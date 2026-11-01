@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Lucivo — Visual Markdown & Diagram Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter, Plus Jakarta Sans, Noto Sans JP, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- Marked, DOMPurify, Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans JP"', '-apple-system', 'sans-serif'],
+            display: ['"Plus Jakarta Sans"', '"Inter"', '"Noto Sans JP"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body data-appearance="light" class="flex flex-col">
+
+  <!-- ==================== メインヘッダー ==================== -->
+  <header class="glass-nav h-12 px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0 z-30">
+    <div class="flex items-center gap-2 shrink-0">
+      <div class="w-6 h-6 rounded-md flex items-center justify-center font-display font-extrabold text-xs text-white bg-blue-600 shadow-sm shrink-0">
+        L
+      </div>
+      <span class="font-display font-bold text-sm tracking-tight whitespace-nowrap" style="color: var(--text-primary);">Lucivo</span>
+    </div>
+
+    <!-- モード切り替え -->
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div class="pill-container shrink-0">
+        <button type="button" data-view-mode="split" class="pill-btn view-mode-btn">Split</button>
+        <button type="button" data-view-mode="canvas" class="pill-btn view-mode-btn">Canvas</button>
+        <button type="button" data-view-mode="editor" class="pill-btn view-mode-btn">Code</button>
+      </div>
+
+      <button type="button" id="btn-visual-mode" class="pill-btn stage-mode-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-xs">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+        </svg>
+        <span>Visual Stage</span>
+      </button>
+    </div>
+
+    <!-- 右側ツール -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button id="btn-theme-toggle" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center border transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="Light / Dark 切替">
+        <svg id="icon-sun" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"></path>
+        </svg>
+        <svg id="icon-moon" class="w-4 h-4 text-sky-400 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+      </button>
+
+      <button id="btn-open-settings" type="button" class="h-8 px-2.5 rounded-lg border flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="矢印スタイル・パレット設定">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+        </svg>
+        <span class="hidden sm:inline" id="active-palette-name">Cobalt</span>
+      </button>
+
+      <button id="btn-export-html" type="button" class="h-8 px-3 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-sm flex items-center gap-1 transition-all cursor-pointer">
+        <span>HTML</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== クイック・スタイルバー ==================== -->
+  <div class="h-9 px-3 sm:px-5 border-b flex items-center justify-between gap-2 overflow-x-auto shrink-0 z-20" style="background: var(--panel-sub); border-color: var(--border-subtle);">
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="text-[10px] font-mono font-bold uppercase tracking-wider" style="color: var(--text-muted);">デザインスタイル:</span>
+      <div class="pill-container">
+        <button type="button" data-info-style="shapes" class="info-style-btn pill-btn is-active text-[10px] py-0.5 px-2">🎨 パステル図形</button>
+        <button type="button" data-info-style="cards" class="info-style-btn pill-btn text-[10px] py-0.5 px-2">📋 2段カード</button>
+        <button type="button" data-info-style="circles" class="info-style-btn pill-btn text-[10px] py-0.5 px-2">⭕ 5色サークル</button>
+        <button type="button" data-info-style="editorial" class="info-style-btn pill-btn text-[10px] py-0.5 px-2">📖 クリームチャート</button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="text-[10px] font-mono font-bold uppercase tracking-wider hidden sm:inline" style="color: var(--text-muted);">矢印形状:</span>
+      <div class="pill-container">
+        <button type="button" data-curve-set="smooth" class="curve-option-btn pill-btn is-active text-[10px] py-0.5 px-2">曲線 Smooth</button>
+        <button type="button" data-curve-set="step" class="curve-option-btn pill-btn text-[10px] py-0.5 px-2">直角 Step</button>
+        <button type="button" data-curve-set="straight" class="curve-option-btn pill-btn text-[10px] py-0.5 px-2">直線 Straight</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== メインワークスペース ==================== -->
+  <main id="workspace-main" class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative">
+
+    <!-- 左ペイン：Markdown エディタ -->
+    <section id="pane-editor" class="w-full lg:w-[40%] h-[42%] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r shrink-0 z-10" style="border-color: var(--border-subtle); background: var(--panel-bg);">
+      <div class="h-8 px-4 border-b flex items-center justify-between text-xs shrink-0" style="border-color: var(--border-subtle); background: var(--panel-sub);">
+        <span class="font-mono text-[10px] font-bold" style="color: var(--text-muted);">SOURCE MARKDOWN</span>
+        <div class="flex items-center gap-1.5">
+          <button id="btn-test-cache" type="button" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 cursor-pointer">
+            + 0ms Test
+          </button>
+          <button id="btn-test-err" type="button" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/25 cursor-pointer">
+            + Err Guard
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 min-h-0 relative">
+        <textarea id="markdown-editor" class="w-full h-full p-4 text-xs sm:text-[13px] overflow-y-auto" spellcheck="false" placeholder="Markdownと ```mermaid を記述..."></textarea>
+      </div>
+    </section>
+
+    <!-- 右ペイン：プレビュー領域 -->
+    <section id="pane-preview" class="flex-1 h-full flex flex-col min-w-0 min-h-0 relative">
+      <div id="preview-scroll" class="flex-1 overflow-y-auto select-text" style="background-color: var(--app-bg);">
+        <!-- 1. 通常モード表示コンテナ -->
+        <div id="standard-doc-wrapper" class="p-4 sm:p-6 lg:p-10">
+          <div id="standard-doc-container" class="prose-doc p-5 sm:p-9 rounded-2xl border shadow-sm" style="background: var(--card-bg); border-color: var(--card-border);">
+            <div class="text-xs font-mono text-slate-400 py-4">Initializing Studio...</div>
+          </div>
+        </div>
+
+        <!-- 2. Visual Stage 表示コンテナ -->
+        <div id="visual-stage-container" class="hidden"></div>
+      </div>
+
+      <!-- ステータスバッジ -->
+      <div class="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 pointer-events-none flex items-center gap-2">
+        <div id="telemetry-pill" class="flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-mono shadow-md backdrop-blur-md transition-all bg-emerald-500/10 text-emerald-600 border-emerald-500/25">
+          <span id="telemetry-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="telemetry-status">Studio Ready</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== 設定モーダル ==================== -->
+  <div id="settings-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-4">
+    <div class="w-full max-w-md rounded-2xl border p-5 sm:p-6 shadow-2xl flex flex-col gap-5" style="background: var(--panel-bg); border-color: var(--border-subtle);">
+      <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--border-subtle);">
+        <h3 class="font-display font-bold text-sm tracking-tight" style="color: var(--text-primary);">Diagram Style & Palette</h3>
+        <button id="btn-close-settings" type="button" class="w-6 h-6 rounded flex items-center justify-center text-xs cursor-pointer" style="color: var(--text-muted);">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-[11px] font-mono uppercase font-semibold" style="color: var(--text-muted);">Color Palette</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" data-palette-set="cobalt" class="palette-option-btn p-2.5 rounded-xl border flex items-center gap-2.5 text-xs font-medium text-left transition-all cursor-pointer" style="border-color: var(--border-subtle);">
+            <span class="w-3.5 h-3.5 rounded-full bg-blue-600 shrink-0"></span>
+            <span class="font-semibold" style="color: var(--text-primary);">Cobalt Tech</span>
+          </button>
+          <button type="button" data-palette-set="emerald" class="palette-option-btn p-2.5 rounded-xl border flex items-center gap-2.5 text-xs font-medium text-left transition-all cursor-pointer" style="border-color: var(--border-subtle);">
+            <span class="w-3.5 h-3.5 rounded-full bg-emerald-600 shrink-0"></span>
+            <span class="font-semibold" style="color: var(--text-primary);">Emerald Matrix</span>
+          </button>
+          <button type="button" data-palette-set="amber" class="palette-option-btn p-2.5 rounded-xl border flex items-center gap-2.5 text-xs font-medium text-left transition-all cursor-pointer" style="border-color: var(--border-subtle);">
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shrink-0"></span>
+            <span class="font-semibold" style="color: var(--text-primary);">Amber Solar</span>
+          </button>
+          <button type="button" data-palette-set="slate" class="palette-option-btn p-2.5 rounded-xl border flex items-center gap-2.5 text-xs font-medium text-left transition-all cursor-pointer" style="border-color: var(--border-subtle);">
+            <span class="w-3.5 h-3.5 rounded-full bg-purple-600 shrink-0"></span>
+            <span class="font-semibold" style="color: var(--text-primary);">Royal Violet</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-[11px] font-mono uppercase font-semibold" style="color: var(--text-muted);">Connection Curve (矢印スタイル)</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-curve-set="smooth" class="curve-option-btn px-3 py-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer" style="border-color: var(--border-subtle);">
+            Smooth (曲線)
+          </button>
+          <button type="button" data-curve-set="step" class="curve-option-btn px-3 py-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer" style="border-color: var(--border-subtle);">
+            Step (直角)
+          </button>
+          <button type="button" data-curve-set="straight" class="curve-option-btn px-3 py-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer" style="border-color: var(--border-subtle);">
+            Straight (直線)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 拡大モーダル ==================== -->
+  <div id="zoom-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-6">
+    <div class="w-full max-w-5xl h-[85vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border" style="background: var(--panel-bg); border-color: var(--border-subtle);">
+      <div class="h-12 px-4 border-b flex items-center justify-between shrink-0" style="border-color: var(--border-subtle); background: var(--panel-sub);">
+        <span class="text-xs font-bold" style="color: var(--text-primary);">Expanded Diagram View</span>
+        <button id="zoom-close-btn" type="button" class="px-3 py-1 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer">Close</button>
+      </div>
+      <div id="zoom-viewport" class="flex-1 overflow-auto relative flex items-center justify-center p-6" style="background: var(--diag-canvas);">
+        <div id="zoom-canvas" class="max-w-full max-h-full flex items-center justify-center"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== トースト ==================== -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200">
+    <div class="bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700">
+      <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+      <span id="toast-message">Notification</span>
+    </div>
+  </div>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>
+
