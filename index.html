@@ -4,32 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Lucivo — Exhibition-Grade Markdown Viewer</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS（使っているクラスだけを tools/build-tailwind-css.cjs で事前に生成したもの） -->
+  <link rel="stylesheet" href="./css/tailwind.css" />
   <!-- Google Fonts: Inter, Plus Jakarta Sans, Noto Sans JP, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <!-- Marked, DOMPurify, Mermaid -->
+  <!-- Marked, DOMPurify（Mermaid と KaTeX は、図・数式が文書に現れたときに app.js が読み込む） -->
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Inter"', '"Noto Sans JP"', '-apple-system', 'sans-serif'],
-            display: ['"Plus Jakarta Sans"', '"Inter"', '"Noto Sans JP"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          }
-        }
-      }
-    };
-  </script>
 
   <link rel="stylesheet" href="./css/style.css" />
 </head>
@@ -56,6 +39,12 @@
         </div>
         <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" class="hidden" />
       </div>
+      <button id="btn-save-markdown" type="button" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="エディタの内容を Markdown ファイルとしてダウンロード">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"></path>
+        </svg>
+        <span>保存</span>
+      </button>
     </div>
 
     <!-- モード切り替え -->
@@ -76,6 +65,7 @@
 
     <!-- 右側ツール -->
     <div class="flex items-center gap-1.5 shrink-0">
+      <button id="btn-front-matter" type="button" class="front-matter-toggle" aria-pressed="false" title="YAML フロントマターの表示 ON / OFF">YAML</button>
       <button id="btn-theme-toggle" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center border transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="Light / Dark 切替">
         <svg id="icon-sun" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="4"></circle>
@@ -111,13 +101,6 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0">
-      <span class="text-[10px] font-mono font-bold uppercase tracking-wider hidden sm:inline" style="color: var(--text-muted);">矢印形状:</span>
-      <div class="pill-container">
-        <button type="button" data-curve-set="smooth" class="curve-option-btn pill-btn is-active text-[10px] py-0.5 px-2">曲線 Smooth</button>
-        <button type="button" data-curve-set="step" class="curve-option-btn pill-btn text-[10px] py-0.5 px-2">直角 Step</button>
-        <button type="button" data-curve-set="straight" class="curve-option-btn pill-btn text-[10px] py-0.5 px-2">直線 Straight</button>
-      </div>
     </div>
   </div>
 
@@ -129,6 +112,10 @@
       <div class="h-8 px-4 border-b flex items-center justify-between text-xs shrink-0" style="border-color: var(--border-subtle); background: var(--panel-sub);">
         <span class="font-mono text-[10px] font-bold" style="color: var(--text-muted);">SOURCE MARKDOWN</span>
         <div class="flex items-center gap-1.5">
+          <span id="editor-lock" class="editor-lock hidden">
+            <span class="editor-lock-label">読み取り専用</span>
+            <button id="btn-edit-unlock" type="button" class="editor-unlock-btn">編集</button>
+          </span>
           <button id="btn-test-cache" type="button" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 cursor-pointer">
             + 0ms Test
           </button>
@@ -196,20 +183,6 @@
         </div>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <label class="text-[11px] font-mono uppercase font-semibold" style="color: var(--text-muted);">Connection Curve (矢印スタイル)</label>
-        <div class="grid grid-cols-3 gap-2">
-          <button type="button" data-curve-set="smooth" class="curve-option-btn px-3 py-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer" style="border-color: var(--border-subtle);">
-            Smooth (曲線)
-          </button>
-          <button type="button" data-curve-set="step" class="curve-option-btn px-3 py-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer" style="border-color: var(--border-subtle);">
-            Step (直角)
-          </button>
-          <button type="button" data-curve-set="straight" class="curve-option-btn px-3 py-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer" style="border-color: var(--border-subtle);">
-            Straight (直線)
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 

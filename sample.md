@@ -1,6 +1,17 @@
+---
+# YAML フロントマター: ヘッダーの「YAML」ボタンで表示を切り替えます
+title: Lucivo サンプル文書
+description: Markdown・数式・Mermaid の記法のサンプル
+tags: ["Lucivo", "Markdown", "Mermaid"]
+author:
+  name: Lucivo
+  role: sample
+draft: false
+---
+
 # Lucivo サンプル文書
 
-Lucivo で使える Markdown と Mermaid の主な記法のサンプルです。左のエディタで書き換えると、右のプレビューにすぐ反映されます。
+Lucivo で使える Markdown と Mermaid の主な記法のサンプルです。左のエディタで書き換えると、右のプレビューにすぐ反映されます。先頭の YAML フロントマターは、ヘッダーの「YAML」ボタンで表示を切り替えられます。
 
 ## 1. 見出しと段落
 
