@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "CSS"]
 
 # css/style.css
 
-ソース: [css/style.css](../../../css/style.css)／設計: `DD-MD`、`DD-DIAG-023`・`030`〜`032`、`DD-MATH-023`、`DD-FM-030`、`DD-FILE-006`
+ソース: [css/style.css](../../../css/style.css)／設計: `DD-MD`、`DD-DIAG-023`・`030`〜`032`・`041`、`DD-MATH-023`、`DD-FM-030`、`DD-FILE-006`
 
 ## 依存関係
 
@@ -34,4 +34,4 @@ flowchart TD
 - **本文の要素**: 通常モードと Visual Stage の両方に効くよう `:is(.prose-doc, .exhibition-slab)` で書く。
 - **線の色**: 背景と見分ける線には `--border-strong` を使う。Dark の Visual Stage では `--border-subtle` がスラブの背景と同じ色になる（`DD-MD-003`）。
 - **図の表示枠**: `justify-content` は `flex-start` のままにし、中身は左右の `margin: auto` で中央に置く。`center` に戻すと、表示枠より広い図の左側がスクロールで見えなくなる（`DD-DIAG-032`）。
-- **クラス名の出どころ**: `lucivo-math`、`front-matter`、`fm-*`、`edge-curve-btn` などは `app.js` が生成する HTML のクラス名で、HTML ファイルには現れない。
+- **クラス名の出どころ**: `lucivo-math`、`front-matter`、`fm-*`、`edge-curve-btn`、`exhibition-slab-split`、`is-stacked` などは `app.js` が生成・付与するクラス名で、HTML ファイルには現れない。

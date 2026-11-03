@@ -707,6 +707,70 @@ async function testVisualStageQuality(browser) {
     rows.push({ style, ok: r.bgLum < 0.3 && edgeOk && r.classTextLum > 0.6 && r.lifelineLum > 0.4 && r.messageLum > 0.6, ...r });
   }
   record('TC-DIAG-019', rows.every(r => r.ok), JSON.stringify(rows));
+
+  // TC-DIAG-021 Visual Stage の自動 2 段組みレイアウトと 1 段組みへの自動フォールバック（FR-015, DD-DIAG-040〜042）
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const splitCheck = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    const slabs = Array.from(root.querySelectorAll('.exhibition-slab'));
+    const findSlab = titleRe => slabs.find(s => { const h2 = s.querySelector('h2'); return h2 && titleRe.test(h2.textContent); });
+    const inspectSlab = s => {
+      const isSplit = s.classList.contains('exhibition-slab-split');
+      const isStacked = s.classList.contains('is-stacked');
+      const prose = s.querySelector('.exhibition-slab-prose');
+      const fig = s.querySelector('.exhibition-slab-figure');
+      const vp = s.querySelector('.exhibition-viewport');
+      const pr = prose ? prose.getBoundingClientRect() : null;
+      const fr = fig ? fig.getBoundingClientRect() : null;
+      return {
+        isSplit,
+        isStacked,
+        sideBySide: !!(pr && fr && fr.left >= pr.right - 2 && Math.abs(fr.top - pr.top) < 40),
+        stackedPos: !!(pr && fr && fr.top >= pr.bottom - 2),
+        overflow: vp ? vp.scrollWidth > vp.clientWidth + 1 : false
+      };
+    };
+    return {
+      flow9: inspectSlab(findSlab(/フローチャート$/)),
+      state12: inspectSlab(findSlab(/^STAGE \d+状態遷移図$/)),
+      bigFlow23: inspectSlab(findSlab(/大きなフローチャート/)),
+      bigState24: inspectSlab(findSlab(/大きな状態遷移図/)),
+      textOnly1: inspectSlab(findSlab(/見出しと段落/)),
+      diagOnly10: inspectSlab(findSlab(/シーケンス図/)),
+      twoDiags25: inspectSlab(findSlab(/図の中の数式/))
+    };
+  });
+  const firstSplitSlab = await page.$('#visual-stage-container .exhibition-slab-split:not(.is-stacked)');
+  if (firstSplitSlab) await firstSplitSlab.screenshot({ path: path.join(SHOT_DIR, 'slab-split-shapes-light.png') });
+
+  // 9 章の図を 1:1 に切り替えると 1 段組み（is-stacked）になり、Fit に戻すと 2 段組みに戻る
+  await page.click('#visual-stage-container [data-action="scale-actual"][data-index="0"]');
+  const actualStacked = await page.evaluate(() => {
+    const s = document.querySelector('#visual-stage-container #diagram-frame-0').closest('.exhibition-slab');
+    const pr = s.querySelector('.exhibition-slab-prose').getBoundingClientRect();
+    const fr = s.querySelector('.exhibition-slab-figure').getBoundingClientRect();
+    return s.classList.contains('is-stacked') && fr.top >= pr.bottom - 2;
+  });
+  await page.click('#visual-stage-container [data-action="scale-fit"][data-index="0"]');
+
+  // 画面幅 767px 以下では 1 段組み（上下配置）になる
+  await page.setViewportSize({ width: 640, height: 16000 });
+  const narrowStacked = await page.evaluate(() => {
+    const s = document.querySelector('#visual-stage-container #diagram-frame-0').closest('.exhibition-slab');
+    const pr = s.querySelector('.exhibition-slab-prose').getBoundingClientRect();
+    const fr = s.querySelector('.exhibition-slab-figure').getBoundingClientRect();
+    return fr.top >= pr.bottom - 2;
+  });
+  await page.setViewportSize({ width: 1300, height: 16000 });
+
+  const splitOk = splitCheck.flow9.isSplit && !splitCheck.flow9.isStacked && splitCheck.flow9.sideBySide && !splitCheck.flow9.overflow
+    && splitCheck.state12.isSplit && !splitCheck.state12.isStacked && splitCheck.state12.sideBySide && !splitCheck.state12.overflow
+    && splitCheck.bigFlow23.isSplit && splitCheck.bigFlow23.isStacked && splitCheck.bigFlow23.stackedPos
+    && splitCheck.bigState24.isSplit && splitCheck.bigState24.isStacked && splitCheck.bigState24.stackedPos
+    && !splitCheck.textOnly1.isSplit && !splitCheck.diagOnly10.isSplit && !splitCheck.twoDiags25.isSplit
+    && actualStacked && narrowStacked;
+  record('TC-DIAG-021', splitOk, JSON.stringify({ ...splitCheck, actualStacked, narrowStacked }));
+
   if (page.consoleErrors.length) record('TC-DIAG-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }
