@@ -165,116 +165,89 @@ const THEMES = {
   }
 };
 
-const SAMPLE_DOC = `# 次世代インテリジェント分散基盤・アーキテクチャ仕様書
-
-<div class="flex flex-wrap items-center gap-2 mb-4 text-xs font-mono">
-  <span class="badge-tag bg-blue-500/10 text-blue-600 border border-blue-500/20">Version 4.5-PROD</span>
-  <span class="badge-tag bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">Status: Verified</span>
-  <span class="badge-tag bg-purple-500/10 text-purple-600 border border-purple-500/20">Infographic Ready</span>
-</div>
-
-本ドキュメントは、超低遅延分散基盤における推論パイプライン（階層フローチャート）、FIDO2認証シーケンス、および自律制御フェイルオーバー（ステートマシン）のシステム統合仕様を定義します。
-
-## 1. 推論パイプライン・トポロジー
-
-<div class="callout-box">
-  <strong>設計方針:</strong> クライアント流入から永続化層までを3層の垂直パイプラインに集約し、モバイルおよび大型ディスプレイ双方で視覚的な黄金比を維持します。
-</div>
-
-\`\`\`mermaid
-flowchart TD
-  subgraph Tier1 ["01: Ingress & Edge Tier"]
-    CLIENT["Client Application<br/><small>Web / iOS / Android</small>"]
-    WAF["Edge Security WAF<br/><small>TLS 1.3 & DDoS Guard</small>"]
-  end
-
-  subgraph Tier2 ["02: Compute & Inference Mesh"]
-    SCHEDULER["Token Batcher & Router<br/><small>Dynamic Load Balancing</small>"]
-    DECODER["Draft Decoder L1<br/><small>Speculative Fast Engine</small>"]
-    WORKERS["Verify Mesh Cluster<br/><small>Multi-GPU Verification</small>"]
-  end
-
-  subgraph Tier3 ["03: Persistence & Storage Tier"]
-    KVCACHE["Distributed KV Cache<br/><small>In-Memory Context</small>"]
-    VECTOR["Vector Index DB<br/><small>Semantic Search</small>"]
-  end
-
-  CLIENT -->|Encrypted Session| WAF
-  WAF -->|gRPC Direct Stream| SCHEDULER
-  SCHEDULER -->|Draft Tokens| DECODER
-  DECODER -->|Parallel Verify| WORKERS
-  SCHEDULER <-->|Context Sync| KVCACHE
-  WORKERS <-->|RAG Query| VECTOR
-\`\`\`
-
-## 2. ゼロトラスト・パスキー認証
-
-<div class="callout-box">
-  <strong>プロトコル要件:</strong> FIDO2/WebAuthn規格に基づく公開鍵暗号認証と、ミリ秒レベルのリアルタイム不正検知スコアリングを同期実行します。
-</div>
-
-\`\`\`mermaid
-sequenceDiagram
-  autonumber
-  participant User as ユーザー端末
-  participant API as API Gateway
-  participant Auth as FIDO2 Core
-  participant Ledger as Core Ledger
-
-  User->>API: 署名付き要求 (WebAuthn)
-  activate API
-  API->>Auth: 暗号署名＆生体検証
-  activate Auth
-  Note over Auth: Secure Enclave検証
-  Auth-->>API: 署名検証 OK (Valid)
-  deactivate Auth
-
-  API->>Ledger: トランザクション確定
-  activate Ledger
-  Ledger-->>API: Commit ACK (0x9f...)
-  deactivate Ledger
-
-  API-->>User: 201 Created (完了)
-  deactivate API
-\`\`\`
-
-## 3. 自律制御フェイルオーバー・モデル
-
-<div class="callout-box">
-  <strong>状態遷移設計:</strong> 正常航行（ActiveOps）から障害検知（FaultLock）、安全着陸（Landing）に至る垂直ライフサイクルを定義します。
-</div>
-
-\`\`\`mermaid
-stateDiagram-v2
-  direction TB
-  [*] --> Standby: Boot
-  Standby --> PreFlight: Diagnostics
-  PreFlight --> ActiveOps: Check OK
-  PreFlight --> FaultLock: Anomaly
-
-  state ActiveOps {
-    [*] --> Cruising
-    Cruising --> Avoidance: Alert
-    Avoidance --> Cruising: Clear
-    Cruising --> Docking: Arrival
+// Visual Stage のカード背景はどのスタイルも明るい色のため、Light / Dark によらずこの配色で描画する
+const VISUAL_THEMES = {
+  shapes: {
+    clusterBg: '#F5FBFA',
+    clusterBorder: '#94A3B8',
+    nodeBg: '#FBE3B0',
+    nodeStroke: '#D9902A',
+    nodeText: '#1E293B',
+    edgeStroke: '#475569',
+    edgeLabelBg: '#FFFFFF',
+    edgeLabelBorder: '#CBD5E1',
+    edgeLabelText: '#1E293B',
+    secondary: '#C9F1F6',
+    tertiary: '#F8D9D3',
+    lifeline: '#475569',
+    activationBg: '#C9F1F6',
+    activationBorder: '#0E7490'
+  },
+  cards: {
+    clusterBg: '#FFFFFF',
+    clusterBorder: '#CBD5E1',
+    nodeBg: '#FFFFFF',
+    nodeStroke: '#E29578',
+    nodeText: '#0F172A',
+    edgeStroke: '#64748B',
+    edgeLabelBg: '#FFFFFF',
+    edgeLabelBorder: '#E2E8F0',
+    edgeLabelText: '#0F172A',
+    secondary: '#DCE3F6',
+    tertiary: '#D3EBEC',
+    lifeline: '#7C8BA1',
+    activationBg: '#FBE7B5',
+    activationBorder: '#C98A12'
+  },
+  circles: {
+    clusterBg: '#F8FAFC',
+    clusterBorder: '#7EA6BF',
+    nodeBg: '#D7E6EF',
+    nodeStroke: '#7EA6BF',
+    nodeText: '#2B2D42',
+    edgeStroke: '#3D464D',
+    edgeLabelBg: '#FFFFFF',
+    edgeLabelBorder: '#7EA6BF',
+    edgeLabelText: '#2B2D42',
+    secondary: '#F3CFCB',
+    tertiary: '#F6E3C8',
+    lifeline: '#6D597A',
+    activationBg: '#F3CFCB',
+    activationBorder: '#D45D53'
+  },
+  editorial: {
+    clusterBg: '#FFFDF7',
+    clusterBorder: '#C9BFA5',
+    nodeBg: '#FFFFFF',
+    nodeStroke: '#D68C8C',
+    nodeText: '#2B2D42',
+    edgeStroke: '#6F8A55',
+    edgeLabelBg: '#FFFFFF',
+    edgeLabelBorder: '#C9BFA5',
+    edgeLabelText: '#2B2D42',
+    secondary: '#E4ECD9',
+    tertiary: '#F3E1E1',
+    lifeline: '#8FA876',
+    activationBg: '#E4ECD9',
+    activationBorder: '#6F8A55'
   }
+};
 
-  ActiveOps --> Failover: Link Loss
-  Failover --> ActiveOps: Restored
-  Failover --> Landing: Low Battery
-  Landing --> Terminated
-  FaultLock --> Terminated
-  Terminated --> [*]
-\`\`\`
+// Visual Stage のノード装飾（g.node の形・塗りの置き換え）を適用する図種。
+// 他の図種の g.node（クラス図のクラスなど）に適用すると図の構造が崩れるため、限定する（FR-008）
+const NODE_DECORATED_TYPES = ['flowchart-v2', 'flowchart', 'stateDiagram'];
 
-## 4. コア性能マトリクス
+// Fit 表示で保つ、図の中の文字の表示上の最小サイズ（NFR-005）
+const MIN_FIT_FONT_PX = 10;
+// シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）
+const SEQUENCE_MATH_LIFT = 6;
 
-| 評価指標 | 従来の構成 | Lucivo Mesh Architecture | ステータス |
-| :--- | :--- | :--- | :--- |
-| **平均応答遅延 (p99)** | 142ms（過密時スパイクあり） | **18ms（投機的デコードによる短縮）** | <span class="badge-tag bg-emerald-500/10 text-emerald-600">SUB-MS</span> |
-| **キャッシュ再描画** | テキスト入力ごとにSVGフル再生成 | **ハッシュ一致時に 0.0ms で即時マウント** | <span class="badge-tag bg-blue-500/10 text-blue-600">ZERO-WAIT</span> |
-| **障害時フォールバック** | 単一ノード障害でパイプライン停止 | **LKG（直前の正常状態）を維持して自動復帰** | <span class="badge-tag bg-purple-500/10 text-purple-600">RESILIENT</span> |
-`;
+const EMPTY_GUIDE_HTML = `
+<div class="empty-guide">
+  <p class="empty-guide-title">Markdown を開いてください</p>
+  <p>ヘッダーの「ファイル」メニュー →「Markdown を開く…」で Markdown ファイルを読み込むか、左のエディタに直接入力してください。</p>
+  <p>Markdown と Mermaid の記法の例は、同梱の <code>sample.md</code> にあります。</p>
+</div>`;
 
 const state = {
   appearance: 'light',
@@ -288,6 +261,10 @@ const state = {
 const svgCache = new Map();
 const lkgCache = new Map();
 let renderDebounceTimer = null;
+// renderApp を呼ぶたびに増やし、描画中の古い非同期描画を見分ける
+let renderGeneration = 0;
+// 最後に読み込んだ Markdown。エディタの内容と異なれば編集中とみなす（起動直後は空）
+let lastLoadedMarkdown = '';
 
 function getThemeSpec() {
   const mode = THEMES[state.appearance] || THEMES.light;
@@ -313,10 +290,20 @@ function getMermaidCurve() {
   return 'basis';
 }
 
-function setupMermaid() {
+// 描画に使う配色。Visual Stage はスタイルごとの配色、通常モードは外観とパレットの配色
+function getDiagramSpec(isVisual) {
+  if (isVisual) return VISUAL_THEMES[state.infographicStyle] || VISUAL_THEMES.shapes;
+  return getThemeSpec();
+}
+
+function setupMermaid(isVisual = state.isVisualMode) {
   syncCssTokens();
-  const spec = getThemeSpec();
-  const isDark = state.appearance === 'dark';
+  const spec = getDiagramSpec(isVisual);
+  const isDark = !isVisual && state.appearance === 'dark';
+  // Visual Stage では円グラフなどの派生色もスタイルの配色に揃える
+  const visualColors = isVisual
+    ? { secondaryColor: spec.secondary, tertiaryColor: spec.tertiary }
+    : { tertiaryColor: spec.clusterBg };
 
   mermaid.initialize({
     startOnLoad: false,
@@ -341,6 +328,18 @@ function setupMermaid() {
       boxMargin: 12,
       useMaxWidth: true
     },
+    // ガントチャートは描画時のページ幅で横長に生成され、表示枠に縮小されて文字が極小になるため、
+    // 表示枠（約 54rem）に近い幅で生成する
+    gantt: {
+      useWidth: 820,
+      barHeight: 24,
+      barGap: 6,
+      topPadding: 56,
+      leftPadding: 72,
+      fontSize: 12,
+      sectionFontSize: 12,
+      useMaxWidth: true
+    },
     state: {
       padding: 16,
       dividerMargin: 18,
@@ -360,7 +359,7 @@ function setupMermaid() {
 
       clusterBkg: spec.clusterBg,
       clusterBorder: spec.clusterBorder,
-      tertiaryColor: spec.clusterBg,
+      ...visualColors,
       tertiaryBorderColor: spec.clusterBorder,
       titleColor: spec.nodeText,
 
@@ -385,349 +384,640 @@ function setupMermaid() {
       loopTextColor: spec.nodeText,
       noteBorderColor: spec.nodeStroke,
       noteBkgColor: spec.clusterBg,
-      noteTextColor: spec.nodeText
+      noteTextColor: spec.nodeText,
+
+      // ER 図の属性行とガントチャートは、派生色のままだと Dark で白地に白文字などになるため明示する（FR-008）
+      attributeBackgroundColorOdd: spec.nodeBg,
+      attributeBackgroundColorEven: spec.clusterBg,
+      sectionBkgColor: spec.clusterBg,
+      sectionBkgColor2: spec.clusterBg,
+      altSectionBkgColor: isVisual ? '#FFFFFF' : spec.canvasBg,
+      gridColor: spec.clusterBorder,
+      taskBkgColor: spec.nodeBg,
+      taskBorderColor: spec.nodeStroke,
+      taskTextColor: spec.nodeText,
+      taskTextLightColor: spec.nodeText,
+      taskTextDarkColor: spec.nodeText,
+      taskTextOutsideColor: spec.nodeText,
+      taskTextClickableColor: spec.nodeText,
+      activeTaskBkgColor: isVisual ? spec.secondary : spec.clusterBg,
+      activeTaskBorderColor: spec.nodeStroke,
+      doneTaskBkgColor: isVisual ? spec.tertiary : spec.clusterBorder,
+      doneTaskBorderColor: spec.clusterBorder,
+      critBkgColor: isDark ? '#7F1D1D' : '#FECACA',
+      critBorderColor: '#DC2626',
+      todayLineColor: spec.nodeStroke,
+      // 円グラフの境界線は既定が黒のため、Dark では暗い扇形どうしの境目が見えなくなる
+      pieStrokeColor: spec.edgeStroke,
+      pieOuterStrokeColor: spec.edgeStroke,
+      pieTitleTextColor: spec.nodeText,
+      pieSectionTextColor: spec.nodeText,
+      pieLegendTextColor: spec.nodeText,
+      // XY チャートの系列色（派生色のままだと白地に淡いクリーム色になり見分けにくい）
+      xyChart: {
+        backgroundColor: 'transparent',
+        titleColor: spec.nodeText,
+        xAxisLabelColor: spec.nodeText,
+        xAxisTitleColor: spec.nodeText,
+        xAxisTickColor: spec.edgeStroke,
+        xAxisLineColor: spec.edgeStroke,
+        yAxisLabelColor: spec.nodeText,
+        yAxisTitleColor: spec.nodeText,
+        yAxisTickColor: spec.edgeStroke,
+        yAxisLineColor: spec.edgeStroke,
+        plotColorPalette: `${spec.nodeStroke}, ${spec.edgeStroke}`
+      }
     }
+  });
+}
+
+/* ==========================================================================
+   数式（FR-010）: Marked の拡張で数式の置き場所を作り、サニタイズ後に KaTeX で描画する
+   ========================================================================== */
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+}
+
+// 置き場所の中身は TeX の原文。KaTeX を読み込めない場合は原文がそのまま表示される（DD-MATH-012, 022）
+function mathPlaceholder(tag, tex, isDisplay, raw) {
+  return `<${tag} class="lucivo-math" data-display="${isDisplay}" data-tex="${escapeHtml(tex)}">${escapeHtml(raw)}</${tag}>`;
+}
+
+const mathBlockExtension = {
+  name: 'mathBlock',
+  level: 'block',
+  start: src => {
+    const m = src.match(/^\$\$/m);
+    return m ? m.index : undefined;
+  },
+  tokenizer(src) {
+    const m = /^\$\$[^\S\n]*\n?([\s\S]+?)\n?[^\S\n]*\$\$[^\S\n]*(?:\n+|$)/.exec(src);
+    if (m) return { type: 'mathBlock', raw: m[0], text: m[1].trim() };
+  },
+  renderer: token => `${mathPlaceholder('div', token.text, true, token.raw.trim())}\n`
+};
+
+// $…$ は、開きの直後・閉じの直前が空白でなく、閉じの直後が数字でない場合だけ数式にする（「$5 と $10」を除くため）。
+// 中身にバッククォートを含めない。後ろのインラインコードの中の $ を閉じの $ と取り違えないため
+const mathInlineExtension = {
+  name: 'mathInline',
+  level: 'inline',
+  start: src => {
+    const index = src.indexOf('$');
+    return index >= 0 ? index : undefined;
+  },
+  tokenizer(src) {
+    const display = /^\$\$((?:\\.|[^\\$`])+?)\$\$/.exec(src);
+    if (display) return { type: 'mathInline', raw: display[0], text: display[1].trim(), display: true };
+    const inline = /^\$(?!\s)((?:\\.|[^\\$`\n])+?)(?<!\s)\$(?!\d)/.exec(src);
+    if (inline) return { type: 'mathInline', raw: inline[0], text: inline[1], display: false };
+  },
+  renderer: token => mathPlaceholder('span', token.text, token.display, token.raw)
+};
+
+function setupMarkedMath() {
+  marked.use({ extensions: [mathBlockExtension, mathInlineExtension] });
+}
+
+// サニタイズ後の HTML に入れた置き場所へ描画する。trust: false で、リンクや任意の属性を作るコマンドは描画しない
+function renderMath(container) {
+  if (!window.katex) return;
+  container.querySelectorAll('.lucivo-math').forEach(el => {
+    katex.render(el.dataset.tex, el, {
+      displayMode: el.dataset.display === 'true',
+      throwOnError: false,
+      trust: false,
+      output: 'htmlAndMathml'
+    });
   });
 }
 
 /* ==========================================================================
    SVG ポストプロセッサ (通常モード vs リファレンス4大インフォグラフィック)
    ========================================================================== */
-function postProcessSvg(rawSvg, isVisualMode, blockIndex = 0) {
+function hexToRgba(hex, alpha) {
+  const v = parseInt(hex.replace('#', ''), 16);
+  return `rgba(${(v >> 16) & 255}, ${(v >> 8) & 255}, ${v & 255}, ${alpha})`;
+}
+
+// SVG 内の id を SVG ごとに一意にし、url(#…)・href・aria 参照を書き換える。
+// Mermaid はシーケンス図の矢じり（#arrowhead）などを図をまたいで同じ id で出力するため、
+// 同じページに複数の図があると、別の図（非表示のものを含む）のマーカーやグラデーションを参照してしまう
+function scopeSvgIds(svg) {
+  const prefix = svg.id || `lucivo-${Math.random().toString(36).slice(2, 9)}`;
+  const idMap = new Map();
+  const used = new Set();
+  svg.querySelectorAll('[id]').forEach(el => {
+    if (el.id.startsWith(prefix)) return;
+    // Mermaid が 1 つの図の中で同じ id を出すこと（タイムラインの node-undefined など）があるため、
+    // 2 つ目以降には連番を付ける。参照は最初の要素に向けたままにする
+    let scoped = `${prefix}-${el.id}`;
+    for (let n = 2; used.has(scoped); n++) scoped = `${prefix}-${el.id}-${n}`;
+    used.add(scoped);
+    if (!idMap.has(el.id)) idMap.set(el.id, scoped);
+    el.id = scoped;
+  });
+  if (idMap.size === 0) return;
+
+  const ariaRefs = ['aria-labelledby', 'aria-describedby'];
+  svg.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(attr => {
+      const value = attr.value;
+      if (value.includes('url(')) {
+        // style 属性は url("#id") のように引用符付きで書き出されるため、引用符の有無を問わない
+        el.setAttribute(attr.name, value.replace(/url\(\s*(['"]?)#([^)'"\s]+)\1\s*\)/g, (m, q, id) => (idMap.has(id) ? `url(#${idMap.get(id)})` : m)));
+      } else if ((attr.name === 'href' || attr.name === 'xlink:href') && value.startsWith('#') && idMap.has(value.slice(1))) {
+        el.setAttribute(attr.name, `#${idMap.get(value.slice(1))}`);
+      } else if (ariaRefs.includes(attr.name)) {
+        el.setAttribute(attr.name, value.split(/\s+/).map(id => idMap.get(id) || id).join(' '));
+      }
+    });
+  });
+}
+
+// シーケンス図のライフライン・活性区間・メッセージ線・矢じりを、背景と見分けられる配色にする（NFR-004）
+function styleSequenceDiagram(svg, colors) {
+  // Mermaid 10.9 はライフラインの class を "200" で上書きして出力するため、id でも拾う
+  svg.querySelectorAll('line[id^="actor"], line[class~="200"], line.actor-line').forEach(line => {
+    line.style.setProperty('stroke', colors.lifeline, 'important');
+    line.style.setProperty('stroke-width', '1.25px', 'important');
+    line.style.setProperty('stroke-dasharray', '5 4', 'important');
+  });
+  svg.querySelectorAll('rect[class^="activation"]').forEach(rect => {
+    rect.style.setProperty('fill', colors.activationBg, 'important');
+    rect.style.setProperty('stroke', colors.activationBorder, 'important');
+    rect.style.setProperty('stroke-width', '1.5px', 'important');
+  });
+  svg.querySelectorAll('line.messageLine0, line.messageLine1').forEach(line => {
+    line.style.setProperty('stroke', colors.signal, 'important');
+    line.style.setProperty('stroke-width', '2px', 'important');
+  });
+  // 応答（-->>）の破線は意味を持つため、線の太さに合わせて間隔だけ広げる
+  svg.querySelectorAll('line.messageLine1').forEach(line => {
+    line.style.setProperty('stroke-dasharray', '6 4', 'important');
+  });
+  svg.querySelectorAll('marker path, marker circle').forEach(m => {
+    m.style.setProperty('fill', colors.signal, 'important');
+    m.style.setProperty('stroke', colors.signal, 'important');
+  });
+  // autonumber の番号は矢じりと同じ色の円の上に載るため、円と対比する色にする
+  svg.querySelectorAll('text.sequenceNumber').forEach(t => {
+    t.style.setProperty('fill', colors.numberText, 'important');
+  });
+  // Mermaid はメッセージの数式（SVG 直下の foreignObject）の下端をメッセージ線にそろえるため、
+  // 添字や分母が線に重なる。線から離れるよう上へずらす（DD-DIAG-031）
+  // 数式（MathML）はページの文字色を継承し、Visual Stage の Dark では明るいカードの上で白文字になるため、色も指定する
+  svg.querySelectorAll(':scope > foreignObject').forEach(fo => {
+    fo.setAttribute('y', String(parseFloat(fo.getAttribute('y') || '0') - SEQUENCE_MATH_LIFT));
+    fo.querySelectorAll(':scope > div').forEach(div => div.style.setProperty('color', colors.messageText, 'important'));
+  });
+}
+
+// Fit 表示で、図の中の最も小さい文字が MIN_FIT_FONT_PX 未満になるほどは縮小しない（DD-DIAG-030）。
+// 文字の大きさは計算後のスタイルで調べるため、図を DOM に入れた後に呼ぶ
+function applyReadableFit(svg) {
+  const viewBox = svg && svg.viewBox && svg.viewBox.baseVal;
+  if (!viewBox || !viewBox.width) return;
+  const sizes = Array.from(svg.querySelectorAll('text, tspan, foreignObject *'))
+    .filter(el => !el.closest('math') && Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim()))
+    .map(el => parseFloat(getComputedStyle(el).fontSize))
+    .filter(size => size > 0);
+  if (sizes.length === 0) return;
+  const minScale = Math.min(1, MIN_FIT_FONT_PX / Math.min(...sizes));
+  svg.style.minWidth = `${Math.ceil(viewBox.width * minScale)}px`;
+}
+
+function postProcessSvg(rawSvg, isVisualMode) {
   try {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = rawSvg;
     const svg = wrapper.querySelector('svg');
     if (!svg) return rawSvg;
 
-    const isDark = state.appearance === 'dark';
-    const spec = getThemeSpec();
-
-    // 1. 通常モード：端正なエンジニアリング設計図スタイル
-    if (!isVisualMode) {
-      const targetTextColor = isDark ? '#F8FAFC' : '#0F172A';
-      svg.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text.actor, text.noteText, .nodeLabel, .stateLabel, .messageText, .loopText, .labelText').forEach(el => {
-        el.style.setProperty('color', targetTextColor, 'important');
-        el.style.setProperty('fill', targetTextColor, 'important');
-      });
-      svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach(g => {
-        const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
-        if (!rect) return;
-        rect.setAttribute('rx', '8');
-        rect.setAttribute('ry', '8');
-        rect.style.setProperty('fill', spec.nodeBg, 'important');
-        rect.style.setProperty('stroke', spec.nodeStroke, 'important');
-        rect.style.setProperty('stroke-width', '1.75px', 'important');
-      });
-      svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition, line.messageLine0, line.messageLine1').forEach(p => {
-        p.style.setProperty('stroke', spec.edgeStroke, 'important');
-        p.style.setProperty('stroke-width', '2px', 'important');
-      });
-      return svg.outerHTML;
+    const diagramType = svg.getAttribute('aria-roledescription') || '';
+    if (isVisualMode) {
+      decorateVisualSvg(svg, diagramType);
+    } else {
+      decorateStandardSvg(svg, diagramType);
     }
-
-    // ======================================================================
-    // 2. Visual Stage モード：インフォグラフィック・エンジン
-    // ======================================================================
-    const styleMode = state.infographicStyle;
-
-    let defs = svg.querySelector('defs');
-    if (!defs) {
-      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-      svg.insertBefore(defs, svg.firstChild);
-    }
-
-    const uid = Math.random().toString(36).slice(2, 7);
-
-    defs.insertAdjacentHTML('beforeend', `
-      <filter id="vis-soft-shadow-${uid}" x="-30%" y="-30%" width="160%" height="170%">
-        <feDropShadow dx="0" dy="6" stdDeviation="5.5" flood-color="#0F172A" flood-opacity="0.16" />
-      </filter>
-      <filter id="vis-card-shadow-${uid}" x="-20%" y="-20%" width="140%" height="150%">
-        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.14" />
-      </filter>
-
-      <linearGradient id="vis-g-amber-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#E89B27" />
-        <stop offset="100%" stop-color="#F7D05C" />
-      </linearGradient>
-      <linearGradient id="vis-g-aqua-${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#73E8F4" />
-        <stop offset="100%" stop-color="#DAEDFA" />
-      </linearGradient>
-      <linearGradient id="vis-g-coral-${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#E87C6C" />
-        <stop offset="100%" stop-color="#F6CBC3" />
-      </linearGradient>
-      <linearGradient id="vis-g-lime-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#8CEE97" />
-        <stop offset="100%" stop-color="#CEF65B" />
-      </linearGradient>
-
-      <linearGradient id="vis-cap-coral-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#E29578" />
-        <stop offset="100%" stop-color="#ECAC94" />
-      </linearGradient>
-      <linearGradient id="vis-cap-gold-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#E5AD35" />
-        <stop offset="100%" stop-color="#F3C868" />
-      </linearGradient>
-      <linearGradient id="vis-cap-violet-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#9AAEE4" />
-        <stop offset="100%" stop-color="#BAC7EC" />
-      </linearGradient>
-      <linearGradient id="vis-cap-teal-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#64ADB0" />
-        <stop offset="100%" stop-color="#88C4C6" />
-      </linearGradient>
-    `);
-
-    // サブグラフの磨りガラス・フレーム化
-    svg.querySelectorAll('g.cluster, g.statediagram-cluster').forEach(cluster => {
-      const outerRect = cluster.querySelector('rect.outer') || cluster.querySelector('rect');
-      if (outerRect) {
-        outerRect.setAttribute('rx', '18');
-        outerRect.setAttribute('ry', '18');
-        outerRect.style.setProperty('fill', isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.65)', 'important');
-        outerRect.style.setProperty('stroke', isDark ? 'rgba(148, 163, 184, 0.4)' : 'rgba(255, 255, 255, 0.95)', 'important');
-        outerRect.style.setProperty('stroke-width', '2px', 'important');
-      }
-    });
-
-    // ----------------------------------------------------------------------
-    // スタイル 1: 🎨 Pastel Shapes (リファレンス1準拠)
-    // ----------------------------------------------------------------------
-    if (styleMode === 'shapes') {
-      svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
-        const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
-        const polygon = g.querySelector('polygon');
-        const text = (g.textContent || '').toLowerCase();
-
-        g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
-          el.style.setProperty('color', '#1E293B', 'important');
-          el.style.setProperty('fill', '#1E293B', 'important');
-          el.style.setProperty('font-weight', '700', 'important');
-        });
-
-        if (rect) {
-          rect.style.setProperty('stroke', 'none', 'important');
-          rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
-
-          if (idx === 0 || text.includes('client') || text.includes('start') || text.includes('standby')) {
-            rect.setAttribute('rx', '9999');
-            rect.setAttribute('ry', '9999');
-            rect.style.setProperty('fill', '#FFFFFF', 'important');
-          } else if (text.includes('terminal') || text.includes('landing') || text.includes('end') || text.includes('終了')) {
-            rect.setAttribute('rx', '9999');
-            rect.setAttribute('ry', '9999');
-            rect.style.setProperty('fill', `url(#vis-g-lime-${uid})`, 'important');
-          } else {
-            rect.setAttribute('rx', '10');
-            rect.setAttribute('ry', '10');
-            rect.style.setProperty('fill', `url(#vis-g-amber-${uid})`, 'important');
-          }
-        }
-
-        if (polygon) {
-          polygon.style.setProperty('stroke', 'none', 'important');
-          polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
-          const points = polygon.getAttribute('points') || '';
-          if (points.split(' ').length <= 5) {
-            polygon.style.setProperty('fill', `url(#vis-g-aqua-${uid})`, 'important');
-          } else {
-            polygon.style.setProperty('fill', `url(#vis-g-coral-${uid})`, 'important');
-          }
-        }
-      });
-
-      svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition, line.messageLine0, line.messageLine1').forEach(p => {
-        p.style.setProperty('stroke', '#475569', 'important');
-        p.style.setProperty('stroke-width', '2px', 'important');
-        p.style.setProperty('stroke-dasharray', 'none', 'important');
-      });
-      svg.querySelectorAll('marker path').forEach(m => {
-        m.style.setProperty('fill', '#475569', 'important');
-        m.style.setProperty('stroke', '#475569', 'important');
-      });
-    }
-
-    // ----------------------------------------------------------------------
-    // スタイル 2: 📋 2-Tier Cards (リファレンス4準拠)
-    // ----------------------------------------------------------------------
-    else if (styleMode === 'cards') {
-      const capGradients = [
-        `url(#vis-cap-coral-${uid})`,
-        `url(#vis-cap-gold-${uid})`,
-        `url(#vis-cap-violet-${uid})`,
-        `url(#vis-cap-teal-${uid})`
-      ];
-      const stepLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-
-      svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
-        const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
-        if (!rect) return;
-
-        const x = parseFloat(rect.getAttribute('x') || 0);
-        const y = parseFloat(rect.getAttribute('y') || 0);
-        const w = parseFloat(rect.getAttribute('width') || 0);
-        const h = parseFloat(rect.getAttribute('height') || 0);
-        if (w <= 10 || h <= 10) return;
-
-        rect.setAttribute('rx', '12');
-        rect.setAttribute('ry', '12');
-        rect.style.setProperty('fill', '#FFFFFF', 'important');
-        rect.style.setProperty('stroke', '#E2E8F0', 'important');
-        rect.style.setProperty('stroke-width', '1.5px', 'important');
-        rect.setAttribute('filter', `url(#vis-card-shadow-${uid})`);
-
-        const cap = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        cap.setAttribute('x', String(x));
-        cap.setAttribute('y', String(y));
-        cap.setAttribute('width', String(w));
-        const capH = Math.min(24, h * 0.38);
-        cap.setAttribute('height', String(capH));
-        cap.setAttribute('rx', '12');
-        cap.setAttribute('ry', '12');
-        cap.style.setProperty('fill', capGradients[idx % capGradients.length], 'important');
-        cap.style.setProperty('stroke', 'none', 'important');
-        cap.style.setProperty('pointer-events', 'none');
-        g.appendChild(cap);
-
-        const stepText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        stepText.setAttribute('x', String(x + 10));
-        stepText.setAttribute('y', String(y + capH - 7));
-        stepText.setAttribute('fill', '#FFFFFF');
-        stepText.setAttribute('font-size', '11');
-        stepText.setAttribute('font-weight', '800');
-        stepText.setAttribute('font-family', '"Plus Jakarta Sans", sans-serif');
-        stepText.textContent = stepLetters[idx % stepLetters.length];
-        g.appendChild(stepText);
-
-        g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
-          el.style.setProperty('color', '#0F172A', 'important');
-          el.style.setProperty('fill', '#0F172A', 'important');
-          el.style.setProperty('font-weight', '700', 'important');
-        });
-      });
-
-      svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-        p.style.setProperty('stroke', '#64748B', 'important');
-        p.style.setProperty('stroke-width', '2px', 'important');
-      });
-    }
-
-    // ----------------------------------------------------------------------
-    // スタイル 3: ⭕ Vibrant Circles & Dots (リファレンス2準拠)
-    // ----------------------------------------------------------------------
-    else if (styleMode === 'circles') {
-      const circlePalette = ['#D45D53', '#7EA6BF', '#ECB674', '#7D9763', '#6D597A', '#3D464D'];
-
-      svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
-        const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
-        const color = circlePalette[idx % circlePalette.length];
-
-        if (rect) {
-          rect.setAttribute('rx', '9999');
-          rect.setAttribute('ry', '9999');
-          rect.style.setProperty('fill', color, 'important');
-          rect.style.setProperty('stroke', '#FFFFFF', 'important');
-          rect.style.setProperty('stroke-width', '2.5px', 'important');
-          rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
-        }
-
-        g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
-          el.style.setProperty('color', '#FFFFFF', 'important');
-          el.style.setProperty('fill', '#FFFFFF', 'important');
-          el.style.setProperty('font-weight', '700', 'important');
-        });
-      });
-
-      svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach((p, idx) => {
-        const color = circlePalette[idx % circlePalette.length];
-        p.style.setProperty('stroke', color, 'important');
-        p.style.setProperty('stroke-width', '4px', 'important');
-        p.style.setProperty('stroke-linecap', 'round', 'important');
-        p.style.setProperty('stroke-dasharray', '0 9', 'important');
-      });
-      svg.querySelectorAll('marker path').forEach(m => {
-        m.style.setProperty('fill', '#7EA6BF', 'important');
-      });
-    }
-
-    // ----------------------------------------------------------------------
-    // スタイル 4: 📖 Editorial Cream (リファレンス3準拠)
-    // ----------------------------------------------------------------------
-    else if (styleMode === 'editorial') {
-      svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
-        const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
-        const text = (g.textContent || '').toLowerCase();
-
-        if (rect) {
-          if (idx === 0 || text.includes('start') || text.includes('client')) {
-            rect.setAttribute('rx', '9999');
-            rect.setAttribute('ry', '9999');
-            rect.style.setProperty('fill', '#FFFFFF', 'important');
-            rect.style.setProperty('stroke', '#E29578', 'important');
-            rect.style.setProperty('stroke-width', '3px', 'important');
-          } else if (text.includes('type') || text.includes('terminat') || text.includes('landing') || text.includes('docking')) {
-            rect.setAttribute('rx', '8');
-            rect.setAttribute('ry', '8');
-            rect.style.setProperty('fill', '#D68C8C', 'important');
-            rect.style.setProperty('stroke', 'none', 'important');
-            g.querySelectorAll('foreignObject div, foreignObject span, text').forEach(el => {
-              el.style.setProperty('color', '#FFFFFF', 'important');
-              el.style.setProperty('fill', '#FFFFFF', 'important');
-            });
-            return;
-          } else {
-            rect.setAttribute('rx', '9999');
-            rect.setAttribute('ry', '9999');
-            rect.style.setProperty('fill', '#FFFFFF', 'important');
-            rect.style.setProperty('stroke', 'none', 'important');
-            rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
-          }
-        }
-
-        g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
-          el.style.setProperty('color', '#2B2D42', 'important');
-          el.style.setProperty('fill', '#2B2D42', 'important');
-          el.style.setProperty('font-weight', '600', 'important');
-        });
-      });
-
-      svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-        p.style.setProperty('stroke', '#8FA876', 'important');
-        p.style.setProperty('stroke-width', '3.5px', 'important');
-        p.style.setProperty('stroke-dasharray', 'none', 'important');
-      });
-      svg.querySelectorAll('marker path').forEach(m => {
-        m.style.setProperty('fill', '#8FA876', 'important');
-        m.style.setProperty('stroke', '#8FA876', 'important');
-      });
-    }
-
-    // シーケンス図のアクターもインフォグラフィック化
-    svg.querySelectorAll('rect.actor').forEach((rect, idx) => {
-      rect.setAttribute('rx', '10');
-      rect.setAttribute('ry', '10');
-      rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
-      if (styleMode === 'shapes') {
-        rect.style.setProperty('fill', `url(#vis-g-amber-${uid})`, 'important');
-        rect.style.setProperty('stroke', 'none', 'important');
-      } else if (styleMode === 'circles') {
-        rect.style.setProperty('fill', ['#7EA6BF', '#D45D53', '#7D9763', '#ECB674'][idx % 4], 'important');
-        rect.style.setProperty('stroke', '#FFFFFF', 'important');
-        rect.style.setProperty('stroke-width', '2px', 'important');
-      } else {
-        rect.style.setProperty('fill', '#FFFFFF', 'important');
-        rect.style.setProperty('stroke', '#CBD5E1', 'important');
-      }
-    });
-
+    scopeSvgIds(svg);
     return svg.outerHTML;
   } catch (e) {
+    console.error('SVG post-processing failed:', e);
     return rawSvg;
   }
+}
+
+// 1. 通常モード：端正なエンジニアリング設計図スタイル
+function decorateStandardSvg(svg, diagramType) {
+  const isDark = state.appearance === 'dark';
+  const spec = getThemeSpec();
+  const targetTextColor = isDark ? '#F8FAFC' : '#0F172A';
+  svg.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text.actor, text.noteText, .nodeLabel, .stateLabel, .messageText, .loopText, .labelText').forEach(el => {
+    el.style.setProperty('color', targetTextColor, 'important');
+    el.style.setProperty('fill', targetTextColor, 'important');
+  });
+  if (diagramType === 'sequence') {
+    styleSequenceDiagram(svg, {
+      lifeline: isDark ? '#94A3B8' : '#64748B',
+      activationBg: hexToRgba(spec.nodeStroke, isDark ? 0.3 : 0.16),
+      activationBorder: spec.nodeStroke,
+      signal: spec.edgeStroke,
+      numberText: isDark ? spec.canvasBg : '#FFFFFF',
+      messageText: spec.nodeText
+    });
+  }
+  if (!NODE_DECORATED_TYPES.includes(diagramType)) return;
+  svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach(g => {
+    const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
+    if (!rect) return;
+    rect.setAttribute('rx', '8');
+    rect.setAttribute('ry', '8');
+    rect.style.setProperty('fill', spec.nodeBg, 'important');
+    rect.style.setProperty('stroke', spec.nodeStroke, 'important');
+    rect.style.setProperty('stroke-width', '1.75px', 'important');
+  });
+  svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
+    p.style.setProperty('stroke', spec.edgeStroke, 'important');
+    p.style.setProperty('stroke-width', '2px', 'important');
+  });
+}
+
+// ======================================================================
+// 2. Visual Stage モード：インフォグラフィック・エンジン
+// ======================================================================
+function decorateVisualSvg(svg, diagramType) {
+  const styleMode = state.infographicStyle;
+  const visualSpec = getDiagramSpec(true);
+
+  const uid = addVisualDefs(svg);
+
+  if (diagramType === 'sequence') {
+    decorateVisualSequence(svg, styleMode, visualSpec, uid);
+    return;
+  }
+  // その他の図種は、構造を保ったまま setupMermaid のスタイル配色だけで描画する（FR-008）
+  if (!NODE_DECORATED_TYPES.includes(diagramType)) return;
+
+  // サブグラフの磨りガラス・フレーム化（カード背景は外観によらず明るいため、明るい配色に固定）
+  svg.querySelectorAll('g.cluster, g.statediagram-cluster').forEach(cluster => {
+    const outerRect = cluster.querySelector('rect.outer') || cluster.querySelector('rect');
+    if (outerRect) {
+      outerRect.setAttribute('rx', '18');
+      outerRect.setAttribute('ry', '18');
+      outerRect.style.setProperty('fill', 'rgba(255, 255, 255, 0.65)', 'important');
+      outerRect.style.setProperty('stroke', visualSpec.clusterBorder, 'important');
+      outerRect.style.setProperty('stroke-width', '2px', 'important');
+    }
+  });
+
+  const decorators = {
+    shapes: decorateVisualShapes,
+    cards: decorateVisualCards,
+    circles: decorateVisualCircles,
+    editorial: decorateVisualEditorial
+  };
+  const decorate = decorators[styleMode];
+  if (decorate) decorate(svg, uid);
+
+  fixMarkerScale(svg);
+}
+
+// Visual Stage で使う影・グラデーションを defs に追加し、id の接尾辞を返す
+function addVisualDefs(svg) {
+  let defs = svg.querySelector('defs');
+  if (!defs) {
+    defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    svg.insertBefore(defs, svg.firstChild);
+  }
+
+
+  const uid = Math.random().toString(36).slice(2, 7);
+
+  defs.insertAdjacentHTML('beforeend', `
+    <filter id="vis-soft-shadow-${uid}" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5.5" flood-color="#0F172A" flood-opacity="0.16" />
+    </filter>
+    <filter id="vis-card-shadow-${uid}" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.14" />
+    </filter>
+
+    <linearGradient id="vis-g-amber-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E89B27" />
+      <stop offset="100%" stop-color="#F7D05C" />
+    </linearGradient>
+    <linearGradient id="vis-g-aqua-${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#73E8F4" />
+      <stop offset="100%" stop-color="#DAEDFA" />
+    </linearGradient>
+    <linearGradient id="vis-g-coral-${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E87C6C" />
+      <stop offset="100%" stop-color="#F6CBC3" />
+    </linearGradient>
+    <linearGradient id="vis-g-lime-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8CEE97" />
+      <stop offset="100%" stop-color="#CEF65B" />
+    </linearGradient>
+
+    <linearGradient id="vis-cap-coral-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E29578" />
+      <stop offset="100%" stop-color="#ECAC94" />
+    </linearGradient>
+    <linearGradient id="vis-cap-gold-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E5AD35" />
+      <stop offset="100%" stop-color="#F3C868" />
+    </linearGradient>
+    <linearGradient id="vis-cap-violet-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9AAEE4" />
+      <stop offset="100%" stop-color="#BAC7EC" />
+    </linearGradient>
+    <linearGradient id="vis-cap-teal-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#64ADB0" />
+      <stop offset="100%" stop-color="#88C4C6" />
+    </linearGradient>
+  `);
+  return uid;
+}
+
+// スタイル 1: 🎨 Pastel Shapes (リファレンス1準拠)
+function decorateVisualShapes(svg, uid) {
+  svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
+    const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
+    const polygon = g.querySelector('polygon');
+    const text = (g.textContent || '').toLowerCase();
+
+    g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      el.style.setProperty('color', '#1E293B', 'important');
+      el.style.setProperty('fill', '#1E293B', 'important');
+      el.style.setProperty('font-weight', '700', 'important');
+    });
+
+    if (rect) {
+      rect.style.setProperty('stroke', 'none', 'important');
+      rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+
+      if (idx === 0 || text.includes('client') || text.includes('start') || text.includes('standby')) {
+        rect.setAttribute('rx', '9999');
+        rect.setAttribute('ry', '9999');
+        rect.style.setProperty('fill', '#FFFFFF', 'important');
+      } else if (text.includes('terminal') || text.includes('landing') || text.includes('end') || text.includes('終了')) {
+        rect.setAttribute('rx', '9999');
+        rect.setAttribute('ry', '9999');
+        rect.style.setProperty('fill', `url(#vis-g-lime-${uid})`, 'important');
+      } else {
+        rect.setAttribute('rx', '10');
+        rect.setAttribute('ry', '10');
+        rect.style.setProperty('fill', `url(#vis-g-amber-${uid})`, 'important');
+      }
+    }
+
+    if (polygon) {
+      polygon.style.setProperty('stroke', 'none', 'important');
+      polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+      const points = polygon.getAttribute('points') || '';
+      if (points.split(' ').length <= 5) {
+        polygon.style.setProperty('fill', `url(#vis-g-aqua-${uid})`, 'important');
+      } else {
+        polygon.style.setProperty('fill', `url(#vis-g-coral-${uid})`, 'important');
+      }
+    }
+  });
+
+  svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
+    p.style.setProperty('stroke', '#475569', 'important');
+    p.style.setProperty('stroke-width', '2px', 'important');
+    p.style.setProperty('stroke-dasharray', 'none', 'important');
+  });
+  svg.querySelectorAll('marker path').forEach(m => {
+    m.style.setProperty('fill', '#475569', 'important');
+    m.style.setProperty('stroke', '#475569', 'important');
+  });
+}
+
+// スタイル 2: 📋 2-Tier Cards (リファレンス4準拠)
+function decorateVisualCards(svg, uid) {
+  const capGradients = [
+    `url(#vis-cap-coral-${uid})`,
+    `url(#vis-cap-gold-${uid})`,
+    `url(#vis-cap-violet-${uid})`,
+    `url(#vis-cap-teal-${uid})`
+  ];
+  // 記号は A〜Z、続けて AA, AB…（表計算の列名と同じ）。ノードの多い図でも記号が重複しないようにする
+  const stepLabel = n => (n < 26 ? '' : stepLabel(Math.floor(n / 26) - 1)) + String.fromCharCode(65 + (n % 26));
+  // カード化したノードだけを図の上から順（同じ高さは左から）に数え、記号が A, B, C… と並ぶようにする
+  let cardCount = 0;
+  const nodePos = g => {
+    const m = /translate\(\s*([-\d.]+)[\s,]+([-\d.]+)\s*\)/.exec(g.getAttribute('transform') || '');
+    return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : { x: 0, y: 0 };
+  };
+  const orderedNodes = Array.from(svg.querySelectorAll('g.node:not(.statediagram-cluster)'))
+    .map(g => ({ g, pos: nodePos(g) }))
+    .sort((a, b) => (a.pos.y - b.pos.y) || (a.pos.x - b.pos.x))
+    .map(item => item.g);
+
+  orderedNodes.forEach(g => {
+    const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
+    if (!rect) return;
+
+    const x = parseFloat(rect.getAttribute('x') || 0);
+    const y = parseFloat(rect.getAttribute('y') || 0);
+    const w = parseFloat(rect.getAttribute('width') || 0);
+    const h = parseFloat(rect.getAttribute('height') || 0);
+    if (w <= 10 || h <= 10) return;
+    const idx = cardCount++;
+
+    rect.setAttribute('rx', '12');
+    rect.setAttribute('ry', '12');
+    rect.style.setProperty('fill', '#FFFFFF', 'important');
+    rect.style.setProperty('stroke', '#E2E8F0', 'important');
+    rect.style.setProperty('stroke-width', '1.5px', 'important');
+    rect.setAttribute('filter', `url(#vis-card-shadow-${uid})`);
+
+    const cap = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    cap.setAttribute('x', String(x));
+    cap.setAttribute('y', String(y));
+    cap.setAttribute('width', String(w));
+    const capH = Math.min(24, h * 0.38);
+    cap.setAttribute('height', String(capH));
+    cap.setAttribute('rx', '12');
+    cap.setAttribute('ry', '12');
+    cap.style.setProperty('fill', capGradients[idx % capGradients.length], 'important');
+    cap.style.setProperty('stroke', 'none', 'important');
+    cap.style.setProperty('pointer-events', 'none');
+    g.appendChild(cap);
+
+    const stepText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    stepText.setAttribute('x', String(x + 10));
+    stepText.setAttribute('y', String(y + capH - 7));
+    stepText.setAttribute('fill', '#FFFFFF');
+    stepText.setAttribute('font-size', '11');
+    stepText.setAttribute('font-weight', '800');
+    stepText.setAttribute('font-family', '"Plus Jakarta Sans", sans-serif');
+    stepText.textContent = stepLabel(idx);
+    g.appendChild(stepText);
+
+    g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      el.style.setProperty('color', '#0F172A', 'important');
+      el.style.setProperty('fill', '#0F172A', 'important');
+      el.style.setProperty('font-weight', '700', 'important');
+    });
+  });
+
+  svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
+    p.style.setProperty('stroke', '#64748B', 'important');
+    p.style.setProperty('stroke-width', '2px', 'important');
+  });
+}
+
+// スタイル 3: ⭕ Vibrant Circles & Dots (リファレンス2準拠)
+function decorateVisualCircles(svg, uid) {
+  const circlePalette = ['#D45D53', '#7EA6BF', '#ECB674', '#7D9763', '#6D597A', '#3D464D'];
+
+  svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
+    const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
+    const color = circlePalette[idx % circlePalette.length];
+
+    if (rect) {
+      rect.setAttribute('rx', '9999');
+      rect.setAttribute('ry', '9999');
+      rect.style.setProperty('fill', color, 'important');
+      rect.style.setProperty('stroke', '#FFFFFF', 'important');
+      rect.style.setProperty('stroke-width', '2.5px', 'important');
+      rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+    }
+    // ひし形・平行四辺形も塗り分ける（白文字を淡い塗りの上に載せないため）
+    const polygon = g.querySelector('polygon');
+    if (polygon) {
+      polygon.style.setProperty('fill', color, 'important');
+      polygon.style.setProperty('stroke', '#FFFFFF', 'important');
+      polygon.style.setProperty('stroke-width', '2.5px', 'important');
+      polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+    }
+
+    g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      el.style.setProperty('color', '#FFFFFF', 'important');
+      el.style.setProperty('fill', '#FFFFFF', 'important');
+      el.style.setProperty('font-weight', '700', 'important');
+    });
+  });
+
+  svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach((p, idx) => {
+    const color = circlePalette[idx % circlePalette.length];
+    p.style.setProperty('stroke', color, 'important');
+    p.style.setProperty('stroke-width', '4px', 'important');
+    p.style.setProperty('stroke-linecap', 'round', 'important');
+    p.style.setProperty('stroke-dasharray', '0 9', 'important');
+  });
+  svg.querySelectorAll('marker path').forEach(m => {
+    m.style.setProperty('fill', '#7EA6BF', 'important');
+  });
+}
+
+// スタイル 4: 📖 Editorial Cream (リファレンス3準拠)
+function decorateVisualEditorial(svg, uid) {
+  svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
+    const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
+    const text = (g.textContent || '').toLowerCase();
+    // 状態遷移図の並行（fork / join）のバーは細い矩形。白で塗るとクリーム色の背景に溶けるため、Mermaid の線の色のまま残す
+    if (rect && parseFloat(rect.getAttribute('height') || 0) <= 10) return;
+
+    if (rect) {
+      if (idx === 0 || text.includes('start') || text.includes('client')) {
+        rect.setAttribute('rx', '9999');
+        rect.setAttribute('ry', '9999');
+        rect.style.setProperty('fill', '#FFFFFF', 'important');
+        rect.style.setProperty('stroke', '#E29578', 'important');
+        rect.style.setProperty('stroke-width', '3px', 'important');
+      } else if (text.includes('type') || text.includes('terminat') || text.includes('landing') || text.includes('docking')) {
+        rect.setAttribute('rx', '8');
+        rect.setAttribute('ry', '8');
+        rect.style.setProperty('fill', '#D68C8C', 'important');
+        rect.style.setProperty('stroke', 'none', 'important');
+        g.querySelectorAll('foreignObject div, foreignObject span, text').forEach(el => {
+          el.style.setProperty('color', '#FFFFFF', 'important');
+          el.style.setProperty('fill', '#FFFFFF', 'important');
+        });
+        return;
+      } else {
+        rect.setAttribute('rx', '9999');
+        rect.setAttribute('ry', '9999');
+        rect.style.setProperty('fill', '#FFFFFF', 'important');
+        rect.style.setProperty('stroke', 'none', 'important');
+        rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+      }
+    }
+
+    g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      el.style.setProperty('color', '#2B2D42', 'important');
+      el.style.setProperty('fill', '#2B2D42', 'important');
+      el.style.setProperty('font-weight', '600', 'important');
+    });
+  });
+
+  svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
+    p.style.setProperty('stroke', '#8FA876', 'important');
+    p.style.setProperty('stroke-width', '3.5px', 'important');
+    p.style.setProperty('stroke-dasharray', 'none', 'important');
+  });
+  svg.querySelectorAll('marker path').forEach(m => {
+    m.style.setProperty('fill', '#8FA876', 'important');
+    m.style.setProperty('stroke', '#8FA876', 'important');
+  });
+}
+
+// 線幅を基準に拡大されるマーカー（状態遷移図の矢じりなど）を、線幅によらない大きさに固定する。
+// Visual Stage は線を太くするため、そのままでは矢じりが巨大になり、ラベルや状態に重なる
+function fixMarkerScale(svg) {
+  const scale = 1.6;
+  svg.querySelectorAll('marker').forEach(marker => {
+    if (marker.getAttribute('markerUnits') === 'userSpaceOnUse') return;
+    const w = parseFloat(marker.getAttribute('markerWidth') || 3);
+    const h = parseFloat(marker.getAttribute('markerHeight') || 3);
+    if (!marker.getAttribute('viewBox')) marker.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    marker.setAttribute('markerUnits', 'userSpaceOnUse');
+    marker.setAttribute('markerWidth', String(w * scale));
+    marker.setAttribute('markerHeight', String(h * scale));
+  });
+}
+
+// Visual Stage のシーケンス図：参加者の箱をスタイルに合わせ、線・活性区間・矢じりを見分けやすくする（NFR-004）
+function decorateVisualSequence(svg, styleMode, visualSpec, uid) {
+  // 同じ参加者の上下の箱を同じ色にするため、参加者名ごとに色を割り当てる
+  const actorOrder = [];
+  svg.querySelectorAll('rect.actor').forEach(rect => {
+    const name = rect.getAttribute('name') || '';
+    if (!actorOrder.includes(name)) actorOrder.push(name);
+    const idx = actorOrder.indexOf(name);
+    rect.setAttribute('rx', '10');
+    rect.setAttribute('ry', '10');
+    rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+    if (styleMode === 'shapes') {
+      rect.style.setProperty('fill', `url(#vis-g-amber-${uid})`, 'important');
+      rect.style.setProperty('stroke', 'none', 'important');
+    } else if (styleMode === 'circles') {
+      rect.style.setProperty('fill', ['#7EA6BF', '#D45D53', '#7D9763', '#ECB674'][idx % 4], 'important');
+      rect.style.setProperty('stroke', '#FFFFFF', 'important');
+      rect.style.setProperty('stroke-width', '2px', 'important');
+    } else {
+      rect.style.setProperty('fill', '#FFFFFF', 'important');
+      rect.style.setProperty('stroke', visualSpec.nodeStroke, 'important');
+      rect.style.setProperty('stroke-width', '1.5px', 'important');
+    }
+  });
+  if (styleMode === 'circles') {
+    svg.querySelectorAll('text.actor, text.actor tspan').forEach(el => {
+      el.style.setProperty('fill', '#FFFFFF', 'important');
+      el.style.setProperty('font-weight', '700', 'important');
+    });
+  }
+  styleSequenceDiagram(svg, {
+    lifeline: visualSpec.lifeline,
+    activationBg: visualSpec.activationBg,
+    activationBorder: visualSpec.activationBorder,
+    signal: visualSpec.edgeStroke,
+    numberText: '#FFFFFF',
+    messageText: visualSpec.nodeText
+  });
 }
 
 /* ==========================================================================
@@ -865,19 +1155,30 @@ function renderApp() {
   const stdContainer = document.getElementById('standard-doc-container');
   const visContainer = document.getElementById('visual-stage-container');
   const stdWrapper = document.getElementById('standard-doc-wrapper');
+  const isVisual = state.isVisualMode;
+  const generation = ++renderGeneration;
+  const isEmpty = rawMarkdown.trim() === '';
 
-  if (state.isVisualMode) {
+  // 非表示側のコンテナは空にする。残すと同じ data-stage-index・SVG 内 id が DOM に重複し、
+  // 描画結果の書き込み先やマーカー・グラデーションの参照先が非表示側に向いてしまう
+  if (isVisual) {
     stdWrapper.classList.add('hidden');
+    stdContainer.innerHTML = '';
     visContainer.classList.remove('hidden');
-    visContainer.innerHTML = buildVisualStageHtml(cleanHtml);
+    visContainer.innerHTML = isEmpty
+      ? `<div class="exhibition-wrap"><section class="exhibition-slab">${EMPTY_GUIDE_HTML}</section></div>`
+      : buildVisualStageHtml(cleanHtml);
   } else {
     visContainer.classList.add('hidden');
+    visContainer.innerHTML = '';
     stdWrapper.classList.remove('hidden');
-    stdContainer.innerHTML = cleanHtml;
+    stdContainer.innerHTML = isEmpty ? EMPTY_GUIDE_HTML : cleanHtml;
   }
 
-  const activeContainer = state.isVisualMode ? visContainer : stdContainer;
+  const activeContainer = isVisual ? visContainer : stdContainer;
+  renderMath(activeContainer);
   const slots = activeContainer.querySelectorAll('.lucivo-slot');
+  const modeTag = isVisual ? `vis-${state.infographicStyle}` : 'std';
 
   const dirtyBlocks = [];
 
@@ -886,50 +1187,58 @@ function renderApp() {
     const block = mermaidBlocks[idx];
     if (!block) return;
 
-    const modeTag = state.isVisualMode ? `vis-${state.infographicStyle}` : 'std';
     const cacheKey = `${block.hash}-${modeTag}`;
 
     if (svgCache.has(cacheKey)) {
-      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, state.isVisualMode);
+      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, isVisual);
     } else {
-      slot.outerHTML = createDiagramCard(idx, lkgCache.get(idx) || '', true, state.isVisualMode);
+      slot.outerHTML = createDiagramCard(idx, '', true, isVisual);
       dirtyBlocks.push({ ...block, modeTag, cacheKey });
     }
   });
 
-  bindViewportInteractions();
+  activeContainer.querySelectorAll('[data-stage-index] > svg').forEach(applyReadableFit);
+  bindViewportInteractions(activeContainer);
 
   if (dirtyBlocks.length > 0) {
-    processDirtyBlocks(dirtyBlocks);
+    processDirtyBlocks(dirtyBlocks, { container: activeContainer, generation, isVisual });
   } else {
     updateStatus(`• ${mermaidBlocks.length}/${mermaidBlocks.length} Diagrams Ready`, 'success');
   }
 }
 
-async function processDirtyBlocks(dirtyBlocks) {
+// target: 描画開始時の表示先コンテナ・描画世代・モード。
+// 描画中にモード切替や再描画が起きた場合（世代が変わった場合）は、古い描画結果を捨てる
+async function processDirtyBlocks(dirtyBlocks, target) {
   updateStatus(`Rendering ${dirtyBlocks.length} diagrams...`, 'warning');
+  const isStale = () => target.generation !== renderGeneration;
 
   for (const block of dirtyBlocks) {
+    if (isStale()) return;
     const renderId = `mermaid-render-${block.index}-${Date.now()}`;
+    const lkgKey = `${block.index}-${block.modeTag}`;
+    const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
     try {
-      setupMermaid();
+      setupMermaid(target.isVisual);
       const { svg } = await mermaid.render(renderId, block.code);
-      const finalSvg = postProcessSvg(svg, state.isVisualMode, block.index);
+      if (isStale()) return;
+      const finalSvg = postProcessSvg(svg, target.isVisual);
 
       svgCache.set(block.cacheKey, finalSvg);
-      lkgCache.set(block.index, finalSvg);
+      lkgCache.set(lkgKey, finalSvg);
 
-      const stageViewport = document.querySelector(`[data-stage-index="${block.index}"]`);
       if (stageViewport) {
         stageViewport.innerHTML = finalSvg;
+        applyReadableFit(stageViewport.querySelector(':scope > svg'));
       }
     } catch (err) {
       console.error(`Mermaid render failed for block ${block.index}:`, err);
-      const fallback = lkgCache.get(block.index);
-      const stageViewport = document.querySelector(`[data-stage-index="${block.index}"]`);
+      if (isStale()) return;
+      const fallback = lkgCache.get(lkgKey);
       if (stageViewport) {
         if (fallback) {
           stageViewport.innerHTML = fallback;
+          applyReadableFit(stageViewport.querySelector(':scope > svg'));
           showToast('構文エラーのため直前の正常状態を表示');
         } else {
           stageViewport.innerHTML = `<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">構文エラー: 正しいMermaid記法を入力してください</div>`;
@@ -944,13 +1253,14 @@ async function processDirtyBlocks(dirtyBlocks) {
 /* ==========================================================================
    ビューポート操作イベント
    ========================================================================== */
-function bindViewportInteractions() {
-  document.querySelectorAll('.scale-btn').forEach(btn => {
+// container: 表示中のコンテナ。非表示側の図を操作しないよう、探索範囲を限定する
+function bindViewportInteractions(container) {
+  container.querySelectorAll('.scale-btn').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
       const action = btn.getAttribute('data-action');
-      const vp = document.querySelector(`[data-stage-index="${idx}"]`);
-      const frame = document.getElementById(`diagram-frame-${idx}`);
+      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
+      const frame = btn.closest(`#diagram-frame-${idx}`);
       if (!vp || !frame) return;
 
       frame.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('is-active'));
@@ -964,10 +1274,10 @@ function bindViewportInteractions() {
     };
   });
 
-  document.querySelectorAll('[data-action="svg"]').forEach(btn => {
+  container.querySelectorAll('[data-action="svg"]').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
-      const vp = document.querySelector(`[data-stage-index="${idx}"]`);
+      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
       if (!vp) return;
       const svgEl = vp.querySelector('svg');
       if (!svgEl) return;
@@ -976,10 +1286,10 @@ function bindViewportInteractions() {
     };
   });
 
-  document.querySelectorAll('[data-action="png"]').forEach(btn => {
+  container.querySelectorAll('[data-action="png"]').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
-      const vp = document.querySelector(`[data-stage-index="${idx}"]`);
+      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
       if (!vp) return;
       const svgEl = vp.querySelector('svg');
       if (!svgEl) return;
@@ -997,7 +1307,7 @@ function bindViewportInteractions() {
         canvas.width = (bbox.width || 800) * scale;
         canvas.height = (bbox.height || 600) * scale;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = state.appearance === 'dark' ? '#0F172A' : '#FFFFFF';
+        ctx.fillStyle = state.appearance === 'dark' && !state.isVisualMode ? '#0F172A' : '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(blob => {
@@ -1015,10 +1325,10 @@ function bindViewportInteractions() {
     };
   });
 
-  document.querySelectorAll('[data-action="zoom"]').forEach(btn => {
+  container.querySelectorAll('[data-action="zoom"]').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
-      const vp = document.querySelector(`[data-stage-index="${idx}"]`);
+      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
       if (!vp) return;
       const svgEl = vp.querySelector('svg');
       if (!svgEl) return;
@@ -1155,6 +1465,8 @@ function setupEventListeners() {
   document.getElementById('zoom-close-btn').onclick = () => {
     zoomModal.classList.add('hidden');
     zoomModal.classList.remove('flex');
+    // 閉じた後に複製した SVG を残さない
+    document.getElementById('zoom-canvas').innerHTML = '';
   };
 
   document.getElementById('btn-export-html').onclick = () => {
@@ -1176,10 +1488,74 @@ function setupEventListeners() {
   };
 }
 
+/* ==========================================================================
+   ファイルメニュー（Markdown ファイルの読み込み）
+   ========================================================================== */
+function closeFileMenu() {
+  document.getElementById('file-menu').classList.add('hidden');
+  document.getElementById('btn-file-menu').setAttribute('aria-expanded', 'false');
+}
+
+// 最後に読み込んだ時点から編集していれば、置き換える前に確認する（保存機能がないため）
+function confirmDiscardEdits(fileName) {
+  const editor = document.getElementById('markdown-editor');
+  if (editor.value === lastLoadedMarkdown) return true;
+  return window.confirm(`編集中の内容は失われます。「${fileName}」を読み込みますか？`);
+}
+
+function loadMarkdownFile(file) {
+  if (!confirmDiscardEdits(file.name)) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result).replace(/^﻿/, '');
+    document.getElementById('markdown-editor').value = text;
+    lastLoadedMarkdown = text;
+    clearTimeout(renderDebounceTimer);
+    renderApp();
+    document.getElementById('preview-scroll').scrollTop = 0;
+    showToast(`「${file.name}」を読み込みました`);
+  };
+  reader.onerror = () => {
+    console.error('Failed to read file:', reader.error);
+    showToast(`「${file.name}」を読み込めませんでした`);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function setupFileMenu() {
+  const btnMenu = document.getElementById('btn-file-menu');
+  const menu = document.getElementById('file-menu');
+  const input = document.getElementById('file-input');
+
+  btnMenu.onclick = event => {
+    event.stopPropagation();
+    const willOpen = menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', !willOpen);
+    btnMenu.setAttribute('aria-expanded', String(willOpen));
+  };
+  document.getElementById('menu-open-markdown').onclick = () => {
+    closeFileMenu();
+    input.click();
+  };
+  input.onchange = () => {
+    const file = input.files && input.files[0];
+    // 同じファイルを続けて選んでも change が発生するよう、選択を解除する
+    input.value = '';
+    if (file) loadMarkdownFile(file);
+  };
+  document.addEventListener('click', event => {
+    if (!menu.contains(event.target)) closeFileMenu();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeFileMenu();
+  });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('markdown-editor').value = SAMPLE_DOC;
   document.querySelector('[data-view-mode="split"]').classList.add('is-active');
   setupEventListeners();
+  setupFileMenu();
+  setupMarkedMath();
   setupMermaid();
   renderApp();
 });
