@@ -14,6 +14,8 @@
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -40,6 +42,20 @@
         L
       </div>
       <span class="font-display font-bold text-sm tracking-tight whitespace-nowrap" style="color: var(--text-primary);">Lucivo</span>
+
+      <!-- ファイルメニュー -->
+      <div class="relative ml-1 sm:ml-2">
+        <button id="btn-file-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="file-menu" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+          </svg>
+          <span>ファイル</span>
+        </button>
+        <div id="file-menu" role="menu" class="file-menu hidden">
+          <button id="menu-open-markdown" type="button" role="menuitem" class="file-menu-item">Markdown を開く…</button>
+        </div>
+        <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" class="hidden" />
+      </div>
     </div>
 
     <!-- モード切り替え -->
