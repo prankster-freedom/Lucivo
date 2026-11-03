@@ -428,6 +428,101 @@ body[data-appearance="dark"] :is(.prose-doc, .exhibition-slab) mark {
   margin: 0;
 }
 
+/* YAML フロントマター（FR-011, DD-FM-030）: 本文の前の枠。YAML は書いたとおりに等幅で表示し、キー・値・コメントを色分けする */
+.front-matter {
+  margin: 0 0 1.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel-sub);
+  overflow: hidden;
+}
+.front-matter-label {
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--border-strong);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.front-matter .front-matter-body {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.front-matter .fm-key {
+  color: var(--accent);
+  font-weight: 600;
+}
+.front-matter .fm-value {
+  color: var(--text-primary);
+}
+.front-matter .fm-comment {
+  color: var(--text-muted);
+}
+
+/* エディタの読み取り専用の表示と「編集」ボタン（FR-014, DD-FILE-006） */
+.editor-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.editor-lock.hidden {
+  display: none;
+}
+.editor-lock-label {
+  padding: 0.05rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-strong);
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.editor-unlock-btn {
+  padding: 0.1rem 0.55rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.625rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+#markdown-editor[readonly] {
+  cursor: default;
+}
+#btn-test-err:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ヘッダーの YAML フロントマター表示の切替ボタン（DD-FM-011） */
+.front-matter-toggle {
+  height: 2rem;
+  padding: 0 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.front-matter-toggle.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -498,7 +593,8 @@ th {
   margin-right: auto;
 }
 .diagram-viewport svg {
-  max-width: 100% !important;
+  /* --fit-max-width: 小さな図の拡大の上限（app.js の applyReadableFit が設定） */
+  max-width: min(100%, var(--fit-max-width, 100%)) !important;
   height: auto !important;
   display: block;
 }
@@ -626,6 +722,47 @@ body[data-appearance="dark"] .exhibition-slab {
   background: #F7F4EB !important;
 }
 
+/* Dark の Visual Stage（DD-DIAG-024）: 各スタイルの調子を保った暗いカード背景。
+   ノードの塗り（色付きの図形・白いカード）はそのまま、線と文字の配色は app.js の VISUAL_THEMES_DARK で明るくする */
+body[data-appearance="dark"] .infographic-bg-shapes {
+  background-color: #10262A;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px),
+    linear-gradient(125deg, #0F3B40 0%, #14302F 34%, #2A2620 68%, #2A2227 100%) !important;
+}
+body[data-appearance="dark"] .infographic-bg-cards {
+  background: linear-gradient(180deg, #1A2130 0%, #121826 100%) !important;
+}
+body[data-appearance="dark"] .infographic-bg-circles {
+  background: #14171C !important;
+}
+body[data-appearance="dark"] .infographic-bg-editorial {
+  background: #221E17 !important;
+}
+
+/* 展示用のカードの中の横スクロールバーは、操作するときだけ目立つようにする。
+   文字の判読性（NFR-005）のための横スクロールは残し、ビューアーらしさを抑える */
+.exhibition-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.exhibition-viewport:hover,
+.exhibition-viewport:focus-within {
+  scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+}
+.exhibition-viewport::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+.exhibition-viewport:hover::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+/* Dark の Visual Stage では --border-subtle がスラブの背景と同じ色になるため、表の区切り線を強める */
+body[data-appearance="dark"] .exhibition-slab :is(th, td) {
+  border-color: var(--border-strong) !important;
+}
+
 .exhibition-diagram-header {
   height: 42px;
   padding: 0 16px;
@@ -650,7 +787,7 @@ body[data-appearance="dark"] .exhibition-diagram-header {
   min-height: 180px;
 }
 .exhibition-viewport svg {
-  max-width: 100% !important;
+  max-width: min(100%, var(--fit-max-width, 100%)) !important;
   height: auto !important;
   display: block;
   background: transparent !important;
