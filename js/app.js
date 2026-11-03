@@ -721,6 +721,23 @@ function applyReadableFit(svg, cacheKey) {
   }
   if (fit.minWidth) svg.style.minWidth = `${fit.minWidth}px`;
   svg.style.setProperty('--fit-max-width', `${fit.maxWidth}px`);
+  updateSlabSplit(svg.closest('.exhibition-slab-split'));
+}
+
+// 2 段組みスラブで、右カラムの表示枠より図が広い場合は 1 段組み（is-stacked）に切り替える（DD-DIAG-042）
+function updateSlabSplit(slab) {
+  if (!slab || !slab.classList.contains('exhibition-slab-split')) return;
+  const vp = slab.querySelector('.exhibition-viewport');
+  if (!vp || !vp.querySelector(':scope > svg')) return;
+  slab.classList.remove('is-stacked');
+  if (vp.scrollWidth > vp.clientWidth + 1) {
+    slab.classList.add('is-stacked');
+  }
+}
+
+function updateAllSlabSplits(container) {
+  if (!container) return;
+  container.querySelectorAll('.exhibition-slab-split').forEach(updateSlabSplit);
 }
 
 function postProcessSvg(rawSvg, isVisualMode) {
@@ -1251,7 +1268,18 @@ function buildVisualStageHtml(cleanHtml) {
       const rawTitle = h2.textContent.replace(/^\d+\.\s*/, '');
       h2.innerHTML = `<span class="exhibition-num-badge">STAGE ${numStr}</span><span>${escapeHtml(rawTitle)}</span>`;
     }
-    slabsHtml += `<section class="exhibition-slab">${wrapper.innerHTML}</section>`;
+    const slots = wrapper.querySelectorAll('.lucivo-slot');
+    const children = Array.from(wrapper.children);
+    const proseEls = children.filter(el => el !== h2 && !el.classList.contains('front-matter') && !el.classList.contains('lucivo-slot') && !el.querySelector('.lucivo-slot'));
+    if (slots.length === 1 && proseEls.length >= 1) {
+      const fm = wrapper.querySelector(':scope > .front-matter');
+      const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
+      const proseHtml = proseEls.map(el => el.outerHTML).join('');
+      const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
+      slabsHtml += `<section class="exhibition-slab exhibition-slab-split">${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div></section>`;
+    } else {
+      slabsHtml += `<section class="exhibition-slab">${wrapper.innerHTML}</section>`;
+    }
   });
 
   // 見出しの文字（textContent）はエスケープしてから埋め込む。そのまま入れると、見出しに書いた
@@ -1456,6 +1484,7 @@ function bindViewportInteractions(container) {
       } else {
         vp.classList.remove('is-actual-size');
       }
+      updateSlabSplit(vp.closest('.exhibition-slab-split'));
     };
   });
 
@@ -1559,7 +1588,16 @@ function setupEventListeners() {
         panePreview.classList.add('hidden');
         paneEditor.className = 'w-full h-full flex flex-col shrink-0 z-10';
       }
+      if (state.isVisualMode && mode !== 'editor') {
+        updateAllSlabSplits(document.getElementById('visual-stage-container'));
+      }
     };
+  });
+
+  window.addEventListener('resize', () => {
+    if (state.isVisualMode) {
+      updateAllSlabSplits(document.getElementById('visual-stage-container'));
+    }
   });
 
   const btnVisual = document.getElementById('btn-visual-mode');

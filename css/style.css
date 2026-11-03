@@ -689,6 +689,34 @@ body[data-appearance="dark"] .exhibition-slab {
   color: #FFFFFF;
 }
 
+/* スラブ内の「解説＋図版」自動 2 段組みレイアウト（FR-015, DD-DIAG-040〜042） */
+.exhibition-slab-split > .exhibition-slab-body {
+  display: grid;
+  grid-template-columns: minmax(15rem, 5fr) minmax(0, 7fr);
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+  align-items: start;
+}
+.exhibition-slab-split > .exhibition-slab-body > .exhibition-slab-prose > :first-child {
+  margin-top: 0;
+}
+.exhibition-slab-split > .exhibition-slab-body > .exhibition-slab-prose > :last-child {
+  margin-bottom: 0;
+}
+.exhibition-slab-split:not(.is-stacked) > .exhibition-slab-body > .exhibition-slab-figure > .exhibition-diagram-card {
+  margin: 0;
+}
+.exhibition-slab-split:not(.is-stacked) .exhibition-viewport {
+  padding: clamp(1rem, 2vw, 1.75rem);
+}
+.exhibition-slab-split.is-stacked > .exhibition-slab-body {
+  grid-template-columns: 1fr;
+}
+@media (max-width: 767px) {
+  .exhibition-slab-split > .exhibition-slab-body {
+    grid-template-columns: 1fr;
+  }
+}
+
 .exhibition-diagram-card {
   margin: 1.25rem 0;
   border-radius: 18px;
