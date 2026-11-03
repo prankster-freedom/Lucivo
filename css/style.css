@@ -85,6 +85,52 @@ body {
   border-bottom: 1px solid var(--nav-border);
 }
 
+/* ファイルメニュー（FR-006） */
+.file-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 11rem;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.25);
+  z-index: 40;
+}
+.file-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.file-menu-item:hover,
+.file-menu-item:focus-visible {
+  background: var(--panel-sub);
+  outline: none;
+}
+
+/* 起動直後・エディタが空のときの案内（FR-007） */
+.empty-guide {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+.empty-guide-title {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
 .pill-container {
   background: var(--control-bg);
   border: 1px solid var(--border-subtle);
@@ -158,6 +204,12 @@ svg .edgeLabel span {
   font-size: 11.5px !important;
   white-space: nowrap !important;
 }
+/* ラベルのない矢印の空ラベル（図の原点に置かれる）に余白が付くと、小さな図形として見えてしまう */
+svg .edgeLabel:empty,
+svg .edgeLabel span:empty {
+  padding: 0 !important;
+  background: transparent !important;
+}
 
 /* ==========================================================================
    3. 通常モード（Split / Canvas / Code）組版
@@ -199,8 +251,181 @@ svg .edgeLabel span {
   border-radius: 9999px;
   background: var(--accent);
 }
-.prose-doc p {
+
+/* --------------------------------------------------------------------------
+   Markdown 要素（FR-009）: 通常モードと Visual Stage の本文で共有する。
+   Tailwind の Preflight と全要素リセットで標準のスタイルが消えるため、ここで定義する。
+   線は --border-strong を使う（Dark の Visual Stage では --border-subtle がスラブの背景と同色）
+   -------------------------------------------------------------------------- */
+:is(.prose-doc, .exhibition-slab) p {
   margin-bottom: 0.875rem;
+}
+:is(.prose-doc, .exhibition-slab) :is(h3, h4, h5, h6) {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+:is(.prose-doc, .exhibition-slab) h3 {
+  font-size: 1.05rem;
+}
+:is(.prose-doc, .exhibition-slab) h4 {
+  font-size: 0.95rem;
+  margin-top: 1.25rem;
+}
+:is(.prose-doc, .exhibition-slab) :is(h5, h6) {
+  font-size: 0.875rem;
+  margin-top: 1.25rem;
+  color: var(--text-muted);
+}
+
+:is(.prose-doc, .exhibition-slab) :is(ul, ol) {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0 0.875rem;
+}
+:is(.prose-doc, .exhibition-slab) ul {
+  list-style-type: disc;
+}
+:is(.prose-doc, .exhibition-slab) ul ul {
+  list-style-type: circle;
+}
+:is(.prose-doc, .exhibition-slab) ul ul ul {
+  list-style-type: square;
+}
+:is(.prose-doc, .exhibition-slab) ol {
+  list-style-type: decimal;
+}
+:is(.prose-doc, .exhibition-slab) li :is(ul, ol) {
+  margin: 0.25rem 0;
+}
+:is(.prose-doc, .exhibition-slab) li {
+  margin: 0.2rem 0;
+}
+:is(.prose-doc, .exhibition-slab) li::marker {
+  color: var(--text-muted);
+}
+:is(.prose-doc, .exhibition-slab) li:has(> input[type="checkbox"]) {
+  list-style-type: none;
+  margin-left: -1.25rem;
+}
+:is(.prose-doc, .exhibition-slab) li > input[type="checkbox"] {
+  margin-right: 0.45rem;
+  vertical-align: -0.1em;
+}
+
+:is(.prose-doc, .exhibition-slab) a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+:is(.prose-doc, .exhibition-slab) a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:is(.prose-doc, .exhibition-slab) code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  background: var(--panel-sub);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+:is(.prose-doc, .exhibition-slab) pre {
+  margin: 0.875rem 0;
+  padding: 0.9rem 1.1rem;
+  border-radius: 10px;
+  background: var(--panel-sub);
+  border: 1px solid var(--border-strong);
+  overflow-x: auto;
+  line-height: 1.6;
+}
+:is(.prose-doc, .exhibition-slab) pre code {
+  font-size: 0.8125rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 引用は背景を付けず灰色の左線にして、パレット色の左線と背景を持つ callout-box と見分ける */
+:is(.prose-doc, .exhibition-slab) blockquote {
+  margin: 0.875rem 0;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 4px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+:is(.prose-doc, .exhibition-slab) blockquote blockquote {
+  margin: 0.5rem 0;
+}
+:is(.prose-doc, .exhibition-slab) blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* 既存の th, td { text-align: left } より詳細度が高い属性セレクタで、Marked が出力する align 属性に従う */
+:is(th, td)[align="left"] {
+  text-align: left;
+}
+:is(th, td)[align="center"] {
+  text-align: center;
+}
+:is(th, td)[align="right"] {
+  text-align: right;
+}
+
+:is(.prose-doc, .exhibition-slab) hr {
+  border: 0;
+  border-top: 1px solid var(--border-strong);
+  margin: 1.5rem 0;
+}
+
+:is(.prose-doc, .exhibition-slab) details {
+  margin: 0.875rem 0;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+}
+:is(.prose-doc, .exhibition-slab) summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+:is(.prose-doc, .exhibition-slab) details[open] > summary {
+  margin-bottom: 0.5rem;
+}
+:is(.prose-doc, .exhibition-slab) kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--panel-sub);
+  color: var(--text-primary);
+}
+:is(.prose-doc, .exhibition-slab) mark {
+  padding: 0 0.15em;
+  border-radius: 3px;
+  background: #FDE68A;
+  color: var(--text-primary);
+}
+body[data-appearance="dark"] :is(.prose-doc, .exhibition-slab) mark {
+  background: rgba(250, 204, 21, 0.35);
+}
+
+/* 数式（FR-010, DD-MATH-023）: 文字色は本文を継承し、横に長いブロック数式は横スクロールする */
+.lucivo-math[data-display="true"] {
+  display: block;
+  margin: 1rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+  color: var(--text-primary);
+}
+.lucivo-math .katex-display {
+  margin: 0;
 }
 
 .table-container {
@@ -261,10 +486,16 @@ th {
   padding: clamp(1rem, 2.5vw, 2rem);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow-x: auto;
   min-height: 140px;
   background: var(--diag-canvas);
+}
+/* 表示枠の中身は左右の auto margin で中央に置き、表示枠より広い図（Fit の縮小の下限、1:1）は左端から表示する。
+   justify-content: center は、はみ出すときに左右へ均等にはみ出させ、左側がスクロールでも見えなくなる（DD-DIAG-032） */
+:is(.diagram-viewport, .exhibition-viewport) > * {
+  margin-left: auto;
+  margin-right: auto;
 }
 .diagram-viewport svg {
   max-width: 100% !important;
@@ -405,12 +636,16 @@ body[data-appearance="dark"] .exhibition-slab {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
 }
+/* Dark ではヘッダーの文字が明るい色になるため、ヘッダーの背景を暗くする */
+body[data-appearance="dark"] .exhibition-diagram-header {
+  background: rgba(30, 41, 59, 0.92);
+}
 
 .exhibition-viewport {
   padding: clamp(1.5rem, 3.5vw, 3rem);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow-x: auto;
   min-height: 180px;
 }
