@@ -6,7 +6,7 @@ tags: ["Lucivo", "詳細設計", "Mermaid", "SVG"]
 
 # 図の描画と後処理（diagram-rendering）
 
-対応する要求: `FR-002`, `FR-003`, `FR-008`, `FR-010`, `NFR-002`, `NFR-004`, `NFR-005`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.2・4.3・4.6
+対応する要求: `FR-002`, `FR-003`, `FR-008`, `FR-010`, `FR-015`, `NFR-002`, `NFR-004`, `NFR-005`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.2・4.3・4.6・4.9
 
 ## 1. 描画の流れ
 
@@ -119,3 +119,14 @@ flowchart TD
 - **背景（DD-DIAG-030）**: `Fit` は SVG の幅を表示枠の幅（100%）にするため、横に大きい図ほど縮小される。CSS では `min-width` が `max-width` より優先されるため、`min-width` で縮小の下限を決められる。`1:1` は既存の `min-width`（`!important`）が優先されるため、この下限の影響を受けない。`min(1, …)` により、下限で元の大きさより大きくすることはない。
 - **背景（DD-DIAG-031）**: Mermaid `10.9.1` は、数式の `foreignObject` の下端をメッセージ線の位置にそろえて配置する。和の記号の添字や分数の分母が線に接し、重なって見えるため。6 は、線の太さ（2px）と、文字と線の間に必要な余白から決めた値。また、数式（MathML）はページの文字色を継承するため、Visual Stage の Dark では、明るいカードの上に白い文字で描かれて見えなくなる。このため文字色も指定する。
 - **背景（DD-DIAG-032）**: 表示枠は `justify-content: center` で SVG を中央に置いていた。この状態で SVG が表示枠より広くなると、左右へ均等にはみ出し、左側がスクロールでも見えない位置になる。左右の `margin: auto` は余白があるときだけ中央に置き、はみ出すときは 0 になる。ただし、`margin: auto` が 0 になった場合は `justify-content` が効くため、`margin: auto` だけでは解決せず、`justify-content` を `flex-start` にする必要がある（テストで確認した）。
+
+## 6. Visual Stage の自動 2 段組みレイアウト
+
+| ID          | 項目                                      | 設計                                                                                                                                                                                                                                                                                                                                       | 対応する要求        |
+| :---------- | :---------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------ |
+| DD-DIAG-040 | 2 段組み対象スラブの構築                  | `buildVisualStageHtml()` でスラブの要素群を調べ、`.lucivo-slot` がちょうど 1 つあり、かつ `h2`・`.front-matter`・`.lucivo-slot` 以外の要素ノード（本文要素）が 1 つ以上ある場合は、スラブに `.exhibition-slab-split` を付け、`h2`（および先頭の `.front-matter`）の下に `<div class="exhibition-slab-body"><div class="exhibition-slab-prose">…</div><div class="exhibition-slab-figure">…</div></div>` を出力する | `FR-015` |
+| DD-DIAG-041 | 2 段組みの CSS グリッド                   | `.exhibition-slab-split > .exhibition-slab-body` は CSS Grid（左 `minmax(15rem, 5fr)`、右 `minmax(0, 7fr)`、`align-items: start`）で横並びにする。`.is-stacked` が付いた場合と画面幅 `767px` 以下の場合は `grid-template-columns: 1fr`（縦積み 1 段）にする                                                                                | `FR-015`, `NFR-007` |
+| DD-DIAG-042 | 幅超過時の 1 段組みへの自動フォールバック | `applyReadableFit()` の直後、図の倍率切替（`Fit` / `1:1`）時、ビューモード切替（`Split` / `Canvas`）時、およびウィンドウの `resize` 時に `updateSlabSplit()` を呼ぶ。いったん `.is-stacked` を外した状態で `.exhibition-viewport` の `scrollWidth > clientWidth + 1` であれば、右カラム幅に図が収まらないと判定して `.is-stacked` を付ける | `FR-015`, `NFR-005` |
+
+- **背景（DD-DIAG-040）**: 先頭スラブに `.front-matter` が含まれる場合、`.front-matter` を `.exhibition-slab-body` の外（スラブの先頭子要素）に置くことで、フロントマターが常にスラブ最上部に全幅表示される設計（`DD-FM-030`）と両立させる。
+- **背景（DD-DIAG-042）**: 固定のノード数や `viewBox` 幅の閾値だけで判定すると、文字の大きさや画面幅（`Split` と `Canvas` の差）によって、右カラム内で横スクロールが出る図や、逆に収まるのに 1 段になる図が出る。`applyReadableFit()` が設定した `min-width` のもとで実際の `scrollWidth > clientWidth + 1` を調べることで、`NFR-005`（10px 下限）と完全に一致した判定ができる。また `getComputedStyle` を呼ばないため、`TC-PERF-002` のキャッシュ再描画条件（`getComputedStyle` 呼び出し 0 回）も維持される。
