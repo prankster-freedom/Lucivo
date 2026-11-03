@@ -1,12 +1,12 @@
 ---
-title: Lucivo 詳細設計書 ファイルの読み込みと初期表示
-description: Markdown ファイルの読み込み（FR-006）と起動時の初期表示（FR-007）の詳細設計。
+title: Lucivo 詳細設計書 ファイルの読み込み・保存と初期表示
+description: Markdown ファイルの読み込み（FR-006）、起動時の初期表示（FR-007）、保存（FR-013）、読み込み直後の読み取り専用（FR-014）の詳細設計。
 tags: ["Lucivo", "詳細設計", "ファイル読み込み"]
 ---
 
-# ファイルの読み込みと初期表示（file-loading）
+# ファイルの読み込み・保存と初期表示（file-loading）
 
-対応する要求: `FR-006`, `FR-007`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.1
+対応する要求: `FR-006`, `FR-007`, `FR-013`, `FR-014`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.1
 
 ## 1. 画面要素
 
@@ -16,6 +16,8 @@ tags: ["Lucivo", "詳細設計", "ファイル読み込み"]
 | DD-FILE-002 | ファイルメニュー（`#file-menu`）           | 項目は「Markdown を開く…」（`#menu-open-markdown`）の 1 つ。メニューの外側をクリックするか、Esc キーで閉じる | `FR-006`     |
 | DD-FILE-003 | ファイル選択（`#file-input`）              | 非表示の `<input type="file">`。受け付ける拡張子は `.md` / `.markdown` / `.txt`                              | `FR-006`     |
 | DD-FILE-004 | 初期案内（`EMPTY_GUIDE_HTML`）             | エディタが空（空白だけの場合を含む）のとき、プレビューに表示する。通常モードではプレビューの本文に、Visual Stage では 1 枚のスラブに入れて表示する | `FR-007` |
+| DD-FILE-005 | 保存ボタン（`#btn-save-markdown`）         | ヘッダーのファイルメニューボタンの右に置く。表示は「保存」                                                   | `FR-013`     |
+| DD-FILE-006 | 編集の状態（`#editor-lock`、`#btn-edit-unlock`） | エディタのヘッダーに置く。読み取り専用のときは「読み取り専用」の表示と「編集」ボタンを出し、編集できるときは隠す | `FR-014` |
 
 ## 2. 処理
 
@@ -53,3 +55,17 @@ sequenceDiagram
 
 - 起動時にエディタへ何も設定せず、`renderApp()` を呼ぶ。エディタが空のため、DD-FILE-004 の案内が表示される。
 - サンプル文書は `app.js` に埋め込まない（`FR-007`）。サンプルは同梱の [sample.md](../../../sample.md) を、利用者が DD-FILE-010 で開く。
+
+### DD-FILE-030 保存
+
+- `saveMarkdownFile()` は、エディタの内容を `text/markdown;charset=utf-8` の `Blob` にして、`downloadBlob()` でダウンロードする。BOM は付けない。
+- ファイル名は `currentFileName`（最後に読み込んだファイルの名前。読み込んでいない場合は `untitled.md`）とする。
+- 保存した後は `lastLoadedMarkdown` を保存した内容にする。別のファイルを読み込むときに、保存済みの内容について確認ダイアログを出さないため（`FR-006`）。
+- 保存したことをトースト「「ファイル名」を保存しました」で知らせる。
+- 読み取り専用の間も保存できる。
+
+### DD-FILE-040 読み取り専用
+
+- `setEditorReadOnly(isReadOnly)` は、エディタの `readOnly` 属性、DD-FILE-006 の表示、エディタの内容を変えるボタン（`#btn-test-err`）の `disabled` をまとめて切り替える。
+- DD-FILE-010 で読み込みに成功したら、`setEditorReadOnly(true)` を呼ぶ。「編集」ボタンを押したら `setEditorReadOnly(false)` を呼び、エディタにフォーカスを移す。
+- 起動時は `setEditorReadOnly(false)` の状態とする（DD-FILE-020）。

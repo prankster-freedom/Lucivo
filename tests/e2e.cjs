@@ -14,7 +14,8 @@ const VISUAL_STYLES = ['shapes', 'cards', 'circles', 'editorial'];
 const MODES = [
   { style: 'std', appearance: 'light' }, { style: 'std', appearance: 'dark' },
   ...VISUAL_STYLES.map(style => ({ style, appearance: 'light' })),
-  { style: 'shapes', appearance: 'dark' }
+  // Dark の Visual Stage は 4 スタイルとも確かめる
+  ...VISUAL_STYLES.map(style => ({ style, appearance: 'dark' }))
 ];
 
 const results = [];
@@ -29,7 +30,8 @@ async function openApp(browser) {
   page.on('console', m => { if (m.type() === 'error') page.consoleErrors.push(m.text().slice(0, 200)); });
   page.on('pageerror', e => page.consoleErrors.push('pageerror: ' + e.message));
   await page.goto(APP_URL);
-  await page.waitForFunction(() => window.mermaid && typeof renderApp === 'function' && document.getElementById('telemetry-status'));
+  // Mermaid は図が現れるまで読み込まれないため、アプリの準備だけを待つ
+  await page.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
   return page;
 }
 
@@ -74,6 +76,16 @@ async function testFileLoading(browser) {
   }));
   record('TC-FILE-001', init.editor === '' && init.guide, JSON.stringify(init));
 
+  // TC-FILE-013 起動直後は編集でき、読み込む前の保存名は untitled.md
+  const startEditable = await page.evaluate(() => !document.getElementById('markdown-editor').readOnly && document.getElementById('editor-lock').classList.contains('hidden'));
+  await page.fill('#markdown-editor', '# 新しい文書\n');
+  const [firstDownload] = await Promise.all([page.waitForEvent('download'), page.click('#btn-save-markdown')]);
+  const firstName = firstDownload.suggestedFilename();
+  const firstText = fs.readFileSync(await firstDownload.path(), 'utf8');
+  await page.fill('#markdown-editor', '');
+  await page.evaluate(() => { lastLoadedMarkdown = ''; renderApp(); });
+  record('TC-FILE-013', startEditable && firstName === 'untitled.md' && firstText === '# 新しい文書\n', JSON.stringify({ startEditable, firstName, firstText }));
+
   // TC-FILE-002 メニューの開閉
   await page.click('#btn-file-menu');
   const opened = await page.evaluate(() => !document.getElementById('file-menu').classList.contains('hidden') && document.getElementById('btn-file-menu').getAttribute('aria-expanded') === 'true');
@@ -97,7 +109,27 @@ async function testFileLoading(browser) {
   record('TC-FILE-003', !dialogOnFirstLoad && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast), JSON.stringify({ dialogOnFirstLoad, ...after }));
   record('TC-FILE-006', after.inputCleared, `file-input.value cleared: ${after.inputCleared}`);
 
-  // TC-FILE-004 編集後の読み込み：キャンセルで内容を保つ
+  // TC-FILE-011 読み込み直後は読み取り専用で、「編集」ボタンで編集できる
+  const lockedEditor = await page.evaluate(() => ({
+    readOnly: document.getElementById('markdown-editor').readOnly,
+    lockShown: !document.getElementById('editor-lock').classList.contains('hidden'),
+    errBtnDisabled: document.getElementById('btn-test-err').disabled
+  }));
+  const beforeType = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  await page.click('#markdown-editor');
+  await page.keyboard.type('XYZ');
+  const afterType = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  await page.click('#btn-edit-unlock');
+  const unlockedEditor = await page.evaluate(() => ({
+    readOnly: document.getElementById('markdown-editor').readOnly,
+    lockShown: !document.getElementById('editor-lock').classList.contains('hidden'),
+    errBtnDisabled: document.getElementById('btn-test-err').disabled
+  }));
+  record('TC-FILE-011', lockedEditor.readOnly && lockedEditor.lockShown && lockedEditor.errBtnDisabled && beforeType === afterType
+    && !unlockedEditor.readOnly && !unlockedEditor.lockShown && !unlockedEditor.errBtnDisabled,
+    JSON.stringify({ lockedEditor, typedIgnored: beforeType === afterType, unlockedEditor }));
+
+  // TC-FILE-004 編集後の読み込み：キャンセルで内容を保つ（TC-FILE-011 で編集できる状態にしてある）
   await page.fill('#markdown-editor', '# 編集中の文書');
   let dialogMessage = null;
   page.once('dialog', d => { dialogMessage = d.message(); d.dismiss(); });
@@ -110,8 +142,24 @@ async function testFileLoading(browser) {
   let accepted = false;
   page.once('dialog', d => { accepted = true; d.accept(); });
   await page.setInputFiles('#file-input', SAMPLE);
-  await page.waitForFunction(() => document.getElementById('markdown-editor').value.startsWith('# Lucivo サンプル文書'));
-  record('TC-FILE-005', accepted, `dialog accepted and replaced: ${accepted}`);
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('\n# Lucivo サンプル文書'));
+  const relocked = await page.evaluate(() => document.getElementById('markdown-editor').readOnly);
+  record('TC-FILE-005', accepted && relocked, `dialog accepted and replaced: ${accepted}, read-only again: ${relocked}`);
+
+  // TC-FILE-012 保存：読み込んだファイル名で、エディタの内容をダウンロードし、その後の読み込みで確認しない
+  await page.click('#btn-edit-unlock');
+  await page.fill('#markdown-editor', '---\ntitle: 保存のテスト\n---\n# 保存した文書\n');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-save-markdown')]);
+  const savedText = fs.readFileSync(await download.path(), 'utf8');
+  const savedName = download.suggestedFilename();
+  let dialogAfterSave = false;
+  const onDialogAfterSave = d => { dialogAfterSave = true; d.dismiss(); };
+  page.on('dialog', onDialogAfterSave);
+  await page.setInputFiles('#file-input', SAMPLE);
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('\n# Lucivo サンプル文書'));
+  page.off('dialog', onDialogAfterSave);
+  record('TC-FILE-012', savedName === 'sample.md' && savedText === '---\ntitle: 保存のテスト\n---\n# 保存した文書\n' && !savedText.startsWith('﻿') && !dialogAfterSave,
+    JSON.stringify({ savedName, savedLength: savedText.length, dialogAfterSave }));
 
   // TC-FILE-008 埋め込みサンプルの削除
   const appJs = fs.readFileSync(path.join(APP_DIR, 'js', 'app.js'), 'utf8');
@@ -244,7 +292,7 @@ async function testDiagramRendering(browser) {
     perMode.fit.push({ tag, bad: r.fit.filter(f => !f.ok), shown: r.fit.map(f => f.shown) });
     perMode.wide.push({ tag, wide: r.wide });
     perMode.large.push({ tag, flow: Math.max(...r.flowSizes), state: Math.max(...r.stateSizes) });
-    perMode.math.push({ tag, mathSvgs: r.mathSvgs, gaps: r.gaps, lums: r.mathLums, darkBg: tag === 'std-dark' });
+    perMode.math.push({ tag, mathSvgs: r.mathSvgs, gaps: r.gaps, lums: r.mathLums, darkBg: tag.endsWith('-dark') });
     perMode.ids.push({ tag, dup: r.dup, badRefs: r.badRefs });
     perMode.render.push({ tag, count: r.count, errors: r.errors, types: r.types });
     perMode.seq.push({ tag, ...r.seq });
@@ -523,7 +571,7 @@ async function testMathRendering(browser) {
   const pageErrors = [];
   offline.on('pageerror', e => pageErrors.push(e.message));
   await offline.goto(APP_URL);
-  await offline.waitForFunction(() => window.mermaid && typeof renderApp === 'function');
+  await offline.waitForFunction(() => typeof renderApp === 'function');
   await offline.setInputFiles('#file-input', SAMPLE);
   await offline.waitForFunction(() => document.getElementById('markdown-editor').value.length > 0);
   await offline.waitForTimeout(500);
@@ -535,6 +583,347 @@ async function testMathRendering(browser) {
   await ctx.close();
 }
 
+// 色の明るさ（0〜1）。ページ内で実行する関数からも使えるよう、文字列として渡す
+const LUMINANCE_SRC = `c => { const m = (c || '').match(/[\\d.]+/g); if (!m) return null; const [r, g, b] = m.map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; }`;
+
+// TC-DIAG-015〜019: 安全性、Visual Stage の細部と Dark
+async function testVisualStageQuality(browser) {
+  const page = await openApp(browser);
+  await waitRendered(page);
+
+  // TC-DIAG-015 Mermaid の図の中の HTML とクリック時のスクリプト呼び出しが無効
+  const mermaidXss = await page.evaluate(async () => {
+    const ed = document.getElementById('markdown-editor');
+    ed.value = '# 図の安全性\n\n```mermaid\nflowchart TD\n  A["<img src=x onerror=window.__mxss=1>"] --> B\n  click A call alert(1)\n  click B "javascript:window.__mxss=2"\n```\n';
+    renderApp();
+    return true;
+  });
+  await waitRendered(page);
+  await page.waitForTimeout(300);
+  const mx = await page.evaluate(() => {
+    const svg = document.querySelector('#standard-doc-container [data-stage-index="0"] svg');
+    const handlers = svg ? Array.from(svg.querySelectorAll('*')).filter(el => Array.from(el.attributes).some(a => /^on/i.test(a.name))).length : -1;
+    return { svg: !!svg, imgs: svg ? svg.querySelectorAll('img').length : -1, eventHandlers: handlers, jsLinks: svg ? svg.querySelectorAll('a[href^="javascript"], a[*|href^="javascript"]').length : -1, xss: !!window.__mxss };
+  });
+  // Mermaid の strict は、HTML タグを文字にせず、DOMPurify で危険な属性を取り除く。img 要素は残るが、イベント属性は残らない。
+  // テストで書いた img（src=x）の読み込みエラーはコンソールに出るため、ここまでのエラーは集計から外す
+  page.consoleErrors = page.consoleErrors.filter(e => !/ERR_FILE_NOT_FOUND/.test(e));
+  record('TC-DIAG-015', mermaidXss && mx.svg && mx.eventHandlers === 0 && mx.jsLinks === 0 && !mx.xss, JSON.stringify(mx));
+
+  // TC-DIAG-016 Visual Stage の見出しの文字は HTML として解釈されない
+  await page.evaluate(() => {
+    const ed = document.getElementById('markdown-editor');
+    ed.value = '# &lt;img src=x onerror="window.__hxss=1"&gt;\n\n## &lt;img src=x onerror="window.__hxss=2"&gt;\n\n本文\n';
+  });
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await page.waitForTimeout(300);
+  const hx = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    return { imgs: root.querySelectorAll('img').length, heroText: (root.querySelector('.exhibition-hero h1') || {}).textContent, xss: !!window.__hxss };
+  });
+  record('TC-DIAG-016', hx.imgs === 0 && !hx.xss && /<img src=x/.test(hx.heroText || ''), JSON.stringify(hx));
+
+  // 以降は sample.md で確かめる
+  await setMode(page, { style: 'std', appearance: 'light' });
+  await loadSample(page);
+
+  // TC-DIAG-017 小さな図は 1.5 倍までしか拡大しない。1:1 は元の大きさ
+  const scale = await page.evaluate(() => {
+    const svg = document.querySelector('#standard-doc-container [data-stage-index="0"] > svg');
+    return +(svg.getBoundingClientRect().width / svg.viewBox.baseVal.width).toFixed(2);
+  });
+  await page.click('#standard-doc-container [data-action="scale-actual"][data-index="0"]');
+  const actual = await page.evaluate(() => {
+    const svg = document.querySelector('#standard-doc-container [data-stage-index="0"] > svg');
+    return { width: svg.getBoundingClientRect().width, vb: svg.viewBox.baseVal.width };
+  });
+  record('TC-DIAG-017', scale <= 1.51 && scale >= 1.2 && actual.width >= actual.vb - 1, JSON.stringify({ fitScale: scale, actual }));
+
+  // TC-DIAG-018 Visual Stage の細部: Cards の帯と文字、Circles のキャメル色の文字、ヒーローの固定文言、Dark の表の区切り線
+  await setMode(page, { style: 'cards', appearance: 'light' });
+  const cards = await page.evaluate(() => {
+    const svg = document.querySelector('#visual-stage-container [data-stage-index="0"] svg');
+    return Array.from(svg.querySelectorAll('g.node')).map(g => {
+      const cap = Array.from(g.querySelectorAll('rect')).find(r => /vis-cap/.test(r.style.fill || ''));
+      const label = g.querySelector(':scope > .label');
+      if (!cap || !label) return null;
+      // ラベルの枠（行の高さを含む箱）の中心が帯より下にあり、枠と帯の重なりが 2px 以内であること
+      const box = (label.querySelector('foreignObject div, text') || label).getBoundingClientRect();
+      const capBottom = cap.getBoundingClientRect().bottom;
+      return { overlap: +(capBottom - box.top).toFixed(1), centerBelow: (box.top + box.bottom) / 2 > capBottom };
+    }).filter(v => v !== null);
+  });
+  await setMode(page, { style: 'circles', appearance: 'light' });
+  const lum = eval(LUMINANCE_SRC);
+  const camel = await page.evaluate(() => {
+    const svg = document.querySelector('#visual-stage-container [data-stage-index="0"] svg');
+    const node = Array.from(svg.querySelectorAll('g.node')).find(g => {
+      const shape = g.querySelector('rect, polygon');
+      return shape && getComputedStyle(shape).fill === 'rgb(236, 182, 116)';
+    });
+    const text = node && node.querySelector('.nodeLabel, foreignObject span, text');
+    return { found: !!node, color: text ? getComputedStyle(text).color : null, hero: document.querySelector('#visual-stage-container').textContent.includes('EDITORIAL INFOGRAPHIC STUDIO') };
+  });
+  await setMode(page, { style: 'shapes', appearance: 'dark' });
+  const table = await page.evaluate(() => {
+    const td = document.querySelector('#visual-stage-container .exhibition-slab td');
+    const slab = td.closest('.exhibition-slab');
+    return { border: getComputedStyle(td).borderTopColor, slab: getComputedStyle(slab).backgroundColor };
+  });
+  const detail = {
+    cardsMaxOverlap: Math.max(...cards.map(c => c.overlap)), cardsCenterBelow: cards.every(c => c.centerBelow), cardsCount: cards.length,
+    camelText: camel.color, camelLum: camel.color && +lum(camel.color).toFixed(2), fixedHero: camel.hero, table
+  };
+  record('TC-DIAG-018', cards.length >= 3 && detail.cardsCenterBelow && detail.cardsMaxOverlap <= 2 && camel.found && detail.camelLum < 0.4 && !camel.hero && table.border !== table.slab, JSON.stringify(detail));
+
+  // TC-DIAG-019 Dark の Visual Stage: カード背景が暗く、背景の上の線・文字が明るい（4 スタイル）
+  const rows = [];
+  for (const style of VISUAL_STYLES) {
+    await setMode(page, { style, appearance: 'dark' });
+    const r = await page.evaluate(src => {
+      const lumOf = eval(src);
+      const root = document.getElementById('visual-stage-container');
+      const card = root.querySelector('.exhibition-diagram-card');
+      const cs = getComputedStyle(card);
+      const colors = (cs.backgroundImage + ' ' + cs.backgroundColor).match(/rgba?\([^)]+\)/g) || [];
+      const opaque = colors.filter(c => { const a = c.match(/[\d.]+/g); return a.length < 4 || +a[3] > 0.5; });
+      const bgLum = opaque.reduce((sum, c) => sum + lumOf(c), 0) / opaque.length;
+      const svgOf = type => Array.from(root.querySelectorAll('[data-stage-index] > svg')).find(s => s.getAttribute('aria-roledescription') === type);
+      const flow = svgOf('flowchart-v2'), cls = svgOf('classDiagram'), seq = svgOf('sequence');
+      const edge = flow.querySelector('path.flowchart-link');
+      const clsText = cls.querySelector('.nodeLabel, text');
+      const lifeline = seq.querySelector('line[class~="200"], line[id^="actor"]');
+      const msg = seq.querySelector('text.messageText');
+      return {
+        bgLum: +bgLum.toFixed(2),
+        edgeLum: +lumOf(getComputedStyle(edge).stroke).toFixed(2),
+        classTextLum: +lumOf(getComputedStyle(clsText).color === 'rgb(0, 0, 0)' ? getComputedStyle(clsText).fill : getComputedStyle(clsText).color).toFixed(2),
+        lifelineLum: +lumOf(getComputedStyle(lifeline).stroke).toFixed(2),
+        messageLum: +lumOf(getComputedStyle(msg).fill).toFixed(2)
+      };
+    }, LUMINANCE_SRC);
+    // Circles の結線はパレットの色（暗めの色を含む）のため、明るさは判定しない
+    const edgeOk = style === 'circles' || r.edgeLum > 0.5;
+    rows.push({ style, ok: r.bgLum < 0.3 && edgeOk && r.classTextLum > 0.6 && r.lifelineLum > 0.4 && r.messageLum > 0.6, ...r });
+  }
+  record('TC-DIAG-019', rows.every(r => r.ok), JSON.stringify(rows));
+  if (page.consoleErrors.length) record('TC-DIAG-CONSOLE', false, JSON.stringify(page.consoleErrors));
+  await page.close();
+}
+
+// TC-PERF-001〜002: 起動時の読み込みと、再描画のキャッシュ
+async function testStartupAndCache(browser) {
+  const page = await openApp(browser);
+  await waitRendered(page);
+  const libs = () => page.evaluate(() => ({
+    mermaid: !!window.mermaid,
+    katex: !!window.katex,
+    tailwindCdn: !!document.querySelector('script[src*="cdn.tailwindcss.com"]') || typeof window.tailwind !== 'undefined',
+    tailwindCss: !!document.querySelector('link[href$="css/tailwind.css"]'),
+    headerFlex: getComputedStyle(document.querySelector('header')).display,
+    menuHidden: getComputedStyle(document.getElementById('file-menu')).display
+  }));
+  const atStart = await libs();
+  await page.evaluate(() => { document.getElementById('markdown-editor').value = '# 図も数式もない文書\n\n本文です。'; renderApp(); });
+  await waitRendered(page);
+  const plain = await libs();
+  // loadSample はエディタが空でなくなるのを待つため、読み込みの前に空に戻す
+  await page.evaluate(() => { document.getElementById('markdown-editor').value = ''; lastLoadedMarkdown = ''; renderApp(); });
+  await loadSample(page);
+  await page.waitForFunction(() => window.katex && document.querySelector('#standard-doc-container .lucivo-math .katex'));
+  const withSample = await libs();
+  record('TC-PERF-001', !atStart.mermaid && !atStart.katex && !atStart.tailwindCdn && atStart.tailwindCss && atStart.headerFlex === 'flex' && atStart.menuHidden === 'none'
+    && !plain.mermaid && !plain.katex && withSample.mermaid && withSample.katex, JSON.stringify({ atStart, plain, withSample }));
+
+  // TC-PERF-002 キャッシュから表示するときは、Fit の計算と数式の描画をやり直さない
+  const timing = await page.evaluate(() => {
+    const before = { fit: fitCache.size, math: mathCache.size };
+    let computed = 0;
+    const orig = window.getComputedStyle;
+    window.getComputedStyle = function (...args) { computed++; return orig.apply(this, args); };
+    const t0 = performance.now();
+    renderApp();
+    const ms = performance.now() - t0;
+    window.getComputedStyle = orig;
+    return { before, after: { fit: fitCache.size, math: mathCache.size }, getComputedStyleCalls: computed, renderMs: +ms.toFixed(1) };
+  });
+  record('TC-PERF-002', timing.before.fit >= 18 && timing.before.math >= 5 && timing.after.fit === timing.before.fit && timing.after.math === timing.before.math && timing.getComputedStyleCalls === 0,
+    JSON.stringify(timing));
+  if (page.consoleErrors.length) record('TC-PERF-CONSOLE', false, JSON.stringify(page.consoleErrors));
+  await page.close();
+}
+
+// 図ごとの矢印の形状（FR-012）を調べる。ページ内で実行する
+function inspectEdgeStyle(isVisual) {
+  const root = document.querySelector(isVisual ? '#visual-stage-container' : '#standard-doc-container');
+  return Array.from(root.querySelectorAll('[id^="diagram-frame-"]')).map(card => {
+    const svg = card.querySelector('[data-stage-index] > svg');
+    const active = card.querySelector('.edge-curve-btn.is-active');
+    const paths = svg ? Array.from(svg.querySelectorAll('path.flowchart-link')).map(p => p.getAttribute('d') || '') : [];
+    return {
+      idx: card.id.replace('diagram-frame-', ''),
+      type: svg ? svg.getAttribute('aria-roledescription') : null,
+      picker: card.querySelectorAll('.edge-curve-btn').length,
+      active: active ? active.getAttribute('data-curve') : null,
+      pressed: active ? active.getAttribute('aria-pressed') : null,
+      curved: paths.some(d => /C/.test(d)),
+      sig: paths.join('|').slice(0, 200)
+    };
+  });
+}
+
+async function testEdgeStyle(browser) {
+  const page = await openApp(browser);
+  await waitRendered(page);
+  await loadSample(page);
+  const byIdx = (list, idx) => list.find(c => c.idx === String(idx));
+
+  // TC-EDGE-001 既定: フローチャートだけに選択があり直角、他の図種には選択がない
+  const initial = await page.evaluate(inspectEdgeStyle, false);
+  const flows = initial.filter(c => c.type === 'flowchart-v2');
+  const others = initial.filter(c => c.type !== 'flowchart-v2');
+  record('TC-EDGE-001', flows.length >= 3 && flows.every(c => c.picker === 3 && c.active === 'step' && c.pressed === 'true' && !c.curved) && others.every(c => c.picker === 0),
+    JSON.stringify({ flows: flows.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), otherPickers: others.filter(c => c.picker).map(c => c.idx) }));
+
+  // TC-EDGE-002 1 つの図だけ形状を変えられる
+  const otherFlow = flows[1].idx;
+  await page.click('#standard-doc-container .edge-curve-btn[data-index="0"][data-curve="smooth"]');
+  await waitRendered(page);
+  const smooth = await page.evaluate(inspectEdgeStyle, false);
+  await page.click('#standard-doc-container .edge-curve-btn[data-index="0"][data-curve="straight"]');
+  await waitRendered(page);
+  const straight = await page.evaluate(inspectEdgeStyle, false);
+  const s0 = byIdx(smooth, 0), t0 = byIdx(straight, 0), i0 = byIdx(initial, 0);
+  record('TC-EDGE-002', s0.active === 'smooth' && s0.curved && t0.active === 'straight' && !t0.curved && t0.sig !== i0.sig
+    && byIdx(smooth, otherFlow).active === 'step' && byIdx(smooth, otherFlow).sig === byIdx(initial, otherFlow).sig,
+    JSON.stringify({ smooth: { active: s0.active, curved: s0.curved }, straight: { active: t0.active, curved: t0.curved, differsFromStep: t0.sig !== i0.sig }, other: byIdx(smooth, otherFlow).active }));
+
+  // TC-EDGE-003 選択は Visual Stage でも保たれ、文書全体の矢印形状の切替はない
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const visual = await page.evaluate(inspectEdgeStyle, true);
+  const globalSwitch = await page.evaluate(() => document.querySelectorAll('.curve-option-btn, [data-curve-set]').length);
+  record('TC-EDGE-003', byIdx(visual, 0).active === 'straight' && !byIdx(visual, 0).curved && byIdx(visual, otherFlow).active === 'step' && globalSwitch === 0,
+    JSON.stringify({ visual0: byIdx(visual, 0).active, visualOther: byIdx(visual, otherFlow).active, globalSwitch }));
+  const card = await page.$('#visual-stage-container #diagram-frame-0');
+  if (card) await card.screenshot({ path: path.join(SHOT_DIR, 'edge-shapes-light-00-straight.png') });
+
+  // TC-EDGE-004 ファイルを読み込み直すと既定に戻る
+  await setMode(page, { style: 'std', appearance: 'light' });
+  await page.setInputFiles('#file-input', SAMPLE);
+  await waitRendered(page);
+  const reloaded = await page.evaluate(inspectEdgeStyle, false);
+  record('TC-EDGE-004', byIdx(reloaded, 0).active === 'step' && !byIdx(reloaded, 0).curved, JSON.stringify({ after: byIdx(reloaded, 0).active }));
+  if (page.consoleErrors.length) record('TC-EDGE-CONSOLE', false, JSON.stringify(page.consoleErrors));
+  await page.close();
+}
+
+// YAML フロントマター（FR-011）を調べる。ページ内で実行する
+function inspectFrontMatter(isVisual) {
+  const root = document.querySelector(isVisual ? '#visual-stage-container' : '#standard-doc-container');
+  const fm = root.querySelector('.front-matter');
+  const btn = document.getElementById('btn-front-matter');
+  const isTransparent = c => c === 'transparent' || /rgba\(.*,\s*0\)$/.test(c);
+  const backdrop = el => {
+    for (let n = el; n; n = n.parentElement) {
+      const bg = getComputedStyle(n).backgroundColor;
+      if (!isTransparent(bg)) return bg;
+    }
+    return 'rgb(255, 255, 255)';
+  };
+  const h1 = isVisual ? root.querySelector('.exhibition-hero h1') : root.querySelector('h1');
+  const first = isVisual ? root.querySelector('.exhibition-slab') : root.firstElementChild;
+  const info = {
+    pressed: btn.getAttribute('aria-pressed'),
+    present: !!fm,
+    leakedYaml: /draft: false/.test(root.textContent) && !fm,
+    hrBeforeH1: !isVisual && !!h1 && Array.from(root.children).indexOf(root.querySelector('hr')) > -1
+      && Array.from(root.children).indexOf(root.querySelector('hr')) < Array.from(root.children).indexOf(h1),
+    h1: h1 ? h1.textContent.trim() : null
+  };
+  if (fm) {
+    const key = fm.querySelector('.fm-key'), value = fm.querySelector('.fm-value'), comment = fm.querySelector('.fm-comment');
+    const bg = backdrop(fm.querySelector('pre'));
+    info.label = fm.querySelector('.front-matter-label').textContent.trim();
+    info.text = fm.querySelector('pre').textContent;
+    info.keys = fm.querySelectorAll('.fm-key').length;
+    info.comments = fm.querySelectorAll('.fm-comment').length;
+    info.colors = { key: getComputedStyle(key).color, value: getComputedStyle(value).color, comment: getComputedStyle(comment).color, bg };
+    info.mono = /JetBrains Mono|monospace/.test(getComputedStyle(fm.querySelector('pre')).fontFamily);
+    info.atTop = isVisual ? first.contains(fm) && first.firstElementChild === fm : first === fm;
+  }
+  return info;
+}
+
+async function testFrontMatter(browser) {
+  const page = await openApp(browser);
+  await waitRendered(page);
+  await loadSample(page);
+  const sampleYaml = /^---\r?\n([\s\S]*?)\r?\n---/.exec(fs.readFileSync(SAMPLE, 'utf8'))[1].replace(/\r/g, '');
+
+  // TC-FM-001 起動直後は OFF で、フロントマターが本文に現れない
+  const off = await page.evaluate(inspectFrontMatter, false);
+  record('TC-FM-001', off.pressed === 'false' && !off.present && !off.leakedYaml && !off.hrBeforeH1 && off.h1 === 'Lucivo サンプル文書', JSON.stringify(off));
+
+  // TC-FM-002 ON にすると、本文モードごとに書いたとおりの YAML が色分けされて本文の前に表示される
+  await page.click('#btn-front-matter');
+  await waitRendered(page);
+  const rows = [];
+  for (const mode of MD_MODES) {
+    await setMode(page, mode);
+    const isVisual = mode.style !== 'std';
+    const r = await page.evaluate(inspectFrontMatter, isVisual);
+    const c = r.colors || {};
+    const ok = r.pressed === 'true' && r.present && r.text === sampleYaml && r.label === 'Front Matter' && r.mono && r.atTop
+      && r.keys >= 6 && r.comments === 1 && c.key !== c.value && c.key !== c.bg && c.value !== c.bg && c.comment !== c.bg;
+    rows.push({ tag: `${mode.style}-${mode.appearance}`, ok, keys: r.keys, comments: r.comments, colors: c, atTop: r.atTop, textMatches: r.text === sampleYaml });
+    const box = await page.$(`${isVisual ? '#visual-stage-container' : '#standard-doc-container'} .front-matter`);
+    if (box) await box.screenshot({ path: path.join(SHOT_DIR, `fm-${mode.style}-${mode.appearance}.png`) });
+  }
+  record('TC-FM-002', rows.every(r => r.ok), JSON.stringify(rows));
+
+  // TC-FM-003 Visual Stage で OFF にでき、通常モードに戻っても OFF のまま
+  await page.click('#btn-front-matter');
+  await waitRendered(page);
+  const visOff = await page.evaluate(inspectFrontMatter, true);
+  await setMode(page, { style: 'std', appearance: 'light' });
+  const stdOff = await page.evaluate(inspectFrontMatter, false);
+  record('TC-FM-003', !visOff.present && visOff.pressed === 'false' && !stdOff.present && stdOff.pressed === 'false', JSON.stringify({ visOff, stdOff }));
+
+  // TC-FM-004 フロントマターでない --- は水平線のまま。ON でも枠は出ない
+  await page.click('#btn-front-matter');
+  const notFm = await page.evaluate(() => {
+    const ed = document.getElementById('markdown-editor');
+    const root = document.getElementById('standard-doc-container');
+    const results = {};
+    ed.value = '---\n\n# 見出し\n\n本文';
+    renderApp();
+    results.unclosed = { fm: !!root.querySelector('.front-matter'), hr: root.querySelectorAll('hr').length };
+    ed.value = '# 見出し\n\n---\n\ntitle: x\n\n---\n';
+    renderApp();
+    results.middle = { fm: !!root.querySelector('.front-matter'), hr: root.querySelectorAll('hr').length };
+    ed.value = '---\n---\n# 見出し';
+    renderApp();
+    results.empty = { fm: !!root.querySelector('.front-matter'), h1: !!root.querySelector('h1'), hr: root.querySelectorAll('hr').length };
+    return results;
+  });
+  record('TC-FM-004', !notFm.unclosed.fm && notFm.unclosed.hr === 1 && !notFm.middle.fm && notFm.middle.hr === 2 && notFm.empty.fm && notFm.empty.h1 && notFm.empty.hr === 0,
+    JSON.stringify(notFm));
+
+  // TC-FM-005 フロントマターの中の HTML は文字として表示され、実行されない
+  const safe = await page.evaluate(() => {
+    const ed = document.getElementById('markdown-editor');
+    ed.value = '---\ntitle: <img src=x onerror="window.__fmxss=1">\n# <script>window.__fmxss=2</script>\n---\n本文';
+    renderApp();
+    const fm = document.querySelector('#standard-doc-container .front-matter');
+    return { fm: !!fm, imgs: fm ? fm.querySelectorAll('img, script').length : -1, shown: fm ? /<img src=x/.test(fm.textContent) : false, xss: !!window.__fmxss };
+  });
+  await page.waitForTimeout(200);
+  const xssAfter = await page.evaluate(() => !!window.__fmxss);
+  record('TC-FM-005', safe.fm && safe.imgs === 0 && safe.shown && !safe.xss && !xssAfter, JSON.stringify({ ...safe, xssAfter }));
+  if (page.consoleErrors.length) record('TC-FM-CONSOLE', false, JSON.stringify(page.consoleErrors));
+  await page.close();
+}
+
 (async () => {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await chromium.launch();
@@ -543,6 +932,10 @@ async function testMathRendering(browser) {
     await testDiagramRendering(browser);
     await testMarkdownTypography(browser);
     await testMathRendering(browser);
+    await testFrontMatter(browser);
+    await testEdgeStyle(browser);
+    await testVisualStageQuality(browser);
+    await testStartupAndCache(browser);
   } catch (e) {
     record('RUNTIME', false, e.stack);
   } finally {

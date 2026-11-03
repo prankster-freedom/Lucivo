@@ -13,6 +13,7 @@ tags: ["Lucivo", "実装"]
 | [index.html](../../index.html)       | [index.html.md](index.html.md)       | 画面の骨格、CDN ライブラリと CSS・スクリプトの読み込み順 |
 | [css/style.css](../../css/style.css) | [css/style.css.md](css/style.css.md) | デザイントークン、組版、Markdown 要素、図の表示枠、Visual Stage |
 | [js/app.js](../../js/app.js)         | [js/app.js.md](js/app.js.md)         | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
+| [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成 |
 | [tests/e2e.cjs](../../tests/e2e.cjs) | [tests/e2e.cjs.md](tests/e2e.cjs.md) | テスト仕様の自動確認と画面の撮影 |
 
 `sample.md` はソースではなく同梱のサンプル文書のため、実装ドキュメントを作らない（内容は `FR-008`〜`FR-010` を参照）。

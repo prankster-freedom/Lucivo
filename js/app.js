@@ -235,10 +235,40 @@ const VISUAL_THEMES = {
 
 // Visual Stage のノード装飾（g.node の形・塗りの置き換え）を適用する図種。
 // 他の図種の g.node（クラス図のクラスなど）に適用すると図の構造が崩れるため、限定する（FR-008）
+// Dark の Visual Stage の配色（DD-DIAG-024）。カード背景が暗くなるため、背景の上に直接描く線・文字を明るくする。
+// 装飾したノードの塗り（色付きの図形・白いカード）と、その上の文字の色は装飾の処理が決めるため、ここでは変わらない
+const VISUAL_DARK_BASE = {
+  clusterBg: '#1B2433',
+  clusterBorder: '#64748B',
+  nodeBg: '#1E293B',
+  nodeText: '#F1F5F9',
+  edgeStroke: '#CBD5E1',
+  edgeLabelBg: '#1E293B',
+  edgeLabelBorder: '#475569',
+  edgeLabelText: '#F1F5F9',
+  lifeline: '#94A3B8',
+  canvasBg: '#111827'
+};
+const VISUAL_DARK_ACCENTS = {
+  shapes: { clusterBg: '#16302F', secondary: '#155E75', tertiary: '#7C3A2E', activationBg: '#164E63' },
+  cards: { secondary: '#3B4A75', tertiary: '#1F5254', activationBg: '#4A3A1A' },
+  circles: { secondary: '#2F5266', tertiary: '#6B2E2A', activationBg: '#5A2B27' },
+  editorial: { clusterBg: '#2A251C', secondary: '#3F4D33', tertiary: '#5A3535', activationBg: '#3F4D33' }
+};
+const VISUAL_THEMES_DARK = Object.fromEntries(Object.entries(VISUAL_THEMES).map(([style, spec]) =>
+  [style, { ...spec, ...VISUAL_DARK_BASE, ...VISUAL_DARK_ACCENTS[style] }]));
+
 const NODE_DECORATED_TYPES = ['flowchart-v2', 'flowchart', 'stateDiagram'];
 
-// Fit 表示で保つ、図の中の文字の表示上の最小サイズ（NFR-005）
+// 図種ごとの矢印の既定の形状（FR-012）。フローチャートは業務フロー図で一般的な直角にする
+const DEFAULT_CURVES = { flowchart: 'step' };
+const CURVE_LABELS = { smooth: '曲線', step: '直角', straight: '直線' };
+
+// Fit 表示で保つ、図の中の文字の表示上の最小サイズ（NFR-005）と、小さな図の拡大の上限
 const MIN_FIT_FONT_PX = 10;
+const MAX_FIT_SCALE = 1.5;
+// Vibrant Circles で、白文字では読みにくい明るい塗り
+const CIRCLE_DARK_TEXT_FILLS = ['#ECB674'];
 // シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）
 const SEQUENCE_MATH_LIFT = 6;
 
@@ -252,19 +282,62 @@ const EMPTY_GUIDE_HTML = `
 const state = {
   appearance: 'light',
   palette: 'cobalt',
-  curve: 'smooth',
   viewMode: 'split',
   isVisualMode: false,
-  infographicStyle: 'shapes'
+  infographicStyle: 'shapes',
+  showFrontMatter: false,
+  // 図の番号 → 矢印の形状（'smooth' / 'step' / 'straight'）。画面の表示の間だけ保持する（DD-EDGE-003）
+  curveByIndex: new Map()
 };
 
 const svgCache = new Map();
 const lkgCache = new Map();
+// Fit の下限・上限の計算結果（描画結果のキャッシュのキー → { minWidth, maxWidth }）と、数式の描画結果
+const fitCache = new Map();
+const mathCache = new Map();
+
+// 図・数式がない文書では読み込まないライブラリ。名前 → 読み込みの Promise（true: 読み込めた）
+const LIBRARIES = {
+  mermaid: { script: 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js', global: 'mermaid' },
+  katex: {
+    script: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
+    style: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css',
+    global: 'katex'
+  }
+};
+const libraryLoads = new Map();
+
+// CSS も <head> に入れるため、HTML エクスポート（outerHTML）にも含まれる
+function loadLibrary(name) {
+  const lib = LIBRARIES[name];
+  if (window[lib.global]) return Promise.resolve(true);
+  if (!libraryLoads.has(name)) {
+    libraryLoads.set(name, new Promise(resolve => {
+      if (lib.style) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = lib.style;
+        document.head.appendChild(link);
+      }
+      const script = document.createElement('script');
+      script.src = lib.script;
+      script.onload = () => resolve(!!window[lib.global]);
+      script.onerror = () => {
+        console.warn(`Failed to load ${name}`);
+        resolve(false);
+      };
+      document.head.appendChild(script);
+    }));
+  }
+  return libraryLoads.get(name);
+}
 let renderDebounceTimer = null;
 // renderApp を呼ぶたびに増やし、描画中の古い非同期描画を見分ける
 let renderGeneration = 0;
 // 最後に読み込んだ Markdown。エディタの内容と異なれば編集中とみなす（起動直後は空）
 let lastLoadedMarkdown = '';
+// 保存するときのファイル名。読み込んだファイルの名前（DD-FILE-030）
+let currentFileName = 'untitled.md';
 
 function getThemeSpec() {
   const mode = THEMES[state.appearance] || THEMES.light;
@@ -284,35 +357,54 @@ function syncCssTokens() {
   root.style.setProperty('--accent', spec.nodeStroke);
 }
 
-function getMermaidCurve() {
-  if (state.curve === 'step') return 'stepAfter';
-  if (state.curve === 'straight') return 'linear';
+function getMermaidCurve(curve) {
+  if (curve === 'step') return 'stepAfter';
+  if (curve === 'straight') return 'linear';
   return 'basis';
+}
+
+// 矢印の形状を選べる図種か。Mermaid 10.9.1 で curve の設定が効くのはフローチャートだけ（DD-EDGE-001）
+function getCurveTarget(code) {
+  const first = code.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.startsWith('%%')) || '';
+  return /^(flowchart|graph)\b/.test(first) ? 'flowchart' : null;
+}
+
+// 図の矢印の形状。利用者が選んでいなければ、図種の既定の形状（DD-EDGE-002, 003）
+function getBlockCurve(index, code) {
+  const target = getCurveTarget(code);
+  if (!target) return null;
+  return state.curveByIndex.get(index) || DEFAULT_CURVES[target];
 }
 
 // 描画に使う配色。Visual Stage はスタイルごとの配色、通常モードは外観とパレットの配色
 function getDiagramSpec(isVisual) {
-  if (isVisual) return VISUAL_THEMES[state.infographicStyle] || VISUAL_THEMES.shapes;
+  if (isVisual) {
+    const themes = state.appearance === 'dark' ? VISUAL_THEMES_DARK : VISUAL_THEMES;
+    return themes[state.infographicStyle] || themes.shapes;
+  }
   return getThemeSpec();
 }
 
-function setupMermaid(isVisual = state.isVisualMode) {
+function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth') {
   syncCssTokens();
   const spec = getDiagramSpec(isVisual);
-  const isDark = !isVisual && state.appearance === 'dark';
+  const isDark = state.appearance === 'dark';
   // Visual Stage では円グラフなどの派生色もスタイルの配色に揃える
   const visualColors = isVisual
     ? { secondaryColor: spec.secondary, tertiaryColor: spec.tertiary }
     : { tertiaryColor: spec.clusterBg };
 
+  // Mermaid は図が現れるまで読み込まない。読み込んだ後の描画の直前に、改めて設定する
+  if (!window.mermaid) return;
   mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
-    securityLevel: 'loose',
+    // 開いた Markdown の図の中の HTML タグとクリック時のスクリプト呼び出しを無効にする（NFR-003）
+    securityLevel: 'strict',
     fontFamily: '"Inter", "Noto Sans JP", -apple-system, sans-serif',
     fontSize: 13,
     flowchart: {
-      curve: getMermaidCurve(),
+      curve: getMermaidCurve(curve),
       padding: 18,
       nodeSpacing: 44,
       rankSpacing: 56,
@@ -391,7 +483,7 @@ function setupMermaid(isVisual = state.isVisualMode) {
       attributeBackgroundColorEven: spec.clusterBg,
       sectionBkgColor: spec.clusterBg,
       sectionBkgColor2: spec.clusterBg,
-      altSectionBkgColor: isVisual ? '#FFFFFF' : spec.canvasBg,
+      altSectionBkgColor: isVisual && !isDark ? '#FFFFFF' : spec.canvasBg,
       gridColor: spec.clusterBorder,
       taskBkgColor: spec.nodeBg,
       taskBorderColor: spec.nodeStroke,
@@ -480,16 +572,53 @@ function setupMarkedMath() {
 }
 
 // サニタイズ後の HTML に入れた置き場所へ描画する。trust: false で、リンクや任意の属性を作るコマンドは描画しない
+// KaTeX は、数式が初めて現れたときに読み込む。読み込めなければ置き場所の原文のまま（DD-MATH-022）。
+// 描画結果は TeX ごとにキャッシュし、入力のたびに描画し直さない
 function renderMath(container) {
-  if (!window.katex) return;
-  container.querySelectorAll('.lucivo-math').forEach(el => {
-    katex.render(el.dataset.tex, el, {
-      displayMode: el.dataset.display === 'true',
-      throwOnError: false,
-      trust: false,
-      output: 'htmlAndMathml'
-    });
+  const targets = container.querySelectorAll('.lucivo-math');
+  if (targets.length === 0) return;
+  if (!window.katex) {
+    loadLibrary('katex').then(ok => { if (ok && container.isConnected) renderMath(container); });
+    return;
+  }
+  targets.forEach(el => {
+    const isDisplay = el.dataset.display === 'true';
+    const key = `${isDisplay ? 'D' : 'I'}:${el.dataset.tex}`;
+    if (!mathCache.has(key)) {
+      mathCache.set(key, katex.renderToString(el.dataset.tex, {
+        displayMode: isDisplay,
+        throwOnError: false,
+        trust: false,
+        output: 'htmlAndMathml'
+      }));
+    }
+    el.innerHTML = mathCache.get(key);
   });
+}
+
+/* ==========================================================================
+   YAML フロントマター（FR-011）: 先頭を切り出し、表示するときは行単位で色分けする
+   ========================================================================== */
+// 文書の先頭だけを調べる。閉じの行がない場合は、先頭の水平線を隠さないよう一致させない（DD-FM-001）
+function splitFrontMatter(text) {
+  const m = /^---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(text);
+  if (!m) return { yaml: null, body: text };
+  return { yaml: m[1] || '', body: text.slice(m[0].length) };
+}
+
+// YAML は解析せず、コメント・キー・値を行ごとに色分けする（DD-FM-021）。各部分はエスケープしてから囲む
+function highlightYamlLine(line) {
+  if (/^\s*#/.test(line)) return `<span class="fm-comment">${escapeHtml(line)}</span>`;
+  const m = /^(\s*(?:-\s+)?)([^\s#:][^:]*?)(:)(\s.*|$)/.exec(line);
+  if (m) {
+    return `${escapeHtml(m[1])}<span class="fm-key">${escapeHtml(m[2])}</span>${escapeHtml(m[3])}<span class="fm-value">${escapeHtml(m[4])}</span>`;
+  }
+  return `<span class="fm-value">${escapeHtml(line)}</span>`;
+}
+
+function buildFrontMatterHtml(yaml) {
+  const body = yaml.split(/\r?\n/).map(highlightYamlLine).join('\n');
+  return `<section class="front-matter"><div class="front-matter-label">Front Matter</div><pre class="front-matter-body"><code>${body}</code></pre></section>\n`;
 }
 
 /* ==========================================================================
@@ -575,16 +704,23 @@ function styleSequenceDiagram(svg, colors) {
 
 // Fit 表示で、図の中の最も小さい文字が MIN_FIT_FONT_PX 未満になるほどは縮小しない（DD-DIAG-030）。
 // 文字の大きさは計算後のスタイルで調べるため、図を DOM に入れた後に呼ぶ
-function applyReadableFit(svg) {
+// あわせて、小さな図を枠の幅まで拡大しすぎないよう、拡大の上限（MAX_FIT_SCALE）を CSS 変数で渡す。
+// 計算結果は描画結果のキャッシュのキーごとに保存し、キャッシュから表示するときは計算し直さない
+function applyReadableFit(svg, cacheKey) {
   const viewBox = svg && svg.viewBox && svg.viewBox.baseVal;
   if (!viewBox || !viewBox.width) return;
-  const sizes = Array.from(svg.querySelectorAll('text, tspan, foreignObject *'))
-    .filter(el => !el.closest('math') && Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim()))
-    .map(el => parseFloat(getComputedStyle(el).fontSize))
-    .filter(size => size > 0);
-  if (sizes.length === 0) return;
-  const minScale = Math.min(1, MIN_FIT_FONT_PX / Math.min(...sizes));
-  svg.style.minWidth = `${Math.ceil(viewBox.width * minScale)}px`;
+  let fit = cacheKey && fitCache.get(cacheKey);
+  if (!fit) {
+    const sizes = Array.from(svg.querySelectorAll('text, tspan, foreignObject *'))
+      .filter(el => !el.closest('math') && Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim()))
+      .map(el => parseFloat(getComputedStyle(el).fontSize))
+      .filter(size => size > 0);
+    const minScale = sizes.length ? Math.min(1, MIN_FIT_FONT_PX / Math.min(...sizes)) : 0;
+    fit = { minWidth: Math.ceil(viewBox.width * minScale), maxWidth: Math.ceil(viewBox.width * MAX_FIT_SCALE) };
+    if (cacheKey) fitCache.set(cacheKey, fit);
+  }
+  if (fit.minWidth) svg.style.minWidth = `${fit.minWidth}px`;
+  svg.style.setProperty('--fit-max-width', `${fit.maxWidth}px`);
 }
 
 function postProcessSvg(rawSvg, isVisualMode) {
@@ -659,13 +795,14 @@ function decorateVisualSvg(svg, diagramType) {
   // その他の図種は、構造を保ったまま setupMermaid のスタイル配色だけで描画する（FR-008）
   if (!NODE_DECORATED_TYPES.includes(diagramType)) return;
 
-  // サブグラフの磨りガラス・フレーム化（カード背景は外観によらず明るいため、明るい配色に固定）
+  // サブグラフの磨りガラス・フレーム化（カード背景の明暗に合わせる）
+  const frost = state.appearance === 'dark' ? 'rgba(15, 23, 42, 0.55)' : 'rgba(255, 255, 255, 0.65)';
   svg.querySelectorAll('g.cluster, g.statediagram-cluster').forEach(cluster => {
     const outerRect = cluster.querySelector('rect.outer') || cluster.querySelector('rect');
     if (outerRect) {
       outerRect.setAttribute('rx', '18');
       outerRect.setAttribute('ry', '18');
-      outerRect.style.setProperty('fill', 'rgba(255, 255, 255, 0.65)', 'important');
+      outerRect.style.setProperty('fill', frost, 'important');
       outerRect.style.setProperty('stroke', visualSpec.clusterBorder, 'important');
       outerRect.style.setProperty('stroke-width', '2px', 'important');
     }
@@ -783,14 +920,16 @@ function decorateVisualShapes(svg, uid) {
     }
   });
 
+  // 結線の色はカード背景に合わせる（Dark では明るい色）
+  const edgeColor = getDiagramSpec(true).edgeStroke;
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-    p.style.setProperty('stroke', '#475569', 'important');
+    p.style.setProperty('stroke', edgeColor, 'important');
     p.style.setProperty('stroke-width', '2px', 'important');
     p.style.setProperty('stroke-dasharray', 'none', 'important');
   });
   svg.querySelectorAll('marker path').forEach(m => {
-    m.style.setProperty('fill', '#475569', 'important');
-    m.style.setProperty('stroke', '#475569', 'important');
+    m.style.setProperty('fill', edgeColor, 'important');
+    m.style.setProperty('stroke', edgeColor, 'important');
   });
 }
 
@@ -845,6 +984,9 @@ function decorateVisualCards(svg, uid) {
     cap.style.setProperty('stroke', 'none', 'important');
     cap.style.setProperty('pointer-events', 'none');
     g.appendChild(cap);
+    // 帯はカードの上部に重なるため、ラベルを帯の下の白い部分の中央へ下げる
+    const label = g.querySelector(':scope > .label');
+    if (label) label.setAttribute('transform', `${label.getAttribute('transform') || ''} translate(0, ${capH / 2})`.trim());
 
     const stepText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     stepText.setAttribute('x', String(x + 10));
@@ -863,8 +1005,9 @@ function decorateVisualCards(svg, uid) {
     });
   });
 
+  const edgeColor = getDiagramSpec(true).edgeStroke;
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-    p.style.setProperty('stroke', '#64748B', 'important');
+    p.style.setProperty('stroke', edgeColor, 'important');
     p.style.setProperty('stroke-width', '2px', 'important');
   });
 }
@@ -894,9 +1037,11 @@ function decorateVisualCircles(svg, uid) {
       polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
     }
 
+    // 明るいキャメル色の上の白文字はコントラストが足りないため、その色だけ濃い文字にする
+    const textColor = CIRCLE_DARK_TEXT_FILLS.includes(color) ? '#3B2A0E' : '#FFFFFF';
     g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
-      el.style.setProperty('color', '#FFFFFF', 'important');
-      el.style.setProperty('fill', '#FFFFFF', 'important');
+      el.style.setProperty('color', textColor, 'important');
+      el.style.setProperty('fill', textColor, 'important');
       el.style.setProperty('font-weight', '700', 'important');
     });
   });
@@ -1004,18 +1149,21 @@ function decorateVisualSequence(svg, styleMode, visualSpec, uid) {
       rect.style.setProperty('stroke-width', '1.5px', 'important');
     }
   });
-  if (styleMode === 'circles') {
-    svg.querySelectorAll('text.actor, text.actor tspan').forEach(el => {
-      el.style.setProperty('fill', '#FFFFFF', 'important');
-      el.style.setProperty('font-weight', '700', 'important');
-    });
-  }
+  // 参加者の箱の塗りは外観によらないため、箱の文字の色も固定する（Dark では配色の nodeText が明るくなるため）
+  // 人型の参加者（actor）の名前は箱ではなく背景の上に描かれるため、配色（外観に合わせた色）のままにする
+  svg.querySelectorAll('text.actor, text.actor tspan').forEach(el => {
+    if (el.closest('.actor-man')) return;
+    el.style.setProperty('fill', styleMode === 'circles' ? '#FFFFFF' : '#1E293B', 'important');
+    if (styleMode === 'circles') el.style.setProperty('font-weight', '700', 'important');
+  });
+  const isDark = state.appearance === 'dark';
   styleSequenceDiagram(svg, {
     lifeline: visualSpec.lifeline,
     activationBg: visualSpec.activationBg,
     activationBorder: visualSpec.activationBorder,
     signal: visualSpec.edgeStroke,
-    numberText: '#FFFFFF',
+    // 番号は矢じりと同じ色の円の上に載る。Dark では円が明るい色になるため、番号を暗い色にする
+    numberText: isDark ? '#0F172A' : '#FFFFFF',
     messageText: visualSpec.nodeText
   });
 }
@@ -1023,7 +1171,8 @@ function decorateVisualSequence(svg, styleMode, visualSpec, uid) {
 /* ==========================================================================
    ダイアグラムカード生成
    ========================================================================== */
-function createDiagramCard(index, svgHtml, isRendering, isVisual) {
+// curve: 矢印の形状を選べる図ではその形状、選べない図では null（DD-EDGE-010）
+function createDiagramCard(index, svgHtml, isRendering, isVisual, curve = null) {
   const content = isRendering
     ? `<div class="py-12 font-mono text-xs text-blue-500 animate-pulse flex items-center justify-center">Rendering Diagram 0${index + 1}...</div>`
     : svgHtml;
@@ -1032,6 +1181,10 @@ function createDiagramCard(index, svgHtml, isRendering, isVisual) {
   const headerClass = isVisual ? 'exhibition-diagram-header' : 'diagram-frame-header';
   const viewportClass = isVisual ? 'exhibition-viewport' : 'diagram-viewport';
   const badgeLabel = isVisual ? `INFOGRAPHIC // 0${index + 1}` : `DIAGRAM 0${index + 1}`;
+  const curvePicker = curve
+    ? `<div class="pill-container mr-1.5" role="group" aria-label="矢印の形状">${Object.entries(CURVE_LABELS).map(([key, label]) =>
+        `<button type="button" data-curve="${key}" data-index="${index}" aria-pressed="${key === curve}" class="edge-curve-btn pill-btn text-[10px]${key === curve ? ' is-active' : ''}">${label}</button>`).join('')}</div>`
+    : '';
 
   return `
     <div id="diagram-frame-${index}" class="${cardClass}">
@@ -1041,6 +1194,7 @@ function createDiagramCard(index, svgHtml, isRendering, isVisual) {
           <span class="font-mono text-[11px] font-bold tracking-wider" style="color: var(--text-primary);">${badgeLabel}</span>
         </div>
         <div class="flex items-center gap-1">
+          ${curvePicker}
           <div class="pill-container mr-1.5">
             <button type="button" data-action="scale-fit" data-index="${index}" class="scale-btn pill-btn is-active text-[10px]">Fit</button>
             <button type="button" data-action="scale-actual" data-index="${index}" class="scale-btn pill-btn text-[10px]">1:1</button>
@@ -1064,7 +1218,8 @@ function buildVisualStageHtml(cleanHtml) {
   const temp = document.createElement('div');
   temp.innerHTML = cleanHtml;
 
-  let heroTitle = 'Architecture Exhibition Showcase';
+  // h1 がない文書は、読み込んだファイル名を題名にする。どちらもなければヒーローを出さない
+  let heroTitle = currentFileName !== 'untitled.md' ? currentFileName.replace(/\.[^.]+$/, '') : '';
   const h1 = temp.querySelector('h1');
   if (h1) {
     heroTitle = h1.textContent;
@@ -1094,17 +1249,15 @@ function buildVisualStageHtml(cleanHtml) {
       sectionCounter++;
       const numStr = String(sectionCounter).padStart(2, '0');
       const rawTitle = h2.textContent.replace(/^\d+\.\s*/, '');
-      h2.innerHTML = `<span class="exhibition-num-badge">STAGE ${numStr}</span><span>${rawTitle}</span>`;
+      h2.innerHTML = `<span class="exhibition-num-badge">STAGE ${numStr}</span><span>${escapeHtml(rawTitle)}</span>`;
     }
     slabsHtml += `<section class="exhibition-slab">${wrapper.innerHTML}</section>`;
   });
 
-  return `
-    <div class="exhibition-wrap">
+  // 見出しの文字（textContent）はエスケープしてから埋め込む。そのまま入れると、見出しに書いた
+  // &lt;img …&gt; などが HTML として解釈される（NFR-003）
+  const heroHtml = heroTitle ? `
       <div class="exhibition-hero">
-        <span class="font-mono text-[11px] font-bold tracking-widest uppercase text-slate-400">
-          EDITORIAL INFOGRAPHIC STUDIO
-        </span>
         <div class="four-color-bar">
           <span class="bg-[#E29578]"></span>
           <span class="bg-[#E6B34B]"></span>
@@ -1112,9 +1265,13 @@ function buildVisualStageHtml(cleanHtml) {
           <span class="bg-[#6DB1B4]"></span>
         </div>
         <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight leading-tight mt-1" style="color: var(--text-primary);">
-          ${heroTitle}
+          ${escapeHtml(heroTitle)}
         </h1>
-      </div>
+      </div>` : '';
+
+  return `
+    <div class="exhibition-wrap">
+      ${heroHtml}
       ${slabsHtml}
     </div>
   `;
@@ -1125,7 +1282,9 @@ function buildVisualStageHtml(cleanHtml) {
    ========================================================================== */
 function renderApp() {
   const rawMarkdown = document.getElementById('markdown-editor').value;
-  const parsed = marked.lexer(rawMarkdown);
+  // フロントマターは Marked に渡さない。渡すと先頭の --- が水平線、YAML が段落になる（DD-FM-001）
+  const { yaml, body } = splitFrontMatter(rawMarkdown);
+  const parsed = marked.lexer(body);
 
   const mermaidBlocks = [];
   const tokensToKeep = [];
@@ -1134,8 +1293,9 @@ function renderApp() {
     if (token.type === 'code' && (token.lang || '').trim().toLowerCase() === 'mermaid') {
       const index = mermaidBlocks.length;
       const code = token.text.trim();
-      const hash = fnv1aHash(code + state.appearance + state.palette + state.curve + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std'));
-      mermaidBlocks.push({ index, code, hash });
+      const curve = getBlockCurve(index, code);
+      const hash = fnv1aHash(code + state.appearance + state.palette + (curve || '') + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std'));
+      mermaidBlocks.push({ index, code, hash, curve });
       tokensToKeep.push({
         type: 'html',
         raw: `<div class="lucivo-slot" data-slot="${index}"></div>`,
@@ -1146,7 +1306,8 @@ function renderApp() {
     }
   });
 
-  const rawHtml = marked.parser(tokensToKeep);
+  const frontMatterHtml = yaml !== null && state.showFrontMatter ? buildFrontMatterHtml(yaml) : '';
+  const rawHtml = frontMatterHtml + marked.parser(tokensToKeep);
   const cleanHtml = DOMPurify.sanitize(rawHtml, {
     ADD_TAGS: ['div', 'span', 'strong', 'small'],
     ADD_ATTR: ['class', 'data-slot', 'style']
@@ -1181,6 +1342,7 @@ function renderApp() {
   const modeTag = isVisual ? `vis-${state.infographicStyle}` : 'std';
 
   const dirtyBlocks = [];
+  const cachedKeys = new Map();
 
   slots.forEach(slot => {
     const idx = parseInt(slot.getAttribute('data-slot'), 10);
@@ -1190,14 +1352,17 @@ function renderApp() {
     const cacheKey = `${block.hash}-${modeTag}`;
 
     if (svgCache.has(cacheKey)) {
-      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, isVisual);
+      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, isVisual, block.curve);
+      cachedKeys.set(idx, cacheKey);
     } else {
-      slot.outerHTML = createDiagramCard(idx, '', true, isVisual);
+      slot.outerHTML = createDiagramCard(idx, '', true, isVisual, block.curve);
       dirtyBlocks.push({ ...block, modeTag, cacheKey });
     }
   });
 
-  activeContainer.querySelectorAll('[data-stage-index] > svg').forEach(applyReadableFit);
+  cachedKeys.forEach((cacheKey, idx) => {
+    applyReadableFit(activeContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
+  });
   bindViewportInteractions(activeContainer);
 
   if (dirtyBlocks.length > 0) {
@@ -1213,13 +1378,25 @@ async function processDirtyBlocks(dirtyBlocks, target) {
   updateStatus(`Rendering ${dirtyBlocks.length} diagrams...`, 'warning');
   const isStale = () => target.generation !== renderGeneration;
 
+  // Mermaid は、図が初めて現れたときに読み込む
+  const mermaidReady = await loadLibrary('mermaid');
+  if (isStale()) return;
+  if (!mermaidReady) {
+    dirtyBlocks.forEach(block => {
+      const vp = target.container.querySelector(`[data-stage-index="${block.index}"]`);
+      if (vp) vp.innerHTML = '<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">Mermaid を読み込めませんでした（ネットワークの接続を確認してください）</div>';
+    });
+    updateStatus('• Mermaid Unavailable', 'warning');
+    return;
+  }
+
   for (const block of dirtyBlocks) {
     if (isStale()) return;
     const renderId = `mermaid-render-${block.index}-${Date.now()}`;
     const lkgKey = `${block.index}-${block.modeTag}`;
     const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
     try {
-      setupMermaid(target.isVisual);
+      setupMermaid(target.isVisual, block.curve || 'smooth');
       const { svg } = await mermaid.render(renderId, block.code);
       if (isStale()) return;
       const finalSvg = postProcessSvg(svg, target.isVisual);
@@ -1229,7 +1406,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
 
       if (stageViewport) {
         stageViewport.innerHTML = finalSvg;
-        applyReadableFit(stageViewport.querySelector(':scope > svg'));
+        applyReadableFit(stageViewport.querySelector(':scope > svg'), block.cacheKey);
       }
     } catch (err) {
       console.error(`Mermaid render failed for block ${block.index}:`, err);
@@ -1255,6 +1432,14 @@ async function processDirtyBlocks(dirtyBlocks, target) {
    ========================================================================== */
 // container: 表示中のコンテナ。非表示側の図を操作しないよう、探索範囲を限定する
 function bindViewportInteractions(container) {
+  // 矢印の形状を選ぶと、その図だけキャッシュのキーが変わり、描き直される（DD-EDGE-011）
+  container.querySelectorAll('.edge-curve-btn').forEach(btn => {
+    btn.onclick = () => {
+      state.curveByIndex.set(parseInt(btn.getAttribute('data-index'), 10), btn.getAttribute('data-curve'));
+      renderApp();
+    };
+  });
+
   container.querySelectorAll('.scale-btn').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
@@ -1307,7 +1492,7 @@ function bindViewportInteractions(container) {
         canvas.width = (bbox.width || 800) * scale;
         canvas.height = (bbox.height || 600) * scale;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = state.appearance === 'dark' && !state.isVisualMode ? '#0F172A' : '#FFFFFF';
+        ctx.fillStyle = state.appearance === 'dark' ? getDiagramSpec(state.isVisualMode).canvasBg : '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(blob => {
@@ -1406,19 +1591,6 @@ function setupEventListeners() {
     };
   });
 
-  document.querySelectorAll('.curve-option-btn').forEach(btn => {
-    btn.onclick = () => {
-      const curve = btn.getAttribute('data-curve-set');
-      state.curve = curve;
-      document.querySelectorAll('.curve-option-btn').forEach(b => {
-        b.classList.toggle('is-active', b.getAttribute('data-curve-set') === curve);
-      });
-      setupMermaid();
-      renderApp();
-      showToast(`矢印形状: ${curve.toUpperCase()}`);
-    };
-  });
-
   document.querySelectorAll('.palette-option-btn').forEach(btn => {
     btn.onclick = () => {
       const pal = btn.getAttribute('data-palette-set');
@@ -1496,7 +1668,7 @@ function closeFileMenu() {
   document.getElementById('btn-file-menu').setAttribute('aria-expanded', 'false');
 }
 
-// 最後に読み込んだ時点から編集していれば、置き換える前に確認する（保存機能がないため）
+// 最後に読み込んだ（または保存した）時点から編集していれば、置き換える前に確認する
 function confirmDiscardEdits(fileName) {
   const editor = document.getElementById('markdown-editor');
   if (editor.value === lastLoadedMarkdown) return true;
@@ -1510,6 +1682,9 @@ function loadMarkdownFile(file) {
     const text = String(reader.result).replace(/^﻿/, '');
     document.getElementById('markdown-editor').value = text;
     lastLoadedMarkdown = text;
+    currentFileName = file.name;
+    state.curveByIndex.clear();
+    setEditorReadOnly(true);
     clearTimeout(renderDebounceTimer);
     renderApp();
     document.getElementById('preview-scroll').scrollTop = 0;
@@ -1520,6 +1695,21 @@ function loadMarkdownFile(file) {
     showToast(`「${file.name}」を読み込めませんでした`);
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+// 読み込み直後の閲覧中に誤って編集しないよう、エディタと、内容を変えるボタンをまとめて切り替える（DD-FILE-040）
+function setEditorReadOnly(isReadOnly) {
+  document.getElementById('markdown-editor').readOnly = isReadOnly;
+  document.getElementById('editor-lock').classList.toggle('hidden', !isReadOnly);
+  document.getElementById('btn-test-err').disabled = isReadOnly;
+}
+
+// エディタの内容をダウンロードする。元のファイルは上書きしない（DD-FILE-030）
+function saveMarkdownFile() {
+  const text = document.getElementById('markdown-editor').value;
+  downloadBlob(text, currentFileName, 'text/markdown;charset=utf-8');
+  lastLoadedMarkdown = text;
+  showToast(`「${currentFileName}」を保存しました`);
 }
 
 function setupFileMenu() {
@@ -1537,6 +1727,11 @@ function setupFileMenu() {
     closeFileMenu();
     input.click();
   };
+  document.getElementById('btn-save-markdown').onclick = saveMarkdownFile;
+  document.getElementById('btn-edit-unlock').onclick = () => {
+    setEditorReadOnly(false);
+    document.getElementById('markdown-editor').focus();
+  };
   input.onchange = () => {
     const file = input.files && input.files[0];
     // 同じファイルを続けて選んでも change が発生するよう、選択を解除する
@@ -1551,10 +1746,22 @@ function setupFileMenu() {
   });
 }
 
+// フロントマターの表示 ON / OFF。モードにかかわらず効き、モードを切り替えても状態を保つ（DD-FM-011）
+function setupFrontMatterToggle() {
+  const btn = document.getElementById('btn-front-matter');
+  btn.addEventListener('click', () => {
+    state.showFrontMatter = !state.showFrontMatter;
+    btn.setAttribute('aria-pressed', String(state.showFrontMatter));
+    btn.classList.toggle('is-active', state.showFrontMatter);
+    renderApp();
+  });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   document.querySelector('[data-view-mode="split"]').classList.add('is-active');
   setupEventListeners();
   setupFileMenu();
+  setupFrontMatterToggle();
   setupMarkedMath();
   setupMermaid();
   renderApp();
