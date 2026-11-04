@@ -675,12 +675,50 @@ body[data-appearance="dark"] #visual-stage-container {
   color: #F8FAFC;
 }
 
+/* --vs-c1〜4: 雛形・バッジ・4 色バーのアクセント色。スタイルごとに図の配色と同じ調子にする（DTP-003, DTP-VTPL-070）
+   --vs-tone: アクセント色を文字に使うときに混ぜる色（Light は濃紺、Dark は白）。--vs-slab-bg: スラブの背景（手順の丸の輪） */
 .exhibition-wrap {
   max-width: 62rem;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 2.25rem;
+  container-type: inline-size;
+  --vs-c1: #E29578;
+  --vs-c2: #E6B34B;
+  --vs-c3: #A3B4E4;
+  --vs-c4: #6DB1B4;
+  --vs-ink: #1E293B;
+  --vs-tone: #0F172A;
+  --vs-slab-bg: #FFFFFF;
+  --vs-card-bg: #F8FAFC;
+  --vs-card-border: #E2E8F0;
+}
+.vs-theme-shapes {
+  --vs-c3: #6CC4C9;
+  --vs-c4: #9CCB86;
+  --vs-c2: #EBB453;
+}
+.vs-theme-circles {
+  --vs-c1: #D45D53;
+  --vs-c2: #7EA6BF;
+  --vs-c3: #ECB674;
+  --vs-c4: #7D9763;
+}
+.vs-theme-editorial {
+  --vs-c1: #D68C8C;
+  --vs-c2: #8FA876;
+  --vs-c3: #C9A66B;
+  --vs-c4: #8FA3B8;
+}
+body[data-appearance="dark"] .exhibition-wrap {
+  --vs-tone: #FFFFFF;
+  --vs-slab-bg: #1E293B;
+  --vs-card-bg: rgba(15, 23, 42, 0.45);
+  --vs-card-border: #334155;
+  /* Dark の --border-strong・--text-muted はスラブの背景（#1E293B）に近く、線と出典が沈むため明るくする */
+  --vs-line: #64748B;
+  --vs-sub-text: #94A3B8;
 }
 
 .exhibition-hero {
@@ -705,6 +743,10 @@ body[data-appearance="dark"] .exhibition-hero {
   height: 4px;
   border-radius: 2px;
 }
+.four-color-bar span:nth-child(1) { background: var(--vs-c1); }
+.four-color-bar span:nth-child(2) { background: var(--vs-c2); }
+.four-color-bar span:nth-child(3) { background: var(--vs-c3); }
+.four-color-bar span:nth-child(4) { background: var(--vs-c4); }
 
 .exhibition-slab {
   border-radius: 22px;
@@ -741,7 +783,7 @@ body[data-appearance="dark"] .exhibition-slab {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.75rem;
   font-weight: 800;
-  background: #E29578;
+  background: var(--vs-c1);
   color: #FFFFFF;
 }
 
@@ -771,6 +813,242 @@ body[data-appearance="dark"] .exhibition-slab {
   .exhibition-slab-split > .exhibition-slab-body {
     grid-template-columns: 1fr;
   }
+}
+
+/* --------------------------------------------------------------------------
+   記述パターン別の雛形（FR-016, DD-VTPL-020〜024）。寸法・色は DTP/features/visual-templates.md を正とする。
+   既存の :is(.prose-doc, .exhibition-slab) の要素スタイルより詳細度を上げて上書きする
+   -------------------------------------------------------------------------- */
+/* リード型（DTP-VTPL-020） */
+.exhibition-slab .vs-lead {
+  position: relative;
+  padding-left: 1.25rem;
+  font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+  font-weight: 600;
+  line-height: 1.85;
+  color: var(--text-primary);
+  text-wrap: pretty;
+}
+.exhibition-slab .vs-lead::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  bottom: 0.3em;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--vs-c1), var(--vs-c2), var(--vs-c3), var(--vs-c4));
+}
+.exhibition-slab .vs-lead > p {
+  margin-bottom: 0.75rem;
+}
+.exhibition-slab .vs-lead > p:last-child {
+  margin-bottom: 0;
+}
+
+/* 要点カード型（DTP-VTPL-030）: 帯と番号の色は項目の順に --vs-c1〜4 を繰り返す */
+.exhibition-slab ul.vs-points {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(var(--vs-cols, 3), minmax(0, 1fr));
+  gap: 1rem;
+  counter-reset: vs-point;
+}
+/* 列の数は app.js が項目の数から決める（--vs-cols: 4 個は 2 列、5〜6 個は 3 列。--vs-cols-wide: 版面 56rem 以上で 4 個を 4 列） */
+@container (min-width: 56rem) {
+  .exhibition-slab ul.vs-points {
+    grid-template-columns: repeat(var(--vs-cols-wide, 3), minmax(0, 1fr));
+  }
+}
+@container (max-width: 30rem) {
+  .exhibition-slab ul.vs-points {
+    grid-template-columns: 1fr;
+  }
+}
+/* 和文を文節で折り返し、語の途中（「切り／替える」など）で改行しない（Chromium 119 以降。他は通常の折り返し） */
+.exhibition-slab :is(.vs-lead, .vs-points > li, .vs-steps > li, .vs-quote) {
+  word-break: auto-phrase;
+}
+.exhibition-slab .vs-points > li {
+  --vs-c: var(--vs-c1);
+  counter-increment: vs-point;
+  position: relative;
+  margin: 0;
+  padding: 1.25rem;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--vs-card-border);
+  background: var(--vs-card-bg);
+  box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.12);
+  line-height: 1.7;
+}
+.exhibition-slab .vs-points > li:nth-child(4n + 2) { --vs-c: var(--vs-c2); }
+.exhibition-slab .vs-points > li:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
+.exhibition-slab .vs-points > li:nth-child(4n + 4) { --vs-c: var(--vs-c4); }
+.exhibition-slab .vs-points > li::before {
+  content: counter(vs-point, decimal-leading-zero);
+  display: block;
+  margin-bottom: 0.6rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--vs-c) 70%, var(--vs-tone));
+}
+.exhibition-slab .vs-points > li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--vs-c);
+}
+.exhibition-slab .vs-point-title {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* 手順型（DTP-VTPL-040）: 4 個以下は横並び（--vs-n 列）、5 個以上（.is-vertical）と版面 40rem 未満は縦並び */
+.exhibition-slab ol.vs-steps {
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--vs-n, 4), minmax(0, 1fr));
+  gap: 1rem;
+  counter-reset: vs-step;
+}
+.exhibition-slab .vs-steps::before {
+  content: "";
+  position: absolute;
+  top: 1.25rem;
+  left: calc(50% / var(--vs-n, 4));
+  right: calc(50% / var(--vs-n, 4));
+  height: 2px;
+  background: var(--vs-line, var(--border-strong));
+}
+.exhibition-slab .vs-steps > li {
+  --vs-c: var(--vs-c1);
+  counter-increment: vs-step;
+  position: relative;
+  margin: 0;
+  padding: 3.5rem 0.25rem 0;
+  text-align: center;
+  line-height: 1.65;
+}
+.exhibition-slab .vs-steps > li:nth-child(4n + 2) { --vs-c: var(--vs-c2); }
+.exhibition-slab .vs-steps > li:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
+.exhibition-slab .vs-steps > li:nth-child(4n + 4) { --vs-c: var(--vs-c4); }
+.exhibition-slab .vs-steps > li::before {
+  content: counter(vs-step);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--vs-c);
+  box-shadow: 0 0 0 5px var(--vs-slab-bg);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--vs-ink);
+}
+.exhibition-slab ol.vs-steps.is-vertical {
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+}
+.exhibition-slab .vs-steps.is-vertical::before {
+  top: 1.25rem;
+  bottom: 1.25rem;
+  left: calc(1.25rem - 1px);
+  right: auto;
+  width: 2px;
+  height: auto;
+}
+.exhibition-slab .vs-steps.is-vertical > li {
+  min-height: 2.5rem;
+  padding: 0.35rem 0 0 3.5rem;
+  text-align: left;
+}
+.exhibition-slab .vs-steps.is-vertical > li::before {
+  left: 0;
+  transform: none;
+}
+@container (max-width: 40rem) {
+  .exhibition-slab ol.vs-steps {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+  .exhibition-slab .vs-steps::before {
+    top: 1.25rem;
+    bottom: 1.25rem;
+    left: calc(1.25rem - 1px);
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+  .exhibition-slab .vs-steps > li {
+    min-height: 2.5rem;
+    padding: 0.35rem 0 0 3.5rem;
+    text-align: left;
+  }
+  .exhibition-slab .vs-steps > li::before {
+    left: 0;
+    transform: none;
+  }
+}
+
+/* ステートメント型（DTP-VTPL-050）: 引用の左線を外し、大きな引用符と中央揃えの一文にする */
+.exhibition-slab blockquote.vs-quote {
+  position: relative;
+  max-width: 46rem;
+  margin: 0.5rem auto 0;
+  padding: 3rem 1rem 0.5rem;
+  border-left: 0;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+.exhibition-slab blockquote.vs-quote::before {
+  content: "\201C";
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 4.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--vs-c1);
+}
+.exhibition-slab .vs-quote > p {
+  margin-bottom: 0.5rem;
+}
+.exhibition-slab .vs-quote > .vs-quote-cite {
+  margin: 1rem 0 0;
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--vs-sub-text, var(--text-muted));
 }
 
 .exhibition-diagram-card {

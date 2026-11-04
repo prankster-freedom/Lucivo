@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "CSS"]
 
 # css/style.css
 
-ソース: [css/style.css](../../../css/style.css)／設計: `DD-MD`、`DD-DIAG-023`・`030`〜`032`・`041`、`DD-MATH-023`、`DD-FM-030`、`DD-FILE-006`
+ソース: [css/style.css](../../../css/style.css)／設計: `DD-MD`、`DD-DIAG-023`・`030`〜`032`・`041`、`DD-MATH-023`、`DD-FM-030`、`DD-FILE-006`、`DD-VTPL-020`〜`031`
 
 ## 依存関係
 
@@ -34,4 +34,6 @@ flowchart TD
 - **本文の要素**: 高速モードと Visualモードの両方に効くよう `:is(.prose-doc, .exhibition-slab)` で書く。
 - **線の色**: 背景と見分ける線には `--border-strong` を使う。Dark の Visualモードでは `--border-subtle` がスラブの背景と同じ色になる（`DD-MD-003`）。
 - **図の表示枠**: `justify-content` は `flex-start` のままにし、中身は左右の `margin: auto` で中央に置く。`center` に戻すと、表示枠より広い図の左側がスクロールで見えなくなる（`DD-DIAG-032`）。
-- **クラス名の出どころ**: `lucivo-math`、`front-matter`、`fm-*`、`edge-curve-btn`、`exhibition-slab-split`、`is-stacked` などは `app.js` が生成・付与するクラス名で、HTML ファイルには現れない。
+- **クラス名の出どころ**: `lucivo-math`、`front-matter`、`fm-*`、`edge-curve-btn`、`exhibition-slab-split`、`is-stacked`、`vs-*` などは `app.js` が生成・付与するクラス名で、HTML ファイルには現れない。
+- **雛形の値の正**: 雛形（`.vs-*`）の寸法・色は、デザイン仕様（[DTP/features/visual-templates.md](../../DTP/features/visual-templates.md)）を正とする。値を変えるときは、先にデザイン仕様を直す。
+- **コンテナクエリの基準**: `.exhibition-wrap` は `container-type: inline-size` のコンテナで、雛形の `@container` はその幅（版面の幅）で判定する。`.exhibition-wrap` の幅を中身に合わせる指定（`width: max-content` など）にすると、コンテナの大きさが決まらなくなる（`DD-VTPL-022`）。
