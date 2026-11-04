@@ -8,7 +8,7 @@ tags: ["Lucivo", "テスト仕様", "Markdown"]
 
 すべての TC は、`index.html` を `file://` で開き、`sample.md` を読み込んでから実施する。確認方法が「自動」の TC は [tests/e2e.cjs](../../tests/e2e.cjs) で確認する。
 
-「本文モード」は次の 4 通りとする: 通常モード Light / Dark、Visual Stage（Pastel Shapes）Light / Dark。Visual Stage の本文の表示はスタイルによらず共通（DD-MD-001）のため、スタイルは 1 つで代表する。
+「本文モード」は次の 4 通りとする: 高速モード Light / Dark、Visualモード（Pastel Shapes）Light / Dark。Visualモードの本文の表示はスタイルによらず共通（DD-MD-001）のため、スタイルは 1 つで代表する。
 
 「背景と見分けられる」は、要素の色（文字・線・塗り）が、その要素の背後にある最も近い不透明な背景色と異なることをいう。
 

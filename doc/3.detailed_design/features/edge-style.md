@@ -6,7 +6,7 @@ tags: ["Lucivo", "詳細設計", "Mermaid", "矢印"]
 
 # 図ごとの矢印の形状（edge-style）
 
-対応する要求: `FR-012`, `FR-004`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.8
+対応する要求: `FR-012`, `FR-004`（[SRS.md](../../SRS.md) および [SRS/features/edge-style.md](../../SRS/features/edge-style.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.8
 
 ## 1. 設計
 

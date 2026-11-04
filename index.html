@@ -49,18 +49,23 @@
 
     <!-- モード切り替え -->
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <!-- ビューモード (Split / Canvas / Code) -->
       <div class="pill-container shrink-0">
         <button type="button" data-view-mode="split" class="pill-btn view-mode-btn">Split</button>
         <button type="button" data-view-mode="canvas" class="pill-btn view-mode-btn">Canvas</button>
         <button type="button" data-view-mode="editor" class="pill-btn view-mode-btn">Code</button>
       </div>
 
-      <button type="button" id="btn-visual-mode" class="pill-btn stage-mode-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-xs">
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-        </svg>
-        <span>Visual Stage</span>
-      </button>
+      <!-- 描画モード (高速モード / Visualモード) -->
+      <div class="pill-container shrink-0">
+        <button type="button" id="btn-mode-fast" data-stage-mode="fast" class="pill-btn stage-mode-btn is-active">高速モード</button>
+        <button type="button" id="btn-visual-mode" data-stage-mode="visual" class="pill-btn stage-mode-btn flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          <span>Visualモード</span>
+        </button>
+      </div>
     </div>
 
     <!-- 右側ツール -->
