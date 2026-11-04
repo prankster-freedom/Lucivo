@@ -1255,17 +1255,21 @@ function buildVisualStageHtml(cleanHtml) {
     h1.remove();
   }
 
+  // 要素も文字もないスラブ（h1 の直後に h2 が続く文書で、h1 を除いた後に残る改行だけの部分）は出さない
   const slabs = [];
   let currentNodes = [];
+  const pushSlab = nodes => {
+    if (nodes.some(n => n.nodeType === 1 || n.textContent.trim())) slabs.push(nodes);
+  };
   Array.from(temp.childNodes).forEach(node => {
     if (node.nodeType === 1 && node.tagName === 'H2') {
-      if (currentNodes.length > 0) slabs.push(currentNodes);
+      pushSlab(currentNodes);
       currentNodes = [node];
     } else {
       currentNodes.push(node);
     }
   });
-  if (currentNodes.length > 0) slabs.push(currentNodes);
+  pushSlab(currentNodes);
 
   let slabsHtml = '';
   let sectionCounter = 0;
