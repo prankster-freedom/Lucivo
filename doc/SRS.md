@@ -148,6 +148,7 @@ else 描画モード切替 (高速モード / Visualモード)
   User -> App: ヘッダーセグメントから「高速モード」または「Visualモード」選択
   App -> App: 各種ノード・エッジの装飾適用 (FR-003: diagram-rendering, FR-003: markdown-typography)
   App -> App: 条件合致スラブの自動 2 段組みレイアウト適用 (FR-015: diagram-rendering)
+  App -> App: 記述パターン別の雛形の適用 (FR-016: visual-templates)
   App --> User: 高品質インフォグラフィックまたはクリーン仕様書表示
 else 図ごとの矢印形状変更
   User -> App: フローチャートの矢印形状（直角/曲線/直線）選択
@@ -195,6 +196,7 @@ end
 | FR-013 | Markdown の保存            | `file-loading`                              | 「保存」ボタンでエディタの内容を Markdown ファイルとしてダウンロードする                                         | [file-loading.md](SRS/features/file-loading.md#fr-013-markdown-の保存)            |
 | FR-014 | 読み込み直後の読み取り専用 | `file-loading`                              | ファイルを読み込んだ直後はエディタを読み取り専用にし、「編集」ボタンで解除する                                   | [file-loading.md](SRS/features/file-loading.md#fr-014-読み込み直後の読み取り専用) |
 | FR-015 | Visualモードの自動 2 段組みレイアウト | `diagram-rendering`              | Visualモードのスラブに本文と 1 つの Mermaid 図が含まれ、図が収まる場合は左右 2 段組みで表示する                  | [diagram-rendering.md](SRS/features/diagram-rendering.md#fr-015-visualモードの自動-2-段組みレイアウト) |
+| FR-016 | Visualモードの記述パターン別の雛形 | `visual-templates`                  | Visualモードのスラブの記述パターン（短い段落、箇条書き、番号付きリスト、引用など）に応じて、リード・要点カード・手順・ステートメントなどの雛形で表示する | [visual-templates.md](SRS/features/visual-templates.md#fr-016-visualモードの記述パターン別の雛形) |
 ---
 
 ## 5. 非機能要求 (NFR)
