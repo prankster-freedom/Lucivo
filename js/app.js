@@ -1243,6 +1243,69 @@ function createDiagramCard(index, svgHtml, isRendering, isVisual, curve = null) 
 /* ==========================================================================
    Visual Stage 展示レイアウト構築
    ========================================================================== */
+// 記述パターン別の雛形の判定（FR-016, DD-VTPL-001）。els: スラブの本文要素（h2・フロントマター・図を除く）。
+// タグ名と文字数だけで判定し、計算後のスタイルは使わない（TC-PERF-002）。順序は DTP-VTPL-001 の表のとおり
+const TEMPLATE_LIMITS = { leadChars: 160, itemChars: 100, quoteChars: 240, points: [2, 6], steps: [2, 8] };
+
+function detectSlabTemplate(els, slotCount) {
+  if (slotCount > 0 || els.length === 0) return 'standard';
+  const textLen = el => el.textContent.trim().length;
+  const tags = els.map(el => el.tagName);
+
+  const leadLen = els.reduce((sum, el) => sum + textLen(el), 0);
+  if (tags.every(t => t === 'P') && els.length <= 2 && leadLen > 0 && leadLen <= TEMPLATE_LIMITS.leadChars) return 'lead';
+
+  const list = els[els.length - 1];
+  const hasIntro = els.length === 2 && tags[0] === 'P';
+  if ((els.length === 1 || hasIntro) && (list.tagName === 'UL' || list.tagName === 'OL')) {
+    const items = Array.from(list.children);
+    const plain = items.every(li => !li.querySelector('ul, ol, pre, table, blockquote, input') && textLen(li) <= TEMPLATE_LIMITS.itemChars);
+    const [min, max] = list.tagName === 'UL' ? TEMPLATE_LIMITS.points : TEMPLATE_LIMITS.steps;
+    if (plain && items.length >= min && items.length <= max) return list.tagName === 'UL' ? 'points' : 'steps';
+  }
+
+  if (els.length === 1 && tags[0] === 'BLOCKQUOTE') {
+    const paras = Array.from(els[0].children);
+    if (paras.length >= 1 && paras.length <= 3 && paras.every(p => p.tagName === 'P') && textLen(els[0]) <= TEMPLATE_LIMITS.quoteChars) return 'quote';
+  }
+  return 'standard';
+}
+
+// 雛形に合わせて本文要素を組み替える（DD-VTPL-010〜013）。els はスラブの DOM の中の要素で、直接書き換える
+function applySlabTemplate(template, els) {
+  const last = els[els.length - 1];
+  if (template === 'lead') {
+    const lead = document.createElement('div');
+    lead.className = 'vs-lead';
+    els[0].before(lead);
+    els.forEach(el => lead.appendChild(el));
+  } else if (template === 'points') {
+    // 列の数は項目の数から決め、最後の行に 1 枚だけ残る端数を作らない（DTP-VTPL-030, RGH-902）
+    const count = last.children.length;
+    last.classList.add('vs-points');
+    last.style.setProperty('--vs-cols', String(count === 4 ? 2 : Math.min(count, 3)));
+    last.style.setProperty('--vs-cols-wide', String(count === 4 ? 4 : Math.min(count, 3)));
+    // 「**題**: 説明」の項目は、太字を題として切り出し、区切りの : を消す（DTP-VTPL-030）
+    Array.from(last.children).forEach(li => {
+      const head = li.firstChild;
+      const rest = head && head.nextSibling;
+      if (head && head.nodeName === 'STRONG' && rest && rest.nodeType === 3 && /^\s*[:：]/.test(rest.textContent)) {
+        head.classList.add('vs-point-title');
+        rest.textContent = rest.textContent.replace(/^\s*[:：]\s*/, '');
+      }
+    });
+  } else if (template === 'steps') {
+    const count = last.children.length;
+    last.classList.add('vs-steps');
+    if (count > 4) last.classList.add('is-vertical');
+    last.style.setProperty('--vs-n', String(count));
+  } else if (template === 'quote') {
+    last.classList.add('vs-quote');
+    const cite = last.lastElementChild;
+    if (last.children.length > 1 && /^\s*(—|―|--)/.test(cite.textContent)) cite.classList.add('vs-quote-cite');
+  }
+}
+
 function buildVisualStageHtml(cleanHtml) {
   const temp = document.createElement('div');
   temp.innerHTML = cleanHtml;
@@ -1255,7 +1318,7 @@ function buildVisualStageHtml(cleanHtml) {
     h1.remove();
   }
 
-  // 要素も文字もないスラブ（h1 の直後に h2 が続く文書で、h1 を除いた後に残る改行だけの部分）は出さない
+  // 要素も文字もないスラブ（h1 の直後に h2 が続く文書で、h1 を除いた後に残る改行だけの部分）は出さない（DD-VTPL-002）
   const slabs = [];
   let currentNodes = [];
   const pushSlab = nodes => {
@@ -1292,9 +1355,11 @@ function buildVisualStageHtml(cleanHtml) {
       const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
       const proseHtml = proseEls.map(el => el.outerHTML).join('');
       const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
-      slabsHtml += `<section class="exhibition-slab exhibition-slab-split">${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div></section>`;
+      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split">${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div></section>`;
     } else {
-      slabsHtml += `<section class="exhibition-slab">${wrapper.innerHTML}</section>`;
+      const template = detectSlabTemplate(proseEls, slots.length);
+      applySlabTemplate(template, proseEls);
+      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}">${wrapper.innerHTML}</section>`;
     }
   });
 
@@ -1302,19 +1367,15 @@ function buildVisualStageHtml(cleanHtml) {
   // &lt;img …&gt; などが HTML として解釈される（NFR-003）
   const heroHtml = heroTitle ? `
       <div class="exhibition-hero">
-        <div class="four-color-bar">
-          <span class="bg-[#E29578]"></span>
-          <span class="bg-[#E6B34B]"></span>
-          <span class="bg-[#A3B4E4]"></span>
-          <span class="bg-[#6DB1B4]"></span>
-        </div>
+        <div class="four-color-bar"><span></span><span></span><span></span><span></span></div>
         <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight leading-tight mt-1" style="color: var(--text-primary);">
           ${escapeHtml(heroTitle)}
         </h1>
       </div>` : '';
 
+  // 雛形・バッジ・4 色バーの配色は、スタイルのクラスが定義する --vs-c1〜4 から取る（DTP-VTPL-070）
   return `
-    <div class="exhibition-wrap">
+    <div class="exhibition-wrap vs-theme-${state.infographicStyle}">
       ${heroHtml}
       ${slabsHtml}
     </div>

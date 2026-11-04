@@ -393,11 +393,13 @@ function inspectMarkdown(isVisual) {
     return 'rgb(255, 255, 255)';
   };
   const px = v => parseFloat(v);
-  const body = q('p');
+  // Visual Stage の段落・リストは、雛形（FR-016）を適用しない標準型の章で調べる（雛形の章は見た目を変えるため）
+  const std = isVisual ? '.vs-tpl-standard ' : '';
+  const body = q(`${std}h4 ~ p`);
   const h3 = q('h3'), h4 = q('h4');
-  const uls = [q('ul'), q('ul ul'), q('ul ul ul')];
-  const ol = q('ol');
-  const task = Array.from(root.querySelectorAll('li')).find(li => li.querySelector(':scope > input[type="checkbox"]'));
+  const uls = [q(`${std}ul`), q(`${std}ul ul`), q(`${std}ul ul ul`)];
+  const ol = q(`${std}ol`);
+  const task = Array.from(root.querySelectorAll(`${std}li`)).find(li => li.querySelector(':scope > input[type="checkbox"]'));
   const link = q('a');
   const inline = Array.from(root.querySelectorAll('code')).find(c => !c.closest('pre'));
   const pre = q('pre'), preCode = q('pre code');
@@ -414,7 +416,7 @@ function inspectMarkdown(isVisual) {
     })(),
     list: (() => {
       const types = uls.map(u => u && cs(u).listStyleType);
-      const li = [q('ul > li'), q('ul ul > li'), q('ul ul ul > li')];
+      const li = [q(`${std}ul > li`), q(`${std}ul ul > li`), q(`${std}ul ul ul > li`)];
       const indented = li.every(Boolean) && li[0].getBoundingClientRect().left < li[1].getBoundingClientRect().left && li[1].getBoundingClientRect().left < li[2].getBoundingClientRect().left;
       const olType = ol && cs(ol).listStyleType;
       const taskType = task && cs(task).listStyleType;
@@ -996,6 +998,296 @@ async function testFrontMatter(browser) {
   await page.close();
 }
 
+// 記述パターン別の雛形（FR-016）: 章ごとの雛形を調べる。ページ内で実行する。
+// 章の名前は h2 の文字から「STAGE nn」と「n. 」を除いたもの。最初の h2 より前は「(冒頭)」
+function inspectSlabTemplates() {
+  const root = document.getElementById('visual-stage-container');
+  return Array.from(root.querySelectorAll('.exhibition-slab')).map(s => {
+    const h2 = s.querySelector('h2');
+    return {
+      title: h2 ? h2.textContent.replace(/^STAGE \d+/, '') : '(冒頭)',
+      tpl: Array.from(s.classList).filter(c => c.startsWith('vs-tpl-')).map(c => c.slice(7)),
+      vertical: !!s.querySelector('.vs-steps.is-vertical'),
+      empty: s.children.length === 0
+    };
+  });
+}
+
+// 章ごとの文字とリンク・装飾の数（TC-VTPL-003）。高速モードは h2 で区切って同じ形にまとめる
+function inspectSlabContent(isVisual) {
+  const norm = t => t.replace(/[\s:：]/g, '');
+  const tags = ['a', 'code', 'strong', 'em', 'del'];
+  const summarize = (title, nodes) => {
+    const box = document.createElement('div');
+    nodes.forEach(n => box.appendChild(n.cloneNode(true)));
+    box.querySelectorAll('h2, .front-matter').forEach(el => el.remove());
+    return { title, text: norm(box.textContent), counts: tags.map(t => box.querySelectorAll(t).length).join(',') };
+  };
+  const out = [];
+  if (isVisual) {
+    document.querySelectorAll('#visual-stage-container .exhibition-slab').forEach(s => {
+      const h2 = s.querySelector('h2');
+      out.push(summarize(h2 ? h2.textContent.replace(/^STAGE \d+/, '') : '(冒頭)', [s]));
+    });
+  } else {
+    let title = '(冒頭)', nodes = [];
+    Array.from(document.getElementById('standard-doc-container').children).forEach(el => {
+      if (el.tagName === 'H1') return;
+      if (el.tagName === 'H2') {
+        if (nodes.length) out.push(summarize(title, nodes));
+        title = el.textContent.replace(/^\d+\.\s*/, '');
+        nodes = [];
+      } else {
+        nodes.push(el);
+      }
+    });
+    if (nodes.length) out.push(summarize(title, nodes));
+  }
+  return out;
+}
+
+// 雛形の割り付け・配色・視認性を調べる（TC-VTPL-004〜008）。ページ内で実行する
+function inspectTemplateLayout() {
+  const root = document.getElementById('visual-stage-container');
+  const cs = (el, pseudo) => getComputedStyle(el, pseudo || null);
+  const slab = title => Array.from(root.querySelectorAll('.exhibition-slab')).find(s => {
+    const h2 = s.querySelector('h2');
+    return title === '(冒頭)' ? !h2 : h2 && h2.textContent.replace(/^STAGE \d+/, '') === title;
+  });
+  // rgb() / rgba() / color(srgb …) を [r, g, b, a]（0〜255, 0〜1）にする
+  const parse = c => {
+    let m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(c);
+    if (m) return [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]];
+    m = /color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+))?\)/.exec(c);
+    if (m) return [m[1] * 255, m[2] * 255, m[3] * 255, m[4] === undefined ? 1 : +m[4]];
+    return null;
+  };
+  const over = (top, under) => top && under ? [0, 1, 2].map(i => top[i] * top[3] + under[i] * (1 - top[3])).concat(1) : null;
+  const lum = c => {
+    const [r, g, b] = c.slice(0, 3).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrast = (a, b) => a && b ? +((Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05)).toFixed(2) : 0;
+  const same = (a, b) => a && b && a.slice(0, 3).every((v, i) => Math.abs(v - b[i]) < 2);
+  const rows = items => {
+    const tops = [];
+    items.forEach(el => {
+      const t = Math.round(el.getBoundingClientRect().top);
+      const row = tops.find(r => Math.abs(r.top - t) < 4);
+      if (row) row.n++; else tops.push({ top: t, n: 1 });
+    });
+    return tops.map(r => r.n);
+  };
+
+  const wrap = root.querySelector('.exhibition-wrap');
+  const slabBg = s => parse(cs(s).backgroundColor);
+  const s26 = slab('要点のカード'), s02 = slab('文字の装飾'), s27 = slab('手順'), s28 = slab('ステートメント'), lead = slab('(冒頭)');
+  const cards = s26 ? Array.from(s26.querySelectorAll('.vs-points > li')) : [];
+  const steps = s27 ? Array.from(s27.querySelectorAll('.vs-steps > li')) : [];
+  const bq = s28 && s28.querySelector('blockquote.vs-quote');
+  const cite = bq && bq.querySelector('.vs-quote-cite');
+  const leadBox = lead && lead.querySelector('.vs-lead');
+  const bodyP = root.querySelector('.vs-tpl-standard h4 ~ p');
+  const cardBg = li => over(parse(cs(li).backgroundColor), slabBg(li.closest('.exhibition-slab')));
+  return {
+    points: {
+      rows26: rows(cards),
+      rows02: s02 ? rows(Array.from(s02.querySelectorAll('.vs-points > li'))) : [],
+      titles: cards.map(li => (li.querySelector('.vs-point-title') || {}).textContent || null),
+      colonFree: cards.every(li => !/^[\s:：]/.test(li.textContent.replace((li.querySelector('.vs-point-title') || {}).textContent || '', ''))),
+      bands: cards.map(li => cs(li, '::after').backgroundColor)
+    },
+    steps: {
+      tops: steps.map(li => Math.round(li.getBoundingClientRect().top)),
+      lefts: steps.map(li => Math.round(li.getBoundingClientRect().left)),
+      fills: steps.map(li => cs(li, '::before').backgroundColor),
+      line: s27 ? { w: parseFloat(cs(s27.querySelector('.vs-steps'), '::before').width), h: parseFloat(cs(s27.querySelector('.vs-steps'), '::before').height) } : null
+    },
+    quote: bq && {
+      borderLeft: parseFloat(cs(bq).borderLeftWidth),
+      align: cs(bq).textAlign,
+      size: parseFloat(cs(bq).fontSize),
+      body: parseFloat(cs(bodyP).fontSize),
+      mark: cs(bq, '::before').content,
+      citeSmaller: !!cite && parseFloat(cs(cite).fontSize) < parseFloat(cs(bq.querySelector('p')).fontSize)
+    },
+    lead: leadBox && { size: parseFloat(cs(leadBox).fontSize), body: parseFloat(cs(bodyP).fontSize), bar: cs(leadBox, '::before').width },
+    colors: {
+      vars: [1, 2, 3, 4].map(i => cs(wrap).getPropertyValue(`--vs-c${i}`).trim().toUpperCase()),
+      badge: parse(cs(root.querySelector('.exhibition-num-badge')).backgroundColor),
+      bar: Array.from(root.querySelectorAll('.four-color-bar span')).map(sp => parse(cs(sp).backgroundColor)),
+      firstBand: cards[0] ? parse(cs(cards[0], '::after').backgroundColor) : null
+    },
+    legibility: cards.length && steps.length && bq && leadBox ? {
+      cardNum: cards.map(li => contrast(over(parse(cs(li, '::before').color), cardBg(li)), cardBg(li))),
+      stepNum: steps.map(li => contrast(parse(cs(li, '::before').color), parse(cs(li, '::before').backgroundColor))),
+      cite: cite ? contrast(parse(cs(cite).color), slabBg(s28)) : 0,
+      leadText: contrast(parse(cs(leadBox).color), slabBg(lead)),
+      cardTitle: cards.map(li => { const t = li.querySelector('.vs-point-title'); return t ? contrast(parse(cs(t).color), cardBg(li)) : 0; }),
+      quoteText: contrast(parse(cs(bq).color), slabBg(s28)),
+      cardBgDiffers: !same(cardBg(cards[0]), slabBg(s26)),
+      lineDiffers: !same(over(parse(cs(s27.querySelector('.vs-steps'), '::before').backgroundColor), slabBg(s27)), slabBg(s27))
+    } : null
+  };
+}
+
+// 判定の境界を確かめる文書（TC-VTPL-002）。h1 の直後に h2 を続け、空のスラブが出ないことも確かめる
+function buildBoundaryMarkdown() {
+  const ja = n => 'あ'.repeat(n);
+  const list = (n, mark) => Array.from({ length: n }, (_, i) => `${mark === 'ol' ? `${i + 1}.` : '-'} 項目${i + 1}`).join('\n');
+  return [
+    '# 判定の境界',
+    `## L160\n\n${ja(160)}`,
+    `## L161\n\n${ja(161)}`,
+    `## P3\n\n${ja(10)}\n\n${ja(10)}\n\n${ja(10)}`,
+    `## U1\n\n${list(1)}`,
+    `## U6\n\n${list(6)}`,
+    `## U7\n\n${list(7)}`,
+    '## UNEST\n\n- 項目\n  - 入れ子\n- 項目',
+    '## UTASK\n\n- [x] 完了\n- [ ] 未完了',
+    `## U101\n\n- ${ja(101)}\n- 項目`,
+    `## O8\n\n${list(8, 'ol')}`,
+    `## O9\n\n${list(9, 'ol')}`,
+    '## Q3\n\n> 一\n>\n> 二\n>\n> 三',
+    '## Q4\n\n> 一\n>\n> 二\n>\n> 三\n>\n> 四',
+    `## Q241\n\n> ${ja(241)}`,
+    `## P2U\n\n段落\n\n段落\n\n${list(2)}`,
+    '## H3\n\n### 小見出し\n\n段落'
+  ].join('\n\n');
+}
+
+const VTPL_COLORS = {
+  shapes: ['#E29578', '#EBB453', '#6CC4C9', '#9CCB86'],
+  cards: ['#E29578', '#E6B34B', '#A3B4E4', '#6DB1B4'],
+  circles: ['#D45D53', '#7EA6BF', '#ECB674', '#7D9763'],
+  editorial: ['#D68C8C', '#8FA876', '#C9A66B', '#8FA3B8']
+};
+
+async function testVisualTemplates(browser) {
+  const page = await openApp(browser);
+  await waitRendered(page);
+  await loadSample(page);
+  // 読み込み後もファイルメニューが開いたままで、スタイルバーのクリックを遮るため閉じる
+  await page.keyboard.press('Escape');
+
+  // TC-VTPL-009 高速モードには雛形のクラスがない
+  const stdVs = await page.evaluate(() => Array.from(document.querySelectorAll('#standard-doc-container *'))
+    .filter(el => Array.from(el.classList).some(c => c.startsWith('vs-'))).length);
+  record('TC-VTPL-009', stdVs === 0, `vs- クラス ${stdVs} 個`);
+  const stdContent = await page.evaluate(inspectSlabContent, false);
+
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+
+  // TC-VTPL-001 サンプルの雛形の判定
+  const expected = { '(冒頭)': 'lead', '文字の装飾': 'points', '要点のカード': 'points', '手順': 'steps', 'ステートメント': 'quote',
+    'フローチャート': 'split', '状態遷移図': 'split', '大きなフローチャート': 'split', '大きな状態遷移図': 'split' };
+  const sampleTpl = await page.evaluate(inspectSlabTemplates);
+  const tplWrong = sampleTpl.filter(s => s.tpl.length !== 1 || s.tpl[0] !== (expected[s.title] || 'standard'));
+  record('TC-VTPL-001', sampleTpl.length >= 29 && tplWrong.length === 0, tplWrong.length ? JSON.stringify(tplWrong) : `${sampleTpl.length} 章`);
+
+  // TC-VTPL-003 内容の保持（雛形のある章）
+  const visContent = await page.evaluate(inspectSlabContent, true);
+  const contentRows = ['(冒頭)', '文字の装飾', '要点のカード', '手順', 'ステートメント'].map(title => {
+    const a = stdContent.find(r => r.title === title), b = visContent.find(r => r.title === title);
+    return { title, ok: !!(a && b && a.text === b.text && a.counts === b.counts), std: a && a.counts, vis: b && b.counts };
+  });
+  record('TC-VTPL-003', contentRows.every(r => r.ok), JSON.stringify(contentRows));
+
+  // TC-VTPL-010 Visualモードの再描画で計算後のスタイルを調べない
+  const timing = await page.evaluate(() => {
+    let computed = 0;
+    const orig = window.getComputedStyle;
+    window.getComputedStyle = function (...args) { computed++; return orig.apply(this, args); };
+    const t0 = performance.now();
+    renderApp();
+    const ms = performance.now() - t0;
+    window.getComputedStyle = orig;
+    return { getComputedStyleCalls: computed, renderMs: +ms.toFixed(1) };
+  });
+  record('TC-VTPL-010', timing.getComputedStyleCalls === 0, JSON.stringify(timing));
+  await waitRendered(page);
+
+  // TC-VTPL-004〜006 の割り付け（Split と Canvas）
+  const split = await page.evaluate(inspectTemplateLayout);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(300);
+  const canvas = await page.evaluate(inspectTemplateLayout);
+  await page.setViewportSize({ width: 480, height: 16000 });
+  await page.waitForTimeout(300);
+  const narrow = await page.evaluate(inspectTemplateLayout);
+  await page.setViewportSize({ width: 1300, height: 16000 });
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  await page.waitForTimeout(300);
+
+  const allOnes = r => r.length > 0 && r.every(n => n === 1);
+  const distinctNeighbors = list => list.length > 1 && list.every((c, i) => i === 0 || c !== list[i - 1]);
+  const p = canvas.points;
+  const pointsOk = JSON.stringify(canvas.points.rows26) === '[3]' && JSON.stringify(split.points.rows26) === '[3]'
+    && JSON.stringify(canvas.points.rows02) === '[4]' && JSON.stringify(split.points.rows02) === '[2,2]'
+    && allOnes(narrow.points.rows26) && narrow.points.rows26.length === 3 && allOnes(narrow.points.rows02) && narrow.points.rows02.length === 4
+    && p.titles.every(Boolean) && p.colonFree && distinctNeighbors(p.bands);
+  record('TC-VTPL-004', pointsOk, JSON.stringify({ split: split.points, canvas: canvas.points, narrow: { rows26: narrow.points.rows26, rows02: narrow.points.rows02 } }));
+
+  const s = canvas.steps, n = narrow.steps;
+  const horizontal = s.tops.length === 4 && s.tops.every(t => t === s.tops[0]) && s.lefts.every((l, i) => i === 0 || l > s.lefts[i - 1]) && s.line && s.line.w > 100 && s.line.h === 2;
+  const vertical = n.lefts.length === 4 && n.lefts.every(l => l === n.lefts[0]) && n.tops.every((t, i) => i === 0 || t > n.tops[i - 1]) && n.line && n.line.w === 2;
+  record('TC-VTPL-005', horizontal && vertical && distinctNeighbors(s.fills), JSON.stringify({ canvas: s, narrow: n }));
+
+  const q = canvas.quote, l = canvas.lead;
+  record('TC-VTPL-006', !!(q && l) && q.borderLeft === 0 && q.align === 'center' && q.size > q.body && /“/.test(q.mark) && q.citeSmaller
+    && l.size > l.body && l.bar === '4px', JSON.stringify({ quote: q, lead: l }));
+
+  // TC-VTPL-007・008・011 スタイル別の配色、視認性、画像
+  const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const near = (a, hex) => !!a && hexRgb(hex).every((v, i) => Math.abs(v - a[i]) < 2);
+  const colorRows = [], legRows = [];
+  for (const appearance of ['light', 'dark']) {
+    for (const style of VISUAL_STYLES) {
+      await setMode(page, { style, appearance });
+      const r = await page.evaluate(inspectTemplateLayout);
+      const want = VTPL_COLORS[style];
+      if (appearance === 'light') {
+        const c = r.colors;
+        colorRows.push({ style, ok: c.vars.join() === want.join() && near(c.badge, want[0]) && c.bar.length === 4 && c.bar.every((b, i) => near(b, want[i])) && near(c.firstBand, want[0]), vars: c.vars });
+      }
+      const g = r.legibility;
+      const ok = !!g && g.cardNum.every(v => v >= 3) && g.stepNum.every(v => v >= 3) && g.cite >= 3 && g.leadText >= 4.5
+        && g.cardTitle.every(v => v >= 4.5) && g.quoteText >= 4.5 && g.cardBgDiffers && g.lineDiffers;
+      legRows.push({ tag: `${style}-${appearance}`, ok, ...g });
+      const shots = { lead: '(冒頭)', s02: '文字の装飾', s26: '要点のカード', s27: '手順', s28: 'ステートメント' };
+      for (const [key, title] of Object.entries(shots)) {
+        const handle = await page.evaluateHandle(t => Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab')).find(sl => {
+          const h2 = sl.querySelector('h2');
+          return t === '(冒頭)' ? !h2 : h2 && h2.textContent.replace(/^STAGE \d+/, '') === t;
+        }), title);
+        const el = handle.asElement();
+        if (el) await el.screenshot({ path: path.join(SHOT_DIR, `vtpl-${style}-${appearance}-${key}.png`) });
+      }
+    }
+  }
+  record('TC-VTPL-007', colorRows.length === 4 && colorRows.every(r => r.ok), JSON.stringify(colorRows));
+  const legFailed = legRows.filter(r => !r.ok);
+  record('TC-VTPL-008', legRows.length === 8 && legFailed.length === 0, JSON.stringify(legFailed.length ? legFailed : legRows.map(r => ({ tag: r.tag, cardNum: r.cardNum, stepNum: r.stepNum, cite: r.cite }))));
+
+  // TC-VTPL-002 判定の境界（スタイル・外観は最後のまま）
+  await page.evaluate(md => {
+    document.getElementById('markdown-editor').value = md;
+    lastLoadedMarkdown = md;
+    renderApp();
+  }, buildBoundaryMarkdown());
+  await waitRendered(page);
+  const bTpl = await page.evaluate(inspectSlabTemplates);
+  const bExpected = { L160: 'lead', L161: 'standard', P3: 'standard', U1: 'standard', U6: 'points', U7: 'standard', UNEST: 'standard', UTASK: 'standard',
+    U101: 'standard', O8: 'steps', O9: 'standard', Q3: 'quote', Q4: 'standard', Q241: 'standard', P2U: 'standard', H3: 'standard' };
+  const bWrong = bTpl.filter(r => r.tpl.length !== 1 || r.tpl[0] !== bExpected[r.title] || r.empty);
+  const o8 = bTpl.find(r => r.title === 'O8');
+  record('TC-VTPL-002', bTpl.length === Object.keys(bExpected).length && bWrong.length === 0 && !!o8 && o8.vertical,
+    bWrong.length ? JSON.stringify(bWrong) : `${bTpl.length} 章`);
+
+  if (page.consoleErrors.length) record('TC-VTPL-CONSOLE', false, JSON.stringify(page.consoleErrors));
+  await page.close();
+}
+
 (async () => {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await chromium.launch();
@@ -1007,6 +1299,7 @@ async function testFrontMatter(browser) {
     await testFrontMatter(browser);
     await testEdgeStyle(browser);
     await testVisualStageQuality(browser);
+    await testVisualTemplates(browser);
     await testStartupAndCache(browser);
   } catch (e) {
     record('RUNTIME', false, e.stack);
