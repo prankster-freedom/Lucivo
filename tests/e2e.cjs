@@ -52,13 +52,13 @@ async function loadSample(page) {
   return dialog;
 }
 
-// 表示モードの切替（Visual Stage はスタイルバーのボタン、通常モードは Visual Stage ボタンで戻す）
+// 表示モードの切替（Visual Stage はスタイルバーのボタン、通常モードは高速モードボタンで戻す）
 async function setMode(page, { style, appearance }) {
   const current = await page.evaluate(() => state.appearance);
   if (current !== appearance) await page.click('#btn-theme-toggle');
   const isVisual = await page.evaluate(() => state.isVisualMode);
   if (style === 'std') {
-    if (isVisual) await page.click('#btn-visual-mode');
+    if (isVisual) await page.click('#btn-mode-fast');
   } else {
     await page.click(`.info-style-btn[data-info-style="${style}"]`);
   }
@@ -70,11 +70,17 @@ async function testFileLoading(browser) {
   await waitRendered(page);
 
   // TC-FILE-001 起動直後の初期表示
-  const init = await page.evaluate(() => ({
-    editor: document.getElementById('markdown-editor').value,
-    guide: !!document.querySelector('#standard-doc-container .empty-guide')
-  }));
-  record('TC-FILE-001', init.editor === '' && init.guide, JSON.stringify(init));
+  const init = await page.evaluate(() => {
+    const guideEl = document.querySelector('#standard-doc-container .empty-guide');
+    return {
+      editor: document.getElementById('markdown-editor').value,
+      guide: !!guideEl,
+      hasFastModeDesc: guideEl ? guideEl.textContent.includes('高速モード') : false,
+      hasVisualModeDesc: guideEl ? guideEl.textContent.includes('Visualモード') : false,
+      fastBtnActive: document.getElementById('btn-mode-fast') ? document.getElementById('btn-mode-fast').classList.contains('is-active') : false
+    };
+  });
+  record('TC-FILE-001', init.editor === '' && init.guide && init.hasFastModeDesc && init.hasVisualModeDesc && init.fastBtnActive, JSON.stringify(init));
 
   // TC-FILE-013 起動直後は編集でき、読み込む前の保存名は untitled.md
   const startEditable = await page.evaluate(() => !document.getElementById('markdown-editor').readOnly && document.getElementById('editor-lock').classList.contains('hidden'));
@@ -181,9 +187,11 @@ async function testDiagramRendering(browser) {
   const first = await page.evaluate(() => ({
     svgs: document.querySelectorAll('#visual-stage-container [data-stage-index] svg').length,
     pending: document.querySelectorAll('#visual-stage-container .animate-pulse').length,
-    hiddenSide: document.getElementById('standard-doc-container').children.length
+    hiddenSide: document.getElementById('standard-doc-container').children.length,
+    visualActive: document.getElementById('btn-visual-mode').classList.contains('is-active'),
+    fastActive: document.getElementById('btn-mode-fast').classList.contains('is-active')
   }));
-  record('TC-DIAG-001', first.svgs === expected && first.pending === 0 && first.hiddenSide === 0, JSON.stringify({ expected, ...first }));
+  record('TC-DIAG-001', first.svgs === expected && first.pending === 0 && first.hiddenSide === 0 && first.visualActive && !first.fastActive, JSON.stringify({ expected, ...first }));
 
   // TC-DIAG-002 描画中のモード切替
   await page.click('#btn-visual-mode');

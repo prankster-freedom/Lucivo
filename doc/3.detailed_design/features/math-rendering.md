@@ -6,7 +6,7 @@ tags: ["Lucivo", "詳細設計", "数式", "KaTeX"]
 
 # 数式の描画（math-rendering）
 
-対応する要求: `FR-010`, `NFR-003`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.5
+対応する要求: `FR-010`, `NFR-003`（[SRS.md](../../SRS.md) および [SRS/features/math-rendering.md](../../SRS/features/math-rendering.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.5
 
 図の中の数式は Mermaid が描画する。後処理は [diagram-rendering.md](diagram-rendering.md) の DD-DIAG-031 を参照する。
 

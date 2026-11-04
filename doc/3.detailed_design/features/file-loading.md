@@ -6,7 +6,7 @@ tags: ["Lucivo", "詳細設計", "ファイル読み込み"]
 
 # ファイルの読み込み・保存と初期表示（file-loading）
 
-対応する要求: `FR-006`, `FR-007`, `FR-013`, `FR-014`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.1
+対応する要求: `FR-006`, `FR-007`, `FR-013`, `FR-014`（[SRS.md](../../SRS.md) および [SRS/features/file-loading.md](../../SRS/features/file-loading.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.1
 
 ## 1. 画面要素
 
@@ -15,7 +15,7 @@ tags: ["Lucivo", "詳細設計", "ファイル読み込み"]
 | DD-FILE-001 | ファイルメニューボタン（`#btn-file-menu`） | ヘッダーのロゴの右に置く。押すとメニューを開閉する。開閉の状態を `aria-expanded` に反映する                  | `FR-006`     |
 | DD-FILE-002 | ファイルメニュー（`#file-menu`）           | 項目は「Markdown を開く…」（`#menu-open-markdown`）の 1 つ。メニューの外側をクリックするか、Esc キーで閉じる | `FR-006`     |
 | DD-FILE-003 | ファイル選択（`#file-input`）              | 非表示の `<input type="file">`。受け付ける拡張子は `.md` / `.markdown` / `.txt`                              | `FR-006`     |
-| DD-FILE-004 | 初期案内（`EMPTY_GUIDE_HTML`）             | エディタが空（空白だけの場合を含む）のとき、プレビューに表示する。通常モードではプレビューの本文に、Visual Stage では 1 枚のスラブに入れて表示する | `FR-007` |
+| DD-FILE-004 | 初期案内（`EMPTY_GUIDE_HTML`）             | エディタが空（空白だけの場合を含む）のとき、プレビューに表示する。高速モードではプレビューの本文に、Visualモードでは 1 枚のスラブに入れて表示する | `FR-007` |
 | DD-FILE-005 | 保存ボタン（`#btn-save-markdown`）         | ヘッダーのファイルメニューボタンの右に置く。表示は「保存」                                                   | `FR-013`     |
 | DD-FILE-006 | 編集の状態（`#editor-lock`、`#btn-edit-unlock`） | エディタのヘッダーに置く。読み取り専用のときは「読み取り専用」の表示と「編集」ボタンを出し、編集できるときは隠す | `FR-014` |
 
