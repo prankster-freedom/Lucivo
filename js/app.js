@@ -274,9 +274,21 @@ const SEQUENCE_MATH_LIFT = 6;
 
 const EMPTY_GUIDE_HTML = `
 <div class="empty-guide">
-  <p class="empty-guide-title">Markdown を開いてください</p>
-  <p>ヘッダーの「ファイル」メニュー →「Markdown を開く…」で Markdown ファイルを読み込むか、左のエディタに直接入力してください。</p>
-  <p>Markdown と Mermaid の記法の例は、同梱の <code>sample.md</code> にあります。</p>
+  <h3 class="empty-guide-title">Markdown を開いてください</h3>
+  <p class="empty-guide-desc">ヘッダーの「ファイル」メニュー →「Markdown を開く…」からファイルを読み込むか、左のエディタに直接入力してください。同梱の <code>sample.md</code> に各記法や図のサンプルがあります。</p>
+  
+  <div class="empty-guide-modes">
+    <div class="empty-guide-card">
+      <h4>⚡ 高速モード</h4>
+      <p>思考を邪魔しないミリ秒応答の軽快なプレビュー。仕様書の執筆や構造の確認に最適です。</p>
+    </div>
+    <div class="empty-guide-card">
+      <h4>🎨 Visualモード (展示品質)</h4>
+      <p>講演資料や展示ブースの大画面で映えるプロ品質のインフォグラフィックへ瞬時に変換します。</p>
+    </div>
+  </div>
+
+  <p class="empty-guide-footer">💡 画面上部中央の <strong>[ 高速モード | Visualモード ]</strong> セグメントからいつでもワンクリックで切り替えられます。</p>
 </div>`;
 
 const state = {
@@ -1600,18 +1612,30 @@ function setupEventListeners() {
     }
   });
 
+  const btnFast = document.getElementById('btn-mode-fast');
   const btnVisual = document.getElementById('btn-visual-mode');
-  btnVisual.onclick = () => {
-    state.isVisualMode = !state.isVisualMode;
-    if (state.isVisualMode) {
-      btnVisual.classList.add('is-active');
-      showToast('🎨 Visual Stage (インフォグラフィック) を起動');
+
+  function setStageMode(isVisual) {
+    if (state.isVisualMode === isVisual) return;
+    state.isVisualMode = isVisual;
+    if (btnFast) btnFast.classList.toggle('is-active', !isVisual);
+    if (btnVisual) btnVisual.classList.toggle('is-active', isVisual);
+    if (isVisual) {
+      showToast('🎨 Visualモードを起動');
     } else {
-      btnVisual.classList.remove('is-active');
-      showToast('仕様書モードに戻りました');
+      showToast('高速モードに戻りました');
     }
     renderApp();
-  };
+  }
+
+  if (btnFast) {
+    btnFast.onclick = () => setStageMode(false);
+  }
+  if (btnVisual) {
+    btnVisual.onclick = () => {
+      setStageMode(!state.isVisualMode);
+    };
+  }
 
   document.querySelectorAll('.info-style-btn').forEach(btn => {
     btn.onclick = () => {
@@ -1622,7 +1646,8 @@ function setupEventListeners() {
 
       if (!state.isVisualMode) {
         state.isVisualMode = true;
-        btnVisual.classList.add('is-active');
+        if (btnFast) btnFast.classList.remove('is-active');
+        if (btnVisual) btnVisual.classList.add('is-active');
       }
       renderApp();
       showToast(`スタイル適用: ${btn.textContent.trim()}`);

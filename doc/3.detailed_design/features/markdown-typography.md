@@ -6,18 +6,18 @@ tags: ["Lucivo", "詳細設計", "Markdown", "CSS"]
 
 # Markdown 要素の表示（markdown-typography）
 
-対応する要求: `FR-002`, `FR-003`, `FR-009`（[1.SPEC.md](../../1.SPEC.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.4
+対応する要求: `FR-002`, `FR-003`, `FR-009`（[SRS.md](../../SRS.md) および [SRS/features/markdown-typography.md](../../SRS/features/markdown-typography.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.4
 
 ## 1. 適用範囲と色の決め方
 
-| ID        | 項目     | 設計                                                                                                                                                | 対応する要求 |
-| :-------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- | :----------- |
-| DD-MD-001 | 適用範囲 | `style.css` の「Markdown 要素」の節で、`:is(.prose-doc, .exhibition-slab)` の子孫の要素に適用する。通常モードと Visual Stage の本文で同じ定義を使う | `FR-009`     |
+| ID        | 項目     | 設計                                                                                                                                               | 対応する要求 |
+| :-------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------- | :----------- |
+| DD-MD-001 | 適用範囲 | `style.css` の「Markdown 要素」の節で、`:is(.prose-doc, .exhibition-slab)` の子孫の要素に適用する。高速モードと Visualモードの本文で同じ定義を使う | `FR-009`     |
 | DD-MD-002 | 色       | 色は Light / Dark のデザイントークン（`--text-primary`, `--text-secondary`, `--text-muted`, `--panel-sub`, `--border-strong`, `--accent`）から取る。リンクの色はパレット（`--accent`）に連動する | `FR-009` |
-| DD-MD-003 | 線の色   | 引用の左線・水平線・コードの枠など、背景と見分ける必要がある線は `--border-strong` を使う。`--border-subtle` は使わない                             | `FR-009`     |
-| DD-MD-004 | 既存の定義 | 既存の `.prose-doc h1`, `.prose-doc h2`, `.exhibition-slab h2`, 表（`th`, `td`）の定義は変えない。`p` の下余白は、Visual Stage の本文にも同じ値を適用する | `FR-002`, `FR-003` |
+| DD-MD-003 | 線の色   | 引用の左線・水平線・コードの枠など、背景と見分ける必要がある線は `--border-strong` を使う。`--border-subtle` は使わない                            | `FR-009`     |
+| DD-MD-004 | 既存の定義 | 既存の `.prose-doc h1`, `.prose-doc h2`, `.exhibition-slab h2`, 表（`th`, `td`）の定義は変えない。`p` の下余白は、Visualモードの本文にも同じ値を適用する | `FR-002`, `FR-003` |
 
-- **背景（DD-MD-003）**: Dark の Visual Stage では、本文のスラブの背景（`#1E293B`）と `--border-subtle`（`#1E293B`）が同じ色になり、線が見えなくなるため。
+- **背景（DD-MD-003）**: Dark の Visualモードでは、本文のスラブの背景（`#1E293B`）と `--border-subtle`（`#1E293B`）が同じ色になり、線が見えなくなるため。
 
 ## 2. 要素ごとの表示
 
