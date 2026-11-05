@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 24" fill="none">
+  <!-- AST-102 (Stock): Editorial Section Wave Divider -->
+  <path d="M0 12C66.67 2 133.33 22 200 12C266.67 2 333.33 22 400 12" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.35"/>
+  <circle cx="200" cy="12" r="3" fill="currentColor" fill-opacity="0.5"/>
+</svg>
+

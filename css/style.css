@@ -676,7 +676,8 @@ body[data-appearance="dark"] #visual-stage-container {
 }
 
 /* --vs-c1〜4: 雛形・バッジ・4 色バーのアクセント色。スタイルごとに図の配色と同じ調子にする（DTP-003, DTP-VTPL-070）
-   --vs-tone: アクセント色を文字に使うときに混ぜる色（Light は濃紺、Dark は白）。--vs-slab-bg: スラブの背景（手順の丸の輪） */
+   --vs-tone: アクセント色を文字に使うときに混ぜる色（Light は濃紺、Dark は白）。--vs-slab-bg: スラブの背景（手順の丸の輪）
+   --motif-*: assets/motifs/*.svg（AST-005〜008）と同一のベクター定義。Chromium の file://（origin null）では mask-image の外部 SVG 読み込みが CORS で拒否されるため、data URI として保持する（NFR-001, FR-007, DD-VTPL-024） */
 .exhibition-wrap {
   max-width: 62rem;
   margin: 0 auto;
@@ -693,6 +694,10 @@ body[data-appearance="dark"] #visual-stage-container {
   --vs-slab-bg: #FFFFFF;
   --vs-card-bg: #F8FAFC;
   --vs-card-border: #E2E8F0;
+  --motif-hero-prism: url("data:image/svg+xml,%3Csvg id='hero-prism.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Cpolygon points='16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5' stroke='black' stroke-width='2' fill='black' fill-opacity='0.12'/%3E%3Cpolygon points='16,6 25,16 16,26 7,16' stroke='black' stroke-width='1.75' fill='black' fill-opacity='0.28'/%3E%3Ccircle cx='16' cy='16' r='2.75' fill='black'/%3E%3Cline x1='16' y1='2' x2='16' y2='6' stroke='black' stroke-width='1.5'/%3E%3Cline x1='16' y1='26' x2='16' y2='30' stroke='black' stroke-width='1.5'/%3E%3Cline x1='3' y1='9.5' x2='7' y2='16' stroke='black' stroke-width='1.25' stroke-opacity='0.6'/%3E%3Cline x1='29' y1='9.5' x2='25' y2='16' stroke='black' stroke-width='1.25' stroke-opacity='0.6'/%3E%3C/svg%3E");
+  --motif-quote-watermark: url("data:image/svg+xml,%3Csvg id='quote-watermark.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 44' fill='none'%3E%3Ccircle cx='32' cy='22' r='20' stroke='black' stroke-width='1.25' stroke-opacity='0.22' stroke-dasharray='3 3'/%3E%3Ccircle cx='32' cy='22' r='14' stroke='black' stroke-width='1' stroke-opacity='0.15'/%3E%3Cpath d='M27.5 13L19.5 22.5H25.5L22.5 31H15.5L18.5 21.5L23.5 13H27.5Z' fill='black'/%3E%3Cpath d='M44.5 13L36.5 22.5H42.5L39.5 31H32.5L35.5 21.5L40.5 13H44.5Z' fill='black' fill-opacity='0.82'/%3E%3C/svg%3E");
+  --motif-card-ornament: url("data:image/svg+xml,%3Csvg id='card-corner-ornament.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cpath d='M64 0H20L64 44V0Z' fill='black' fill-opacity='0.18'/%3E%3Cpath d='M64 0H38L64 26V0Z' fill='black' fill-opacity='0.26'/%3E%3Cpath d='M12 0L64 52' stroke='black' stroke-width='1.25' stroke-opacity='0.35'/%3E%3Cpath d='M28 0L64 36' stroke='black' stroke-width='1' stroke-opacity='0.25'/%3E%3Ccircle cx='48' cy='16' r='2.2' fill='black' fill-opacity='0.45'/%3E%3C/svg%3E");
+  --motif-step-arrow: url("data:image/svg+xml,%3Csvg id='step-arrow.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M5.5 3.5L10 8L5.5 12.5' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9.5 5L12.5 8L9.5 11' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' stroke-opacity='0.55'/%3E%3C/svg%3E");
 }
 .vs-theme-shapes {
   --vs-c3: #6CC4C9;
@@ -733,10 +738,29 @@ body[data-appearance="dark"] .exhibition-hero {
   background: #1E293B;
   border-color: #334155;
 }
+.exhibition-hero-top {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+.exhibition-hero-emblem {
+  width: 28px;
+  height: 28px;
+  display: inline-block;
+  background: linear-gradient(135deg, var(--vs-c1), var(--vs-c2), var(--vs-c3), var(--vs-c4));
+  -webkit-mask: var(--motif-hero-prism) no-repeat center / contain;
+  mask: var(--motif-hero-prism) no-repeat center / contain;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.exhibition-hero:hover .exhibition-hero-emblem {
+  transform: rotate(12deg) scale(1.08);
+}
 .four-color-bar {
   display: inline-flex;
   gap: 6px;
-  margin: 10px auto 6px;
+  margin: 4px auto 4px;
 }
 .four-color-bar span {
   width: 38px;
@@ -754,10 +778,18 @@ body[data-appearance="dark"] .exhibition-hero {
   background: #FFFFFF;
   box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.08);
   border: 1px solid #E2E8F0;
+  transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 body[data-appearance="dark"] .exhibition-slab {
   background: #1E293B;
   border-color: #334155;
+}
+.exhibition-wrap.has-stage-focus > .exhibition-slab:not(.is-stage-focused) {
+  opacity: 0.42;
+}
+.exhibition-slab.is-stage-focused {
+  border-color: var(--vs-c1);
+  box-shadow: 0 18px 42px -10px rgba(15, 23, 42, 0.22);
 }
 
 .exhibition-slab h2 {
@@ -785,6 +817,13 @@ body[data-appearance="dark"] .exhibition-slab {
   font-weight: 800;
   background: var(--vs-c1);
   color: #FFFFFF;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.exhibition-num-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px -2px rgba(15, 23, 42, 0.22);
 }
 
 /* スラブ内の「解説＋図版」自動 2 段組みレイアウト（FR-015, DD-DIAG-040〜042） */
@@ -816,7 +855,7 @@ body[data-appearance="dark"] .exhibition-slab {
 }
 
 /* --------------------------------------------------------------------------
-   記述パターン別の雛形（FR-016, DD-VTPL-020〜024）。寸法・色は DTP/features/visual-templates.md を正とする。
+   記述パターン別の雛形（FR-016, DD-VTPL-020〜024）。寸法・色は 0.DTP/features/visual-templates.md を正とする。
    既存の :is(.prose-doc, .exhibition-slab) の要素スタイルより詳細度を上げて上書きする
    -------------------------------------------------------------------------- */
 /* リード型（DTP-VTPL-020） */
@@ -883,6 +922,12 @@ body[data-appearance="dark"] .exhibition-slab {
   background: var(--vs-card-bg);
   box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.12);
   line-height: 1.7;
+  cursor: pointer;
+  transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease, border-color 0.24s ease;
+}
+.exhibition-slab .vs-points > li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.2);
 }
 .exhibition-slab .vs-points > li:nth-child(4n + 2) { --vs-c: var(--vs-c2); }
 .exhibition-slab .vs-points > li:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
@@ -906,6 +951,35 @@ body[data-appearance="dark"] .exhibition-slab {
   right: 0;
   height: 4px;
   background: var(--vs-c);
+}
+.exhibition-slab .vs-card-ornament {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  background-color: var(--vs-c);
+  opacity: 0.28;
+  -webkit-mask: var(--motif-card-ornament) no-repeat center / contain;
+  mask: var(--motif-card-ornament) no-repeat center / contain;
+  transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.exhibition-slab .vs-points > li:hover .vs-card-ornament {
+  opacity: 0.52;
+  transform: scale(1.06);
+}
+.exhibition-slab ul.vs-points.has-spotlight > li:not(.is-spotlight) {
+  opacity: 0.48;
+}
+.exhibition-slab ul.vs-points > li.is-spotlight {
+  transform: translateY(-4px);
+  border-color: var(--vs-c);
+  box-shadow: 0 16px 32px -10px rgba(15, 23, 42, 0.24);
+}
+.exhibition-slab ul.vs-points > li.is-spotlight .vs-card-ornament {
+  opacity: 0.65;
+  transform: scale(1.1);
 }
 .exhibition-slab .vs-point-title {
   display: block;
@@ -944,6 +1018,8 @@ body[data-appearance="dark"] .exhibition-slab {
   padding: 3.5rem 0.25rem 0;
   text-align: center;
   line-height: 1.65;
+  cursor: pointer;
+  transition: opacity 0.24s ease, transform 0.24s ease;
 }
 .exhibition-slab .vs-steps > li:nth-child(4n + 2) { --vs-c: var(--vs-c2); }
 .exhibition-slab .vs-steps > li:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
@@ -965,6 +1041,34 @@ body[data-appearance="dark"] .exhibition-slab {
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--vs-ink);
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease;
+}
+.exhibition-slab .vs-steps > li:hover::before {
+  transform: translateX(-50%) scale(1.08);
+}
+.exhibition-slab .vs-step-chevron {
+  position: absolute;
+  top: calc(1.25rem - 8px);
+  left: -0.5rem;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  background-color: var(--vs-c);
+  opacity: 0.72;
+  -webkit-mask: var(--motif-step-arrow) no-repeat center / contain;
+  mask: var(--motif-step-arrow) no-repeat center / contain;
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+.exhibition-slab ol.vs-steps.has-spotlight > li:not(.is-reached) {
+  opacity: 0.45;
+}
+.exhibition-slab ol.vs-steps > li.is-reached .vs-step-chevron {
+  opacity: 1;
+}
+.exhibition-slab ol.vs-steps > li.is-spotlight::before {
+  transform: translateX(-50%) scale(1.14);
+  box-shadow: 0 0 0 5px var(--vs-slab-bg), 0 6px 16px -2px rgba(15, 23, 42, 0.28);
 }
 .exhibition-slab ol.vs-steps.is-vertical {
   grid-template-columns: 1fr;
@@ -986,6 +1090,17 @@ body[data-appearance="dark"] .exhibition-slab {
 .exhibition-slab .vs-steps.is-vertical > li::before {
   left: 0;
   transform: none;
+}
+.exhibition-slab .vs-steps.is-vertical > li:hover::before {
+  transform: scale(1.08);
+}
+.exhibition-slab .vs-steps.is-vertical > li.is-spotlight::before {
+  transform: scale(1.14);
+}
+.exhibition-slab .vs-steps.is-vertical .vs-step-chevron {
+  top: -0.7rem;
+  left: 1.25rem;
+  transform: translateX(-50%) rotate(90deg);
 }
 @container (max-width: 40rem) {
   .exhibition-slab ol.vs-steps {
@@ -1009,9 +1124,20 @@ body[data-appearance="dark"] .exhibition-slab {
     left: 0;
     transform: none;
   }
+  .exhibition-slab .vs-steps > li:hover::before {
+    transform: scale(1.08);
+  }
+  .exhibition-slab .vs-steps > li.is-spotlight::before {
+    transform: scale(1.14);
+  }
+  .exhibition-slab .vs-steps .vs-step-chevron {
+    top: -0.7rem;
+    left: 1.25rem;
+    transform: translateX(-50%) rotate(90deg);
+  }
 }
 
-/* ステートメント型（DTP-VTPL-050）: 引用の左線を外し、大きな引用符と中央揃えの一文にする */
+/* ステートメント型（DTP-VTPL-050）: 引用の左線を外し、大きな引用符モニュメント（AST-006）と中央揃えの一文にする */
 .exhibition-slab blockquote.vs-quote {
   position: relative;
   max-width: 46rem;
@@ -1030,14 +1156,19 @@ body[data-appearance="dark"] .exhibition-slab {
 .exhibition-slab blockquote.vs-quote::before {
   content: "\201C";
   position: absolute;
-  top: -0.35rem;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
+  width: 3.75rem;
+  height: 2.6rem;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 4.5rem;
   font-weight: 800;
   line-height: 1;
-  color: var(--vs-c1);
+  color: transparent;
+  background-color: var(--vs-c1);
+  -webkit-mask: var(--motif-quote-watermark) no-repeat center / contain;
+  mask: var(--motif-quote-watermark) no-repeat center / contain;
 }
 .exhibition-slab .vs-quote > p {
   margin-bottom: 0.5rem;

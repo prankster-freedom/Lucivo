@@ -275,7 +275,7 @@ const SEQUENCE_MATH_LIFT = 6;
 const EMPTY_GUIDE_HTML = `
 <div class="empty-guide">
   <h3 class="empty-guide-title">Markdown を開いてください</h3>
-  <p class="empty-guide-desc">ヘッダーの「ファイル」メニュー →「Markdown を開く…」からファイルを読み込むか、左のエディタに直接入力してください。同梱の <code>sample.md</code> に各記法や図のサンプルがあります。</p>
+  <p class="empty-guide-desc">ヘッダーの「ファイル」メニュー →「Markdown を開く…」からファイルを読み込むか、左のエディタに直接入力してください。同梱の <code>samples/notation_sample.md</code> に各記法や図のサンプルがあります。</p>
   
   <div class="empty-guide-modes">
     <div class="empty-guide-card">
@@ -1271,7 +1271,7 @@ function detectSlabTemplate(els, slotCount) {
   return 'standard';
 }
 
-// 雛形に合わせて本文要素を組み替える（DD-VTPL-010〜013）。els はスラブの DOM の中の要素で、直接書き換える
+// 雛形に合わせて本文要素を組み替える（DD-VTPL-010〜014）。els はスラブの DOM の中の要素で、直接書き換える
 function applySlabTemplate(template, els) {
   const last = els[els.length - 1];
   if (template === 'lead') {
@@ -1293,17 +1293,83 @@ function applySlabTemplate(template, els) {
         head.classList.add('vs-point-title');
         rest.textContent = rest.textContent.replace(/^\s*[:：]\s*/, '');
       }
+      const ornament = document.createElement('span');
+      ornament.className = 'vs-card-ornament';
+      ornament.setAttribute('aria-hidden', 'true');
+      li.appendChild(ornament);
     });
   } else if (template === 'steps') {
     const count = last.children.length;
     last.classList.add('vs-steps');
     if (count > 4) last.classList.add('is-vertical');
     last.style.setProperty('--vs-n', String(count));
+    Array.from(last.children).forEach((li, idx) => {
+      if (idx === 0) return;
+      const chevron = document.createElement('span');
+      chevron.className = 'vs-step-chevron';
+      chevron.setAttribute('aria-hidden', 'true');
+      li.appendChild(chevron);
+    });
   } else if (template === 'quote') {
     last.classList.add('vs-quote');
     const cite = last.lastElementChild;
     if (last.children.length > 1 && /^\s*(—|―|--)/.test(cite.textContent)) cite.classList.add('vs-quote-cite');
   }
+}
+
+// Visual Stage のスポットライト・ステージ集中モードをすべて解除する（DD-VTPL-015）
+function clearVisualStageSpotlight(container) {
+  if (!container) return;
+  container.querySelectorAll('.has-spotlight, .is-spotlight, .is-reached, .has-stage-focus, .is-stage-focused').forEach(el => {
+    el.classList.remove('has-spotlight', 'is-spotlight', 'is-reached', 'has-stage-focus', 'is-stage-focused');
+  });
+}
+
+// Visual Stage の動的ステージ演出（要点カード・手順ステップ・STAGE バッジのクリック操作）を結線する（FR-017, DD-VTPL-015）
+function setupVisualStageInteractions() {
+  const visContainer = document.getElementById('visual-stage-container');
+  if (!visContainer) return;
+
+  visContainer.addEventListener('click', event => {
+    if (event.target.closest('a, button')) return;
+
+    const badge = event.target.closest('.exhibition-num-badge');
+    if (badge) {
+      const slab = badge.closest('.exhibition-slab');
+      const wrap = badge.closest('.exhibition-wrap');
+      if (!slab || !wrap) return;
+      slab.classList.toggle('is-stage-focused');
+      wrap.classList.toggle('has-stage-focus', Boolean(wrap.querySelector('.exhibition-slab.is-stage-focused')));
+      return;
+    }
+
+    const pointItem = event.target.closest('.vs-points > li');
+    if (pointItem) {
+      const list = pointItem.parentElement;
+      const willSpotlight = !pointItem.classList.contains('is-spotlight');
+      Array.from(list.children).forEach(li => li.classList.remove('is-spotlight'));
+      if (willSpotlight) pointItem.classList.add('is-spotlight');
+      list.classList.toggle('has-spotlight', willSpotlight);
+      return;
+    }
+
+    const stepItem = event.target.closest('.vs-steps > li');
+    if (stepItem) {
+      const list = stepItem.parentElement;
+      const items = Array.from(list.children);
+      const targetIdx = items.indexOf(stepItem);
+      const willSpotlight = !stepItem.classList.contains('is-spotlight');
+      items.forEach((li, idx) => {
+        li.classList.toggle('is-spotlight', willSpotlight && idx === targetIdx);
+        li.classList.toggle('is-reached', willSpotlight && idx <= targetIdx);
+      });
+      list.classList.toggle('has-spotlight', willSpotlight);
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') clearVisualStageSpotlight(visContainer);
+  });
 }
 
 function buildVisualStageHtml(cleanHtml) {
@@ -1367,7 +1433,10 @@ function buildVisualStageHtml(cleanHtml) {
   // &lt;img …&gt; などが HTML として解釈される（NFR-003）
   const heroHtml = heroTitle ? `
       <div class="exhibition-hero">
-        <div class="four-color-bar"><span></span><span></span><span></span><span></span></div>
+        <div class="exhibition-hero-top">
+          <span class="exhibition-hero-emblem" aria-hidden="true"></span>
+          <div class="four-color-bar"><span></span><span></span><span></span><span></span></div>
+        </div>
         <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight leading-tight mt-1" style="color: var(--text-primary);">
           ${escapeHtml(heroTitle)}
         </h1>
@@ -1888,6 +1957,7 @@ function setupFrontMatterToggle() {
 window.addEventListener('DOMContentLoaded', () => {
   document.querySelector('[data-view-mode="split"]').classList.add('is-active');
   setupEventListeners();
+  setupVisualStageInteractions();
   setupFileMenu();
   setupFrontMatterToggle();
   setupMarkedMath();
