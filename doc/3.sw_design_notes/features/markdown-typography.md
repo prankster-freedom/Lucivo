@@ -31,6 +31,7 @@ tags: ["Lucivo", "詳細設計", "Markdown", "CSS"]
 | DD-MD-015 | コードブロック   | `pre` に背景 `--panel-sub`、枠 1px `--border-strong`、角丸 10px、内側余白、横スクロールを付ける。`pre code` は DD-MD-014 の背景・枠・余白を打ち消す |
 | DD-MD-016 | 引用             | 左線 4px `--border-strong`、左の内側余白 1rem、色 `--text-secondary`（Dark で `--text-muted` は背景とのコントラストが不足するため）。入れ子の引用も同じ表示で、さらに字下げされる。背景は付けない |
 | DD-MD-017 | 表の列の寄せ     | `th` / `td` の `align` 属性（Marked が出力する `left` / `center` / `right`）に合わせて `text-align` を指定する |
+| DD-MD-020 | 表の横幅収容と折り返し | `renderApp()` で `wrapTables(activeContainer)` を呼び、すべての `table` を `<div class="table-container">`（`width: 100%; max-width: 100%; overflow-x: auto;`）で包む。あわせて `th, td` の折り返しを `word-break: normal !important; overflow-wrap: break-word !important;`、セル内コード（`:is(th, td) code`）を `white-space: nowrap;` とし、識別子の途中改行を防ぎつつ多列の表をスラブ・文書の版面幅に収め、最小幅を下回る狭い画面では `.table-container` 内で横スクロールさせる |
 | DD-MD-018 | 水平線           | 上の枠線 1px `--border-strong`、上下の余白 1.5rem                                 |
 | DD-MD-019 | 標準の HTML 要素 | `details`: 枠 1px `--border-strong`・角丸 8px・内側余白。`summary`: 太さ 600・`--text-primary`・ポインター。`kbd`: 等幅フォント・枠 1px（下 2px）`--border-strong`・背景 `--panel-sub`。`mark`: Light は `#FDE68A`、Dark は `rgba(250, 204, 21, 0.35)` の背景に `--text-primary` の文字 |
 

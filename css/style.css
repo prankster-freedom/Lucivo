@@ -581,12 +581,10 @@ body[data-appearance="dark"] :is(.prose-doc, .exhibition-slab) mark {
 
 .table-container {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   margin: 1.25rem 0;
-  border-radius: 12px;
-  border: 1px solid var(--border-strong);
-  background: var(--card-bg);
 }
 table {
   min-width: 560px !important;
@@ -600,12 +598,15 @@ thead {
 }
 th, td {
   border: 1px solid var(--border-subtle) !important;
-  padding: 0.75rem 1rem !important;
+  padding: 0.65rem 0.75rem !important;
   text-align: left;
   color: var(--text-secondary);
   line-height: 1.6;
-  word-break: keep-all !important;
+  word-break: normal !important;
   overflow-wrap: break-word !important;
+}
+:is(th, td) code {
+  white-space: nowrap;
 }
 th {
   font-family: 'JetBrains Mono', monospace;
@@ -655,9 +656,10 @@ th {
   display: block;
 }
 .diagram-viewport.is-actual-size svg {
-  width: auto !important;
-  min-width: 640px !important;
+  width: var(--natural-width, auto) !important;
+  min-width: var(--natural-width, 0px) !important;
   max-width: none !important;
+  flex-shrink: 0 !important;
 }
 
 /* ==========================================================================
@@ -677,7 +679,7 @@ body[data-appearance="dark"] #visual-stage-container {
 
 /* --vs-c1〜4: 雛形・バッジ・4 色バーのアクセント色。スタイルごとに図の配色と同じ調子にする（DTP-003, DTP-VTPL-070）
    --vs-tone: アクセント色を文字に使うときに混ぜる色（Light は濃紺、Dark は白）。--vs-slab-bg: スラブの背景（手順の丸の輪）
-   --motif-*: assets/motifs/*.svg（AST-005〜008）と同一のベクター定義。Chromium の file://（origin null）では mask-image の外部 SVG 読み込みが CORS で拒否されるため、data URI として保持する（NFR-001, FR-007, DD-VTPL-024） */
+   --motif-*: assets/motifs/*.svg（AST-005〜009）と同一のベクター定義。Chromium の file://（origin null）では mask-image の外部 SVG 読み込みが CORS で拒否されるため、data URI として保持する（NFR-001, FR-007, DD-VTPL-024） */
 .exhibition-wrap {
   max-width: 62rem;
   margin: 0 auto;
@@ -694,23 +696,28 @@ body[data-appearance="dark"] #visual-stage-container {
   --vs-slab-bg: #FFFFFF;
   --vs-card-bg: #F8FAFC;
   --vs-card-border: #E2E8F0;
+  --vs-glow: #EA6A47;
   --motif-hero-prism: url("data:image/svg+xml,%3Csvg id='hero-prism.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Cpolygon points='16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5' stroke='black' stroke-width='2' fill='black' fill-opacity='0.12'/%3E%3Cpolygon points='16,6 25,16 16,26 7,16' stroke='black' stroke-width='1.75' fill='black' fill-opacity='0.28'/%3E%3Ccircle cx='16' cy='16' r='2.75' fill='black'/%3E%3Cline x1='16' y1='2' x2='16' y2='6' stroke='black' stroke-width='1.5'/%3E%3Cline x1='16' y1='26' x2='16' y2='30' stroke='black' stroke-width='1.5'/%3E%3Cline x1='3' y1='9.5' x2='7' y2='16' stroke='black' stroke-width='1.25' stroke-opacity='0.6'/%3E%3Cline x1='29' y1='9.5' x2='25' y2='16' stroke='black' stroke-width='1.25' stroke-opacity='0.6'/%3E%3C/svg%3E");
   --motif-quote-watermark: url("data:image/svg+xml,%3Csvg id='quote-watermark.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 44' fill='none'%3E%3Ccircle cx='32' cy='22' r='20' stroke='black' stroke-width='1.25' stroke-opacity='0.22' stroke-dasharray='3 3'/%3E%3Ccircle cx='32' cy='22' r='14' stroke='black' stroke-width='1' stroke-opacity='0.15'/%3E%3Cpath d='M27.5 13L19.5 22.5H25.5L22.5 31H15.5L18.5 21.5L23.5 13H27.5Z' fill='black'/%3E%3Cpath d='M44.5 13L36.5 22.5H42.5L39.5 31H32.5L35.5 21.5L40.5 13H44.5Z' fill='black' fill-opacity='0.82'/%3E%3C/svg%3E");
   --motif-card-ornament: url("data:image/svg+xml,%3Csvg id='card-corner-ornament.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cpath d='M64 0H20L64 44V0Z' fill='black' fill-opacity='0.18'/%3E%3Cpath d='M64 0H38L64 26V0Z' fill='black' fill-opacity='0.26'/%3E%3Cpath d='M12 0L64 52' stroke='black' stroke-width='1.25' stroke-opacity='0.35'/%3E%3Cpath d='M28 0L64 36' stroke='black' stroke-width='1' stroke-opacity='0.25'/%3E%3Ccircle cx='48' cy='16' r='2.2' fill='black' fill-opacity='0.45'/%3E%3C/svg%3E");
   --motif-step-arrow: url("data:image/svg+xml,%3Csvg id='step-arrow.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M5.5 3.5L10 8L5.5 12.5' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9.5 5L12.5 8L9.5 11' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' stroke-opacity='0.55'/%3E%3C/svg%3E");
+  --motif-flow-spark: url("data:image/svg+xml,%3Csvg id='flow-spark.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='10' stroke='black' stroke-width='1.25' stroke-opacity='0.35' stroke-dasharray='4 3'/%3E%3Cpath d='M12 3.5L13.6 9.4L19.5 11L13.6 12.6L12 18.5L10.4 12.6L4.5 11L10.4 9.4L12 3.5Z' fill='black' fill-opacity='0.85'/%3E%3C/svg%3E");
 }
 .vs-theme-shapes {
+  --vs-glow: #0EA5B7;
   --vs-c3: #6CC4C9;
   --vs-c4: #9CCB86;
   --vs-c2: #EBB453;
 }
 .vs-theme-circles {
+  --vs-glow: #E0483D;
   --vs-c1: #D45D53;
   --vs-c2: #7EA6BF;
   --vs-c3: #ECB674;
   --vs-c4: #7D9763;
 }
 .vs-theme-editorial {
+  --vs-glow: #C95F5F;
   --vs-c1: #D68C8C;
   --vs-c2: #8FA876;
   --vs-c3: #C9A66B;
@@ -725,6 +732,10 @@ body[data-appearance="dark"] .exhibition-wrap {
   --vs-line: #64748B;
   --vs-sub-text: #94A3B8;
 }
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-cards { --vs-glow: #FF9D80; }
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-shapes { --vs-glow: #4FD8E8; }
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-circles { --vs-glow: #FF8A7A; }
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-editorial { --vs-glow: #F0A6A6; }
 
 .exhibition-hero {
   border-radius: 20px;
@@ -773,6 +784,8 @@ body[data-appearance="dark"] .exhibition-hero {
 .four-color-bar span:nth-child(4) { background: var(--vs-c4); }
 
 .exhibition-slab {
+  min-width: 0;
+  max-width: 100%;
   border-radius: 22px;
   padding: clamp(1.25rem, 3vw, 2rem);
   background: #FFFFFF;
@@ -833,6 +846,10 @@ body[data-appearance="dark"] .exhibition-slab {
   gap: clamp(1.25rem, 2.5vw, 2rem);
   align-items: start;
 }
+.exhibition-slab-split > .exhibition-slab-body > :is(.exhibition-slab-prose, .exhibition-slab-figure) {
+  min-width: 0;
+  max-width: 100%;
+}
 .exhibition-slab-split > .exhibition-slab-body > .exhibition-slab-prose > :first-child {
   margin-top: 0;
 }
@@ -846,11 +863,11 @@ body[data-appearance="dark"] .exhibition-slab {
   padding: clamp(1rem, 2vw, 1.75rem);
 }
 .exhibition-slab-split.is-stacked > .exhibition-slab-body {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (max-width: 767px) {
   .exhibition-slab-split > .exhibition-slab-body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -877,6 +894,18 @@ body[data-appearance="dark"] .exhibition-slab {
   width: 4px;
   border-radius: 2px;
   background: linear-gradient(180deg, var(--vs-c1), var(--vs-c2), var(--vs-c3), var(--vs-c4));
+}
+.exhibition-slab .vs-lead::after {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: -0.15em;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  background-color: var(--vs-c1);
+  -webkit-mask: var(--motif-flow-spark) no-repeat center / contain;
+  mask: var(--motif-flow-spark) no-repeat center / contain;
 }
 .exhibition-slab .vs-lead > p {
   margin-bottom: 0.75rem;
@@ -1000,6 +1029,10 @@ body[data-appearance="dark"] .exhibition-slab {
   grid-template-columns: repeat(var(--vs-n, 4), minmax(0, 1fr));
   gap: 1rem;
   counter-reset: vs-step;
+  /* --vs-leg: 光が丸から次の丸へ進む時間。光は周期の 70% で走り、残りは余韻（DTP-LIGHT-050） */
+  --vs-leg: 1s;
+  --vs-cycle: calc((var(--vs-n, 4) - 1) * var(--vs-leg) / 0.7);
+  --vs-comet: 7.5rem;
 }
 .exhibition-slab .vs-steps::before {
   content: "";
@@ -1008,12 +1041,28 @@ body[data-appearance="dark"] .exhibition-slab {
   left: calc(50% / var(--vs-n, 4));
   right: calc(50% / var(--vs-n, 4));
   height: 2px;
-  background: var(--vs-line, var(--border-strong));
+  background-color: var(--vs-line, var(--border-strong));
+}
+/* 線と同じ幅の箱の右端に彗星を描き、箱ごと transform で動かす（描き直しなしで合成だけで動く） */
+.exhibition-slab .vs-steps::after {
+  content: "";
+  position: absolute;
+  top: calc(1.25rem - 10px);
+  left: calc(50% / var(--vs-n, 4));
+  right: calc(50% / var(--vs-n, 4));
+  height: 22px;
+  pointer-events: none;
+  background:
+    radial-gradient(closest-side, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 40%, transparent 100%) right center / 14px 9px no-repeat,
+    linear-gradient(90deg, transparent, var(--vs-glow) 60%, #FFFFFF) right center / var(--vs-comet) 3px no-repeat,
+    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--vs-glow) 70%, transparent), transparent) right center / calc(var(--vs-comet) * 0.8) 22px no-repeat;
+  animation: vs-comet-run var(--vs-cycle) linear infinite;
 }
 .exhibition-slab .vs-steps > li {
   --vs-c: var(--vs-c1);
   counter-increment: vs-step;
   position: relative;
+  z-index: 1;
   margin: 0;
   padding: 3.5rem 0.25rem 0;
   text-align: center;
@@ -1046,6 +1095,22 @@ body[data-appearance="dark"] .exhibition-slab {
 .exhibition-slab .vs-steps > li:hover::before {
   transform: translateX(-50%) scale(1.08);
 }
+/* 光が丸に届いた瞬間の反応。丸に届く時刻は --vs-i × --vs-leg（DTP-LIGHT-050） */
+.exhibition-slab .vs-steps > li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-left: -1.25rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--vs-glow), 0 0 16px 5px color-mix(in srgb, var(--vs-glow) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: vs-step-receive var(--vs-cycle) linear infinite;
+  animation-delay: calc(var(--vs-i, 0) * var(--vs-leg));
+}
 .exhibition-slab .vs-step-chevron {
   position: absolute;
   top: calc(1.25rem - 8px);
@@ -1059,6 +1124,8 @@ body[data-appearance="dark"] .exhibition-slab {
   -webkit-mask: var(--motif-step-arrow) no-repeat center / contain;
   mask: var(--motif-step-arrow) no-repeat center / contain;
   transition: opacity 0.24s ease, transform 0.24s ease;
+  animation: vs-chevron-pulse var(--vs-cycle) linear infinite;
+  animation-delay: calc((var(--vs-i, 1) - 0.5) * var(--vs-leg));
 }
 .exhibition-slab ol.vs-steps.has-spotlight > li:not(.is-reached) {
   opacity: 0.45;
@@ -1081,6 +1148,23 @@ body[data-appearance="dark"] .exhibition-slab {
   right: auto;
   width: 2px;
   height: auto;
+}
+.exhibition-slab .vs-steps.is-vertical::after {
+  top: 1.25rem;
+  bottom: 1.25rem;
+  left: calc(1.25rem - 10px);
+  right: auto;
+  width: 22px;
+  height: auto;
+  background:
+    radial-gradient(closest-side, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 40%, transparent 100%) center bottom / 9px 14px no-repeat,
+    linear-gradient(180deg, transparent, var(--vs-glow) 60%, #FFFFFF) center bottom / 3px var(--vs-comet) no-repeat,
+    radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--vs-glow) 70%, transparent), transparent) center bottom / 22px calc(var(--vs-comet) * 0.8) no-repeat;
+  animation-name: vs-comet-run-vertical;
+}
+.exhibition-slab .vs-steps.is-vertical > li::after {
+  left: 0;
+  margin-left: 0;
 }
 .exhibition-slab .vs-steps.is-vertical > li {
   min-height: 2.5rem;
@@ -1114,6 +1198,23 @@ body[data-appearance="dark"] .exhibition-slab {
     right: auto;
     width: 2px;
     height: auto;
+  }
+  .exhibition-slab .vs-steps::after {
+    top: 1.25rem;
+    bottom: 1.25rem;
+    left: calc(1.25rem - 10px);
+    right: auto;
+    width: 22px;
+    height: auto;
+    background:
+      radial-gradient(closest-side, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 40%, transparent 100%) center bottom / 9px 14px no-repeat,
+      linear-gradient(180deg, transparent, var(--vs-glow) 60%, #FFFFFF) center bottom / 3px var(--vs-comet) no-repeat,
+      radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--vs-glow) 70%, transparent), transparent) center bottom / 22px calc(var(--vs-comet) * 0.8) no-repeat;
+    animation-name: vs-comet-run-vertical;
+  }
+  .exhibition-slab .vs-steps > li::after {
+    left: 0;
+    margin-left: 0;
   }
   .exhibition-slab .vs-steps > li {
     min-height: 2.5rem;
@@ -1286,9 +1387,62 @@ body[data-appearance="dark"] .exhibition-diagram-header {
   background: transparent !important;
 }
 .exhibition-viewport.is-actual-size svg {
-  width: auto !important;
-  min-width: 680px !important;
+  width: var(--natural-width, auto) !important;
+  min-width: var(--natural-width, 0px) !important;
   max-width: none !important;
+  flex-shrink: 0 !important;
+}
+
+/* シグナル・ライト（DTP-LIGHT-010〜060, FR-018）: 図の光は js/stage.js が Canvas に描く。
+   SVG の中に足さないため、PNG / SVG の書き出しには光が入らない */
+.has-signal-light {
+  position: relative;
+}
+/* 光輪とノードの逆光は図の背面、白熱の芯は図の前面に描く（DTP-LIGHT-030） */
+.has-signal-light > svg {
+  position: relative;
+  z-index: 1;
+}
+.signal-light-canvas {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+.signal-light-canvas.is-front {
+  z-index: 2;
+}
+body[data-appearance="dark"] .signal-light-canvas {
+  mix-blend-mode: screen;
+}
+@keyframes vs-comet-run {
+  0% { transform: translateX(-100%); opacity: 0; }
+  5% { opacity: 1; }
+  66% { opacity: 1; }
+  70%, 100% { transform: translateX(0); opacity: 0; }
+}
+@keyframes vs-comet-run-vertical {
+  0% { transform: translateY(-100%); opacity: 0; }
+  5% { opacity: 1; }
+  66% { opacity: 1; }
+  70%, 100% { transform: translateY(0); opacity: 0; }
+}
+@keyframes vs-step-receive {
+  0% { opacity: 0; transform: scale(0.92); }
+  2% { opacity: 1; }
+  20%, 100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes vs-chevron-pulse {
+  0% { opacity: 1; }
+  16%, 100% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exhibition-slab .vs-step-chevron {
+    animation: none !important;
+  }
+  .exhibition-slab .vs-steps::after,
+  .exhibition-slab .vs-steps > li::after {
+    display: none;
+  }
 }
 
 .callout-box {
