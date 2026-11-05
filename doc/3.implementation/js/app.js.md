@@ -46,6 +46,7 @@ flowchart TD
 - **DOM に入れる前と後**: `postProcessSvg()` は文書に入れていない要素を処理するため、計算後のスタイルや大きさは取れない。それらが必要な処理は `applyReadableFit()`（およびその中の `updateSlabSplit()`）のように DOM に入れた後に行う。キャッシュから表示するたびにも呼ぶ。
 - **雛形の判定の閾値**: 雛形を選ぶ条件の数値（`TEMPLATE_LIMITS`）は、デザイン仕様 `DTP-VTPL-001` と同じ値にする。変えるときは、デザイン仕様とテスト仕様（`TC-VTPL-*`）も直す（`DD-VTPL-001`）。
 - **雛形の装飾要素とスポットライト**: `applySlabTemplate()` で追加する `.vs-card-ornament`・`.vs-step-chevron` はテキストを持たない空の `<span aria-hidden="true">` にする（`TC-VTPL-003` が高速モードと Visualモードの `textContent` およびインライン要素数の完全一致を検査するため）。また、スポットライト操作（`setupVisualStageInteractions()`）は `#visual-stage-container` へのイベントデリゲーションとクラス付け替えだけで行い、`getComputedStyle` や再描画を呼ばない（`DD-VTPL-015`, `TC-PERF-002`）。
+- **図表のルミナス・フロー光線レイヤー**: `decorateVisualSvg()` から呼ぶ `addVisualFlowBeams()` は、元の結線（`path.flowchart-link` や `.messageLine0`）を書き換えず、`class="lucivo-flow-beam"` だけを持つ `<path>` / `<line>` を直後に挿入する（`TC-DIAG-019` や `TC-EDGE-001`〜`004` が `path.flowchart-link` の色や個数を検査するため。`DD-VTPL-016`）。
 - **サニタイズの順序**: 本文とフロントマターの HTML は DOMPurify を通してから DOM に入れる。KaTeX の数式だけは、サニタイズ後に置き場所へ描画する（KaTeX の出力はサニタイズで崩れるため、`DD-MATH-020`）。
 - **遅延読み込み**: `window.mermaid` / `window.katex` は、図・数式が現れるまで存在しない。`setupMermaid()` は Mermaid がなければ何もしないため、描画の直前（`processDirtyBlocks()` で `loadLibrary('mermaid')` を待った後）に呼ぶ。
 - **Mermaid の `securityLevel`**: `strict` にしている。`loose` に戻すと、開いた Markdown の図の中の HTML とクリック時のスクリプト呼び出しが有効になる。
