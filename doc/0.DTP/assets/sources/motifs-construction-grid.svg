@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 64" fill="none">
-  <!-- Master Construction Grid for AST-005..AST-008 (DTP Source File - Excluded from Release) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" fill="none">
+  <!-- Master Construction Grid for AST-005..AST-009 (DTP Source File - Excluded from Release) -->
   <g id="grid-guides" stroke="#94A3B8" stroke-width="0.25" stroke-dasharray="1 1">
     <rect x="0" y="0" width="64" height="64"/>
     <rect x="64" y="0" width="64" height="64"/>
     <rect x="128" y="0" width="64" height="64"/>
     <rect x="192" y="0" width="64" height="64"/>
-    <line x1="0" y1="32" x2="256" y2="32"/>
+    <rect x="256" y="0" width="64" height="64"/>
+    <line x1="0" y1="32" x2="320" y2="32"/>
   </g>
   <g id="ast-005-master" transform="translate(16, 16)" stroke="#0F172A">
     <polygon points="16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5" stroke-width="2"/>
@@ -23,6 +24,10 @@
   </g>
   <g id="ast-008-master" transform="translate(216, 24)" stroke="#0F172A">
     <path d="M5.5 3.5L10 8L5.5 12.5" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+  <g id="ast-009-master" transform="translate(276, 20)" stroke="#0F172A" fill="#0F172A">
+    <circle cx="12" cy="12" r="10" fill="none" stroke-width="1.25" stroke-dasharray="4 3"/>
+    <path d="M12 3.5L13.6 9.4L19.5 11L13.6 12.6L12 18.5L10.4 12.6L4.5 11L10.4 9.4L12 3.5Z"/>
   </g>
 </svg>
 

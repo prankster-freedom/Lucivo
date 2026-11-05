@@ -156,3 +156,16 @@ Visualモードでは、文書を章（`h2`）ごとのスラブに分ける。�
 4. **ホバー時のマイクロインタラクションとリアルタイム性の維持**
    - カード・手順・ヒーローエンブレムは、ポインタのホバーに対して `0.2s`〜`0.25s` の滑らかなトランジションで応答する（`prefers-reduced-motion: reduce` 環境では動きを抑える）。
    - すべての動的演出はクラス操作と CSS トランジションだけで完結させ、描画時（`renderApp()`）に `getComputedStyle` やレイアウト計測を一切行わない（`NFR-006`, `NFR-007`）。
+
+## DTP-VTPL-095 ルミナス・フロー（手順トラックおよびダイアグラム結線上を光が流れる演出）
+
+用途: 製品名「Lucivo（構文に、光と舞台を）」を象徴する動的表現として、手順フローおよびダイアグラムの結線に沿って光（ルミナス・ストリーム）を流し、情報の流れる向きと順序を直感的に際立たせる（`RGH-009`, `AST-008`, `AST-009`）。
+
+1. **手順型（`.vs-steps`）のルミナス・トラックとシェブロン脈動**
+   - 手順の接続線（`.vs-steps::before`）は、ベースのトラック色（`--vs-line`）の上に、4 色パレット（`--vs-c1` → `--vs-c2` → `--vs-c3` → `--vs-c4`）と高輝度ハイライトを織り交ぜたグラデーションを重ね、`background-size: 200% 100%`（縦並び時は `100% 200%`）で進行方向（左→右、縦並び時は上→下）へ周期 `3.6s` で滑らかに流す（`@keyframes vs-luminous-track`）。
+   - 方向シェブロン（`.vs-step-chevron`）は、ステップ順に位相差を持たせたパルスアニメーション（`@keyframes vs-chevron-pulse`）で微かに輝きが伝播し、視線を 1 → 2 → 3 → 4 へと自然に誘導する。
+2. **Visualモード ダイアグラムのルミナス・ビーム（`.lucivo-flow-beam`）**
+   - Visualモードで描画されるフローチャート・状態遷移図の結線（`path.flowchart-link, .edgePath path.path, path.transition`）およびシーケンス図のメッセージ信号線（`line.messageLine0, line.messageLine1`）のそれぞれに、同一座標のオーバーレイ軌跡（`<path class="lucivo-flow-beam">` / `<line class="lucivo-flow-beam">`）を重ねる。
+   - ベースの結線は各スタイルの配色・太さ・コントラスト比（`DTP-003`, `NFR-004`）をそのまま維持し、その上を短い光の破線（`stroke-dasharray: 14 140`、`stroke-linecap: round`）が始点から終点（`stroke-dashoffset: 154` → `0`）へ周期 `2.8s` で滑走する（`@keyframes lucivo-beam-flow`）。
+   - エッジごとに `animation-delay` を `0.3s` 刻みでずらすことで、図の上流から下流へ光が連鎖して流れるライブステージ品質の演出とする。
+   - 光の色は、Light 外観では白の高輝度光脈（`#FFFFFF`、Editorial や Circles の白背景上ではスタイルのアクセント色と白の輝き）とし、Dark 外観では暗い背景上で鮮やかに映える高輝度ルミナスカラーとする。
