@@ -1395,7 +1395,7 @@ async function testVisualTemplates(browser) {
   record('TC-VTPL-002', bTpl.length === Object.keys(bExpected).length && bWrong.length === 0 && !!o8 && o8.vertical,
     bWrong.length ? JSON.stringify(bWrong) : `${bTpl.length} 章`);
 
-  // TC-VTPL-014 ルミナス・フロー演出と samples/visual-template.md の検証（FR-015, FR-016, FR-017, DD-VTPL-016, DD-VTPL-026）
+  // TC-VTPL-014 samples/visual-template.md の検証（FR-015, FR-016）。光の演出は TC-LIGHT で確かめる
   const vtplMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
   await setMode(page, { style: 'std', appearance: 'light' });
   await page.evaluate(md => {
@@ -1404,24 +1404,15 @@ async function testVisualTemplates(browser) {
     renderApp();
   }, vtplMd);
   await waitRendered(page);
-  const stdBeams = await page.evaluate(() => document.querySelectorAll('#standard-doc-container .lucivo-flow-beam').length);
 
   await setMode(page, { style: 'shapes', appearance: 'light' });
   const showcase = await page.evaluate(() => {
     const root = document.getElementById('visual-stage-container');
     const slabs = Array.from(root.querySelectorAll('.exhibition-slab'));
     const tpls = slabs.map(s => Array.from(s.classList).filter(c => c.startsWith('vs-tpl-')).map(c => c.slice(7))[0]);
-    const hSteps = slabs[6] && slabs[6].querySelector('.vs-steps');
-    const vSteps = slabs[7] && slabs[7].querySelector('.vs-steps.is-vertical');
-    const chev = hSteps && hSteps.querySelector('.vs-step-chevron');
     const splitStd = slabs[9];
     const splitWide = slabs[10];
     const wrap = root.querySelector('.exhibition-wrap');
-    const flowBeams = splitStd ? splitStd.querySelectorAll('svg path.lucivo-flow-beam').length : 0;
-    const wideBeams = splitWide ? splitWide.querySelectorAll('svg path.lucivo-flow-beam').length : 0;
-    const seqBeams = slabs[11] ? slabs[11].querySelectorAll('svg line.lucivo-flow-beam').length : 0;
-    const stateBeams = slabs[12] ? slabs[12].querySelectorAll('svg path.lucivo-flow-beam').length : 0;
-    const firstBeam = root.querySelector('svg .lucivo-flow-beam');
     const slab12 = slabs[12];
     const tableWrap = slab12 ? slab12.querySelector('.table-container') : null;
     const tableEl = slab12 ? slab12.querySelector('table') : null;
@@ -1430,16 +1421,10 @@ async function testVisualTemplates(browser) {
     return {
       slabCount: slabs.length,
       tpls,
-      hTrackAnim: hSteps ? getComputedStyle(hSteps, '::before').animationName : '',
-      vTrackAnim: vSteps ? getComputedStyle(vSteps, '::before').animationName : '',
-      chevAnim: chev ? getComputedStyle(chev).animationName : '',
-      chevDelay: chev ? chev.style.getPropertyValue('--step-delay') : '',
       split9Stacked: splitStd ? splitStd.classList.contains('is-stacked') : true,
       split10Stacked: splitWide ? splitWide.classList.contains('is-stacked') : false,
       split10Contained: splitWide && wrap ? splitWide.getBoundingClientRect().width <= wrap.getBoundingClientRect().width + 1 : false,
-      tableContained,
-      beams: { flowBeams, wideBeams, seqBeams, stateBeams },
-      beamAnim: firstBeam ? getComputedStyle(firstBeam).animationName : ''
+      tableContained
     };
   });
   // STAGE 10（横に広い図）で Fit より 1:1（実寸）の方が大きく表示されること
@@ -1471,25 +1456,15 @@ async function testVisualTemplates(browser) {
   await page.waitForTimeout(300);
 
   const showcaseExpectedTpls = ['lead', 'lead', 'standard', 'points', 'points', 'standard', 'steps', 'steps', 'quote', 'split', 'split', 'standard', 'standard', 'standard'];
-  const showcaseOk = stdBeams === 0
-    && showcase.slabCount === 14
+  const showcaseOk = showcase.slabCount === 14
     && JSON.stringify(showcase.tpls) === JSON.stringify(showcaseExpectedTpls)
-    && showcase.hTrackAnim === 'vs-luminous-track'
-    && showcase.vTrackAnim === 'vs-luminous-track-vertical'
-    && showcase.chevAnim === 'vs-chevron-pulse'
-    && showcase.chevDelay === '0s'
     && !showcase.split9Stacked
     && showcase.split10Stacked
     && showcase.split10Contained
     && showcase.tableContained
     && canvasTableFits
-    && scaleWideOk
-    && showcase.beams.flowBeams >= 4
-    && showcase.beams.wideBeams >= 3
-    && showcase.beams.seqBeams >= 10
-    && showcase.beams.stateBeams >= 6
-    && showcase.beamAnim === 'lucivo-beam-flow';
-  record('TC-VTPL-014', showcaseOk, JSON.stringify({ stdBeams, wideFitWidth, wideActual, canvasTableFits, ...showcase }));
+    && scaleWideOk;
+  record('TC-VTPL-014', showcaseOk, JSON.stringify({ wideFitWidth, wideActual, canvasTableFits, ...showcase }));
 
   const showcaseShots = [
     [6, 'vtpl-showcase-steps-flow.png'],
@@ -1506,6 +1481,457 @@ async function testVisualTemplates(browser) {
   await page.close();
 }
 
+// TC-LIGHT-001〜011, TC-SHOW-001〜010: シグナル・ライトとステージ発表（FR-018, FR-019）
+async function openStagePage(browser, contextOptions = {}) {
+  const context = await browser.newContext({ viewport: { width: 1600, height: 900 }, ...contextOptions });
+  const page = await context.newPage();
+  page.consoleErrors = [];
+  page.on('console', m => { if (m.type() === 'error') page.consoleErrors.push(m.text().slice(0, 200)); });
+  page.on('pageerror', e => page.consoleErrors.push('pageerror: ' + e.message));
+  await page.goto(APP_URL);
+  await page.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
+  return page;
+}
+
+async function setDocument(page, md) {
+  await page.evaluate(text => {
+    document.getElementById('markdown-editor').value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, md);
+  await waitRendered(page);
+}
+
+async function scrollToSlab(page, index) {
+  await page.evaluate(i => document.querySelectorAll('#visual-stage-container .exhibition-slab')[i].scrollIntoView({ block: 'start' }), index);
+  await page.waitForTimeout(350);
+}
+
+async function seekLight(page, t) {
+  await page.evaluate(v => LucivoStage.seekLights(v), t);
+  await page.waitForTimeout(90);
+}
+
+// 図の順番 flowIndex の光の頭の位置（画面の座標から Canvas の画素へ換算）に、光が描かれているかを調べる
+function inspectLightHead({ flowIndex, edgeIndex, t }) {
+  const flow = LucivoStage.lightPlans()[flowIndex];
+  const edge = flow.plan.edges[edgeIndex];
+  const index = Math.round((t - edge.start) * edge.speed / (edge.length / edge.count));
+  const m = flow.svg.getScreenCTM();
+  const x = edge.points[index * 2];
+  const y = edge.points[index * 2 + 1];
+  const rect = flow.front.getBoundingClientRect();
+  const scale = flow.front.width / rect.width;
+  const px = Math.round((m.a * x + m.e - rect.left) * scale);
+  const py = Math.round((m.d * y + m.f - rect.top) * scale);
+  const pixels = flow.front.getContext('2d').getImageData(px - 2, py - 2, 5, 5).data;
+  let alpha = 0;
+  for (let i = 3; i < pixels.length; i += 4) alpha = Math.max(alpha, pixels[i]);
+  return alpha;
+}
+
+function inspectLightPaint(flowIndex) {
+  const flow = LucivoStage.lightPlans()[flowIndex];
+  const painted = canvas => {
+    const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    let count = 0;
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 8) count++;
+    return count;
+  };
+  return { back: painted(flow.back), front: painted(flow.front) };
+}
+
+async function testSignalLight(browser) {
+  const page = await openStagePage(browser);
+  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+
+  // TC-LIGHT-007 高速モードでは舞台演出を読み込まない
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await setDocument(page, showcaseMd);
+  const fast = await page.evaluate(() => ({
+    loaded: typeof LucivoStage !== 'undefined',
+    script: !!document.querySelector('script[src*="stage.js"]'),
+    canvases: document.querySelectorAll('.signal-light-canvas').length
+  }));
+  record('TC-LIGHT-007', !fast.loaded && !fast.script && fast.canvases === 0, JSON.stringify(fast));
+
+  await page.click('.info-style-btn[data-info-style="shapes"]');
+  await waitRendered(page);
+  await page.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.lightPlans().length >= 5);
+
+  // TC-LIGHT-005 図が画面に入るまでは計算しない。入ると動き、外れると止まる
+  await scrollToSlab(page, 9);
+  await page.waitForFunction(() => LucivoStage.lightPlans()[0].plan);
+  const visible = await page.evaluate(() => LucivoStage.lightPlans().map(f => ({ type: f.type, active: f.active, planned: !!f.plan })));
+
+  // TC-LIGHT-001 光は根のノードから、結線をたどって下流へ伝わる
+  const cascade = await page.evaluate(() => {
+    const { plan } = LucivoStage.lightPlans()[0];
+    const hit = e => e.start + e.length / e.speed;
+    const wrong = plan.edges.filter(e => {
+      const incoming = plan.edges.filter(i => i.to === e.from);
+      if (e.from < 0) return true;
+      if (!incoming.length) return Math.abs(e.start - plan.edges[0].start) > 0.001;
+      return Math.abs(e.start - Math.min(...incoming.map(hit))) > 0.001;
+    }).length;
+    return { edges: plan.edges.length, wrong, unmatched: plan.edges.filter(e => e.to < 0).length, cycle: plan.cycle, pulses: plan.pulses.length };
+  });
+  record('TC-LIGHT-001', cascade.edges === 6 && cascade.wrong === 0 && cascade.unmatched === 0 && cascade.pulses >= 7, JSON.stringify(cascade));
+
+  // TC-LIGHT-003 走っている間は 2 層に描かれ、余韻の間は何も描かない
+  await seekLight(page, 1.0);
+  const lit = await page.evaluate(inspectLightPaint, 0);
+  const headAlpha = await page.evaluate(inspectLightHead, { flowIndex: 0, edgeIndex: 2, t: 1.0 });
+  await seekLight(page, cascade.cycle - 0.05);
+  const dark = await page.evaluate(inspectLightPaint, 0);
+  record('TC-LIGHT-003', lit.back > 200 && lit.front > 50 && headAlpha > 100 && dark.back === 0 && dark.front === 0, JSON.stringify({ lit, headAlpha, dark }));
+
+  // TC-LIGHT-004 表示の倍率を変えても、光は線の上から外れない
+  const aligned = {};
+  await seekLight(page, 1.0);
+  aligned.canvas = headAlpha;
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  await page.waitForTimeout(500);
+  aligned.split = await page.evaluate(inspectLightHead, { flowIndex: 0, edgeIndex: 2, t: 1.0 });
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(400);
+  await page.click('#visual-stage-container [data-action="scale-actual"][data-index="0"]');
+  await page.waitForTimeout(400);
+  aligned.actual = await page.evaluate(inspectLightHead, { flowIndex: 0, edgeIndex: 2, t: 1.0 });
+  await page.click('#visual-stage-container [data-action="scale-fit"][data-index="0"]');
+  await page.waitForTimeout(300);
+  await page.click('#visual-stage-container [data-action="zoom"][data-index="0"]');
+  await page.waitForTimeout(400);
+  aligned.zoomCanvases = await page.evaluate(() => document.querySelectorAll('#zoom-canvas .signal-light-canvas').length);
+  await page.click('#zoom-close-btn');
+  await page.waitForTimeout(200);
+  await page.evaluate(() => LucivoStage.seekLights(null));
+  record('TC-LIGHT-004', aligned.canvas > 100 && aligned.split > 100 && aligned.actual > 100 && aligned.zoomCanvases === 2, JSON.stringify(aligned));
+
+  // TC-LIGHT-010 光が走っている間のフレーム間隔
+  const frames = await page.evaluate(() => new Promise(resolve => {
+    const gaps = [];
+    let last = performance.now();
+    const step = t => {
+      gaps.push(t - last);
+      last = t;
+      if (gaps.length < 150) requestAnimationFrame(step);
+      else {
+        gaps.sort((a, b) => a - b);
+        resolve({ median: gaps[75], p95: gaps[142] });
+      }
+    };
+    requestAnimationFrame(step);
+  }));
+  record('TC-LIGHT-010', frames.median <= 20, JSON.stringify(frames));
+
+  await page.evaluate(() => { document.getElementById('preview-scroll').scrollTop = 0; });
+  await page.waitForTimeout(350);
+  const away = await page.evaluate(() => LucivoStage.lightPlans()[0].active);
+  record('TC-LIGHT-005', visible[0].active && visible[0].planned && !visible[3].planned && !visible[4].planned && !away, JSON.stringify({ visible, away }));
+
+  // TC-LIGHT-002 シーケンス図は時系列の順に 1 本ずつ流れ、長い図でも一巡の時間に上限がある
+  await scrollToSlab(page, 11);
+  await page.evaluate(() => document.querySelectorAll('#visual-stage-container .exhibition-slab')[11].querySelectorAll('.exhibition-viewport')[1].scrollIntoView({ block: 'center' }));
+  await page.waitForFunction(() => LucivoStage.lightPlans()[3].plan);
+  const sequence = await page.evaluate(() => {
+    const { plan } = LucivoStage.lightPlans()[3];
+    const starts = plan.edges.map(e => e.start);
+    return {
+      edges: plan.edges.length,
+      ordered: starts.every((s, i) => i === 0 || s > starts[i - 1]),
+      noOverlap: plan.edges.every((e, i) => i === 0 || e.start >= plan.edges[i - 1].start + plan.edges[i - 1].length / plan.edges[i - 1].speed),
+      cycle: plan.cycle
+    };
+  });
+  record('TC-LIGHT-002', sequence.edges >= 10 && sequence.ordered && sequence.noOverlap && sequence.cycle <= 13 + 0.25 + 2.2 + 0.01, JSON.stringify(sequence));
+
+  // TC-LIGHT-006 書き出す SVG に光が混ざらない（以前は CSS のない線が黒い塗りで書き出された）
+  const exported = await page.evaluate(() => {
+    const svgs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-viewport > svg'));
+    return {
+      svgs: svgs.length,
+      beams: svgs.filter(s => /flow-beam/.test(s.outerHTML)).length,
+      canvases: svgs.filter(s => s.querySelector('canvas')).length,
+      cached: Array.from(svgCache.values()).filter(s => /flow-beam/.test(s)).length
+    };
+  });
+  record('TC-LIGHT-006', exported.svgs === 5 && exported.beams === 0 && exported.canvases === 0 && exported.cached === 0, JSON.stringify(exported));
+
+  // TC-LIGHT-009 手順の光は transform だけで動き、丸への到達と反応の時刻が合う
+  const steps = await page.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab');
+    const horizontal = slabs[6].querySelector('.vs-steps');
+    const vertical = slabs[7].querySelector('.vs-steps.is-vertical');
+    const items = Array.from(horizontal.children);
+    const seconds = v => parseFloat(v);
+    const animation = horizontal.getAnimations({ subtree: true }).find(a => a.animationName === 'vs-comet-run');
+    const properties = animation ? Array.from(new Set(animation.effect.getKeyframes().flatMap(k => Object.keys(k)))).filter(k => !['offset', 'computedOffset', 'easing', 'composite'].includes(k)) : [];
+    return {
+      name: getComputedStyle(horizontal, '::after').animationName,
+      verticalName: getComputedStyle(vertical, '::after').animationName,
+      duration: seconds(getComputedStyle(horizontal, '::after').animationDuration),
+      receiveDelays: items.map(li => seconds(getComputedStyle(li, '::after').animationDelay)),
+      chevronDelays: items.slice(1).map(li => seconds(getComputedStyle(li.querySelector('.vs-step-chevron')).animationDelay)),
+      properties
+    };
+  });
+  const stepsOk = steps.name === 'vs-comet-run' && steps.verticalName === 'vs-comet-run-vertical'
+    && Math.abs(steps.duration - 3 / 0.7) < 0.01
+    && JSON.stringify(steps.receiveDelays) === '[0,1,2,3]'
+    && JSON.stringify(steps.chevronDelays) === '[0.5,1.5,2.5]'
+    && steps.properties.every(p => ['transform', 'opacity'].includes(p));
+  record('TC-LIGHT-009', stepsOk, JSON.stringify(steps));
+
+  // TC-LIGHT-011 見た目（4 スタイル × Light / Dark）
+  for (const appearance of ['light', 'dark']) {
+    for (const style of VISUAL_STYLES) {
+      await setMode(page, { style, appearance });
+      await page.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.lightPlans().length >= 5);
+      await scrollToSlab(page, 9);
+      await page.waitForFunction(() => LucivoStage.lightPlans()[0].plan);
+      await seekLight(page, 1.0);
+      await page.locator('#visual-stage-container .exhibition-viewport').first().screenshot({ path: path.join(SHOT_DIR, `light-${style}-${appearance}-flow.png`) });
+      await seekLight(page, 1.75);
+      await page.locator('#visual-stage-container .exhibition-viewport').first().screenshot({ path: path.join(SHOT_DIR, `light-${style}-${appearance}-arrival.png`) });
+      await page.evaluate(() => LucivoStage.seekLights(null));
+      await scrollToSlab(page, 6);
+      await page.waitForTimeout(1300);
+      await page.locator('#visual-stage-container .exhibition-slab').nth(6).screenshot({ path: path.join(SHOT_DIR, `light-${style}-${appearance}-steps.png`) });
+    }
+  }
+  if (page.consoleErrors.length) record('TC-LIGHT-CONSOLE', false, JSON.stringify(page.consoleErrors));
+  await page.context().close();
+
+  // TC-LIGHT-008 動きを減らす設定では光を出さない
+  const calm = await openStagePage(browser, { reducedMotion: 'reduce' });
+  await calm.click('#btn-visual-mode');
+  await setDocument(calm, showcaseMd);
+  await calm.waitForFunction(() => typeof LucivoStage !== 'undefined');
+  await calm.waitForTimeout(400);
+  const reduced = await calm.evaluate(() => {
+    const steps = document.querySelector('#visual-stage-container .vs-steps');
+    return {
+      canvases: document.querySelectorAll('.signal-light-canvas').length,
+      comet: getComputedStyle(steps, '::after').display,
+      chevron: getComputedStyle(steps.querySelector('.vs-step-chevron')).animationName
+    };
+  });
+  record('TC-LIGHT-008', reduced.canvases === 0 && reduced.comet === 'none' && reduced.chevron === 'none', JSON.stringify(reduced));
+  await calm.context().close();
+}
+
+function inspectShow() {
+  const root = document.getElementById('visual-stage-container');
+  const rect = root.getBoundingClientRect();
+  const shown = Array.from(root.querySelectorAll('.exhibition-wrap > *')).filter(el => getComputedStyle(el).display !== 'none');
+  return {
+    ...LucivoStage.showState(),
+    htmlClass: document.documentElement.classList.contains('is-stage-show'),
+    covers: rect.left === 0 && rect.top === 0 && rect.width === innerWidth && rect.height === innerHeight,
+    topElement: document.elementFromPoint(20, 20).closest('#visual-stage-container, #stage-hud') !== null,
+    shown: shown.length,
+    tpl: shown[0] ? shown[0].className : '',
+    scrollTop: root.scrollTop,
+    overflow: root.scrollHeight - root.clientHeight,
+    appearance: state.appearance,
+    viewMode: state.viewMode,
+    isVisual: state.isVisualMode,
+    count: document.querySelector('.stage-hud-count').textContent
+  };
+}
+
+async function pressUntil(page, predicate, limit = 80) {
+  for (let i = 0; i < limit; i++) {
+    if (await page.evaluate(predicate)) return true;
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(40);
+  }
+  return false;
+}
+
+async function testStageShow(browser) {
+  const page = await openStagePage(browser);
+  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  await setDocument(page, showcaseMd);
+
+  // TC-SHOW-001 高速モード・Light・Split から 1 回の操作で発表を始める
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.showState().active);
+  await waitRendered(page);
+  await page.waitForTimeout(900);
+  const entered = await page.evaluate(inspectShow);
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-00-hero.png') });
+  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.topElement && entered.scenes === 15 && entered.shown === 1
+    && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === '01 / 15', JSON.stringify(entered));
+
+  // TC-SHOW-002 ページ送り（→ / Space / ← / End / Home）
+  await page.keyboard.press('ArrowRight');
+  const second = await page.evaluate(inspectShow);
+  await page.keyboard.press(' ');
+  const third = await page.evaluate(inspectShow);
+  await page.keyboard.press('ArrowLeft');
+  const back = await page.evaluate(inspectShow);
+  await page.keyboard.press('End');
+  const last = await page.evaluate(inspectShow);
+  await page.keyboard.press('Home');
+  const first = await page.evaluate(inspectShow);
+  record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === 14 && first.index === 0 && first.shown === 1,
+    JSON.stringify([second.index, third.index, back.index, last.index, first.index]));
+
+  // TC-SHOW-003 要点カード・手順は 1 項目ずつ見せる
+  await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-points'));
+  await page.waitForTimeout(800);
+  const builtCount = () => document.querySelectorAll('.is-scene .is-built').length;
+  const pointBuilds = [await page.evaluate(builtCount)];
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-points-0.png') });
+  await page.keyboard.press('ArrowRight');
+  pointBuilds.push(await page.evaluate(builtCount));
+  await page.keyboard.press('ArrowRight');
+  pointBuilds.push(await page.evaluate(builtCount));
+  await page.keyboard.press('ArrowLeft');
+  pointBuilds.push(await page.evaluate(builtCount));
+  await page.waitForTimeout(500);
+  const hiddenCard = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.is-scene .vs-points > li:not(.is-built)')).opacity));
+  await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-steps'));
+  await page.waitForTimeout(800);
+  const stepCircle = await page.evaluate(() => {
+    const li = document.querySelector('.is-scene .vs-steps > li:not(.is-built)');
+    return { opacity: getComputedStyle(li).opacity, circle: getComputedStyle(li, '::before').backgroundColor };
+  });
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-steps-2.png') });
+  record('TC-SHOW-003', JSON.stringify(pointBuilds) === '[0,1,2,1]' && hiddenCard < 0.2 && stepCircle.opacity === '1' && !/, 0\)$/.test(stepCircle.circle),
+    JSON.stringify({ pointBuilds, hiddenCard, stepCircle }));
+
+  // TC-SHOW-005 図は舞台の高さに収まり、操作部品は隠れ、光も図に重なる
+  await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-split'));
+  await page.waitForTimeout(900);
+  await seekLight(page, 1.0);
+  const diagram = await page.evaluate(() => {
+    const scene = document.querySelector('.is-scene');
+    const svg = scene.querySelector('.exhibition-viewport > svg');
+    const rect = svg.getBoundingClientRect();
+    return {
+      bottom: rect.bottom,
+      width: rect.width,
+      minWidth: parseFloat(svg.style.minWidth) || 0,
+      header: getComputedStyle(scene.querySelector('.exhibition-diagram-header')).display,
+      fitsHeight: rect.bottom <= innerHeight,
+      overflow: document.getElementById('visual-stage-container').scrollHeight - innerHeight
+    };
+  });
+  const flowHead = await page.evaluate(inspectLightHead, { flowIndex: 0, edgeIndex: 2, t: 1.0 });
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-split.png') });
+  await page.evaluate(() => LucivoStage.seekLights(null));
+  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100, JSON.stringify({ diagram, flowHead }));
+
+  // TC-SHOW-004 画面に収まらない章は、次の章へ進む前に残りをスクロールする
+  await pressUntil(page, () => document.getElementById('visual-stage-container').scrollHeight - innerHeight > 200);
+  await page.waitForTimeout(800);
+  const tall = await page.evaluate(inspectShow);
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-tall.png') });
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(900);
+  const scrolled = await page.evaluate(inspectShow);
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(900);
+  const returned = await page.evaluate(inspectShow);
+  record('TC-SHOW-004', scrolled.index === tall.index && scrolled.scrollTop > 100 && returned.index === tall.index && returned.scrollTop <= 4, JSON.stringify({ index: tall.index, overflow: tall.overflow, scrolled: scrolled.scrollTop, returned: returned.scrollTop }));
+
+  // TC-SHOW-007 発表中に明暗を切り替えても、シーンを保つ
+  await page.keyboard.press('Home');
+  await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-split'));
+  const beforeToggle = await page.evaluate(inspectShow);
+  await page.keyboard.press('t');
+  await waitRendered(page);
+  await page.waitForTimeout(900);
+  const afterToggle = await page.evaluate(inspectShow);
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-light-split.png') });
+  await page.keyboard.press('t');
+  await waitRendered(page);
+  await page.waitForTimeout(500);
+  record('TC-SHOW-007', beforeToggle.index === afterToggle.index && afterToggle.appearance === 'light' && afterToggle.shown === 1 && afterToggle.scenes === 15, JSON.stringify({ before: beforeToggle.appearance, after: afterToggle.appearance, index: afterToggle.index }));
+
+  // TC-SHOW-006 自動進行（項目ごとの送りと、最後の章から先頭への巡回）
+  await page.keyboard.press('Home');
+  await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-points'));
+  await page.keyboard.press('a');
+  await page.waitForTimeout(2900);
+  const autoBuild = await page.evaluate(builtCount);
+  await page.keyboard.press('a');
+  const autoOff = await page.evaluate(() => LucivoStage.showState().auto);
+
+  // TC-SHOW-008 終了すると元の状態に戻り、発表した章を表示する
+  await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-quote'));
+  const quoteIndex = await page.evaluate(() => LucivoStage.showState().index);
+  await page.keyboard.press('Escape');
+  await waitRendered(page);
+  await page.waitForTimeout(500);
+  const exited = await page.evaluate(i => {
+    const scenes = document.querySelectorAll('.exhibition-wrap > .exhibition-hero, .exhibition-wrap > .exhibition-slab');
+    const scroller = document.getElementById('preview-scroll').getBoundingClientRect();
+    const rect = scenes[i].getBoundingClientRect();
+    return {
+      active: LucivoStage.showState().active,
+      htmlClass: document.documentElement.classList.contains('is-stage-show'),
+      appearance: state.appearance,
+      viewMode: state.viewMode,
+      isVisual: state.isVisualMode,
+      leftovers: document.querySelectorAll('.is-scene, .is-built, .is-building').length,
+      sceneInView: rect.top < scroller.bottom && rect.bottom > scroller.top,
+      rootFont: getComputedStyle(document.documentElement).fontSize
+    };
+  }, quoteIndex);
+  record('TC-SHOW-008', !exited.active && !exited.htmlClass && exited.appearance === 'light' && exited.viewMode === 'split' && exited.isVisual && exited.leftovers === 0 && exited.sceneInView && exited.rootFont === '16px', JSON.stringify(exited));
+
+  // 短い文書で、自動進行が最後の章から先頭へ戻ること
+  await setDocument(page, '# 題名\n\n## 一\n\n短い章です。\n');
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => LucivoStage.showState().active);
+  await page.keyboard.press('End');
+  await page.keyboard.press('a');
+  await page.waitForTimeout(7400);
+  const looped = await page.evaluate(() => LucivoStage.showState());
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  record('TC-SHOW-006', autoBuild >= 1 && !autoOff && looped.index === 0 && looped.auto, JSON.stringify({ autoBuild, autoOff, looped }));
+
+  // TC-SHOW-009 章のない文書では発表を始めず、元の表示を保つ
+  await setDocument(page, '');
+  await page.click('#btn-stage-show');
+  await page.waitForTimeout(400);
+  const empty = await page.evaluate(() => ({
+    active: LucivoStage.showState().active,
+    htmlClass: document.documentElement.classList.contains('is-stage-show'),
+    appearance: state.appearance,
+    viewMode: state.viewMode,
+    toast: document.getElementById('toast-message').textContent
+  }));
+  record('TC-SHOW-009', !empty.active && !empty.htmlClass && empty.appearance === 'light' && empty.viewMode === 'split' && /発表する章がありません/.test(empty.toast), JSON.stringify(empty));
+
+  // TC-SHOW-010 見た目（全シーン）
+  await setDocument(page, showcaseMd);
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => LucivoStage.showState().active);
+  await waitRendered(page);
+  for (let i = 0; i < 15; i++) {
+    await page.waitForTimeout(950);
+    await page.screenshot({ path: path.join(SHOT_DIR, `show-scene-${String(i).padStart(2, '0')}.png`) });
+    // 項目の送りとスクロールを含めて、次の章へ進むまで送る
+    for (let n = 0; n < 12 && await page.evaluate(() => LucivoStage.showState().index) <= i; n++) {
+      await page.keyboard.press('ArrowRight');
+      await page.waitForTimeout(350);
+    }
+  }
+  await page.keyboard.press('Escape');
+
+  if (page.consoleErrors.length) record('TC-SHOW-CONSOLE', false, JSON.stringify(page.consoleErrors));
+  await page.context().close();
+}
+
 (async () => {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await chromium.launch();
@@ -1518,6 +1944,8 @@ async function testVisualTemplates(browser) {
     await testEdgeStyle(browser);
     await testVisualStageQuality(browser);
     await testVisualTemplates(browser);
+    await testSignalLight(browser);
+    await testStageShow(browser);
     await testStartupAndCache(browser);
   } catch (e) {
     record('RUNTIME', false, e.stack);

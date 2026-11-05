@@ -16,6 +16,7 @@ tags: ["Lucivo", "詳細設計"]
 | math-rendering    | `MATH` | [math-rendering.md](features/math-rendering.md)     | [math-rendering.md](../1.SRS/features/math-rendering.md) (`FR-010`, `NFR-003`) |
 | front-matter      | `FM`   | [front-matter.md](features/front-matter.md)         | [front-matter.md](../1.SRS/features/front-matter.md) (`FR-011`, `NFR-003`, `NFR-006`) |
 | edge-style        | `EDGE` | [edge-style.md](features/edge-style.md)             | [edge-style.md](../1.SRS/features/edge-style.md) (`FR-004`, `FR-012`) |
-| visual-templates  | `VTPL` | [visual-templates.md](features/visual-templates.md) | [visual-templates.md](../1.SRS/features/visual-templates.md) (`FR-016`) |
+| visual-templates  | `VTPL` | [visual-templates.md](features/visual-templates.md) | [visual-templates.md](../1.SRS/features/visual-templates.md) (`FR-016`, `FR-017`) |
+| stage-show        | `LIGHT`, `SHOW` | [stage-show.md](features/stage-show.md) | [stage-show.md](../1.SRS/features/stage-show.md) (`FR-018`, `FR-019`) |
 
 - 全体要求仕様書: [1.SRS.md](../1.SRS.md)

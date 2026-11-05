@@ -1806,6 +1806,11 @@ function setupEventListeners() {
     };
   }
 
+  document.getElementById('btn-stage-show').onclick = async () => {
+    setStageMode(true);
+    if (await loadLibrary('stage')) LucivoStage.enterShow();
+  };
+
   document.querySelectorAll('.info-style-btn').forEach(btn => {
     btn.onclick = () => {
       const style = btn.getAttribute('data-info-style');
