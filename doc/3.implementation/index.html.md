@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "HTML"]
 
 # index.html
 
-ソース: [index.html](../../index.html)／設計: `DD-FILE-001`〜`006`、`DD-FM-011`、アーキテクチャ 4.5
+ソース: [index.html](../../index.html)／設計: `DD-FILE-001`〜`006`、`DD-FM-011`、`DD-LIGHT-001`、`DD-SHOW-001`、アーキテクチャ 4.5
 
 ## 依存関係
 
