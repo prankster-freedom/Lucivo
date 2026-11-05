@@ -1,4 +1,4 @@
-// Lucivo のブラウザ動作確認スクリプト（テスト仕様: doc/5.test_spec/）
+// Lucivo のブラウザ動作確認スクリプト（テスト仕様: doc/4.test_spec/）
 // 使い方: nodetests/e2e.cjs
 // 出力: work/test/（結果 JSON と図の画像。git 管理外）
 const path = require('path');
@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
 
 const APP_DIR = path.resolve(__dirname, '..');
 const APP_URL = 'file:///' + path.join(APP_DIR, 'index.html').replace(/\\/g, '/');
-const SAMPLE = path.join(APP_DIR, 'sample.md');
+const SAMPLE = path.join(APP_DIR, 'samples', 'notation_sample.md');
 const OUT_DIR = path.join(APP_DIR, 'work', 'test');
 const SHOT_DIR = path.join(OUT_DIR, 'shots');
 const VISUAL_STYLES = ['shapes', 'cards', 'circles', 'editorial'];
@@ -164,7 +164,7 @@ async function testFileLoading(browser) {
   await page.setInputFiles('#file-input', SAMPLE);
   await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('\n# Lucivo サンプル文書'));
   page.off('dialog', onDialogAfterSave);
-  record('TC-FILE-012', savedName === 'sample.md' && savedText === '---\ntitle: 保存のテスト\n---\n# 保存した文書\n' && !savedText.startsWith('﻿') && !dialogAfterSave,
+  record('TC-FILE-012', savedName === 'notation_sample.md' && savedText === '---\ntitle: 保存のテスト\n---\n# 保存した文書\n' && !savedText.startsWith('﻿') && !dialogAfterSave,
     JSON.stringify({ savedName, savedLength: savedText.length, dialogAfterSave }));
 
   // TC-FILE-008 埋め込みサンプルの削除
@@ -495,7 +495,7 @@ async function testMarkdownTypography(browser) {
   await page.close();
 }
 
-// 本文の数式（sample.md の 8 章）を調べる
+// 本文の数式（samples/notation_sample.md の 8 章）を調べる
 function inspectMath(isVisual) {
   const root = document.querySelector(isVisual ? '#visual-stage-container' : '#standard-doc-container');
   const all = Array.from(root.querySelectorAll('.lucivo-math'));
@@ -633,7 +633,7 @@ async function testVisualStageQuality(browser) {
   });
   record('TC-DIAG-016', hx.imgs === 0 && !hx.xss && /<img src=x/.test(hx.heroText || ''), JSON.stringify(hx));
 
-  // 以降は sample.md で確かめる
+  // 以降は samples/notation_sample.md で確かめる
   await setMode(page, { style: 'std', appearance: 'light' });
   await loadSample(page);
 
@@ -1236,6 +1236,111 @@ async function testVisualTemplates(browser) {
   const q = canvas.quote, l = canvas.lead;
   record('TC-VTPL-006', !!(q && l) && q.borderLeft === 0 && q.align === 'center' && q.size > q.body && /“/.test(q.mark) && q.citeSmaller
     && l.size > l.body && l.bar === '4px', JSON.stringify({ quote: q, lead: l }));
+
+  // TC-VTPL-012 ベクター装飾素材の描画確認（FR-017, DD-VTPL-014, DD-VTPL-024）
+  const motifs = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    const cs = (el, p) => getComputedStyle(el, p || null);
+    const maskOf = (el, p) => {
+      const s = cs(el, p);
+      return (s.maskImage && s.maskImage !== 'none' ? s.maskImage : s.webkitMaskImage) || '';
+    };
+    const isOpaque = c => !!c && c !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(c);
+    const slab = title => Array.from(root.querySelectorAll('.exhibition-slab')).find(s => {
+      const h2 = s.querySelector('h2');
+      return h2 && h2.textContent.replace(/^STAGE \d+/, '') === title;
+    });
+    const emblem = root.querySelector('.exhibition-hero-emblem');
+    const eb = emblem ? emblem.getBoundingClientRect() : { width: 0, height: 0 };
+    const s26 = slab('要点のカード'), s27 = slab('手順'), s28 = slab('ステートメント');
+    const ornaments = s26 ? Array.from(s26.querySelectorAll('.vs-points > li > .vs-card-ornament')) : [];
+    const stepItems = s27 ? Array.from(s27.querySelectorAll('.vs-steps > li')) : [];
+    const chevrons = s27 ? Array.from(s27.querySelectorAll('.vs-steps > li > .vs-step-chevron')) : [];
+    const bq = s28 && s28.querySelector('blockquote.vs-quote');
+    return {
+      emblem: {
+        mask: /hero-prism\.svg/.test(maskOf(emblem)),
+        size: eb.width >= 20 && eb.height >= 20,
+        bg: cs(emblem).backgroundImage !== 'none'
+      },
+      ornaments: {
+        count: ornaments.length,
+        mask: ornaments.every(el => /card-corner-ornament\.svg/.test(maskOf(el))),
+        size: ornaments.every(el => { const r = el.getBoundingClientRect(); return r.width >= 20 && r.height >= 20; }),
+        bg: ornaments.every(el => isOpaque(cs(el).backgroundColor))
+      },
+      chevrons: {
+        firstHasNone: stepItems.length === 4 && !stepItems[0].querySelector('.vs-step-chevron'),
+        count: chevrons.length,
+        mask: chevrons.every(el => /step-arrow\.svg/.test(maskOf(el))),
+        size: chevrons.every(el => { const r = el.getBoundingClientRect(); return r.width >= 12 && r.height >= 12; }),
+        bg: chevrons.every(el => isOpaque(cs(el).backgroundColor))
+      },
+      quote: bq ? {
+        mask: /quote-watermark\.svg/.test(maskOf(bq, '::before')),
+        bg: isOpaque(cs(bq, '::before').backgroundColor)
+      } : null
+    };
+  });
+  const motifsOk = motifs.emblem.mask && motifs.emblem.size && motifs.emblem.bg
+    && motifs.ornaments.count === 3 && motifs.ornaments.mask && motifs.ornaments.size && motifs.ornaments.bg
+    && motifs.chevrons.firstHasNone && motifs.chevrons.count === 3 && motifs.chevrons.mask && motifs.chevrons.size && motifs.chevrons.bg
+    && !!(motifs.quote && motifs.quote.mask && motifs.quote.bg);
+  record('TC-VTPL-012', motifsOk, JSON.stringify(motifs));
+
+  // TC-VTPL-013 動的ステージ演出（スポットライト・ステージ集中）の動作確認（FR-017, DD-VTPL-015, DD-VTPL-025）
+  const s26Loc = page.locator('#visual-stage-container .vs-tpl-points').last();
+  await s26Loc.locator('.vs-points > li:nth-child(1)').click();
+  await page.waitForTimeout(300);
+  await s26Loc.screenshot({ path: path.join(SHOT_DIR, 'vtpl-spotlight-points.png') });
+  const ptSpot = await page.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .vs-tpl-points');
+    const ul = slabs[slabs.length - 1].querySelector('.vs-points');
+    const items = Array.from(ul.children);
+    return {
+      hasSpot: ul.classList.contains('has-spotlight'),
+      firstSpot: items[0].classList.contains('is-spotlight'),
+      secondDim: parseFloat(getComputedStyle(items[1]).opacity) < 0.7
+    };
+  });
+  await s26Loc.locator('.vs-points > li:nth-child(1)').click();
+  const ptCleared = await page.evaluate(() => !document.querySelector('#visual-stage-container .vs-points.has-spotlight'));
+
+  await page.click('#visual-stage-container .vs-tpl-steps .vs-steps > li:nth-child(3)');
+  await page.waitForTimeout(300);
+  const s27Slab = await page.$('#visual-stage-container .vs-tpl-steps');
+  if (s27Slab) await s27Slab.screenshot({ path: path.join(SHOT_DIR, 'vtpl-spotlight-steps.png') });
+  const stSpot = await page.evaluate(() => {
+    const ol = document.querySelector('#visual-stage-container .vs-tpl-steps .vs-steps');
+    const items = Array.from(ol.children);
+    return {
+      hasSpot: ol.classList.contains('has-spotlight'),
+      reached: items.map(li => li.classList.contains('is-reached')),
+      spotIdx: items.findIndex(li => li.classList.contains('is-spotlight')),
+      fourthDim: parseFloat(getComputedStyle(items[3]).opacity) < 0.7
+    };
+  });
+
+  await s26Loc.locator('.exhibition-num-badge').click();
+  await page.waitForTimeout(300);
+  const stageSpot = await page.evaluate(() => {
+    const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+    const slabs = document.querySelectorAll('#visual-stage-container .vs-tpl-points');
+    const target = slabs[slabs.length - 1];
+    const other = document.querySelector('#visual-stage-container .exhibition-slab');
+    return {
+      wrapFocus: wrap.classList.contains('has-stage-focus'),
+      slabFocus: target.classList.contains('is-stage-focused'),
+      otherDim: parseFloat(getComputedStyle(other).opacity) < 0.7
+    };
+  });
+
+  await page.keyboard.press('Escape');
+  const allCleared = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .has-spotlight, #visual-stage-container .is-spotlight, #visual-stage-container .is-reached, #visual-stage-container .has-stage-focus, #visual-stage-container .is-stage-focused').length === 0);
+  const spotOk = ptSpot.hasSpot && ptSpot.firstSpot && ptSpot.secondDim && ptCleared
+    && stSpot.hasSpot && JSON.stringify(stSpot.reached) === '[true,true,true,false]' && stSpot.spotIdx === 2 && stSpot.fourthDim
+    && stageSpot.wrapFocus && stageSpot.slabFocus && stageSpot.otherDim && allCleared;
+  record('TC-VTPL-013', spotOk, JSON.stringify({ ptSpot, ptCleared, stSpot, stageSpot, allCleared }));
 
   // TC-VTPL-007・008・011 スタイル別の配色、視認性、画像
   const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
