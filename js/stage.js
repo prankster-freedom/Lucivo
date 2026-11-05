@@ -1,5 +1,6 @@
 // Visualモードの舞台演出。Visualモードに初めて入ったときに読み込み、高速モードの起動には影響させない（NFR-006）
 //  - シグナル・ライト（FR-018）: 図の結線に重ねた Canvas に、上流から下流へ伝わる光を描く
+//  - ステージ発表（FR-019）: 章を 1 シーンとして全画面でページ送りする
 (() => {
   /* ======================================================================
      シグナル・ライト（DTP-LIGHT-010〜060）
@@ -386,14 +387,317 @@
     resizeObserver.disconnect();
   }
 
+  /* ======================================================================
+     ステージ発表（DTP-SHOW-010〜060）
+     ====================================================================== */
+  const AUTO_DWELL = { scene: 7000, build: 2400, afterLight: 800 };
+  const SCENE_FIT = { maxScale: 2.4, bottomMargin: 88, minHeightRatio: 0.6, scrollRatio: 0.8 };
+  const HUD_IDLE_MS = 2600;
+
+  const show = { active: false, scenes: [], index: 0, build: 0, auto: false, timer: 0, idleTimer: 0, restore: null, hud: null };
+
+  const stageContainer = () => document.getElementById('visual-stage-container');
+  const currentScene = () => show.scenes[show.index];
+  const buildItems = scene => (scene ? Array.from(scene.querySelectorAll('.vs-steps > li, .vs-points > li')) : []);
+
+  function buildHud() {
+    const hud = document.createElement('div');
+    hud.id = 'stage-hud';
+    hud.className = 'stage-hud';
+    hud.innerHTML = `
+      <div class="stage-sweep" aria-hidden="true"></div>
+      <div class="stage-hint">→ 次へ ／ ← 戻る ／ A 自動進行 ／ T 明暗 ／ Esc 終了</div>
+      <div class="stage-hud-bar">
+        <span class="stage-hud-title"></span>
+        <span class="stage-hud-count"></span>
+        <div class="stage-hud-actions">
+          <button type="button" data-stage-action="prev" aria-label="前へ">←</button>
+          <button type="button" data-stage-action="next" aria-label="次へ">→</button>
+          <button type="button" data-stage-action="auto" aria-pressed="false">自動進行</button>
+          <button type="button" data-stage-action="exit">終了</button>
+        </div>
+      </div>
+      <div class="stage-hud-rail" aria-hidden="true"><span class="stage-hud-fill"></span></div>`;
+    hud.addEventListener('click', event => {
+      const action = event.target.closest('[data-stage-action]');
+      if (!action) return;
+      event.stopPropagation();
+      ({ prev, next: () => next(), auto: toggleAuto, exit: exitShow })[action.dataset.stageAction]();
+    });
+    document.body.appendChild(hud);
+    return hud;
+  }
+
+  // 図を舞台の残りの高さに収める。ただし文字の判読性の下限（NFR-005）より小さくはしない。収まらない分はスクロールする
+  function fitSceneDiagrams(scene) {
+    scene.querySelectorAll('.exhibition-slab-split').forEach(updateSlabSplit);
+    if (scene.classList.contains('exhibition-slab-split')) updateSlabSplit(scene);
+    scene.querySelectorAll('.exhibition-viewport > svg').forEach(svg => {
+      const viewBox = svg.viewBox && svg.viewBox.baseVal;
+      if (!viewBox || !viewBox.width) return;
+      svg.style.removeProperty('--scene-width');
+      const host = svg.parentElement;
+      const style = getComputedStyle(host);
+      const availableWidth = host.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const top = host.getBoundingClientRect().top + parseFloat(style.paddingTop);
+      // 本文の下に図がある章は残りの高さが小さいため、画面の高さの一定の割合までは確保し、はみ出す分はスクロールで見せる
+      const availableHeight = Math.max(
+        window.innerHeight - top - parseFloat(style.paddingBottom) - SCENE_FIT.bottomMargin,
+        window.innerHeight * SCENE_FIT.minHeightRatio
+      );
+      const readable = (parseFloat(svg.style.minWidth) || 0) / viewBox.width;
+      const scale = Math.max(readable, Math.min(availableWidth / viewBox.width, availableHeight / viewBox.height, SCENE_FIT.maxScale));
+      svg.style.setProperty('--scene-width', `${Math.round(viewBox.width * scale)}px`);
+    });
+  }
+
+  function applyBuild(scene) {
+    const items = buildItems(scene);
+    items.forEach((li, idx) => {
+      li.classList.toggle('is-built', idx < show.build);
+      li.classList.toggle('is-spotlight', idx === show.build - 1);
+      li.parentElement.classList.add('is-building');
+    });
+  }
+
+  function updateHud() {
+    const { hud, scenes, index } = show;
+    const scene = currentScene();
+    if (!hud || !scene) return;
+    const heading = scene.querySelector('h2 span:last-child, h1');
+    hud.querySelector('.stage-hud-title').textContent = heading ? heading.textContent.trim() : '';
+    hud.querySelector('.stage-hud-count').textContent = `${String(index + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}`;
+    hud.querySelector('.stage-hud-fill').style.transform = `scaleX(${scenes.length > 1 ? (index + 1) / scenes.length : 1})`;
+    const auto = hud.querySelector('[data-stage-action="auto"]');
+    auto.setAttribute('aria-pressed', String(show.auto));
+    auto.classList.toggle('is-active', show.auto);
+  }
+
+  function replaySceneEntrance(scene) {
+    scene.classList.remove('is-scene-in');
+    show.hud.classList.remove('is-sweeping');
+    void scene.offsetWidth;
+    scene.classList.add('is-scene-in');
+    show.hud.classList.add('is-sweeping');
+  }
+
+  function applyScene(animate) {
+    const scene = currentScene();
+    if (!scene) return;
+    show.scenes.forEach(s => {
+      s.classList.toggle('is-scene', s === scene);
+      if (s !== scene) s.classList.remove('is-scene-in');
+    });
+    applyBuild(scene);
+    fitSceneDiagrams(scene);
+    if (animate) {
+      stageContainer().scrollTop = 0;
+      replaySceneEntrance(scene);
+    }
+    updateHud();
+    scheduleAuto();
+  }
+
+  function goToScene(index, build) {
+    show.index = index;
+    show.build = build === 'end' ? buildItems(show.scenes[index]).length : build;
+    applyScene(true);
+  }
+
+  // 画面に収まらない章は、次の章へ進む前に残りをスクロールで見せる。動かしたら true を返す
+  function scrollScene(direction) {
+    const stage = stageContainer();
+    const room = direction > 0 ? stage.scrollHeight - stage.clientHeight - stage.scrollTop : stage.scrollTop;
+    if (room <= 4) return false;
+    stage.scrollBy({ top: direction * stage.clientHeight * SCENE_FIT.scrollRatio, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    return true;
+  }
+
+  function next(loop) {
+    const items = buildItems(currentScene());
+    if (show.build < items.length) {
+      show.build += 1;
+      applyBuild(currentScene());
+      scheduleAuto();
+    } else if (scrollScene(1)) {
+      scheduleAuto();
+    } else if (show.index < show.scenes.length - 1) {
+      goToScene(show.index + 1, 0);
+    } else if (loop) {
+      goToScene(0, 0);
+    }
+  }
+
+  function prev() {
+    if (show.build > 0) {
+      show.build -= 1;
+      applyBuild(currentScene());
+      scheduleAuto();
+    } else if (scrollScene(-1)) {
+      scheduleAuto();
+    } else if (show.index > 0) {
+      goToScene(show.index - 1, 'end');
+    }
+  }
+
+  function sceneDwell(scene) {
+    if (show.build < buildItems(scene).length) return AUTO_DWELL.build;
+    // 図のある章は、光が図を一巡してから次へ進む
+    const cycles = Array.from(scene.querySelectorAll('.exhibition-viewport > svg')).map(svg => {
+      const flow = flows.get(svg);
+      if (flow && !flow.plan && svg.getScreenCTM()) buildPlan(flow);
+      return flow && flow.plan ? flow.plan.cycle * 1000 + AUTO_DWELL.afterLight : 0;
+    });
+    return Math.max(AUTO_DWELL.scene, ...cycles);
+  }
+
+  function scheduleAuto() {
+    clearTimeout(show.timer);
+    if (!show.active || !show.auto) return;
+    show.timer = setTimeout(() => next(true), sceneDwell(currentScene()));
+  }
+
+  function toggleAuto() {
+    show.auto = !show.auto;
+    updateHud();
+    scheduleAuto();
+  }
+
+  function wakeHud() {
+    document.documentElement.classList.remove('is-stage-idle');
+    clearTimeout(show.idleTimer);
+    show.idleTimer = setTimeout(() => document.documentElement.classList.add('is-stage-idle'), HUD_IDLE_MS);
+  }
+
+  function onShowKey(event) {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const actions = {
+      ArrowRight: () => next(), ArrowDown: () => next(), PageDown: () => next(), ' ': () => next(), Enter: () => next(),
+      ArrowLeft: prev, ArrowUp: prev, PageUp: prev, Backspace: prev,
+      Home: () => goToScene(0, 0),
+      End: () => goToScene(show.scenes.length - 1, 'end'),
+      a: toggleAuto, A: toggleAuto,
+      t: toggleShowAppearance, T: toggleShowAppearance,
+      Escape: exitShow
+    };
+    const action = actions[event.key];
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    action();
+  }
+
+  function onShowClick(event) {
+    if (event.target.closest('a, button')) return;
+    event.stopPropagation();
+    next();
+  }
+
+  function onFullscreenChange() {
+    if (show.active && show.restore.fullscreen && !document.fullscreenElement) exitShow();
+  }
+
+  function toggleShowAppearance() {
+    document.getElementById('btn-theme-toggle').click();
+  }
+
+  function collectScenes() {
+    const wrap = stageContainer().querySelector('.exhibition-wrap');
+    return wrap ? Array.from(wrap.querySelectorAll(':scope > .exhibition-hero, :scope > .exhibition-slab')) : [];
+  }
+
+  // 発表中に明暗を切り替えると図の DOM が作り直されるため、シーンを取り直す
+  function refreshScenes() {
+    show.scenes = collectScenes();
+    show.index = Math.min(show.index, Math.max(0, show.scenes.length - 1));
+    applyScene(false);
+  }
+
+  function enterShow() {
+    if (show.active) return;
+    const scroller = document.getElementById('preview-scroll');
+    show.restore = { appearance: state.appearance, viewMode: state.viewMode, scrollTop: scroller.scrollTop, fullscreen: false };
+    if (state.viewMode !== 'canvas') document.querySelector('[data-view-mode="canvas"]').click();
+    // 舞台は暗転から始める。Dark の加算で光が本来の輝きになる（DTP-SHOW-010）
+    if (state.appearance !== 'dark') toggleShowAppearance();
+
+    show.scenes = collectScenes();
+    if (!show.scenes.length || !document.getElementById('markdown-editor').value.trim()) {
+      restoreView();
+      showToast('発表する章がありません');
+      return;
+    }
+    clearVisualStageSpotlight(stageContainer());
+    show.active = true;
+    show.index = 0;
+    show.build = 0;
+    show.auto = false;
+    show.hud = show.hud || buildHud();
+    document.documentElement.classList.add('is-stage-show');
+    document.addEventListener('keydown', onShowKey, true);
+    document.addEventListener('mousemove', wakeHud);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    stageContainer().addEventListener('click', onShowClick, true);
+    window.addEventListener('resize', refitScene);
+    wakeHud();
+    applyScene(true);
+
+    const fullscreen = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+    if (fullscreen) fullscreen.then(() => { show.restore.fullscreen = true; }, () => {});
+  }
+
+  function refitScene() {
+    if (show.active && currentScene()) fitSceneDiagrams(currentScene());
+  }
+
+  function restoreView() {
+    const { appearance, viewMode } = show.restore;
+    if (state.appearance !== appearance) toggleShowAppearance();
+    if (state.viewMode !== viewMode) document.querySelector(`[data-view-mode="${viewMode}"]`).click();
+  }
+
+  function exitShow() {
+    if (!show.active) return;
+    const lastScene = currentScene();
+    const lastIndex = show.index;
+    show.active = false;
+    show.auto = false;
+    clearTimeout(show.timer);
+    clearTimeout(show.idleTimer);
+    document.documentElement.classList.remove('is-stage-show', 'is-stage-idle');
+    document.removeEventListener('keydown', onShowKey, true);
+    document.removeEventListener('mousemove', wakeHud);
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
+    stageContainer().removeEventListener('click', onShowClick, true);
+    window.removeEventListener('resize', refitScene);
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+
+    show.scenes.forEach(scene => {
+      scene.classList.remove('is-scene', 'is-scene-in');
+      buildItems(scene).forEach(li => {
+        li.classList.remove('is-built', 'is-spotlight');
+        li.parentElement.classList.remove('is-building');
+      });
+      scene.querySelectorAll('.exhibition-viewport > svg').forEach(svg => svg.style.removeProperty('--scene-width'));
+    });
+    restoreView();
+    // 発表を終えた章を、通常の表示でも見える位置に出す
+    const target = collectScenes()[lastIndex] || lastScene;
+    if (target && target.isConnected) target.scrollIntoView({ block: 'start' });
+    updateAllSlabSplits(stageContainer());
+  }
+
   function mount(container) {
     mountLights(container);
+    if (show.active) refreshScenes();
   }
 
   window.LucivoStage = {
     mount,
     mountLights,
     resetLights,
+    enterShow,
+    exitShow,
     // 確認用: t 秒の時点の光で止める（null で再開）。テストとゲラの撮影で使う
     seekLights(t) {
       seekTime = t;
@@ -405,6 +709,7 @@
       svg: f.svg,
       back: f.back.canvas,
       front: f.front.canvas
-    }))
+    })),
+    showState: () => ({ active: show.active, index: show.index, build: show.build, auto: show.auto, scenes: show.scenes.length })
   };
 })();

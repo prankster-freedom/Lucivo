@@ -52,7 +52,7 @@ description: doc/0.DTP/features/visual-templates.md に定義された Visualモ
 
 ## 6. 手順型（steps）：横並びフロー（4項目以下・ルミナス・フロー演出）
 
-番号付きリストが4項目以下の場合、横並びの手順フローになります。接続線上を4色の光が流れ、工程をクリックするとそこまでの到達経路が強調されます。
+番号付きリストが4項目以下の場合、横並びの手順フローになります。接続線上を光が走り、届いた工程の丸が反応します。工程をクリックするとそこまでの到達経路が強調されます。
 
 1. **原稿の記述**: 標準の Markdown 記法とコードブロックで文書と図を記述します。
 2. **雛形の自動判定**: 章ごとの構造と文字量から最適な誌面テンプレートを選択します。
@@ -78,7 +78,7 @@ description: doc/0.DTP/features/visual-templates.md に定義された Visualモ
 
 ## 9. 解説＋図版型（split）：標準サイズのフローチャートと光線演出
 
-本文要素と図が1つずつ存在する章は、解説文（左5カラム）と図版（右7カラム）の2段組みで自動配置されます。図の結線上には始点から終点へ向かって光線（ルミナス・ビーム）が流れ、データの進行方向を視覚的にガイドします。
+本文要素と図が1つずつ存在する章は、解説文（左5カラム）と図版（右7カラム）の2段組みで自動配置されます。図の根から下流へ結線をたどって光が伝わり、届いたノードの輪郭が逆光で浮かびます。
 
 ```mermaid
 flowchart TD
@@ -195,9 +195,10 @@ $$
 ### 13.3 コードブロックとの組み合わせ
 
 ```javascript
-// ルミナス・ビームの位相差アニメーション設定例
-const beams = svg.querySelectorAll('.lucivo-flow-beam');
-beams.forEach((beam, idx) => {
-  beam.style.setProperty('--beam-delay', `${-((idx % 6) * 0.45).toFixed(2)}s`);
+// 光の出発の時刻を、到達の早い順に求める例
+const arrival = new Map([[root, 0]]);
+edges.forEach(edge => {
+  edge.start = arrival.get(edge.from);
+  arrival.set(edge.to, edge.start + edge.length / speed);
 });
 ```
