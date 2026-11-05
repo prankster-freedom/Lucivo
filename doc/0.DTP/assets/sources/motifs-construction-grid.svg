@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 64" fill="none">
+  <!-- Master Construction Grid for AST-005..AST-008 (DTP Source File - Excluded from Release) -->
+  <g id="grid-guides" stroke="#94A3B8" stroke-width="0.25" stroke-dasharray="1 1">
+    <rect x="0" y="0" width="64" height="64"/>
+    <rect x="64" y="0" width="64" height="64"/>
+    <rect x="128" y="0" width="64" height="64"/>
+    <rect x="192" y="0" width="64" height="64"/>
+    <line x1="0" y1="32" x2="256" y2="32"/>
+  </g>
+  <g id="ast-005-master" transform="translate(16, 16)" stroke="#0F172A">
+    <polygon points="16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5" stroke-width="2"/>
+    <polygon points="16,6 25,16 16,26 7,16" stroke-width="1.75"/>
+    <circle cx="16" cy="16" r="2.75" fill="#0F172A"/>
+  </g>
+  <g id="ast-006-master" transform="translate(64, 10)" stroke="#0F172A" fill="#0F172A">
+    <circle cx="32" cy="22" r="20" fill="none" stroke-dasharray="3 3"/>
+    <path d="M27.5 13L19.5 22.5H25.5L22.5 31H15.5L18.5 21.5L23.5 13H27.5Z"/>
+    <path d="M44.5 13L36.5 22.5H42.5L39.5 31H32.5L35.5 21.5L40.5 13H44.5Z"/>
+  </g>
+  <g id="ast-007-master" transform="translate(128, 0)" stroke="#0F172A" fill="#0F172A">
+    <path d="M64 0H20L64 44V0Z" fill-opacity="0.2"/>
+    <path d="M12 0L64 52" fill="none"/>
+  </g>
+  <g id="ast-008-master" transform="translate(216, 24)" stroke="#0F172A">
+    <path d="M5.5 3.5L10 8L5.5 12.5" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+</svg>
+
