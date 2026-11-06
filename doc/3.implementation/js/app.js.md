@@ -14,7 +14,7 @@ tags: ["Lucivo", "実装", "JavaScript"]
 
 ```mermaid
 flowchart TD
-  subgraph Dependencies["Dependencies（CDN のグローバル変数）"]
+  subgraph Dependencies["Dependencies（同梱のライブラリのグローバル変数）"]
     marked["marked"]
     purify["DOMPurify"]
     mermaid["mermaid（loadLibrary で遅延読み込み）"]
