@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —</title>
+  <link id="app-favicon" rel="icon" type="image/svg+xml" href="./assets/logos/light/favicon.svg" />
   <!-- Tailwind CSS（使っているクラスだけを tools/build-tailwind-css.cjs で事前に生成したもの） -->
   <link rel="stylesheet" href="./css/tailwind.css" />
   <!-- Google Fonts: Inter, Plus Jakarta Sans, Noto Sans JP, JetBrains Mono -->
@@ -21,10 +22,10 @@
   <!-- ==================== メインヘッダー ==================== -->
   <header class="glass-nav h-12 px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0 z-30">
     <div class="flex items-center gap-2 shrink-0">
-      <div class="w-6 h-6 rounded-md flex items-center justify-center font-display font-extrabold text-xs text-white bg-blue-600 shadow-sm shrink-0">
-        L
+      <div id="header-brand-logo" class="header-brand-logo shrink-0">
+        <img class="brand-logo-light" src="./assets/logos/light/logo_capsule.svg" alt="Lucivo" width="117" height="32" />
+        <img class="brand-logo-dark" src="./assets/logos/dark/logo_capsule.svg" alt="Lucivo" width="117" height="32" />
       </div>
-      <span class="font-display font-bold text-sm tracking-tight whitespace-nowrap" style="color: var(--text-primary);">Lucivo</span>
 
       <!-- ファイルメニュー -->
       <div class="relative ml-1 sm:ml-2">

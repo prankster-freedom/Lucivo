@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "CSS"]
 
 # css/style.css
 
-ソース: [css/style.css](../../../css/style.css)／設計: `DD-MD`、`DD-DIAG-023`・`030`〜`032`・`041`、`DD-MATH-023`、`DD-FM-030`、`DD-FILE-006`、`DD-VTPL-020`〜`031`
+ソース: [css/style.css](../../../css/style.css)／設計: `DD-MD`、`DD-DIAG-023`・`030`〜`032`・`041`、`DD-MATH-023`、`DD-FM-030`、`DD-FILE-006`〜`007`、`DD-VTPL-020`〜`031`
 
 ## 依存関係
 

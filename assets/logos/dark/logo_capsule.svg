@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 120" width="440" height="120">
+  <defs>
+    <filter id="capsuleGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Background Capsule -->
+  <rect x="4" y="8" width="432" height="104" rx="52" fill="#111620" stroke="#1e293b" stroke-width="3"/>
+  
+  <!-- Dot / Status light -->
+  <circle cx="58" cy="60" r="10" fill="#00f0ff" filter="url(#capsuleGlow)"/>
+  
+  <!-- Lucivo in Rounded Monospace Style -->
+  <text x="96" y="74" font-family="'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace" font-size="52" font-weight="600" fill="#f8fafc" letter-spacing="4">Lucivo</text>
+  
+  <!-- Subtle Stage Wave / Node on right -->
+  <circle cx="376" cy="60" r="6" fill="#38bdf8"/>
+  <path d="M 376 60 Q 394 48 408 60" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="408" cy="60" r="5" fill="#00f0ff"/>
+</svg>

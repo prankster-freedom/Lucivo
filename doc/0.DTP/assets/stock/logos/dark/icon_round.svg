@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgDarkR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c1017"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </linearGradient>
+    <filter id="glowR" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <circle cx="256" cy="256" r="256" fill="url(#bgDarkR)"/>
+  <circle cx="256" cy="256" r="252" fill="none" stroke="#1e293b" stroke-width="3"/>
+  
+  <g filter="url(#glowR)">
+    <path d="M 148 136 L 148 344 A 36 36 0 0 0 184 380 L 280 380" fill="none" stroke="#00f0ff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 264 224 L 328 356 A 20 20 0 0 0 364 356 L 428 224" fill="none" stroke="#38bdf8" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 148 250 L 264 224" fill="none" stroke="#0284c7" stroke-width="10" stroke-linecap="round" stroke-dasharray="6 10" opacity="0.8"/>
+  </g>
+  <circle cx="148" cy="136" r="22" fill="#ffffff" filter="url(#glowR)"/>
+  <circle cx="280" cy="380" r="18" fill="#00f0ff"/>
+  <circle cx="264" cy="224" r="18" fill="#38bdf8"/>
+  <circle cx="428" cy="224" r="20" fill="#00f0ff" filter="url(#glowR)"/>
+</svg>

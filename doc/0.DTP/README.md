@@ -62,14 +62,24 @@ Lucivo の Visualモード（Visual Stage）の誌面設計の全体方針を定
 - ジャンプ率: 本文 1 に対し、ステートメント 1.2〜1.6、リード 1.1〜1.35。章の見出しより大きくなるのはステートメントだけで、章の主役が「その一文」であることを示す。
 - 行の折り返し: ステートメントは `text-wrap: balance`、リードは `text-wrap: pretty` で、最後の行に 1〜2 文字だけが残る折り返しを避ける。雛形の文字（リード、カード、手順、ステートメント）は `word-break: auto-phrase` で文節の区切りで折り返し、「切り／替える」のような語の途中の改行を避ける（対応していないブラウザでは通常の折り返し）。禁則は `line-break: strict`（全体）に従う。
 
+## DTP-005 ブランドロゴとアプリケーション外枠の配置
+
+[製品名称コンセプト仕様書](product-name-concept.md) の「丸みのある等幅フォント（ソフトなラウンド・ターミナル）」と「ルミナスシアン／ディープスレート」のブランド方針に基づき、アプリケーションのブランド表示には Light / Dark それぞれに最適化した公式ベクターロゴ素材（`AST-010`〜`012`）を配置し、`body[data-appearance]` の切り替えに連動させる。
+
+| 箇所                    | 使用素材                                                  | 表示寸法・配置ルール |
+| :---------------------- | :-------------------------------------------------------- | :------------------- |
+| ブラウザタブ（Favicon） | `AST-010`（`assets/logos/{light,dark}/favicon.svg`）      | `32×32` viewBox。外観（Light / Dark）の切り替えに連動して `<link id="app-favicon">` の参照先を更新する |
+| メインヘッダー左端      | `AST-011`（`assets/logos/{light,dark}/logo_capsule.svg`） | 高さ `2rem`（`32px`、ヘッダー内ボタン群と同じ高さ）で配置し、ファイルメニューボタンの左に並べる |
+| 初期案内画面（`.empty-guide`）上部 | `AST-012`（`assets/logos/{light,dark}/logo_full.svg`） | 高さ `4.5rem`（`72px`、最大幅 `100%`）・中央揃えで掲出し、その下に案内見出しとモード紹介カードを配置する |
+
 ## DTP ID 一覧
 
-| ID               | 項目     | 定義する文書                                                 |
-| :--------------- | :------- | :----------------------------------------------------------- |
-| `DTP-001`〜`004` | 全体設計 | 本書                                                         |
+| ID               | 項目                       | 定義する文書                                     |
+| :--------------- | :------------------------- | :----------------------------------------------- |
+| `DTP-001`〜`005` | 全体設計・ブランドロゴ配置 | 本書                                             |
 | `DTP-VTPL-001`〜 | Visualモードの記述パターン別の雛形、動的ステージ演出、表紙と誌面の表 | [features/visual-templates.md](features/visual-templates.md) |
 | `DTP-LIGHT-010`〜, `DTP-SHOW-010`〜 | Visualモードの舞台演出（シグナル・ライト、ステージ発表） | [features/stage-show.md](features/stage-show.md) |
-| `RGH-<nnn>`      | ラフ案   | [roughs/README.md](roughs/README.md)                         |
-| `AST-<nnn>`      | 素材     | [assets/README.md](assets/README.md)                         |
+| `RGH-<nnn>`      | ラフ案                     | [roughs/README.md](roughs/README.md)             |
+| `AST-<nnn>`      | 素材                       | [assets/README.md](assets/README.md)             |
 
-- 本番素材の置き場所（`<プロジェクト>/assets/motifs/`）: ベクター装飾素材 `AST-005`〜`AST-008` を配置し、製品リリースに同梱する。作図元データ（`sources/`）および未使用のストック・ボツ素材（`stock/`）は `doc/0.DTP/assets/` で管理する（[assets/README.md](assets/README.md)）。
+- 本番素材の置き場所（`<プロジェクト>/assets/`）: Visualモードのベクター装飾素材 `AST-005`〜`AST-009` を `assets/motifs/` に、ブランドロゴ素材 `AST-010`〜`AST-012` を `assets/logos/{light,dark}/` に配置し、製品リリースに同梱する。作図元データ（`sources/`）および未使用のストック・ボツ素材（`stock/`）は `doc/0.DTP/assets/` で管理する（[assets/README.md](assets/README.md)）。
