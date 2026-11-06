@@ -274,6 +274,10 @@ const SEQUENCE_MATH_LIFT = 6;
 
 const EMPTY_GUIDE_HTML = `
 <div class="empty-guide">
+  <div class="empty-guide-logo">
+    <img class="brand-logo-light" src="./assets/logos/light/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —" width="264" height="72" />
+    <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —" width="264" height="72" />
+  </div>
   <h3 class="empty-guide-title">Markdown を開いてください</h3>
   <p class="empty-guide-desc">ヘッダーの「ファイル」メニュー →「Markdown を開く…」からファイルを読み込むか、左のエディタに直接入力してください。同梱の <code>samples/notation_sample.md</code> に各記法や図のサンプルがあります。</p>
   
@@ -1949,9 +1953,13 @@ function setupEventListeners() {
   const btnTheme = document.getElementById('btn-theme-toggle');
   const iconSun = document.getElementById('icon-sun');
   const iconMoon = document.getElementById('icon-moon');
+  const appFavicon = document.getElementById('app-favicon');
   btnTheme.onclick = () => {
     state.appearance = state.appearance === 'light' ? 'dark' : 'light';
     document.body.setAttribute('data-appearance', state.appearance);
+    if (appFavicon) {
+      appFavicon.setAttribute('href', `./assets/logos/${state.appearance}/favicon.svg`);
+    }
     if (state.appearance === 'dark') {
       iconSun.classList.add('hidden');
       iconMoon.classList.remove('hidden');

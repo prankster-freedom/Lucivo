@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c1017"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </linearGradient>
+    <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#00f0ff"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bgDark)"/>
+  <rect width="508" height="508" x="2" y="2" rx="126" fill="none" stroke="#1e293b" stroke-width="2"/>
+  
+  <!-- Subtle ambient grid/stage motif -->
+  <line x1="96" y1="416" x2="416" y2="416" stroke="#1e293b" stroke-width="2" stroke-dasharray="8 8"/>
+  
+  <!-- LV Monogram Node Structure -->
+  <g filter="url(#glow)">
+    <!-- Connection lines -->
+    <path d="M 136 120 L 136 360 A 40 40 0 0 0 176 400 L 288 400" fill="none" stroke="url(#cyanGlow)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 264 220 L 336 368 A 24 24 0 0 0 376 368 L 448 220" fill="none" stroke="#67e8f9" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Dynamic linking pulse (Vivo) -->
+    <path d="M 136 260 L 264 220" fill="none" stroke="#0284c7" stroke-width="12" stroke-linecap="round" stroke-dasharray="6 12" opacity="0.8"/>
+  </g>
+  
+  <!-- Nodes (Glowing Dots) -->
+  <circle cx="136" cy="120" r="26" fill="#ffffff" filter="url(#glow)"/>
+  <circle cx="288" cy="400" r="22" fill="#00f0ff"/>
+  <circle cx="264" cy="220" r="22" fill="#38bdf8"/>
+  <circle cx="448" cy="220" r="24" fill="#00f0ff" filter="url(#glow)"/>
+</svg>

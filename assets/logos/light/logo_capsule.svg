@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 120" width="440" height="120">
+  <!-- Background Capsule -->
+  <rect x="4" y="8" width="432" height="104" rx="52" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2.5"/>
+  
+  <!-- Dot / Status light -->
+  <circle cx="58" cy="60" r="10" fill="#0284c7"/>
+  
+  <!-- Lucivo in Rounded Monospace Style -->
+  <text x="96" y="74" font-family="'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace" font-size="52" font-weight="600" fill="#0f172a" letter-spacing="4">Lucivo</text>
+  
+  <!-- Node on right -->
+  <circle cx="376" cy="60" r="6" fill="#0ea5e9"/>
+  <path d="M 376 60 Q 394 48 408 60" fill="none" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="408" cy="60" r="5" fill="#0284c7"/>
+</svg>
