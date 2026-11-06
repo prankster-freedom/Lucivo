@@ -127,17 +127,37 @@ async function testFileLoading(browser) {
   await page.evaluate(() => { lastLoadedMarkdown = ''; renderApp(); });
   record('TC-FILE-013', startEditable && firstName === 'untitled.md' && firstText === '# 新しい文書\n', JSON.stringify({ startEditable, firstName, firstText }));
 
-  // TC-FILE-002 メニューの開閉
+  // TC-FILE-002 メニューの開閉と同梱サンプル項目
   await page.click('#btn-file-menu');
-  const opened = await page.evaluate(() => !document.getElementById('file-menu').classList.contains('hidden') && document.getElementById('btn-file-menu').getAttribute('aria-expanded') === 'true');
+  const menuState = await page.evaluate(() => ({
+    opened: !document.getElementById('file-menu').classList.contains('hidden') && document.getElementById('btn-file-menu').getAttribute('aria-expanded') === 'true',
+    items: Array.from(document.querySelectorAll('#file-menu [role="menuitem"]')).map(el => el.textContent.trim())
+  }));
   await page.mouse.click(700, 600);
   const closedByOutside = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   await page.click('#btn-file-menu');
   await page.keyboard.press('Escape');
   const closedByEsc = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
-  record('TC-FILE-002', opened && closedByOutside && closedByEsc, JSON.stringify({ opened, closedByOutside, closedByEsc }));
+  record('TC-FILE-002',
+    menuState.opened && closedByOutside && closedByEsc
+    && JSON.stringify(menuState.items) === JSON.stringify(['Markdown を開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)']),
+    JSON.stringify({ ...menuState, closedByOutside, closedByEsc }));
 
-  // TC-FILE-003 未編集の状態での読み込み
+  // TC-FILE-003 未編集の状態での読み込みと同梱サンプル選択
+  await page.click('#btn-file-menu');
+  await page.click('#menu-sample-visual');
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('# Lucivo 誌面雛形・ボリューム＆図表サイズ総合サンプル'));
+  await waitRendered(page);
+  const visualSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  const visualSampleMatched = visualSampleValue === fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8').replace(/^﻿/, '');
+  await page.click('#btn-file-menu');
+  await page.click('#menu-sample-notation');
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('\n# Lucivo サンプル文書'));
+  await waitRendered(page);
+  const notationSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  const notationSampleMatched = notationSampleValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^﻿/, '');
+  await page.evaluate(() => { document.getElementById('markdown-editor').value = ''; lastLoadedMarkdown = ''; renderApp(); });
+  await waitRendered(page);
   const dialogOnFirstLoad = await loadSample(page);
   const after = await page.evaluate(() => ({
     h1: (document.querySelector('#standard-doc-container h1') || {}).textContent,
@@ -147,7 +167,9 @@ async function testFileLoading(browser) {
   }));
   const editorValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
   after.sameAsFile = editorValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^﻿/, '');
-  record('TC-FILE-003', !dialogOnFirstLoad && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast), JSON.stringify({ dialogOnFirstLoad, ...after }));
+  record('TC-FILE-003',
+    !dialogOnFirstLoad && visualSampleMatched && notationSampleMatched && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast),
+    JSON.stringify({ dialogOnFirstLoad, visualSampleMatched, notationSampleMatched, ...after }));
   record('TC-FILE-006', after.inputCleared, `file-input.value cleared: ${after.inputCleared}`);
 
   // TC-FILE-011 読み込み直後は読み取り専用で、「編集」ボタンで編集できる
@@ -1437,8 +1459,8 @@ async function testVisualTemplates(browser) {
   record('TC-VTPL-002', bTpl.length === Object.keys(bExpected).length && bWrong.length === 0 && !!o8 && o8.vertical,
     bWrong.length ? JSON.stringify(bWrong) : `${bTpl.length} 章`);
 
-  // TC-VTPL-014 samples/visual-template.md の検証（FR-015, FR-016）。光の演出は TC-LIGHT で確かめる
-  const vtplMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  // TC-VTPL-014 samples/visual-sample.md の検証（FR-015, FR-016）。光の演出は TC-LIGHT で確かめる
+  const vtplMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
   await setMode(page, { style: 'std', appearance: 'light' });
   await page.evaluate(md => {
     document.getElementById('markdown-editor').value = md;
@@ -1624,7 +1646,7 @@ async function testCoverAndTables(browser) {
   record('TC-VTPL-015', coverOk, JSON.stringify({ cover, jump, inShow, c2, c15, c16 }));
 
   // TC-VTPL-016 誌面の表（罫線・数値の列・短いラベルの列）
-  const vtplMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  const vtplMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
   await setDocument(page, vtplMd);
   await page.click('.view-mode-btn[data-view-mode="split"]');
   await page.waitForTimeout(300);
@@ -1746,7 +1768,7 @@ function inspectLightPaint(flowIndex) {
 
 async function testSignalLight(browser) {
   const page = await openStagePage(browser);
-  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
 
   // TC-LIGHT-007 高速モードでは舞台演出を読み込まない
   await page.click('.view-mode-btn[data-view-mode="canvas"]');
@@ -1955,7 +1977,7 @@ async function pressUntil(page, predicate, limit = 80) {
 
 async function testStageShow(browser) {
   const page = await openStagePage(browser);
-  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
   await setDocument(page, showcaseMd);
 
   // TC-SHOW-001 高速モード・Light・Split から 1 回の操作で発表を始める
@@ -2138,7 +2160,7 @@ async function testStageShow(browser) {
 // TC-SHOW-011, 012: 発表の俯瞰（ライトテーブル）と光のポインター（FR-022, FR-023）
 async function testStageOverviewPointer(browser) {
   const page = await openStagePage(browser);
-  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
   await setDocument(page, showcaseMd);
   await page.click('#btn-stage-show');
   await page.waitForFunction(() => LucivoStage.showState().active);

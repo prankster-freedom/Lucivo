@@ -279,7 +279,7 @@ const EMPTY_GUIDE_HTML = `
     <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —" width="264" height="72" />
   </div>
   <h3 class="empty-guide-title">Markdown を開いてください</h3>
-  <p class="empty-guide-desc">ヘッダーの「ファイル」メニュー →「Markdown を開く…」からファイルを読み込むか、左のエディタに直接入力してください。同梱の <code>samples/notation_sample.md</code> に各記法や図のサンプルがあります。</p>
+  <p class="empty-guide-desc">ヘッダーの「ファイル」メニューから「Markdown を開く…」でローカルファイルを読み込むか、同梱の <code>Visualモードサンプル (visual-sample.md)</code> / <code>記法サンプル (notation_sample.md)</code> をワンクリックで開けます。左のエディタに直接入力することもできます。</p>
   
   <div class="empty-guide-modes">
     <div class="empty-guide-card">
@@ -321,7 +321,9 @@ const LIBRARIES = {
     global: 'katex'
   },
   // Visualモードの舞台演出（FR-018, FR-019）。高速モードの起動には読み込まない（NFR-006）
-  stage: { script: './js/stage.js', global: 'LucivoStage' }
+  stage: { script: './js/stage.js', global: 'LucivoStage' },
+  // file:// 直開き時の同梱サンプル読み込みフォールバック（FR-006）。サンプルを選んだときだけ読み込む（NFR-006）
+  samples: { script: './samples/samples-data.js', global: 'LUCIVO_SAMPLES' }
 };
 const libraryLoads = new Map();
 
@@ -2023,26 +2025,54 @@ function confirmDiscardEdits(fileName) {
   return window.confirm(`編集中の内容は失われます。「${fileName}」を読み込みますか？`);
 }
 
+function applyLoadedMarkdown(rawText, fileName) {
+  const text = String(rawText).replace(/^﻿/, '');
+  document.getElementById('markdown-editor').value = text;
+  lastLoadedMarkdown = text;
+  currentFileName = fileName;
+  state.curveByIndex.clear();
+  setEditorReadOnly(true);
+  clearTimeout(renderDebounceTimer);
+  renderApp();
+  document.getElementById('preview-scroll').scrollTop = 0;
+  showToast(`「${fileName}」を読み込みました`);
+}
+
 function loadMarkdownFile(file) {
   if (!confirmDiscardEdits(file.name)) return;
   const reader = new FileReader();
   reader.onload = () => {
-    const text = String(reader.result).replace(/^﻿/, '');
-    document.getElementById('markdown-editor').value = text;
-    lastLoadedMarkdown = text;
-    currentFileName = file.name;
-    state.curveByIndex.clear();
-    setEditorReadOnly(true);
-    clearTimeout(renderDebounceTimer);
-    renderApp();
-    document.getElementById('preview-scroll').scrollTop = 0;
-    showToast(`「${file.name}」を読み込みました`);
+    applyLoadedMarkdown(reader.result, file.name);
   };
   reader.onerror = () => {
     console.error('Failed to read file:', reader.error);
     showToast(`「${file.name}」を読み込めませんでした`);
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+// ファイルメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
+async function loadBundledSample(fileName) {
+  if (!confirmDiscardEdits(fileName)) return;
+  let text = null;
+  if (window.location.protocol !== 'file:') {
+    try {
+      const res = await fetch(`./samples/${encodeURIComponent(fileName)}`);
+      if (res.ok) text = await res.text();
+    } catch (_) {
+      // fetch 失敗時は samples-data.js にフォールバックする
+    }
+  }
+  if (text === null) {
+    if (await loadLibrary('samples') && window.LUCIVO_SAMPLES && typeof window.LUCIVO_SAMPLES[fileName] === 'string') {
+      text = window.LUCIVO_SAMPLES[fileName];
+    }
+  }
+  if (text === null) {
+    showToast(`「${fileName}」を読み込めませんでした`);
+    return;
+  }
+  applyLoadedMarkdown(text, fileName);
 }
 
 // 読み込み直後の閲覧中に誤って編集しないよう、エディタと、内容を変えるボタンをまとめて切り替える（DD-FILE-040）
@@ -2075,6 +2105,13 @@ function setupFileMenu() {
     closeFileMenu();
     input.click();
   };
+  menu.querySelectorAll('[data-sample-file]').forEach(btn => {
+    btn.onclick = () => {
+      const fileName = btn.getAttribute('data-sample-file');
+      closeFileMenu();
+      if (fileName) loadBundledSample(fileName);
+    };
+  });
   document.getElementById('btn-save-markdown').onclick = saveMarkdownFile;
   document.getElementById('btn-edit-unlock').onclick = () => {
     setEditorReadOnly(false);
