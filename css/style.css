@@ -90,13 +90,26 @@ body {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  min-width: 11rem;
+  min-width: 17.5rem;
   padding: 4px;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
   background: var(--panel-bg);
   box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.25);
   z-index: 40;
+}
+.file-menu-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-subtle);
+}
+.file-menu-section-label {
+  padding: 0.25rem 0.7rem 0.15rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
 }
 .file-menu-item {
   display: block;
@@ -107,6 +120,7 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
   cursor: pointer;
 }
 .file-menu-item:hover,

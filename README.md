@@ -28,11 +28,11 @@ Markdown 文書と Mermaid ダイアグラムを、エンジニアリング仕�
 2. ヘッダーの「ファイル」メニュー →「Markdown を開く…」で Markdown ファイル（`.md` / `.markdown` / `.txt`、UTF-8）を読み込みます。起動直後のエディタは空です。
 3. 左ペイン（`SOURCE MARKDOWN`）で Markdown と ```` ```mermaid ```` コードブロックを編集すると、右ペインにリアルタイムでプレビューが表示されます。
 
-Markdown と Mermaid の記法の例は、同梱の [samples/notation_sample.md](samples/notation_sample.md) にあります。また、Visualモードの表紙・各雛形・誌面の表・光の演出・ステージ発表、および段落ボリューム・図表サイズ（横長・縦長・大表）に応じた組版の確認用サンプルは [samples/visual-template.md](samples/visual-template.md) にあります。「Markdown を開く…」で開いてください。
+Markdown と Mermaid の記法の例は、同梱の [samples/notation_sample.md](samples/notation_sample.md) にあります。また、Visualモードの表紙・各雛形・誌面の表・光の演出・ステージ発表、および段落ボリューム・図表サイズ（横長・縦長・大表）に応じた組版の確認用サンプルは [samples/visual-sample.md](samples/visual-sample.md) にあります。「ファイル」メニューの「Visualモードサンプル (visual-sample.md)」「記法サンプル (notation_sample.md)」からワンクリックで開けます。
 
 ### 主な使い方のパターン
 
-- **ファイルの読み込み**: 「ファイル」メニュー →「Markdown を開く…」で読み込みます。読み込んだ直後のエディタは読み取り専用です。編集するときは、エディタ上部の「編集」を押してください。保存していない編集内容がある状態で別のファイルを読み込むと、確認ダイアログが表示されます。
+- **ファイルの読み込み**: 「ファイル」メニュー →「Markdown を開く…」で任意のローカルファイルを読み込むか、メニュー内の「Visualモードサンプル (visual-sample.md)」「記法サンプル (notation_sample.md)」から同梱サンプルをワンクリックで読み込みます。読み込んだ直後のエディタは読み取り専用です。編集するときは、エディタ上部の「編集」を押してください。保存していない編集内容がある状態で別のファイルを読み込むと、確認ダイアログが表示されます。
 - **保存**: ヘッダーの「保存」で、エディタの内容を Markdown ファイルとしてダウンロードします（元のファイルは上書きしません）。
 - **表示モードの切り替え**: ヘッダー中央の `Split`（左右分割）/ `Canvas`（プレビューのみ）/ `Code`（エディタのみ）で作業画面を切り替えます。
 - **描画モードの切り替え（高速モード / Visualモード）**: ヘッダー中央の「高速モード」「Visualモード」ボタンで、軽快な仕様書表示とインフォグラフィック表示を切り替えます。Visualモード時や上部のスタイルバー（`🎨 パステル図形` / `📋 2段カード` / `⭕ 5色サークル` / `📖 クリームチャート`）をクリックすると、Mermaid ダイアグラムと文書がインフォグラフィック調に変換されます。本文と 1 つの図を持つ章（`h2`）は、図が右カラムに収まる場合は左に本文・右に図の 2 段組みで表示されます（横長の大きな図は自動で全幅の 1 段組みになります）。
@@ -54,10 +54,12 @@ lucivo/
 ├── README.md          # 本ファイル（概要・使い方・リリースノート）
 ├── index.html         # エントリーポイント HTML
 ├── assets/            # 製品同梱アセット
+│   ├── logos/         # ブランドロゴ・Favicon（Light / Dark）
 │   └── motifs/        # Visualモード用のベクター装飾素材（SVG）
 ├── samples/           # 同梱サンプル文書
+│   ├── visual-sample.md   # Visualモードのレンダリング確認サンプル
 │   ├── notation_sample.md # Markdown と Mermaid の記法のサンプル
-│   └── visual-template.md # Visualモードの雛形レンダリング確認サンプル
+│   └── samples-data.js    # file:// 直開き時の同梱サンプル遅延読み込み用データ（tools/build-samples-data.cjs で生成）
 ├── tests/
 │   └── e2e.cjs        # Playwright による動作確認スクリプト
 ├── css/
