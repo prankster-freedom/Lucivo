@@ -1669,6 +1669,8 @@ html.is-stage-show .exhibition-wrap > .is-scene {
   border: 0;
   box-shadow: none;
   padding: 0;
+  /* 俯瞰から戻るとき、スラブの transform のトランジションで縮小図からもう一度拡大し直さないようにする */
+  transition: none;
 }
 html.is-stage-show .exhibition-hero h1 {
   font-size: 3.4rem;
@@ -1865,6 +1867,126 @@ body:not([data-appearance="dark"]) .stage-hud-actions button {
 .stage-hud.is-sweeping .stage-sweep {
   animation: stage-sweep 1s cubic-bezier(0.45, 0, 0.2, 1);
 }
+/* 俯瞰（ライトテーブル。DTP-SHOW-070, DD-SHOW-070〜）: シーンの要素そのものを scale で縮小し、格子に並べる。
+   負のマージンで、縮小後の大きさだけを格子の升目に取らせる */
+html.is-stage-show.is-stage-overview #visual-stage-container {
+  padding: 7vh 6vw 11vh;
+}
+html.is-stage-show.is-stage-overview .exhibition-wrap {
+  display: grid;
+  grid-template-columns: repeat(var(--ov-cols, 4), max-content);
+  gap: var(--ov-gap, 1.6vw);
+  justify-content: center;
+  align-content: safe center;
+  max-width: none;
+  margin: auto;
+}
+html.is-stage-show.is-stage-overview .exhibition-wrap > * {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: safe center;
+  position: relative;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  min-width: 0;
+  max-width: none;
+  margin: 0 calc(100vw * (var(--ov-s) - 1)) calc(100vh * (var(--ov-s) - 1)) 0;
+  padding: 6vh max(6vw, calc((100vw - 76rem) / 2)) 9vh;
+  overflow: hidden;
+  transform: scale(var(--ov-s));
+  transform-origin: 0 0;
+  border: 0;
+  border-radius: 2.4vw;
+  background:
+    radial-gradient(ellipse 72% 64% at 50% -14%, rgba(148, 163, 184, 0.22), transparent 72%),
+    #070B14;
+  box-shadow: 0 0 0 calc(1px / var(--ov-s)) rgba(148, 163, 184, 0.24);
+  opacity: 1 !important;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+html.is-stage-show.is-stage-overview body:not([data-appearance="dark"]) .exhibition-wrap > * {
+  background:
+    radial-gradient(ellipse 72% 64% at 50% -14%, #FFFFFF, transparent 72%),
+    #E9ECF2;
+  box-shadow: 0 0 0 calc(1px / var(--ov-s)) rgba(15, 23, 42, 0.14);
+}
+html.is-stage-show.is-stage-overview .exhibition-wrap > :hover {
+  box-shadow: 0 0 0 calc(2px / var(--ov-s)) rgba(203, 213, 225, 0.6);
+}
+/* 選んでいるシーンは、ブランドのアクセントライト（ペールシアン）の輪で示す */
+html.is-stage-show.is-stage-overview .exhibition-wrap > .is-ov-selected {
+  box-shadow:
+    0 0 0 calc(3px / var(--ov-s)) #7DE3FF,
+    0 0 calc(30px / var(--ov-s)) calc(4px / var(--ov-s)) rgba(125, 227, 255, 0.35);
+}
+html.is-stage-show.is-stage-overview body:not([data-appearance="dark"]) .exhibition-wrap > .is-ov-selected {
+  box-shadow:
+    0 0 0 calc(3px / var(--ov-s)) #0891B2,
+    0 0 calc(30px / var(--ov-s)) calc(4px / var(--ov-s)) rgba(8, 145, 178, 0.28);
+}
+html.is-stage-show.is-stage-overview .exhibition-wrap > .is-ov-zooming {
+  z-index: 2;
+}
+/* 縮小図の図は、升目の高さに収める（縦長の図が下へ切れないように） */
+html.is-stage-show.is-stage-overview .exhibition-viewport svg {
+  height: auto;
+  max-height: 56vh;
+}
+html.is-stage-overview .stage-hint,
+html.is-stage-overview .stage-sweep {
+  display: none;
+}
+html.is-stage-show.is-stage-overview .is-ov-entering > :not(.is-ov-zooming) {
+  animation: stage-ov-fade 0.42s ease both;
+}
+@keyframes stage-ov-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 光のポインター（DTP-SHOW-080）: マウスの位置にスポットライト。周りを沈め、中心に光の粒を置く。
+   色はブランドのアクセントライト（ペールシアン・ルミナスホワイト） */
+.stage-pointer {
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), transparent 0, transparent 10vmin, rgba(2, 5, 12, 0.3) 24vmin, rgba(2, 5, 12, 0.46) 42vmin);
+}
+body:not([data-appearance="dark"]) .stage-pointer {
+  background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), transparent 0, transparent 10vmin, rgba(15, 23, 42, 0.14) 24vmin, rgba(15, 23, 42, 0.22) 42vmin);
+}
+html.is-stage-pointer .stage-pointer {
+  display: block;
+}
+html.is-stage-pointer,
+html.is-stage-pointer #visual-stage-container {
+  cursor: none;
+}
+.stage-pointer-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #F5FBFF;
+  box-shadow:
+    0 0 0 2px rgba(125, 227, 255, 0.6),
+    0 0 18px 6px rgba(125, 227, 255, 0.5),
+    0 0 46px 18px rgba(125, 227, 255, 0.2);
+  will-change: transform;
+}
+body:not([data-appearance="dark"]) .stage-pointer-dot {
+  box-shadow:
+    0 0 0 2px rgba(8, 145, 178, 0.75),
+    0 0 18px 6px rgba(8, 145, 178, 0.35),
+    0 0 46px 18px rgba(8, 145, 178, 0.14);
+}
+
 @keyframes stage-rise {
   from { opacity: 0; transform: translateY(1.25rem); }
   to { opacity: 1; transform: none; }
@@ -1880,7 +2002,8 @@ body:not([data-appearance="dark"]) .stage-hud-actions button {
 @media (prefers-reduced-motion: reduce) {
   html.is-stage-show .is-scene-in > *,
   html.is-stage-show .is-scene-in > .exhibition-slab-body > *,
-  .stage-hud.is-sweeping .stage-sweep {
+  .stage-hud.is-sweeping .stage-sweep,
+  html.is-stage-show.is-stage-overview .is-ov-entering > :not(.is-ov-zooming) {
     animation: none;
   }
 }

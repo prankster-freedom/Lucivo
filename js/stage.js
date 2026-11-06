@@ -43,6 +43,8 @@
   const sprites = new Map();
   let frameId = 0;
   let seekTime = null;
+  // 俯瞰（DTP-SHOW-070）の間は、画面に並ぶすべての図の光を止める
+  let lightsSuspended = false;
 
   const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -335,7 +337,7 @@
   }
 
   function startFlow(flow) {
-    if (activeFlows.has(flow)) return;
+    if (lightsSuspended || activeFlows.has(flow)) return;
     if (!flow.svg.getScreenCTM()) return;
     if (!flow.plan) buildPlan(flow);
     if (!flow.plan.edges.length) return;
@@ -395,6 +397,10 @@
   const HUD_IDLE_MS = 2600;
 
   const show = { active: false, scenes: [], index: 0, build: 0, auto: false, timer: 0, idleTimer: 0, restore: null, hud: null };
+  // 俯瞰（DTP-SHOW-070）と光のポインター（DTP-SHOW-080）
+  const OVERVIEW = { widthRatio: 0.88, heightRatio: 0.78, gapVw: 1.6, minScale: 0.12, maxCols: 6, zoomMs: 420 };
+  const ov = { active: false, index: 0, busy: false };
+  const pointer = { on: false, moved: false, x: 0, y: 0, frame: 0 };
 
   const stageContainer = () => document.getElementById('visual-stage-container');
   const currentScene = () => show.scenes[show.index];
@@ -406,13 +412,16 @@
     hud.className = 'stage-hud';
     hud.innerHTML = `
       <div class="stage-sweep" aria-hidden="true"></div>
-      <div class="stage-hint">→ 次へ ／ ← 戻る ／ A 自動進行 ／ T 明暗 ／ Esc 終了</div>
+      <div class="stage-hint">→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ A 自動進行 ／ T 明暗 ／ Esc 終了</div>
+      <div class="stage-pointer" aria-hidden="true"><span class="stage-pointer-dot"></span></div>
       <div class="stage-hud-bar">
         <span class="stage-hud-title"></span>
         <span class="stage-hud-count"></span>
         <div class="stage-hud-actions">
           <button type="button" data-stage-action="prev" aria-label="前へ">←</button>
           <button type="button" data-stage-action="next" aria-label="次へ">→</button>
+          <button type="button" data-stage-action="overview" aria-pressed="false">一覧</button>
+          <button type="button" data-stage-action="pointer" aria-pressed="false">ポインター</button>
           <button type="button" data-stage-action="auto" aria-pressed="false">自動進行</button>
           <button type="button" data-stage-action="exit">終了</button>
         </div>
@@ -422,7 +431,7 @@
       const action = event.target.closest('[data-stage-action]');
       if (!action) return;
       event.stopPropagation();
-      ({ prev, next: () => next(), auto: toggleAuto, exit: exitShow })[action.dataset.stageAction]();
+      ({ prev, next: () => next(), auto: toggleAuto, exit: exitShow, overview: toggleOverview, pointer: togglePointer })[action.dataset.stageAction]();
     });
     document.body.appendChild(hud);
     return hud;
@@ -461,8 +470,10 @@
   }
 
   function updateHud() {
-    const { hud, scenes, index } = show;
-    const scene = currentScene();
+    const { hud, scenes } = show;
+    // 俯瞰の間は、選んでいるシーンの題と位置を出す
+    const index = ov.active ? ov.index : show.index;
+    const scene = scenes[index];
     if (!hud || !scene) return;
     const heading = scene.querySelector('h2 span:last-child, h1');
     hud.querySelector('.stage-hud-title').textContent = heading ? heading.textContent.trim() : '';
@@ -471,6 +482,11 @@
     const auto = hud.querySelector('[data-stage-action="auto"]');
     auto.setAttribute('aria-pressed', String(show.auto));
     auto.classList.toggle('is-active', show.auto);
+    [['overview', ov.active], ['pointer', pointer.on]].forEach(([name, on]) => {
+      const button = hud.querySelector(`[data-stage-action="${name}"]`);
+      button.setAttribute('aria-pressed', String(on));
+      button.classList.toggle('is-active', on);
+    });
   }
 
   function replaySceneEntrance(scene) {
@@ -571,6 +587,10 @@
 
   function onShowKey(event) {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (ov.active) {
+      onOverviewKey(event);
+      return;
+    }
     const actions = {
       ArrowRight: () => next(), ArrowDown: () => next(), PageDown: () => next(), ' ': () => next(), Enter: () => next(),
       ArrowLeft: prev, ArrowUp: prev, PageUp: prev, Backspace: prev,
@@ -578,6 +598,8 @@
       End: () => goToScene(show.scenes.length - 1, 'end'),
       a: toggleAuto, A: toggleAuto,
       t: toggleShowAppearance, T: toggleShowAppearance,
+      o: toggleOverview, O: toggleOverview,
+      l: togglePointer, L: togglePointer,
       Escape: exitShow
     };
     const action = actions[event.key];
@@ -588,9 +610,185 @@
   }
 
   function onShowClick(event) {
+    if (ov.active) {
+      event.stopPropagation();
+      event.preventDefault();
+      const tile = show.scenes.find(scene => scene.contains(event.target));
+      if (tile) openFromOverview(show.scenes.indexOf(tile));
+      return;
+    }
     if (event.target.closest('a, button')) return;
     event.stopPropagation();
     next();
+  }
+
+  /* ----------------------------------------------------------------------
+     俯瞰（ライトテーブル。DTP-SHOW-070）: 全シーンを実物のまま縮小して並べ、選んだシーンへ拡大して戻る。
+     シーンの要素そのものを transform で縮小するため、複製も再描画もしない。拡大・縮小の動きも transform だけで描く
+     ---------------------------------------------------------------------- */
+  const overviewWrap = () => stageContainer().querySelector('.exhibition-wrap');
+  const overviewScale = () => parseFloat(overviewWrap().style.getPropertyValue('--ov-s')) || 0.2;
+
+  // 画面の幅と高さの両方に収まる縮小率が最も大きくなる列の数（1〜6）を選ぶ。下限を下回る場合はスクロールで見せる
+  function layoutOverview() {
+    const n = show.scenes.length;
+    const gap = window.innerWidth * OVERVIEW.gapVw / 100;
+    const fit = cols => {
+      const rows = Math.ceil(n / cols);
+      const byWidth = (window.innerWidth * OVERVIEW.widthRatio - gap * (cols - 1)) / cols / window.innerWidth;
+      const byHeight = (window.innerHeight * OVERVIEW.heightRatio - gap * (rows - 1)) / rows / window.innerHeight;
+      return Math.min(byWidth, byHeight);
+    };
+    let cols = 1;
+    for (let c = 2; c <= Math.min(n, OVERVIEW.maxCols); c++) if (fit(c) > fit(cols)) cols = c;
+    const wrap = overviewWrap();
+    wrap.style.setProperty('--ov-cols', String(cols));
+    wrap.style.setProperty('--ov-s', Math.max(OVERVIEW.minScale, fit(cols)).toFixed(4));
+    wrap.style.setProperty('--ov-gap', `${gap.toFixed(1)}px`);
+  }
+
+  function selectTile(index) {
+    ov.index = Math.max(0, Math.min(show.scenes.length - 1, index));
+    show.scenes.forEach((scene, k) => scene.classList.toggle('is-ov-selected', k === ov.index));
+    show.scenes[ov.index].scrollIntoView({ block: 'nearest' });
+    updateHud();
+  }
+
+  // 全画面のシーンと一覧の縮小図の間を、transform の補間だけで動かす（toTile: 全画面 → 縮小図）
+  function zoomTile(tile, toTile) {
+    if (prefersReducedMotion() || !tile.animate) return Promise.resolve();
+    const rect = tile.getBoundingClientRect();
+    const full = `translate(${-rect.left}px, ${-rect.top}px) scale(1)`;
+    const small = `scale(${overviewScale()})`;
+    tile.classList.add('is-ov-zooming');
+    const animation = tile.animate([{ transform: toTile ? full : small }, { transform: toTile ? small : full }], {
+      duration: OVERVIEW.zoomMs,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: toTile ? 'none' : 'forwards'
+    });
+    return animation.finished.catch(() => {}).then(() => animation);
+  }
+
+  function suspendLights(suspend) {
+    lightsSuspended = suspend;
+    if (suspend) {
+      Array.from(activeFlows).forEach(stopFlow);
+      return;
+    }
+    // 俯瞰の間も画面に入っていた図は、見え方が変わらないため交差の通知が来ない。今のシーンの図を直接始める
+    const scene = currentScene();
+    if (scene) scene.querySelectorAll('.exhibition-viewport').forEach(host => {
+      const flow = flows.get(host);
+      if (flow) startFlow(flow);
+    });
+  }
+
+  function openOverview() {
+    if (!show.active || ov.active || ov.busy) return;
+    if (show.auto) toggleAuto();
+    setPointer(false);
+    ov.active = true;
+    suspendLights(true);
+    layoutOverview();
+    document.documentElement.classList.add('is-stage-overview');
+    stageContainer().scrollTop = 0;
+    selectTile(show.index);
+    const wrap = overviewWrap();
+    wrap.classList.add('is-ov-entering');
+    zoomTile(currentScene(), true).then(() => {
+      wrap.classList.remove('is-ov-entering');
+      currentScene().classList.remove('is-ov-zooming');
+    });
+  }
+
+  // 俯瞰を閉じて index のシーンを出す。build は項目の表示数（'end' は全部）
+  function closeOverview(index, build) {
+    ov.active = false;
+    document.documentElement.classList.remove('is-stage-overview');
+    show.scenes.forEach(scene => {
+      scene.classList.remove('is-ov-selected', 'is-ov-zooming');
+      scene.getAnimations().forEach(a => a.cancel());
+    });
+    overviewWrap().classList.remove('is-ov-entering');
+    // 別のシーンへ入るときは、通常の転換（光の帯と下からの登場）を見せる。縮小図と全画面では図の収め方が違い、
+    // そのまま切り替えると図の大きさが跳ねるため、登場の動きで吸収する。元のシーンへ戻るときは図が収まっているので出さない
+    const changed = index !== show.index;
+    show.index = index;
+    show.build = build === 'end' ? buildItems(show.scenes[index]).length : build;
+    applyScene(changed);
+    stageContainer().scrollTop = 0;
+    suspendLights(false);
+  }
+
+  // 一覧で選んだシーンへ、縮小図を全画面へ拡大して入る。一覧で見たままの姿（項目をすべて表示）で出す
+  function openFromOverview(index) {
+    if (!ov.active || ov.busy) return;
+    selectTile(index);
+    ov.busy = true;
+    zoomTile(show.scenes[index], false).then(() => {
+      ov.busy = false;
+      closeOverview(index, index === show.index ? show.build : 'end');
+    });
+  }
+
+  function toggleOverview() {
+    if (ov.active) openFromOverview(show.index);
+    else openOverview();
+  }
+
+  function onOverviewKey(event) {
+    const cols = parseInt(overviewWrap().style.getPropertyValue('--ov-cols'), 10) || 1;
+    const actions = {
+      ArrowRight: () => selectTile(ov.index + 1), ArrowLeft: () => selectTile(ov.index - 1),
+      ArrowDown: () => selectTile(ov.index + cols), ArrowUp: () => selectTile(ov.index - cols),
+      Home: () => selectTile(0), End: () => selectTile(show.scenes.length - 1),
+      Enter: () => openFromOverview(ov.index), ' ': () => openFromOverview(ov.index),
+      // 閉じるときは、俯瞰を開く前のシーンへ戻る
+      Escape: () => openFromOverview(show.index), o: () => openFromOverview(show.index), O: () => openFromOverview(show.index),
+      t: toggleShowAppearance, T: toggleShowAppearance
+    };
+    const action = actions[event.key];
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    action();
+  }
+
+  /* ----------------------------------------------------------------------
+     光のポインター（DTP-SHOW-080）: マウスの位置にスポットライトを当て、周りを沈める。
+     位置の反映は 1 フレームに 1 回、CSS 変数と transform の書き換えだけで行い、レイアウトを読まない
+     ---------------------------------------------------------------------- */
+  function paintPointer() {
+    pointer.frame = 0;
+    const layer = show.hud && show.hud.querySelector('.stage-pointer');
+    if (!layer) return;
+    layer.style.setProperty('--px', `${pointer.x}px`);
+    layer.style.setProperty('--py', `${pointer.y}px`);
+    layer.firstElementChild.style.transform = `translate3d(${pointer.x}px, ${pointer.y}px, 0)`;
+  }
+
+  function onPointerMove(event) {
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.moved = true;
+    if (pointer.on && !pointer.frame) pointer.frame = requestAnimationFrame(paintPointer);
+  }
+
+  function setPointer(on) {
+    pointer.on = Boolean(on) && show.active && !ov.active;
+    document.documentElement.classList.toggle('is-stage-pointer', pointer.on);
+    if (pointer.on) {
+      if (!pointer.moved) {
+        pointer.x = window.innerWidth / 2;
+        pointer.y = window.innerHeight / 2;
+      }
+      paintPointer();
+    }
+    updateHud();
+  }
+
+  function togglePointer() {
+    setPointer(!pointer.on);
   }
 
   function onFullscreenChange() {
@@ -611,6 +809,11 @@
     show.scenes = collectScenes();
     show.index = Math.min(show.index, Math.max(0, show.scenes.length - 1));
     applyScene(false);
+    // 俯瞰の間に図が描き直されたら（明暗の切替など）、並べ方と選択を付け直す
+    if (ov.active && show.scenes.length) {
+      layoutOverview();
+      selectTile(ov.index);
+    }
   }
 
   function enterShow() {
@@ -636,6 +839,7 @@
     document.documentElement.classList.add('is-stage-show');
     document.addEventListener('keydown', onShowKey, true);
     document.addEventListener('mousemove', wakeHud);
+    document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('fullscreenchange', onFullscreenChange);
     stageContainer().addEventListener('click', onShowClick, true);
     window.addEventListener('resize', refitScene);
@@ -647,7 +851,9 @@
   }
 
   function refitScene() {
-    if (show.active && currentScene()) fitSceneDiagrams(currentScene());
+    if (!show.active || !currentScene()) return;
+    if (ov.active) layoutOverview();
+    else fitSceneDiagrams(currentScene());
   }
 
   function restoreView() {
@@ -660,6 +866,15 @@
     if (!show.active) return;
     const lastScene = currentScene();
     const lastIndex = show.index;
+    if (ov.active) {
+      ov.active = false;
+      ov.busy = false;
+      document.documentElement.classList.remove('is-stage-overview');
+      const wrap = overviewWrap();
+      if (wrap) ['--ov-cols', '--ov-s', '--ov-gap'].forEach(name => wrap.style.removeProperty(name));
+      lightsSuspended = false;
+    }
+    setPointer(false);
     show.active = false;
     show.auto = false;
     clearTimeout(show.timer);
@@ -667,13 +882,15 @@
     document.documentElement.classList.remove('is-stage-show', 'is-stage-idle');
     document.removeEventListener('keydown', onShowKey, true);
     document.removeEventListener('mousemove', wakeHud);
+    document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     stageContainer().removeEventListener('click', onShowClick, true);
     window.removeEventListener('resize', refitScene);
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
     show.scenes.forEach(scene => {
-      scene.classList.remove('is-scene', 'is-scene-in');
+      scene.classList.remove('is-scene', 'is-scene-in', 'is-ov-selected', 'is-ov-zooming');
+      scene.getAnimations().forEach(a => a.cancel());
       buildItems(scene).forEach(li => {
         li.classList.remove('is-built', 'is-spotlight');
         li.parentElement.classList.remove('is-building');
@@ -710,6 +927,9 @@
       back: f.back.canvas,
       front: f.front.canvas
     })),
-    showState: () => ({ active: show.active, index: show.index, build: show.build, auto: show.auto, scenes: show.scenes.length })
+    showState: () => ({
+      active: show.active, index: show.index, build: show.build, auto: show.auto, scenes: show.scenes.length,
+      overview: ov.active, selected: ov.index, pointer: pointer.on
+    })
   };
 })();
