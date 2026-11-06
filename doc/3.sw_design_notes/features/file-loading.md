@@ -13,7 +13,7 @@ tags: ["Lucivo", "詳細設計", "ファイル読み込み"]
 | ID          | 要素                                             | 内容                                                                                                             | 対応する要求 |
 | :---------- | :----------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- | :----------- |
 | DD-FILE-001 | ファイルメニューボタン（`#btn-file-menu`）       | ヘッダーのロゴの右に置く。押すとメニューを開閉する。開閉の状態を `aria-expanded` に反映する                      | `FR-006`     |
-| DD-FILE-002 | ファイルメニュー（`#file-menu`）                 | 項目は「Markdown を開く…」（`#menu-open-markdown`）の 1 つ。メニューの外側をクリックするか、Esc キーで閉じる     | `FR-006`     |
+| DD-FILE-002 | ファイルメニュー（`#file-menu`）                 | 「Markdown を開く…」（`#menu-open-markdown`）の下に区切り線と「同梱サンプル」見出しを置き、上段に「`Visualモードサンプル (visual-sample.md)`」（`#menu-sample-visual`）、下段に「`記法サンプル (notation_sample.md)`」（`#menu-sample-notation`）を並べる。外側のクリックまたは Esc キーで閉じる | `FR-006` |
 | DD-FILE-003 | ファイル選択（`#file-input`）                    | 非表示の `<input type="file">`。受け付ける拡張子は `.md` / `.markdown` / `.txt`                                  | `FR-006`     |
 | DD-FILE-004 | 初期案内（`EMPTY_GUIDE_HTML`）                   | エディタが空（空白だけの場合を含む）のとき、プレビューに表示する。上部にブランド・フルバナーロゴ（`AST-012`）を配置し、高速モードではプレビューの本文に、Visualモードでは 1 枚のスラブに入れて表示する | `FR-007`, `DTP-005` |
 | DD-FILE-005 | 保存ボタン（`#btn-save-markdown`）               | ヘッダーのファイルメニューボタンの右に置く。表示は「保存」                                                       | `FR-013`     |
@@ -51,6 +51,13 @@ sequenceDiagram
 - **同じファイルの再選択**: `change` の処理の最初に `input.value` を空にする。空にしないと、同じファイルを続けて選んだときに `change` が発生しない。
 - **文字コード**: UTF-8 として読む。UTF-8 以外のファイルは文字化けするが、今回の増分では対応しない（未対応と明記する）。
 - **読み込みの失敗**: `FileReader` の `error` で、エラーをコンソールに出力し、トーストで知らせる。エディタの内容は変えない。
+
+### DD-FILE-015 同梱サンプルのワンクリック読み込み
+
+- ファイルメニューのサンプル項目（`[data-sample-file]`）が押されたら、メニューを閉じて `loadBundledSample(fileName)` を呼ぶ。
+- DD-FILE-010 と同じく `confirmDiscardEdits(fileName)` で未保存の編集有無を確認する。
+- `window.location.protocol !== 'file:'`（HTTP / HTTPS 配信時）は `fetch('./samples/' + fileName)` で取得する。`file://` 直開き時（または `fetch` 失敗時）は、CORS コンソールエラーを出さないよう `fetch` を呼ばずに `loadLibrary('samples')` で `./samples/samples-data.js`（`tools/build-samples-data.cjs` で生成）を遅延読み込みし、`window.LUCIVO_SAMPLES[fileName]` から本文を取得する。
+- 取得後は `applyLoadedMarkdown(text, fileName)` で DD-FILE-010 と同一の状態更新（エディタ反映、`lastLoadedMarkdown` と `currentFileName` の更新、`setEditorReadOnly(true)`、`renderApp()`、先頭スクロール、トースト表示）を行う。
 
 ### DD-FILE-020 起動時の初期表示
 
