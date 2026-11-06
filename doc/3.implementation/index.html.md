@@ -6,19 +6,21 @@ tags: ["Lucivo", "実装", "HTML"]
 
 # index.html
 
-ソース: [index.html](../../index.html)／設計: `DD-FILE-001`〜`006`、`DD-FM-011`、`DD-LIGHT-001`、`DD-SHOW-001`、アーキテクチャ 4.5
+ソース: [index.html](../../index.html)／設計: `DD-FILE-001`〜`007`、`DD-FM-011`、`DD-LIGHT-001`、`DD-SHOW-001`、アーキテクチャ 4.5
 
 ## 依存関係
 
 ```mermaid
 flowchart TD
-  subgraph Dependencies["Dependencies（head で読み込む順）"]
+  subgraph Dependencies["Dependencies（head・header で読み込む順）"]
+    fav["assets/logos/*/favicon.svg・logo_capsule.svg"]
     tw["css/tailwind.css（tools/build-tailwind-css.cjs で生成）"]
     fonts["Google Fonts"]
     libs["marked 12.0.2 / DOMPurify 3.1.6（CDN、版を固定）"]
     css["css/style.css"]
   end
   html["index.html"]
+  fav --> html
   tw --> html
   fonts --> html
   libs --> html

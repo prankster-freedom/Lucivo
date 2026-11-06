@@ -115,6 +115,21 @@ body {
   outline: none;
 }
 
+/* ブランドロゴ（Light / Dark 連動、DD-FILE-007） */
+body[data-appearance="light"] .brand-logo-dark,
+body[data-appearance="dark"] .brand-logo-light {
+  display: none;
+}
+.header-brand-logo {
+  display: inline-flex;
+  align-items: center;
+}
+.header-brand-logo img {
+  height: 2rem;
+  width: auto;
+  display: block;
+}
+
 /* 起動直後・エディタが空のときの案内（FR-007） */
 .empty-guide {
   padding: 2rem 1rem;
@@ -124,6 +139,17 @@ body {
   color: var(--text-secondary);
   max-width: 680px;
   margin: 0 auto;
+}
+.empty-guide-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+.empty-guide-logo img {
+  height: 4.5rem;
+  width: auto;
+  max-width: 100%;
+  display: block;
 }
 .empty-guide-title {
   font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;

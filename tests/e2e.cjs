@@ -69,18 +69,53 @@ async function testFileLoading(browser) {
   const page = await openApp(browser);
   await waitRendered(page);
 
-  // TC-FILE-001 起動直後の初期表示
+  // TC-FILE-001 起動直後の初期表示とブランドロゴ（Light / Dark 連動）
   const init = await page.evaluate(() => {
     const guideEl = document.querySelector('#standard-doc-container .empty-guide');
+    const fav = document.getElementById('app-favicon');
+    const hLight = document.querySelector('#header-brand-logo .brand-logo-light');
+    const hDark = document.querySelector('#header-brand-logo .brand-logo-dark');
+    const gLight = guideEl ? guideEl.querySelector('.empty-guide-logo .brand-logo-light') : null;
+    const gDark = guideEl ? guideEl.querySelector('.empty-guide-logo .brand-logo-dark') : null;
     return {
       editor: document.getElementById('markdown-editor').value,
       guide: !!guideEl,
       hasFastModeDesc: guideEl ? guideEl.textContent.includes('高速モード') : false,
       hasVisualModeDesc: guideEl ? guideEl.textContent.includes('Visualモード') : false,
-      fastBtnActive: document.getElementById('btn-mode-fast') ? document.getElementById('btn-mode-fast').classList.contains('is-active') : false
+      fastBtnActive: document.getElementById('btn-mode-fast') ? document.getElementById('btn-mode-fast').classList.contains('is-active') : false,
+      favHref: fav ? fav.getAttribute('href') : '',
+      headerLightVisible: !!hLight && getComputedStyle(hLight).display !== 'none' && hLight.naturalWidth > 0,
+      headerDarkHidden: !!hDark && getComputedStyle(hDark).display === 'none',
+      guideLightVisible: !!gLight && getComputedStyle(gLight).display !== 'none' && gLight.naturalWidth > 0,
+      guideDarkHidden: !!gDark && getComputedStyle(gDark).display === 'none'
     };
   });
-  record('TC-FILE-001', init.editor === '' && init.guide && init.hasFastModeDesc && init.hasVisualModeDesc && init.fastBtnActive, JSON.stringify(init));
+  await page.click('#btn-theme-toggle');
+  await waitRendered(page);
+  const darkLogo = await page.evaluate(() => {
+    const guideEl = document.querySelector('#standard-doc-container .empty-guide');
+    const fav = document.getElementById('app-favicon');
+    const hLight = document.querySelector('#header-brand-logo .brand-logo-light');
+    const hDark = document.querySelector('#header-brand-logo .brand-logo-dark');
+    const gLight = guideEl ? guideEl.querySelector('.empty-guide-logo .brand-logo-light') : null;
+    const gDark = guideEl ? guideEl.querySelector('.empty-guide-logo .brand-logo-dark') : null;
+    return {
+      favHref: fav ? fav.getAttribute('href') : '',
+      headerDarkVisible: !!hDark && getComputedStyle(hDark).display !== 'none' && hDark.naturalWidth > 0,
+      headerLightHidden: !!hLight && getComputedStyle(hLight).display === 'none',
+      guideDarkVisible: !!gDark && getComputedStyle(gDark).display !== 'none' && gDark.naturalWidth > 0,
+      guideLightHidden: !!gLight && getComputedStyle(gLight).display === 'none'
+    };
+  });
+  await page.click('#btn-theme-toggle');
+  await waitRendered(page);
+  record('TC-FILE-001',
+    init.editor === '' && init.guide && init.hasFastModeDesc && init.hasVisualModeDesc && init.fastBtnActive
+    && init.favHref === './assets/logos/light/favicon.svg'
+    && init.headerLightVisible && init.headerDarkHidden && init.guideLightVisible && init.guideDarkHidden
+    && darkLogo.favHref === './assets/logos/dark/favicon.svg'
+    && darkLogo.headerDarkVisible && darkLogo.headerLightHidden && darkLogo.guideDarkVisible && darkLogo.guideLightHidden,
+    JSON.stringify({ init, darkLogo }));
 
   // TC-FILE-013 起動直後は編集でき、読み込む前の保存名は untitled.md
   const startEditable = await page.evaluate(() => !document.getElementById('markdown-editor').readOnly && document.getElementById('editor-lock').classList.contains('hidden'));
