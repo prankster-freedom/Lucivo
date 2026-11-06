@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "JavaScript"]
 
 # js/stage.js
 
-ソース: [js/stage.js](../../../js/stage.js)／設計: [stage-show.md](../../3.sw_design_notes/features/stage-show.md)（LIGHT, SHOW）
+ソース: [js/stage.js](../../../public/js/stage.js)／設計: [stage-show.md](../../3.sw_design_notes/features/stage-show.md)（LIGHT, SHOW）
 
 ```mermaid
 flowchart LR
