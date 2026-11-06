@@ -1,9 +1,9 @@
 // samples/*.md から file:// 直開き時用の遅延読み込みデータ samples/samples-data.js を生成する（DD-FILE-015）。
-// 使い方: nodetools/build-samples-data.cjs（samples/*.md を変更したら実行する）
+// 使い方: node tools/build-samples-data.cjs（samples/*.md を変更したら実行する）
 const fs = require('fs');
 const path = require('path');
 
-const SAMPLES_DIR = path.resolve(__dirname, '..', 'samples');
+const SAMPLES_DIR = path.resolve(__dirname, '..', 'public', 'samples');
 const OUT = path.join(SAMPLES_DIR, 'samples-data.js');
 const FILES = ['visual-sample.md', 'notation_sample.md'];
 
