@@ -1,14 +1,15 @@
 // Lucivo のブラウザ動作確認スクリプト（テスト仕様: doc/4.test_spec/）
-// 使い方: nodetests/e2e.cjs
+// 使い方: node tests/e2e.cjs
 // 出力: work/test/（結果 JSON と図の画像。git 管理外）
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
 
-const APP_DIR = path.resolve(__dirname, '..');
+const ROOT_DIR = path.resolve(__dirname, '..');
+const APP_DIR = path.join(ROOT_DIR, 'public');
 const APP_URL = 'file:///' + path.join(APP_DIR, 'index.html').replace(/\\/g, '/');
 const SAMPLE = path.join(APP_DIR, 'samples', 'notation_sample.md');
-const OUT_DIR = path.join(APP_DIR, 'work', 'test');
+const OUT_DIR = path.join(ROOT_DIR, 'work', 'test');
 const SHOT_DIR = path.join(OUT_DIR, 'shots');
 const VISUAL_STYLES = ['shapes', 'cards', 'circles', 'editorial'];
 const MODES = [

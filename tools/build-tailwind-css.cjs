@@ -1,11 +1,12 @@
 // index.html と js/app.js で使っている Tailwind のクラスだけを集め、静的な css/tailwind.css を生成する。
 // Tailwind の CDN 版はページを開くたびにブラウザ内で CSS を生成するため、起動の軽快さ（NFR-006）のために事前に生成しておく。
-// 使い方: nodetools/build-tailwind-css.cjs（Tailwind のクラスを追加・変更したら実行する）
+// 使い方: node tools/build-tailwind-css.cjs（Tailwind のクラスを追加・変更したら実行する）
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
-const APP_DIR = path.resolve(__dirname, '..');
+const ROOT_DIR = path.resolve(__dirname, '..');
+const APP_DIR = path.join(ROOT_DIR, 'public');
 const OUT = path.join(APP_DIR, 'css', 'tailwind.css');
 const TAILWIND_CDN = 'https://cdn.tailwindcss.com/3.4.17';
 const TAILWIND_CONFIG = {
