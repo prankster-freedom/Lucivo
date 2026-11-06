@@ -1,0 +1,10 @@
+node_modules/
+
+# AI エージェントの作業ディレクトリ（AGENTS.md 1.10）
+work/
+
+# 配布用の圧縮ファイル
+dist/
+
+# エディタのローカル設定
+.vscode/

@@ -1,0 +1,42 @@
+# Default: normalize all text files to LF unless a more specific rule below applies.
+# Git detects binary files automatically and leaves them untouched.
+* text=auto eol=lf
+
+# Windows: file types whose format or tooling requires or recommends CRLF.
+# Batch files can misbehave with LF (labels, GOTO/CALL), and Visual Studio expects CRLF in solution files.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
+*.sln text eol=crlf
+
+# Linux: file types whose format or tooling requires or recommends LF.
+# A CR at the end of a shebang line or a variable breaks shell scripts, Docker builds, make, and .env parsing.
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+Makefile text eol=lf
+*.mk text eol=lf
+.env text eol=lf
+*.env text eol=lf
+
+# Frontend: file types whose tooling does not fully handle CRLF and recommends LF
+# (e.g. Prettier and ESLint default to LF, and CRLF causes whole-file diffs and lint errors).
+*.js text eol=lf
+*.cjs text eol=lf
+*.mjs text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.vue text eol=lf
+*.svg text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
