@@ -46,6 +46,7 @@ flowchart TD
 - **DOM に入れる前と後**: `postProcessSvg()` は文書に入れていない要素を処理するため、計算後のスタイルや大きさは取れない。それらが必要な処理は `applyReadableFit()`（およびその中の `updateSlabSplit()`）のように DOM に入れた後に行う。キャッシュから表示するたびにも呼ぶ。
 - **雛形の判定の閾値**: 雛形を選ぶ条件の数値（`TEMPLATE_LIMITS`）は、デザイン仕様 `DTP-VTPL-001` と同じ値にする。変えるときは、デザイン仕様とテスト仕様（`TC-VTPL-*`）も直す（`DD-VTPL-001`）。
 - **雛形の装飾要素とスポットライト**: `applySlabTemplate()` で追加する `.vs-card-ornament`・`.vs-step-chevron` はテキストを持たない空の `<span aria-hidden="true">` にする（`TC-VTPL-003` が高速モードと Visualモードの `textContent` およびインライン要素数の完全一致を検査するため）。また、スポットライト操作（`setupVisualStageInteractions()`）は `#visual-stage-container` へのイベントデリゲーションとクラス付け替えだけで行い、`getComputedStyle` や再描画を呼ばない（`DD-VTPL-015`, `TC-PERF-002`）。
+- **表紙の値と表の列の判定**: 表紙は `readCoverMeta()` がフロントマターの原文から読んだ値で組むため、`renderApp()` は `buildVisualStageHtml()` に YAML の原文を渡す。表紙の上限（`COVER_LIMITS`）と表の列の判定（`NUMERIC_CELL`・`EMPTY_CELL`・`TABLE_LABEL_CHARS`）の値は、デザイン仕様 `DTP-VTPL-100`・`110` と同じにする。目次の項目は `button` のため、クリックの委譲で `a, button` を除外する前に処理する（`DD-VTPL-040`〜`042`）。
 - **図の SVG に光を足さない**: 光は `js/stage.js` が SVG の外の Canvas に描く。`postProcessSvg()` の結果はキャッシュされ、PNG / SVG の書き出しにそのまま使うため、見た目の演出の要素を SVG に足すと書き出しに混ざる（`DD-LIGHT-003`）。
 - **サニタイズの順序**: 本文とフロントマターの HTML は DOMPurify を通してから DOM に入れる。KaTeX の数式だけは、サニタイズ後に置き場所へ描画する（KaTeX の出力はサニタイズで崩れるため、`DD-MATH-020`）。
 - **遅延読み込み**: `window.mermaid` / `window.katex` は、図・数式が現れるまで存在しない。`window.LucivoStage` は Visualモードの描画で読み込むまで存在しない。`setupMermaid()` は Mermaid がなければ何もしないため、描画の直前（`processDirtyBlocks()` で `loadLibrary('mermaid')` を待った後）に呼ぶ。
