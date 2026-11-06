@@ -1339,6 +1339,14 @@ function setupVisualStageInteractions() {
   if (!visContainer) return;
 
   visContainer.addEventListener('click', event => {
+    // 表紙の目次: 選んだ章の先頭までスクロールする（FR-020, DD-VTPL-042）
+    const agendaItem = event.target.closest('.vs-cover-agenda-item');
+    if (agendaItem) {
+      const slab = visContainer.querySelector(`.exhibition-slab[data-stage-no="${agendaItem.dataset.stageTarget}"]`);
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (slab) slab.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      return;
+    }
     if (event.target.closest('a, button')) return;
 
     const badge = event.target.closest('.exhibition-num-badge');
@@ -1380,12 +1388,113 @@ function setupVisualStageInteractions() {
   });
 }
 
-function buildVisualStageHtml(cleanHtml) {
+/* ==========================================================================
+   Visualモードの表紙（FR-020）と誌面の表（FR-021）
+   ========================================================================== */
+// 目次は章が 3〜15 個のときだけ出す。タグは先頭の 4 個まで（DTP-VTPL-100）
+const COVER_LIMITS = { agenda: [3, 15], tags: 4 };
+
+// 表紙に使うフロントマターの値（title / description / tags）だけを取り出す。
+// YAML の完全な解析はしない。先頭の列から始まるキーだけを見て、入れ子のキーは読まない（DD-VTPL-040）
+function readCoverMeta(yaml) {
+  const meta = { title: '', description: '', tags: [] };
+  if (!yaml) return meta;
+  const lines = yaml.split(/\r?\n/);
+  const scalar = v => {
+    const q = /^(['"])(.*)\1\s*(?:#.*)?$/.exec(v.trim());
+    return q ? q[2].trim() : v.replace(/\s+#.*$/, '').trim();
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^(title|description|tags)[ \t]*:[ \t]*(.*)$/.exec(lines[i]);
+    if (!m) continue;
+    const [, key, raw] = m;
+    // 続く字下げの行（ブロックの値・リスト）を集める
+    const block = [];
+    for (let j = i + 1; j < lines.length && (/^\s+\S/.test(lines[j]) || lines[j].trim() === ''); j++) {
+      if (lines[j].trim()) block.push(lines[j].trim());
+    }
+    const value = raw.trim();
+    if (key === 'tags') {
+      if (value.startsWith('[')) {
+        meta.tags = value.replace(/^\[|\]\s*(?:#.*)?$/g, '').split(',').map(scalar);
+      } else if (value) {
+        meta.tags = value.split(',').map(scalar);
+      } else {
+        meta.tags = block.filter(l => l.startsWith('-')).map(l => scalar(l.replace(/^-\s*/, '')));
+      }
+      meta.tags = meta.tags.filter(Boolean).slice(0, COVER_LIMITS.tags);
+    } else {
+      meta[key] = (!value || /^[>|][+-]?$/.test(value)) ? block.join(' ') : scalar(value);
+    }
+  }
+  return meta;
+}
+
+// 表紙の HTML。文字はすべてエスケープしてから埋め込む（NFR-003）
+function buildCoverHtml(title, meta, agenda) {
+  const eyebrow = meta.tags.length
+    ? `<p class="vs-cover-eyebrow">${meta.tags.map(escapeHtml).join('<span class="vs-cover-sep" aria-hidden="true">/</span>')}</p>`
+    : '';
+  const deck = meta.description ? `<p class="vs-cover-deck">${escapeHtml(meta.description)}</p>` : '';
+  const [min, max] = COVER_LIMITS.agenda;
+  let agendaHtml = '';
+  if (agenda.length >= min && agenda.length <= max) {
+    // 印刷物の目次と同じく、列の上から下へ読む順に並べる（DTP-VTPL-100）
+    const cols = agenda.length <= 6 ? 2 : 3;
+    const rows = Math.ceil(agenda.length / cols);
+    agendaHtml = `<ol class="vs-cover-agenda" style="--vs-rows: ${rows};" aria-label="目次">${agenda.map(a =>
+      `<li><button type="button" class="vs-cover-agenda-item" data-stage-target="${a.no}"><span class="vs-cover-agenda-no">${a.no}</span><span class="vs-cover-agenda-title">${escapeHtml(a.title)}</span></button></li>`
+    ).join('')}</ol>`;
+  }
+  return `
+      <div class="exhibition-hero vs-cover">
+        <div class="exhibition-hero-top">
+          <span class="exhibition-hero-emblem" aria-hidden="true"></span>
+          <div class="four-color-bar"><span></span><span></span><span></span><span></span></div>
+        </div>
+        ${eyebrow}
+        <h1 class="vs-cover-title font-display">${escapeHtml(title)}</h1>
+        ${deck}
+        ${agendaHtml}
+      </div>`;
+}
+
+// 数値の列の判定に使うセルの形（数字に単位・記号が付いたもの）。「—」「-」などの欠損の印は空のセルとみなす（DD-VTPL-041）
+const NUMERIC_CELL = /^[+\-−±]?[¥$€£]?\d[\d,]*(?:\.\d+)?[ \t]*(?:%|％|[a-zA-Z]{1,3}|件|個|円|倍|回|人|台|年|日|時間|分|秒|字|項目|行|列|枚|×)?$/;
+const EMPTY_CELL = /^(?:[-–—―]|N\/A)?$/i;
+
+// 本文のセルがすべてこの文字数以内で空白を含まない列は、短いラベルの列として折り返さない（DD-VTPL-041）
+const TABLE_LABEL_CHARS = 10;
+
+// 表の列を調べ、本文のセルがすべて数値の列に .vs-num、短いラベルの列に .vs-label を付ける。
+// 数値の揃えは、先頭の列（行の見出し）と、Markdown で揃えを指定した列には付けない
+function markTableColumns(table) {
+  const head = Array.from(table.querySelectorAll('thead th'));
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+  const cols = head.length || (rows[0] ? rows[0].children.length : 0);
+  for (let c = 0; c < cols; c++) {
+    const cells = rows.map(r => r.children[c]).filter(Boolean);
+    const texts = cells.map(td => td.textContent.trim());
+    const filled = texts.filter(t => !EMPTY_CELL.test(t));
+    if (!filled.length) continue;
+    const all = [head[c], ...cells].filter(Boolean);
+    const numeric = c > 0 && filled.every(t => NUMERIC_CELL.test(t)) && !all.some(cell => cell.hasAttribute('align'));
+    if (numeric) {
+      all.forEach(cell => cell.classList.add('vs-num'));
+    } else if (filled.every(t => t.length <= TABLE_LABEL_CHARS && !/\s/.test(t))) {
+      cells.forEach(cell => cell.classList.add('vs-label'));
+    }
+  }
+}
+
+function buildVisualStageHtml(cleanHtml, yaml) {
   const temp = document.createElement('div');
   temp.innerHTML = cleanHtml;
+  temp.querySelectorAll('table').forEach(markTableColumns);
 
-  // h1 がない文書は、読み込んだファイル名を題名にする。どちらもなければヒーローを出さない
-  let heroTitle = currentFileName !== 'untitled.md' ? currentFileName.replace(/\.[^.]+$/, '') : '';
+  // 題名は h1、フロントマターの title、読み込んだファイル名の順に探す。どれもなければヒーローを出さない（DD-VTPL-040）
+  const coverMeta = readCoverMeta(yaml);
+  let heroTitle = coverMeta.title || (currentFileName !== 'untitled.md' ? currentFileName.replace(/\.[^.]+$/, '') : '');
   const h1 = temp.querySelector('h1');
   if (h1) {
     heroTitle = h1.textContent;
@@ -1410,6 +1519,7 @@ function buildVisualStageHtml(cleanHtml) {
 
   let slabsHtml = '';
   let sectionCounter = 0;
+  const agenda = [];
 
   slabs.forEach((nodes) => {
     const wrapper = document.createElement('div');
@@ -1420,7 +1530,9 @@ function buildVisualStageHtml(cleanHtml) {
       const numStr = String(sectionCounter).padStart(2, '0');
       const rawTitle = h2.textContent.replace(/^\d+\.\s*/, '');
       h2.innerHTML = `<span class="exhibition-num-badge">STAGE ${numStr}</span><span>${escapeHtml(rawTitle)}</span>`;
+      agenda.push({ no: numStr, title: rawTitle });
     }
+    const stageAttr = h2 ? ` data-stage-no="${String(sectionCounter).padStart(2, '0')}"` : '';
     const slots = wrapper.querySelectorAll('.lucivo-slot');
     const children = Array.from(wrapper.children);
     const proseEls = children.filter(el => el !== h2 && !el.classList.contains('front-matter') && !el.classList.contains('lucivo-slot') && !el.querySelector('.lucivo-slot'));
@@ -1430,26 +1542,17 @@ function buildVisualStageHtml(cleanHtml) {
       const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
       const proseHtml = proseEls.map(el => el.outerHTML).join('');
       const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
-      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split">${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div></section>`;
+      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div></section>`;
     } else {
       const template = detectSlabTemplate(proseEls, slots.length);
       applySlabTemplate(template, proseEls);
-      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}">${wrapper.innerHTML}</section>`;
+      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}"${stageAttr}>${wrapper.innerHTML}</section>`;
     }
   });
 
   // 見出しの文字（textContent）はエスケープしてから埋め込む。そのまま入れると、見出しに書いた
   // &lt;img …&gt; などが HTML として解釈される（NFR-003）
-  const heroHtml = heroTitle ? `
-      <div class="exhibition-hero">
-        <div class="exhibition-hero-top">
-          <span class="exhibition-hero-emblem" aria-hidden="true"></span>
-          <div class="four-color-bar"><span></span><span></span><span></span><span></span></div>
-        </div>
-        <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight leading-tight mt-1" style="color: var(--text-primary);">
-          ${escapeHtml(heroTitle)}
-        </h1>
-      </div>` : '';
+  const heroHtml = heroTitle ? buildCoverHtml(heroTitle, coverMeta, agenda) : '';
 
   // 雛形・バッジ・4 色バーの配色は、スタイルのクラスが定義する --vs-c1〜4 から取る（DTP-VTPL-070）
   return `
@@ -1524,7 +1627,7 @@ function renderApp() {
     visContainer.classList.remove('hidden');
     visContainer.innerHTML = isEmpty
       ? `<div class="exhibition-wrap"><section class="exhibition-slab">${EMPTY_GUIDE_HTML}</section></div>`
-      : buildVisualStageHtml(cleanHtml);
+      : buildVisualStageHtml(cleanHtml, yaml);
   } else {
     visContainer.classList.add('hidden');
     visContainer.innerHTML = '';

@@ -678,13 +678,14 @@ async function testVisualStageQuality(browser) {
   const table = await page.evaluate(() => {
     const td = document.querySelector('#visual-stage-container .exhibition-slab td');
     const slab = td.closest('.exhibition-slab');
-    return { border: getComputedStyle(td).borderTopColor, slab: getComputedStyle(slab).backgroundColor };
+    // Visualモードの表は横の罫線で組む（DTP-VTPL-110）。区切り線は行の下端の線で調べる
+    return { border: getComputedStyle(td).borderBottomColor, style: getComputedStyle(td).borderBottomStyle, slab: getComputedStyle(slab).backgroundColor };
   });
   const detail = {
     cardsMaxOverlap: Math.max(...cards.map(c => c.overlap)), cardsCenterBelow: cards.every(c => c.centerBelow), cardsCount: cards.length,
     camelText: camel.color, camelLum: camel.color && +lum(camel.color).toFixed(2), fixedHero: camel.hero, table
   };
-  record('TC-DIAG-018', cards.length >= 3 && detail.cardsCenterBelow && detail.cardsMaxOverlap <= 2 && camel.found && detail.camelLum < 0.4 && !camel.hero && table.border !== table.slab, JSON.stringify(detail));
+  record('TC-DIAG-018', cards.length >= 3 && detail.cardsCenterBelow && detail.cardsMaxOverlap <= 2 && camel.found && detail.camelLum < 0.4 && !camel.hero && table.style !== 'none' && table.border !== table.slab, JSON.stringify(detail));
 
   // TC-DIAG-019 Dark の Visual Stage: カード背景が暗く、背景の上の線・文字が明るい（4 スタイル）
   const rows = [];
@@ -1328,7 +1329,13 @@ async function testVisualTemplates(browser) {
   });
 
   await s26Loc.locator('.exhibition-num-badge').click();
-  await page.waitForTimeout(400);
+  // 減光は opacity の 0.28 秒のトランジション。光の描画で忙しいとトランジションの開始が遅れるため、
+  // 一定時間後の値ではなく、落ち着くのを待ってから調べる（最大 3 秒）
+  await page.waitForFunction(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .vs-tpl-points');
+    const other = slabs[slabs.length - 1].previousElementSibling;
+    return parseFloat(getComputedStyle(other).opacity) < 0.7;
+  }, null, { timeout: 3000 }).catch(() => {});
   const stageSpot = await page.evaluate(() => {
     const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
     const slabs = document.querySelectorAll('#visual-stage-container .vs-tpl-points');
@@ -1479,6 +1486,167 @@ async function testVisualTemplates(browser) {
 
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
+}
+
+// TC-VTPL-015, 016: Visualモードの表紙と誌面の表（FR-020, FR-021）
+const coverChapters = n => Array.from({ length: n }, (_, i) => `## ${i + 1}. 章 ${i + 1}\n\n本文 ${i + 1}。\n`).join('\n');
+const COVER_MD = [
+  '---',
+  'title: 表紙の題名',
+  'description: 表紙のリード文 <img src=x onerror="window.__cxss=1">',
+  'tags:',
+  '  - Alpha',
+  '  - "Beta"',
+  '  - Gamma',
+  '  - Delta',
+  '  - Epsilon',
+  'author:',
+  '  title: 入れ子のキーは読まない',
+  '---',
+  '',
+  coverChapters(4)
+].join('\n');
+const TABLE_RULE_MD = [
+  '## 1. 列の判定',
+  '',
+  '| 名前 | 数値 | 揃え指定 | 混在 | ラベル |',
+  '| ---- | ---- | :------: | ---- | ------ |',
+  '| A    | 12   | 3        | 12   | 短い語 |',
+  '| B    | 1,200 ms | 4    | abc  | 語     |',
+  '| C    | —    | 5        | 7    | 長い説明の文章が入るセル |',
+  ''
+].join('\n');
+
+async function testCoverAndTables(browser) {
+  const page = await openStagePage(browser);
+  await page.click('.info-style-btn[data-info-style="shapes"]');
+  await waitRendered(page);
+
+  // TC-VTPL-015 表紙（フロントマターの題名・リード文・タグと目次）
+  await setDocument(page, COVER_MD);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(300);
+  const cover = await page.evaluate(() => {
+    const hero = document.querySelector('#visual-stage-container .exhibition-hero');
+    const items = Array.from(hero.querySelectorAll('.vs-cover-agenda-item'));
+    const rect = el => el.getBoundingClientRect();
+    const h2 = document.querySelector('#visual-stage-container .exhibition-slab h2');
+    return {
+      title: hero.querySelector('h1').textContent.trim(),
+      eyebrow: (hero.querySelector('.vs-cover-eyebrow') || {}).textContent,
+      deck: (hero.querySelector('.vs-cover-deck') || {}).textContent,
+      imgs: hero.querySelectorAll('img').length,
+      xss: !!window.__cxss,
+      agenda: items.map(b => [b.querySelector('.vs-cover-agenda-no').textContent, b.querySelector('.vs-cover-agenda-title').textContent]),
+      // 4 項目は 2 列 × 2 行。列の上から下へ読む（1 の下に 2、1 の右に 3）
+      columnMajor: items.length === 4 && Math.abs(rect(items[1]).left - rect(items[0]).left) < 2 && rect(items[1]).top > rect(items[0]).top
+        && rect(items[2]).left > rect(items[0]).right && Math.abs(rect(items[2]).top - rect(items[0]).top) < 2,
+      titleRatio: +(parseFloat(getComputedStyle(hero.querySelector('h1')).fontSize) / parseFloat(getComputedStyle(h2).fontSize)).toFixed(2)
+    };
+  });
+  // 目次の 3 番目を押すと 3 章の先頭までスクロールする
+  await page.click('#visual-stage-container .vs-cover-agenda-item[data-stage-target="03"]');
+  await page.waitForTimeout(1200);
+  const jump = await page.evaluate(() => {
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="03"]');
+    const scroller = document.getElementById('preview-scroll');
+    // 短い文書では最下部までしかスクロールできないため、その場合は最下部に着いていればよい
+    return {
+      offset: Math.round(slab.getBoundingClientRect().top - scroller.getBoundingClientRect().top),
+      scrolled: scroller.scrollTop > 0,
+      atBottom: scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2
+    };
+  });
+  // 発表の表紙では目次を出さない
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => LucivoStage.showState().active);
+  await waitRendered(page);
+  await page.waitForTimeout(600);
+  const inShow = await page.evaluate(() => ({
+    agenda: getComputedStyle(document.querySelector('.vs-cover-agenda')).display,
+    deck: getComputedStyle(document.querySelector('.vs-cover-deck')).display
+  }));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !LucivoStage.showState().active);
+  await waitRendered(page);
+  // 章の数の境界（2 章・15 章・16 章）と、h1 がフロントマターの題名より優先されること
+  const agendaCount = async md => {
+    await setDocument(page, md);
+    return page.evaluate(() => ({
+      items: document.querySelectorAll('#visual-stage-container .vs-cover-agenda-item').length,
+      title: (document.querySelector('#visual-stage-container .exhibition-hero h1') || {}).textContent
+    }));
+  };
+  const c2 = await agendaCount(`---\ntitle: 題\n---\n\n${coverChapters(2)}`);
+  const c15 = await agendaCount(`---\ntitle: 題\n---\n\n${coverChapters(15)}`);
+  const c16 = await agendaCount(`---\ntitle: 題\n---\n\n# 本文の題名\n\n${coverChapters(16)}`);
+  const coverOk = cover.title === '表紙の題名' && /Alpha.*Beta.*Gamma.*Delta/.test(cover.eyebrow || '') && !/Epsilon/.test(cover.eyebrow)
+    && /<img src=x/.test(cover.deck || '') && cover.imgs === 0 && !cover.xss
+    && JSON.stringify(cover.agenda) === JSON.stringify([['01', '章 1'], ['02', '章 2'], ['03', '章 3'], ['04', '章 4']])
+    && cover.columnMajor && cover.titleRatio >= 1.3 && jump.scrolled && (Math.abs(jump.offset) <= 40 || jump.atBottom)
+    && inShow.agenda === 'none' && inShow.deck !== 'none'
+    && c2.items === 0 && c15.items === 15 && c16.items === 0 && c16.title.trim() === '本文の題名';
+  record('TC-VTPL-015', coverOk, JSON.stringify({ cover, jump, inShow, c2, c15, c16 }));
+
+  // TC-VTPL-016 誌面の表（罫線・数値の列・短いラベルの列）
+  const vtplMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  await setDocument(page, vtplMd);
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  await page.waitForTimeout(300);
+  const tableRule = await page.evaluate(() => {
+    const slab = document.querySelectorAll('#visual-stage-container .exhibition-slab')[12];
+    const [wide, num] = slab.querySelectorAll('table');
+    const cs = el => getComputedStyle(el);
+    const probe = document.createElement('span');
+    probe.style.color = getComputedStyle(slab.closest('.exhibition-wrap')).getPropertyValue('--vs-c1').trim();
+    slab.appendChild(probe);
+    const c1 = cs(probe).color;
+    probe.remove();
+    // 文字の行の数（Range の矩形の上端の種類）
+    const lines = el => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return new Set(Array.from(range.getClientRects()).map(r => Math.round(r.top))).size;
+    };
+    const cells = Array.from(wide.querySelectorAll('th, td'));
+    const col = (table, n) => Array.from(table.querySelectorAll(`tr > :nth-child(${n})`));
+    return {
+      minCellWidth: Math.round(Math.min(...cells.map(c => c.getBoundingClientRect().width))),
+      noVertical: cells.every(c => parseFloat(cs(c).borderLeftWidth) === 0 && parseFloat(cs(c).borderRightWidth) === 0),
+      headRule: [cs(wide.querySelector('th')).borderBottomWidth, cs(wide.querySelector('th')).borderBottomColor, c1],
+      labelOneLine: col(wide, 2).slice(1).map(td => [td.classList.contains('vs-label'), lines(td)]),
+      numCols: [1, 2, 3, 4, 5].map(n => col(num, n).every(c => c.classList.contains('vs-num'))),
+      numAlign: col(num, 2).map(c => cs(c).textAlign),
+      tabular: /tabular-nums/.test(cs(col(num, 3)[1]).fontVariantNumeric),
+      firstColWeight: cs(col(num, 1)[1]).fontWeight
+    };
+  });
+  await page.locator('#visual-stage-container .exhibition-slab').nth(12).screenshot({ path: path.join(SHOT_DIR, 'vtpl-editorial-table.png') });
+  await setDocument(page, TABLE_RULE_MD);
+  const rule = await page.evaluate(() => {
+    const t = document.querySelector('#visual-stage-container table');
+    const cls = n => Array.from(t.querySelectorAll(`tbody tr > :nth-child(${n})`)).map(c => [c.classList.contains('vs-num'), c.classList.contains('vs-label')]);
+    return { name: cls(1), value: cls(2), aligned: cls(3), mixed: cls(4), label: cls(5) };
+  });
+  // 高速モードの表は変えない
+  await page.click('#btn-mode-fast');
+  await waitRendered(page);
+  const fast = await page.evaluate(() => {
+    const t = document.querySelector('#standard-doc-container table');
+    return { marked: t.querySelectorAll('.vs-num, .vs-label').length, thFont: getComputedStyle(t.querySelector('th')).fontFamily, tdLeft: getComputedStyle(t.querySelector('td')).borderLeftWidth };
+  });
+  const all = (rows, i, v) => rows.every(r => r[i] === v);
+  const tableOk = tableRule.minCellWidth >= 60 && tableRule.noVertical && tableRule.headRule[0] === '2px' && tableRule.headRule[1] === tableRule.headRule[2]
+    && tableRule.labelOneLine.every(([label, n]) => label && n === 1)
+    && JSON.stringify(tableRule.numCols) === JSON.stringify([false, true, true, true, true])
+    && tableRule.numAlign.every(a => a === 'right') && tableRule.tabular && +tableRule.firstColWeight >= 600
+    && all(rule.name, 0, false) && all(rule.value, 0, true) && all(rule.aligned, 0, false) && all(rule.mixed, 0, false)
+    && all(rule.mixed, 1, true) && all(rule.label, 1, false)
+    && fast.marked === 0 && /JetBrains Mono/.test(fast.thFont) && parseFloat(fast.tdLeft) >= 1;
+  record('TC-VTPL-016', tableOk, JSON.stringify({ tableRule, rule, fast }));
+
+  if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
+  await page.context().close();
 }
 
 // TC-LIGHT-001〜011, TC-SHOW-001〜010: シグナル・ライトとステージ発表（FR-018, FR-019）
@@ -1944,6 +2112,7 @@ async function testStageShow(browser) {
     await testEdgeStyle(browser);
     await testVisualStageQuality(browser);
     await testVisualTemplates(browser);
+    await testCoverAndTables(browser);
     await testSignalLight(browser);
     await testStageShow(browser);
     await testStartupAndCache(browser);
