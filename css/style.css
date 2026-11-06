@@ -783,6 +783,182 @@ body[data-appearance="dark"] .exhibition-hero {
 .four-color-bar span:nth-child(3) { background: var(--vs-c3); }
 .four-color-bar span:nth-child(4) { background: var(--vs-c4); }
 
+/* 表紙（DTP-VTPL-100, DD-VTPL-043）: 展示パネルの扉。上端の 2 色の淡い光だまりは静止（RGH-903） */
+.exhibition-hero.vs-cover,
+body[data-appearance="dark"] .exhibition-hero.vs-cover {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2.5rem, 6vw, 4.25rem) clamp(1.5rem, 5vw, 3.5rem) clamp(2.25rem, 5vw, 3.5rem);
+  background:
+    radial-gradient(60% 70% at 0% 0%, color-mix(in srgb, var(--vs-c1) 13%, transparent), transparent 70%),
+    radial-gradient(55% 65% at 100% 0%, color-mix(in srgb, var(--vs-c3) 13%, transparent), transparent 70%),
+    var(--vs-slab-bg);
+}
+.vs-cover-eyebrow {
+  margin: 1.1rem auto 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--vs-c1) 70%, var(--vs-tone));
+}
+.vs-cover-sep {
+  display: inline-block;
+  margin: 0 0.75em;
+  opacity: 0.45;
+}
+.vs-cover-title {
+  max-width: 46rem;
+  margin: 0.75rem auto 0;
+  font-size: clamp(1.75rem, 3.6vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-wrap: balance;
+  word-break: auto-phrase;
+}
+.vs-cover-deck {
+  max-width: 40rem;
+  margin: 1rem auto 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+  word-break: auto-phrase;
+}
+body[data-appearance="dark"] .vs-cover-deck { color: #CBD5E1; }
+/* 目次: 列の上から下へ読む順（印刷物の目次と同じ）。番号は 4 色を順に使う */
+.vs-cover-agenda {
+  list-style: none !important;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--vs-rows, 4), auto);
+  grid-auto-columns: minmax(0, 1fr);
+  column-gap: 1.75rem;
+  margin: 2.25rem 0 0 !important;
+  padding: 1.25rem 0 0 !important;
+  border-top: 1px solid var(--vs-card-border);
+  text-align: left;
+}
+.vs-cover-agenda > li {
+  margin: 0 !important;
+  padding: 0 !important;
+  --vs-c: var(--vs-c1);
+}
+.vs-cover-agenda > li:nth-child(4n + 2) { --vs-c: var(--vs-c2); }
+.vs-cover-agenda > li:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
+.vs-cover-agenda > li:nth-child(4n + 4) { --vs-c: var(--vs-c4); }
+.vs-cover-agenda-item {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+}
+.vs-cover-agenda-item:hover,
+.vs-cover-agenda-item:focus-visible {
+  background: color-mix(in srgb, var(--vs-c) 12%, transparent);
+  outline: none;
+}
+.vs-cover-agenda-no {
+  flex: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--vs-c) 70%, var(--vs-tone));
+}
+.vs-cover-agenda-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.55;
+  word-break: auto-phrase;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+@container (max-width: 40rem) {
+  .vs-cover-agenda {
+    grid-auto-flow: row;
+    grid-template-rows: none;
+  }
+}
+
+/* 誌面の表（DTP-VTPL-110, DD-VTPL-044）: 縦の罫線をなくし、横の罫線と見出しの下のアクセントの線で組む。
+   高速モードの表（DD-MD-020）の !important の指定を、詳細度の高いセレクタの !important で上書きする */
+.exhibition-wrap .table-container {
+  margin: 1.5rem 0;
+}
+.exhibition-wrap table {
+  font-size: 0.875rem;
+  font-variant-numeric: lining-nums;
+}
+.exhibition-wrap thead {
+  background: transparent !important;
+  border-bottom: 0 !important;
+}
+.exhibition-wrap :is(th, td) {
+  border: 0 !important;
+  border-bottom: 1px solid var(--vs-card-border) !important;
+  padding: 0.8rem 0.9rem !important;
+  vertical-align: top;
+  /* 文節の区切りで折り返す。anywhere で最小幅を文節の幅にしないため、多列の表も版面に収まる */
+  word-break: auto-phrase !important;
+  overflow-wrap: anywhere !important;
+  line-break: strict;
+}
+/* 文章の列は 6em より狭くしない。狭い版面では、1 文字ずつの縦書き状に潰す代わりに表の枠の中で横スクロールにする */
+.exhibition-wrap :is(th, td):not(.vs-num):not(.vs-label) {
+  min-width: 6em;
+}
+/* 短いラベルだけの列は 1 行に保つ（「リー／ド型」のような語の途中の改行を避ける。DD-VTPL-041） */
+.exhibition-wrap :is(th, td).vs-label {
+  white-space: nowrap;
+}
+.exhibition-wrap th {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--vs-c1) !important;
+}
+.exhibition-wrap tbody td:first-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.exhibition-wrap tbody tr:last-child td {
+  border-bottom-color: var(--vs-line, var(--border-strong)) !important;
+}
+.exhibition-wrap tbody tr {
+  transition: background-color 0.2s ease;
+}
+.exhibition-wrap tbody tr:hover {
+  background: color-mix(in srgb, var(--vs-c1) 7%, transparent);
+}
+.exhibition-wrap :is(th, td).vs-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.exhibition-wrap td.vs-num {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
 .exhibition-slab {
   min-width: 0;
   max-width: 100%;
@@ -1500,6 +1676,19 @@ html.is-stage-show .exhibition-hero h1 {
   margin-top: 1rem;
   word-break: auto-phrase;
   text-wrap: balance;
+}
+html.is-stage-show .vs-cover-eyebrow {
+  font-size: 0.95rem;
+  margin-top: 1.5rem;
+}
+html.is-stage-show .vs-cover-deck {
+  max-width: 52rem;
+  font-size: 1.45rem;
+  margin-top: 1.4rem;
+}
+/* 発表の表紙は題名を主役にする。目次は閲覧時の道案内のため、舞台では出さない（DTP-VTPL-100） */
+html.is-stage-show .vs-cover-agenda {
+  display: none;
 }
 html.is-stage-show .exhibition-hero-emblem {
   width: 4.5rem;
