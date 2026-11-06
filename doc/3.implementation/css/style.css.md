@@ -14,7 +14,7 @@ tags: ["Lucivo", "実装", "CSS"]
 flowchart TD
   subgraph Dependencies
     tw["css/tailwind.css（Tailwind の生成物。Preflight で標準のスタイルを初期化）"]
-    fonts["Google Fonts"]
+    fonts["vendor/fonts/fonts.css"]
     motifs["assets/motifs/*.svg（Visualモードのベクター装飾素材）"]
   end
   css["css/style.css"]
