@@ -10,10 +10,10 @@ tags: ["Lucivo", "実装"]
 
 | ソース                                                             | 実装ドキュメント                                                   | 概要                                                     |
 | :----------------------------------------------------------------- | :----------------------------------------------------------------- | :------------------------------------------------------- |
-| [index.html](../../index.html)                                     | [index.html.md](index.html.md)                                     | 画面の骨格、CDN ライブラリと CSS・スクリプトの読み込み順 |
-| [css/style.css](../../css/style.css)                               | [css/style.css.md](css/style.css.md)                               | デザイントークン、組版、Markdown 要素、図の表示枠、Visualモード |
-| [js/app.js](../../js/app.js)                                       | [js/app.js.md](js/app.js.md)                                       | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
-| [js/stage.js](../../js/stage.js)                                   | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                           |
+| [index.html](../../public/index.html)                                     | [index.html.md](index.html.md)                                     | 画面の骨格、CDN ライブラリと CSS・スクリプトの読み込み順 |
+| [css/style.css](../../public/css/style.css)                               | [css/style.css.md](css/style.css.md)                               | デザイントークン、組版、Markdown 要素、図の表示枠、Visualモード |
+| [js/app.js](../../public/js/app.js)                                       | [js/app.js.md](js/app.js.md)                                       | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
+| [js/stage.js](../../public/js/stage.js)                                   | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                           |
 | [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成                               |
 | [tools/build-samples-data.cjs](../../tools/build-samples-data.cjs) | [tools/build-samples-data.cjs.md](tools/build-samples-data.cjs.md) | `file://` 直開き時の同梱サンプル遅延読み込みデータの生成 |
 | [tests/e2e.cjs](../../tests/e2e.cjs)                               | [tests/e2e.cjs.md](tests/e2e.cjs.md)                               | テスト仕様の自動確認と画面の撮影                         |

@@ -82,4 +82,4 @@ Lucivo の Visualモード（Visual Stage）の誌面設計の全体方針を定
 | `RGH-<nnn>`      | ラフ案                     | [roughs/README.md](roughs/README.md)             |
 | `AST-<nnn>`      | 素材                       | [assets/README.md](assets/README.md)             |
 
-- 本番素材の置き場所（`<プロジェクト>/assets/`）: Visualモードのベクター装飾素材 `AST-005`〜`AST-009` を `assets/motifs/` に、ブランドロゴ素材 `AST-010`〜`AST-012` を `assets/logos/{light,dark}/` に配置し、製品リリースに同梱する。作図元データ（`sources/`）および未使用のストック・ボツ素材（`stock/`）は `doc/0.DTP/assets/` で管理する（[assets/README.md](assets/README.md)）。
+- 本番素材の置き場所（`public/assets/`）: Visualモードのベクター装飾素材 `AST-005`〜`AST-009` を `assets/motifs/` に、ブランドロゴ素材 `AST-010`〜`AST-012` を `assets/logos/{light,dark}/` に配置し、製品リリースに同梱する。作図元データ（`sources/`）および未使用のストック・ボツ素材（`stock/`）は `doc/0.DTP/assets/` で管理する（[assets/README.md](assets/README.md)）。
