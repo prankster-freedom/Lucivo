@@ -18,5 +18,6 @@ tags: ["Lucivo", "詳細設計"]
 | edge-style          | `EDGE` | [edge-style.md](features/edge-style.md)               | [edge-style.md](../1.SRS/features/edge-style.md) (`FR-004`, `FR-012`) |
 | visual-templates    | `VTPL` | [visual-templates.md](features/visual-templates.md)   | [visual-templates.md](../1.SRS/features/visual-templates.md) (`FR-016`, `FR-017`, `FR-020`, `FR-021`) |
 | stage-show          | `LIGHT`, `SHOW` | [stage-show.md](features/stage-show.md)      | [stage-show.md](../1.SRS/features/stage-show.md) (`FR-018`, `FR-019`, `FR-022`, `FR-023`) |
+| offline             | `OFF`  | [offline.md](features/offline.md)                     | [1.SRS.md](../1.SRS.md) (`NFR-008`) |
 
 - 全体要求仕様書: [1.SRS.md](../1.SRS.md)

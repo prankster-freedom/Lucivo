@@ -24,7 +24,7 @@ Markdown 文書と Mermaid ダイアグラムを、エンジニアリング仕�
 
 ### 最も簡単な使い方
 
-1. ブラウザで [index.html](public/index.html) を直接開きます。ライブラリと Web フォントを CDN から読み込むため、インターネット接続が必要です。
+1. ブラウザで [index.html](public/index.html) を直接開きます。インターネット接続は必要ありません。
 2. ヘッダーの「ファイル」メニュー →「Markdown を開く…」で Markdown ファイル（`.md` / `.markdown` / `.txt`、UTF-8）を読み込みます。起動直後のエディタは空です。
 3. 左ペイン（`SOURCE MARKDOWN`）で Markdown と ```` ```mermaid ```` コードブロックを編集すると、右ペインにリアルタイムでプレビューが表示されます。
 
@@ -56,6 +56,8 @@ Lucivo/
 ├── package.json       # 開発用の依存（Playwright）とコマンド
 ├── public/            # 配布物（この中だけで動く）
 │   ├── index.html     # エントリーポイント HTML
+│   ├── THIRD_PARTY_LICENSES.txt # 同梱のライブラリとフォントのライセンス
+│   ├── vendor/        # 同梱のライブラリとフォント（tools/build-vendor.cjs で生成）
 │   ├── assets/        # 製品同梱アセット
 │   │   ├── logos/     # ブランドロゴ・Favicon（Light / Dark）
 │   │   └── motifs/    # Visualモード用のベクター装飾素材（SVG）
@@ -85,7 +87,7 @@ Lucivo/
 
 ## 動作確認
 
-`npm install` と `npx playwright install chromium` のあと、次のコマンドでテスト仕様（[doc/4.test_spec/](doc/4.test_spec/)）の自動確認を実行できます。図の画像は `work/test/` に保存されます（git 管理外）。CDN からライブラリを読み込むため、インターネット接続が必要です。
+`npm install` と `npx playwright install chromium` のあと、次のコマンドでテスト仕様（[doc/4.test_spec/](doc/4.test_spec/)）の自動確認を実行できます。図の画像は `work/test/` に保存されます（git 管理外）。
 
 ```bash
 npm test

@@ -46,4 +46,4 @@ flowchart TD
 | DD-MATH-023 | 表示             | ブロック数式は中央寄せで上下に余白を取り、横に長い場合は横スクロールする（`.lucivo-math[data-display="true"]`、`overflow-x: auto`）。文字色は本文の色を継承する | `FR-010`     |
 
 - `trust: false` により、`\href` や `\htmlClass` などの、リンクや任意の属性を生成するコマンドは描画されない（KaTeX の既定）。
-- KaTeX の CSS（`katex.min.css`）は `index.html` の `<head>` で読み込む。CSS はフォントを CSS からの相対パスで読み込むため、CDN の同じバージョンの `dist/` から読み込む。
+- KaTeX の CSS（`katex.min.css`）は `index.html` の `<head>` で読み込む。CSS はフォントを CSS からの相対パスで読み込むため、`public/vendor/katex/` に CSS とフォントを一緒に置く。
