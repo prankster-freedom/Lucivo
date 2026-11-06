@@ -634,7 +634,7 @@ async function testMathRendering(browser) {
 
   // TC-MATH-004 KaTeX を読み込めない場合は原文を表示する
   const ctx = await browser.newContext();
-  await ctx.route('**/katex@*/**', route => route.abort());
+  await ctx.route('**/vendor/katex/**', route => route.abort());
   const offline = await ctx.newPage();
   const pageErrors = [];
   offline.on('pageerror', e => pageErrors.push(e.message));
@@ -2272,6 +2272,41 @@ async function testStageOverviewPointer(browser) {
   await page.context().close();
 }
 
+// TC-OFF-001〜003: インターネットに接続していなくても、同梱のファイルだけで動く（NFR-008）
+async function testOffline(browser) {
+  const ctx = await browser.newContext({ offline: true, viewport: { width: 1600, height: 1000 } });
+  const page = await ctx.newPage();
+  const external = [];
+  const errors = [];
+  page.on('request', r => { if (!r.url().startsWith('file:') && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) external.push(r.url()); });
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto(APP_URL);
+  await page.waitForFunction(() => typeof renderApp === 'function');
+  await page.setInputFiles('#file-input', SAMPLE);
+  await page.waitForFunction(() => window.mermaid && window.katex
+    && document.querySelector('#standard-doc-container .diagram-card svg, #standard-doc-container svg[id^="mermaid"]')
+    && document.querySelector('#standard-doc-container .lucivo-math .katex'), null, { timeout: 30000 });
+  await page.evaluate(() => document.fonts.ready);
+  const fonts = await page.evaluate(async () => {
+    const families = ['Inter', 'Plus Jakarta Sans', 'Noto Sans JP', 'JetBrains Mono'];
+    const loaded = [];
+    for (const family of families) {
+      const faces = await document.fonts.load(`500 16px "${family}"`, '日本語 Lucivo');
+      if (faces.length) loaded.push(family);
+    }
+    const math = await document.fonts.load('16px KaTeX_Main', 'x');
+    return { loaded, math: math.length };
+  });
+  record('TC-OFF-001', external.length === 0 && errors.length === 0, JSON.stringify({ external: external.slice(0, 5), errors: errors.slice(0, 5) }));
+  record('TC-OFF-002', fonts.loaded.length === 4 && fonts.math > 0, JSON.stringify(fonts));
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-export-html')]);
+  const exported = fs.readFileSync(await download.path(), 'utf8');
+  record('TC-OFF-003', !exported.includes('./vendor/') && exported.includes('fonts.googleapis.com/css2') && /marked@[\d.]+\/marked\.min\.js/.test(exported),
+    `localRefs=${(exported.match(/\.\/vendor\//g) || []).length}`);
+  await ctx.close();
+}
+
 (async () => {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await chromium.launch();
@@ -2289,6 +2324,7 @@ async function testStageOverviewPointer(browser) {
     await testStageShow(browser);
     await testStageOverviewPointer(browser);
     await testStartupAndCache(browser);
+    await testOffline(browser);
   } catch (e) {
     record('RUNTIME', false, e.stack);
   } finally {

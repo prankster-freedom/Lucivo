@@ -314,10 +314,10 @@ const mathCache = new Map();
 
 // 図・数式がない文書では読み込まないライブラリ。名前 → 読み込みの Promise（true: 読み込めた）
 const LIBRARIES = {
-  mermaid: { script: 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js', global: 'mermaid' },
+  mermaid: { script: './vendor/mermaid.min.js', global: 'mermaid' },
   katex: {
-    script: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
-    style: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css',
+    script: './vendor/katex/katex.min.js',
+    style: './vendor/katex/katex.min.css',
     global: 'katex'
   },
   // Visualモードの舞台演出（FR-018, FR-019）。高速モードの起動には読み込まない（NFR-006）
@@ -326,6 +326,15 @@ const LIBRARIES = {
   samples: { script: './samples/samples-data.js', global: 'LUCIVO_SAMPLES' }
 };
 const libraryLoads = new Map();
+// 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを CDN の URL に置き換える（DD-OFF-003）
+const EXPORT_URLS = {
+  './vendor/fonts/fonts.css': 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap',
+  './vendor/marked.min.js': 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js',
+  './vendor/purify.min.js': 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js',
+  './vendor/mermaid.min.js': 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js',
+  './vendor/katex/katex.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
+  './vendor/katex/katex.min.css': 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css'
+};
 
 // CSS も <head> に入れるため、HTML エクスポート（outerHTML）にも含まれる
 function loadLibrary(name) {
@@ -1992,7 +2001,10 @@ function setupEventListeners() {
   };
 
   document.getElementById('btn-export-html').onclick = () => {
-    const fullHtml = document.documentElement.outerHTML;
+    const fullHtml = Object.entries(EXPORT_URLS).reduce(
+      (html, [local, url]) => html.split(local).join(url),
+      document.documentElement.outerHTML
+    );
     downloadBlob(fullHtml, 'lucivo-architecture-export.html', 'text/html');
     showToast('単一HTMLファイルをエクスポートしました');
   };
