@@ -1,10 +1,10 @@
 ---
-title: Lucivo — Exhibition-Grade Markdown Viewer
+title: Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 description: Markdown 文書と Mermaid ダイアグラムをリアルタイムに編集・プレビュー・インフォグラフィック変換できるスタンドアロン Web アプリケーション。
 tags: ["Lucivo", "Markdown", "Mermaid"]
 ---
 
-# Lucivo — Exhibition-Grade Markdown Viewer
+# Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
 - **Version**: `0.1.0`（`1.0.0` に上げるまでは、互換性のない変更も MINOR で上げる。`AGENTS.repo.md` 5 章）
 
