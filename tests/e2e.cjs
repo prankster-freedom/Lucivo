@@ -2100,6 +2100,120 @@ async function testStageShow(browser) {
   await page.context().close();
 }
 
+// TC-SHOW-011, 012: 発表の俯瞰（ライトテーブル）と光のポインター（FR-022, FR-023）
+async function testStageOverviewPointer(browser) {
+  const page = await openStagePage(browser);
+  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-template.md'), 'utf8');
+  await setDocument(page, showcaseMd);
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => LucivoStage.showState().active);
+  await waitRendered(page);
+  await page.waitForTimeout(600);
+  await pressUntil(page, () => LucivoStage.showState().index === 4);
+
+  // TC-SHOW-011 俯瞰: 開くまでの時間、並び、光の停止、選択の移動、拡大して入る、元のシーンへ戻る
+  const openMs = await page.evaluate(() => new Promise(resolve => {
+    const t0 = performance.now();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', bubbles: true }));
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve(+(performance.now() - t0).toFixed(1))));
+  }));
+  await page.waitForTimeout(700);
+  const grid = await page.evaluate(() => {
+    const tiles = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-wrap > *'));
+    const rects = tiles.map(t => t.getBoundingClientRect());
+    return {
+      ...LucivoStage.showState(),
+      htmlClass: document.documentElement.classList.contains('is-stage-overview'),
+      visible: tiles.filter(t => getComputedStyle(t).display !== 'none').length,
+      columns: new Set(rects.map(r => Math.round(r.left))).size,
+      inside: rects.every(r => r.left >= 0 && r.right <= innerWidth + 1),
+      aspect: rects.every(r => Math.abs(r.width / r.height - innerWidth / innerHeight) < 0.03),
+      selectedClass: tiles.findIndex(t => t.classList.contains('is-ov-selected')),
+      lightsOff: LucivoStage.lightPlans().every(p => !p.active),
+      count: document.querySelector('.stage-hud-count').textContent
+    };
+  });
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-overview.png') });
+  const moves = [];
+  for (const key of ['ArrowRight', 'ArrowDown', 'ArrowUp', 'End', 'Home', 'ArrowLeft']) {
+    await page.keyboard.press(key);
+    moves.push(await page.evaluate(() => LucivoStage.showState().selected));
+  }
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1000);
+  const entered = await page.evaluate(inspectShow);
+  // 縮小図をクリックして入る。図のあるシーン（10: 解説＋図版型）では、光がまた流れる
+  await page.keyboard.press('o');
+  await page.waitForTimeout(700);
+  await page.locator('#visual-stage-container .exhibition-wrap > *').nth(10).click();
+  await page.waitForTimeout(1200);
+  const clicked = await page.evaluate(() => ({
+    ...LucivoStage.showState(),
+    lightsOn: LucivoStage.lightPlans().some(p => p.active)
+  }));
+  // Escape で、開く前のシーンへ戻る（発表は続く）
+  await page.keyboard.press('o');
+  await page.waitForTimeout(500);
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(1000);
+  const escaped = await page.evaluate(inspectShow);
+  const overviewOk = openMs < 400 && grid.overview && grid.htmlClass && grid.visible === 15 && grid.columns === 4 && grid.inside && grid.aspect
+    && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === '05 / 15'
+    && JSON.stringify(moves) === '[5,9,5,14,0,0]'
+    && !entered.overview && entered.index === 1 && entered.shown === 1 && entered.active
+    && !clicked.overview && clicked.index === 10 && clicked.lightsOn
+    && !escaped.overview && escaped.active && escaped.index === 10 && escaped.shown === 1;
+  record('TC-SHOW-011', overviewOk, JSON.stringify({ openMs, grid, moves, entered: entered.index, clicked, escaped: escaped.index }));
+
+  // TC-SHOW-012 光のポインター: マウスに追従し、レイアウトを読まない。俯瞰と終了で消える
+  await page.keyboard.press('l');
+  await page.mouse.move(200, 200);
+  await page.evaluate(() => {
+    window.__layoutReads = 0;
+    const count = (obj, name) => {
+      const orig = obj[name];
+      obj[name] = function (...args) { window.__layoutReads++; return orig.apply(this, args); };
+      return () => { obj[name] = orig; };
+    };
+    window.__restoreReads = [count(Element.prototype, 'getBoundingClientRect'), count(window, 'getComputedStyle'), count(Element.prototype, 'getClientRects')];
+  });
+  await page.mouse.move(820, 460, { steps: 30 });
+  await page.waitForTimeout(150);
+  const follow = await page.evaluate(() => {
+    window.__restoreReads.forEach(restore => restore());
+    const layer = document.querySelector('.stage-pointer');
+    return {
+      reads: window.__layoutReads,
+      pointer: LucivoStage.showState().pointer,
+      display: getComputedStyle(layer).display,
+      px: layer.style.getPropertyValue('--px'),
+      py: layer.style.getPropertyValue('--py'),
+      dot: layer.firstElementChild.style.transform,
+      cursor: getComputedStyle(document.getElementById('visual-stage-container')).cursor
+    };
+  });
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-pointer.png') });
+  await page.keyboard.press('o');
+  await page.waitForTimeout(500);
+  const inOverview = await page.evaluate(() => ({ pointer: LucivoStage.showState().pointer, display: getComputedStyle(document.querySelector('.stage-pointer')).display }));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(900);
+  await page.keyboard.press('l');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const afterExit = await page.evaluate(() => ({ active: LucivoStage.showState().active, pointer: LucivoStage.showState().pointer, htmlClass: document.documentElement.className }));
+  const pointerOk = follow.reads === 0 && follow.pointer && follow.display === 'block' && follow.px === '820px' && follow.py === '460px'
+    && /translate3d\(820px, 460px/.test(follow.dot) && follow.cursor === 'none'
+    && !inOverview.pointer && inOverview.display === 'none'
+    && !afterExit.active && !afterExit.pointer && !/is-stage-(pointer|overview|show)/.test(afterExit.htmlClass);
+  record('TC-SHOW-012', pointerOk, JSON.stringify({ follow, inOverview, afterExit }));
+
+  if (page.consoleErrors.length) record('TC-SHOW-CONSOLE2', false, JSON.stringify(page.consoleErrors));
+  await page.context().close();
+}
+
 (async () => {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await chromium.launch();
@@ -2115,6 +2229,7 @@ async function testStageShow(browser) {
     await testCoverAndTables(browser);
     await testSignalLight(browser);
     await testStageShow(browser);
+    await testStageOverviewPointer(browser);
     await testStartupAndCache(browser);
   } catch (e) {
     record('RUNTIME', false, e.stack);
