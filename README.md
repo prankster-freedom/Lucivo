@@ -6,7 +6,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.1.0`（`1.0.0` に上げるまでは、互換性のない変更も MINOR で上げる。`AGENTS.repo.md` 5 章）
+- **Version**: `0.1.0`（`1.0.0` に上げるまでは、互換性のない変更も MINOR で上げる。`AGENTS.repo.md` 4 章）
 
 Markdown 文書と Mermaid ダイアグラムを、エンジニアリング仕様書スタイルの「高速モード」と 4 種のインフォグラフィックスタイルの「Visualモード」で表示する、スタンドアロンの Markdown ビューアーです。左ペインのエディタで書き換えると、プレビューにすぐ反映されます（エディタは当面は付随的な機能です）。
 
@@ -24,11 +24,11 @@ Markdown 文書と Mermaid ダイアグラムを、エンジニアリング仕�
 
 ### 最も簡単な使い方
 
-1. ブラウザで [index.html](index.html) を直接開きます。
+1. ブラウザで [index.html](public/index.html) を直接開きます。ライブラリと Web フォントを CDN から読み込むため、インターネット接続が必要です。
 2. ヘッダーの「ファイル」メニュー →「Markdown を開く…」で Markdown ファイル（`.md` / `.markdown` / `.txt`、UTF-8）を読み込みます。起動直後のエディタは空です。
 3. 左ペイン（`SOURCE MARKDOWN`）で Markdown と ```` ```mermaid ```` コードブロックを編集すると、右ペインにリアルタイムでプレビューが表示されます。
 
-Markdown と Mermaid の記法の例は、同梱の [samples/notation_sample.md](samples/notation_sample.md) にあります。また、Visualモードの表紙・各雛形・誌面の表・光の演出・ステージ発表、および段落ボリューム・図表サイズ（横長・縦長・大表）に応じた組版の確認用サンプルは [samples/visual-sample.md](samples/visual-sample.md) にあります。「ファイル」メニューの「Visualモードサンプル (visual-sample.md)」「記法サンプル (notation_sample.md)」からワンクリックで開けます。
+Markdown と Mermaid の記法の例は、同梱の [samples/notation_sample.md](public/samples/notation_sample.md) にあります。また、Visualモードの表紙・各雛形・誌面の表・光の演出・ステージ発表、および段落ボリューム・図表サイズ（横長・縦長・大表）に応じた組版の確認用サンプルは [samples/visual-sample.md](public/samples/visual-sample.md) にあります。「ファイル」メニューの「Visualモードサンプル (visual-sample.md)」「記法サンプル (notation_sample.md)」からワンクリックで開けます。
 
 ### 主な使い方のパターン
 
@@ -50,24 +50,29 @@ Markdown と Mermaid の記法の例は、同梱の [samples/notation_sample.md]
 ## ディレクトリ構成
 
 ```text
-lucivo/
+Lucivo/
 ├── README.md          # 本ファイル（概要・使い方・リリースノート）
-├── index.html         # エントリーポイント HTML
-├── assets/            # 製品同梱アセット
-│   ├── logos/         # ブランドロゴ・Favicon（Light / Dark）
-│   └── motifs/        # Visualモード用のベクター装飾素材（SVG）
-├── samples/           # 同梱サンプル文書
-│   ├── visual-sample.md   # Visualモードのレンダリング確認サンプル
-│   ├── notation_sample.md # Markdown と Mermaid の記法のサンプル
-│   └── samples-data.js    # file:// 直開き時の同梱サンプル遅延読み込み用データ（tools/build-samples-data.cjs で生成）
+├── LICENSE
+├── package.json       # 開発用の依存（Playwright）とコマンド
+├── public/            # 配布物（この中だけで動く）
+│   ├── index.html     # エントリーポイント HTML
+│   ├── assets/        # 製品同梱アセット
+│   │   ├── logos/     # ブランドロゴ・Favicon（Light / Dark）
+│   │   └── motifs/    # Visualモード用のベクター装飾素材（SVG）
+│   ├── samples/       # 同梱サンプル文書
+│   │   ├── visual-sample.md   # Visualモードのレンダリング確認サンプル
+│   │   ├── notation_sample.md # Markdown と Mermaid の記法のサンプル
+│   │   └── samples-data.js    # file:// 直開き時の同梱サンプル遅延読み込み用データ（tools/build-samples-data.cjs で生成）
+│   ├── css/
+│   │   ├── style.css  # デザイントークン・組版・Visualモード スタイル定義
+│   │   └── tailwind.css # 使っているクラスだけを事前に生成した CSS（tools/build-tailwind-css.cjs で生成）
+│   └── js/
+│       ├── app.js     # レンダリングエンジン・SVG ポストプロセッサ・UI 制御
+│       └── stage.js   # Visualモードの舞台演出（シグナル・ライト、ステージ発表）
 ├── tests/
 │   └── e2e.cjs        # Playwright による動作確認スクリプト
-├── css/
-│   └── style.css      # デザイントークン・組版・Visualモード スタイル定義
-├── js/
-│   ├── app.js         # レンダリングエンジン・SVG ポストプロセッサ・UI 制御
-│   └── stage.js       # Visualモードの舞台演出（シグナル・ライト、ステージ発表）
-└── doc/               # 仕様書・設計書（doc スキル準拠）
+├── tools/             # 生成スクリプト
+└── doc/               # 仕様書・設計書（doc スキル準拠。`js/app.js` のようなソースのパスは public/ からの相対パス）
     ├── 0.DTP/         # デザイン仕様・ラフ・素材の台帳（dtp スキル。リリースに含めない）
     ├── 1.SRS.md       # ソフトウェア要求仕様書（全体）
     ├── 1.SRS/         # 個別 feature 要求仕様書
@@ -80,10 +85,10 @@ lucivo/
 
 ## 動作確認
 
-Playwright（Chromium）を導入済みであれば、次のコマンドでテスト仕様（[doc/4.test_spec/](doc/4.test_spec/)）の自動確認を実行できます。図の画像は `work/test/` に保存されます（git 管理外）。CDN からライブラリを読み込むため、インターネット接続が必要です。
+`npm install` と `npx playwright install chromium` のあと、次のコマンドでテスト仕様（[doc/4.test_spec/](doc/4.test_spec/)）の自動確認を実行できます。図の画像は `work/test/` に保存されます（git 管理外）。CDN からライブラリを読み込むため、インターネット接続が必要です。
 
 ```bash
-nodetests/e2e.cjs
+npm test
 ```
 
 - 所要時間は 3〜5 分です。合否は標準出力と `work/test/results.json` に出力されます。
@@ -92,7 +97,7 @@ nodetests/e2e.cjs
 
 ## 開発を続けるには
 
-本アプリは、リポジトリの `AGENTS.md` と `.claude/skills/` の工程（swe1 → swe2 → swe3 → test）で、増分ごとに開発しています。本フォルダが独立したプロジェクトのルートです（`AGENTS.repo.md` 3 章）。
+本アプリは、リポジトリの `AGENTS.md` と `.claude/skills/` の工程（swe1 → swe2 → swe3 → test）で、増分ごとに開発しています。リポジトリ直下がプロジェクトのルートです（`AGENTS.repo.md` 2 章）。
 
 要求の追加や設計の判断は、[プロダクトコンセプト](doc/1.SRS.md#11-プロダクトコンセプト) に照らして行ってください。高速モードは軽快さ、Visualモードは見た目の品質を優先します。
 
@@ -113,7 +118,7 @@ nodetests/e2e.cjs
 
 - **同じ id の重複**: 高速モードと Visualモードの両方に図を残すと、描画先と SVG 内の参照（矢じり・グラデーション）が非表示側に向きます。表示しない側は空にし、SVG 内の id は図ごとに一意にしています（`DD-DIAG-001`〜`003`, `DD-DIAG-010`）。
 - **Tailwind のリセット**: Tailwind CSS がブラウザ標準のスタイルを消すため、Markdown の要素の見た目はすべて `style.css` で定義しています（`DD-MD-001`〜）。
-- **Tailwind のクラスの追加**: Tailwind は使っているクラスだけを事前に生成した `css/tailwind.css` を読み込んでいます。`index.html` や `app.js` で新しい Tailwind のクラスを使ったら、`nodetools/build-tailwind-css.cjs` で作り直してください。作り直さないと、そのクラスは効きません。
+- **Tailwind のクラスの追加**: Tailwind は使っているクラスだけを事前に生成した `css/tailwind.css` を読み込んでいます。`index.html` や `app.js` で新しい Tailwind のクラスを使ったら、`node tools/build-tailwind-css.cjs` で作り直してください。作り直さないと、そのクラスは効きません。
 - **遅延読み込み**: Mermaid と KaTeX は、図・数式が文書に現れるまで読み込みません。`window.mermaid` / `window.katex` がない状態でも動くように書いてください（`loadLibrary()`）。
 - **Visualモードの装飾の範囲**: 図形の装飾は、フローチャート・状態遷移図・シーケンス図だけに適用します。他の図種に適用すると崩れます（`DD-DIAG-011`）。
 - **Dark の Visualモード**: カード背景は外観に合わせて暗くなりますが、装飾したノードの塗り（色付きの図形・白いカード）は明るいままです。背景の上に直接描く線・文字は明るく、ノードの上の文字は暗く、それぞれ色を明示します（ページの文字色を継承させない。`DD-DIAG-024`, `DD-DIAG-031`）。

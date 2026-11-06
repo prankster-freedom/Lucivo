@@ -62,7 +62,7 @@ sequenceDiagram
 ### DD-FILE-020 起動時の初期表示
 
 - 起動時にエディタへ何も設定せず、`renderApp()` を呼ぶ。エディタが空のため、DD-FILE-004 の案内が表示される。
-- サンプル文書は `app.js` に埋め込まない（`FR-007`）。サンプルは同梱の [notation_sample.md](../../../notation_sample.md) を、利用者が DD-FILE-010 で開く。
+- サンプル文書は `app.js` に埋め込まない（`FR-007`）。サンプルは同梱の [notation_sample.md](../../../public/samples/notation_sample.md) を、利用者が DD-FILE-010 で開く。
 
 ### DD-FILE-030 保存
 
