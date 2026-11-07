@@ -38,9 +38,9 @@ metadata:
 
 ## ブランチ規則
 
-- **main へのマージは必ず Pull Request を経由する。** main へ直接 commit・push・マージしてはならない。
-- **main へのマージは Rebase and merge（fast-forward で履歴を一直線にする）のみとする。** マージコミットの作成と Squash merge は禁止する（リポジトリの設定でも Rebase and merge だけを許可している）。
-- Rebase and merge ではコミットのハッシュが変わる。タグは、マージ後の main 上のコミットに付ける。
+- **main への反映は必ず Pull Request の承認を経る。** 手元から main へ直接 commit・push・マージしてはならない。
+- **main への反映の手順は branch-strategy スキルに従う。** マージコミットの作成と Squash merge は禁止する。
+- タグは、反映後の main 上のコミットに付ける。
 - feature ブランチは `feature/<変更内容>` とする（ケバブケース。例: `feature/cw-restore`）。
 - ソフトウェア開発でフィーチャー単位に分ける場合は `feature/<feature名>/<CR番号または変更内容>` とする。
 
