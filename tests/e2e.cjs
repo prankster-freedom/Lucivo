@@ -1617,7 +1617,7 @@ async function testCoverAndTables(browser) {
   });
   // 発表の表紙では目次を出さない
   await page.click('#btn-stage-show');
-  await page.waitForFunction(() => LucivoStage.showState().active);
+  await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(page);
   await page.waitForTimeout(600);
   const inShow = await page.evaluate(() => ({
@@ -1625,7 +1625,7 @@ async function testCoverAndTables(browser) {
     deck: getComputedStyle(document.querySelector('.vs-cover-deck')).display
   }));
   await page.keyboard.press('Escape');
-  await page.waitForFunction(() => !LucivoStage.showState().active);
+  await page.waitForFunction(() => window.LucivoStage && !LucivoStage.showState().active);
   await waitRendered(page);
   // 章の数の境界（2 章・15 章・16 章）と、h1 がフロントマターの題名より優先されること
   const agendaCount = async md => {
@@ -2116,7 +2116,7 @@ async function testStageShow(browser) {
   // 短い文書で、自動進行が最後の章から先頭へ戻ること
   await setDocument(page, '# 題名\n\n## 一\n\n短い章です。\n');
   await page.click('#btn-stage-show');
-  await page.waitForFunction(() => LucivoStage.showState().active);
+  await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await page.keyboard.press('End');
   await page.keyboard.press('a');
   await page.waitForTimeout(7400);
@@ -2141,7 +2141,7 @@ async function testStageShow(browser) {
   // TC-SHOW-010 見た目（全シーン）
   await setDocument(page, showcaseMd);
   await page.click('#btn-stage-show');
-  await page.waitForFunction(() => LucivoStage.showState().active);
+  await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(page);
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(950);
@@ -2164,7 +2164,7 @@ async function testStageOverviewPointer(browser) {
   const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
   await setDocument(page, showcaseMd);
   await page.click('#btn-stage-show');
-  await page.waitForFunction(() => LucivoStage.showState().active);
+  await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(page);
   await page.waitForTimeout(600);
   await pressUntil(page, () => LucivoStage.showState().index === 4);
