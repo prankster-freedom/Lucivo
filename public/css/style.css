@@ -300,6 +300,14 @@ svg .edgeLabel span {
   font-size: 11.5px !important;
   white-space: nowrap !important;
 }
+/* Mermaid 12 はラベルを .labelBkg と p で包む。背景が重なって十字形に見えないよう、span の 1 枚だけにする */
+svg span.edgeLabel {
+  display: inline-block !important;
+}
+svg .labelBkg,
+svg .edgeLabel p {
+  background: transparent !important;
+}
 /* ラベルのない矢印の空ラベル（図の原点に置かれる）に余白が付くと、小さな図形として見えてしまう */
 svg .edgeLabel:empty,
 svg .edgeLabel span:empty {

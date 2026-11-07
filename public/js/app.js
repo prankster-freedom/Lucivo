@@ -329,9 +329,9 @@ const libraryLoads = new Map();
 // 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを CDN の URL に置き換える（DD-OFF-003）
 const EXPORT_URLS = {
   './vendor/fonts/fonts.css': 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap',
-  './vendor/marked.min.js': 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js',
+  './vendor/marked.min.js': 'https://cdn.jsdelivr.net/npm/marked@18.1.3/lib/marked.umd.js',
   './vendor/purify.min.js': 'https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js',
-  './vendor/mermaid.min.js': 'https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js',
+  './vendor/mermaid.min.js': 'https://cdn.jsdelivr.net/npm/mermaid@12.3.0/dist/mermaid.min.js',
   './vendor/katex/katex.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.js',
   './vendor/katex/katex.min.css': 'https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.css'
 };
@@ -392,7 +392,7 @@ function getMermaidCurve(curve) {
   return 'basis';
 }
 
-// 矢印の形状を選べる図種か。Mermaid 10.9.1 で curve の設定が効くのはフローチャートだけ（DD-EDGE-001）
+// 矢印の形状を選べる図種か。Mermaid で curve の設定が効くのはフローチャートだけ（DD-EDGE-001）
 function getCurveTarget(code) {
   const first = code.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.startsWith('%%')) || '';
   return /^(flowchart|graph)\b/.test(first) ? 'flowchart' : null;
@@ -414,7 +414,12 @@ function getDiagramSpec(isVisual) {
   return getThemeSpec();
 }
 
-function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth') {
+// Mermaid 12 の layout は図全体に効く。マインドマップは dagre だと放射状でなくなるので、既定のレイアウトにする
+function getMermaidLayout(code) {
+  return /^\s*mindmap\b/m.test(code) ? null : 'dagre';
+}
+
+function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 'dagre') {
   syncCssTokens();
   const spec = getDiagramSpec(isVisual);
   const isDark = state.appearance === 'dark';
@@ -428,13 +433,18 @@ function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth') {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'base',
+    // Mermaid 12 の既定の見た目とレイアウトでは flowchart.curve が効かず、図の組版も変わる
+    look: 'classic',
+    ...(layout ? { layout } : {}),
     // 開いた Markdown の図の中の HTML タグとクリック時のスクリプト呼び出しを無効にする（NFR-003）
     securityLevel: 'strict',
     fontFamily: '"Inter", "Noto Sans JP", -apple-system, sans-serif',
     fontSize: 13,
     flowchart: {
       curve: getMermaidCurve(curve),
-      padding: 18,
+      // Mermaid 12 は padding を両側に効かせ、短いラベルも minNodeWidth まで広げる。従来の組版に合わせる
+      padding: 11,
+      minNodeWidth: 0,
       nodeSpacing: 44,
       rankSpacing: 56,
       htmlLabels: true,
@@ -462,7 +472,8 @@ function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth') {
       useMaxWidth: true
     },
     state: {
-      padding: 16,
+      padding: 8,
+      minNodeWidth: 0,
       dividerMargin: 18,
       sizeUnit: 8,
       useMaxWidth: true
@@ -666,11 +677,12 @@ function scopeSvgIds(svg) {
   const idMap = new Map();
   const used = new Set();
   svg.querySelectorAll('[id]').forEach(el => {
-    if (el.id.startsWith(prefix)) return;
     // Mermaid が 1 つの図の中で同じ id を出すこと（タイムラインの node-undefined など）があるため、
-    // 2 つ目以降には連番を付ける。参照は最初の要素に向けたままにする
-    let scoped = `${prefix}-${el.id}`;
-    for (let n = 2; used.has(scoped); n++) scoped = `${prefix}-${el.id}-${n}`;
+    // 2 つ目以降には連番を付ける。参照は最初の要素に向けたままにする。
+    // Mermaid は図の id を接頭辞に付けた id も出すので、それには接頭辞を重ねない
+    const base = el.id.startsWith(prefix) ? el.id : `${prefix}-${el.id}`;
+    let scoped = base;
+    for (let n = 2; used.has(scoped); n++) scoped = `${base}-${n}`;
     used.add(scoped);
     if (!idMap.has(el.id)) idMap.set(el.id, scoped);
     el.id = scoped;
@@ -774,6 +786,27 @@ function updateAllSlabSplits(container) {
   container.querySelectorAll('.exhibition-slab-split').forEach(updateSlabSplit);
 }
 
+// Mermaid 12 はスタジアム形のノードを path で出力する。図の装飾は rect を前提にするので、rect に置き換える
+function normalizeStadiumNodes(svg) {
+  svg.querySelectorAll('g.node > g.basic.label-container.outer-path').forEach(group => {
+    const path = group.querySelector('path');
+    const points = Array.from((path && path.getAttribute('d') || '').matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g));
+    if (!points.length) return;
+    const xs = points.map(p => parseFloat(p[1]));
+    const ys = points.map(p => parseFloat(p[2]));
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    const width = Math.max(...xs) - x;
+    const height = Math.max(...ys) - y;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('class', 'basic label-container');
+    const attrs = { x, y, width, height, rx: height / 2, ry: height / 2 };
+    Object.entries(attrs).forEach(([name, value]) => rect.setAttribute(name, String(value)));
+    if (path.getAttribute('style')) rect.setAttribute('style', path.getAttribute('style'));
+    group.replaceWith(rect);
+  });
+}
+
 function postProcessSvg(rawSvg, isVisualMode) {
   try {
     const wrapper = document.createElement('div');
@@ -782,6 +815,8 @@ function postProcessSvg(rawSvg, isVisualMode) {
     if (!svg) return rawSvg;
 
     const diagramType = svg.getAttribute('aria-roledescription') || '';
+    // クラス図や要件図の箱も同じ構造で出力されるので、フローチャートに限る
+    if (diagramType === 'flowchart-v2') normalizeStadiumNodes(svg);
     if (isVisualMode) {
       decorateVisualSvg(svg, diagramType);
     } else {
@@ -1035,9 +1070,9 @@ function decorateVisualCards(svg, uid) {
     cap.style.setProperty('stroke', 'none', 'important');
     cap.style.setProperty('pointer-events', 'none');
     g.appendChild(cap);
-    // 帯はカードの上部に重なるため、ラベルを帯の下の白い部分の中央へ下げる
+    // 帯はカードの上部に重なるため、ラベルを帯の下の白い部分の中央へ下げる。Mermaid 12 はラベルの行の高さが大きいので 2px 足す
     const label = g.querySelector(':scope > .label');
-    if (label) label.setAttribute('transform', `${label.getAttribute('transform') || ''} translate(0, ${capH / 2})`.trim());
+    if (label) label.setAttribute('transform', `${label.getAttribute('transform') || ''} translate(0, ${capH / 2 + 2})`.trim());
 
     const stepText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     stepText.setAttribute('x', String(x + 10));
@@ -1720,7 +1755,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
     const lkgKey = `${block.index}-${block.modeTag}`;
     const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
     try {
-      setupMermaid(target.isVisual, block.curve || 'smooth');
+      setupMermaid(target.isVisual, block.curve || 'smooth', getMermaidLayout(block.code));
       const { svg } = await mermaid.render(renderId, block.code);
       if (isStale()) return;
       const finalSvg = postProcessSvg(svg, target.isVisual);

@@ -8,7 +8,7 @@ const MODULES = path.join(ROOT_DIR, 'node_modules');
 const VENDOR = path.join(ROOT_DIR, 'public', 'vendor');
 
 const SCRIPTS = [
-  ['marked/marked.min.js', 'marked.min.js'],
+  ['marked/lib/marked.umd.js', 'marked.min.js'],
   ['dompurify/dist/purify.min.js', 'purify.min.js'],
   ['mermaid/dist/mermaid.min.js', 'mermaid.min.js'],
   ['katex/dist/katex.min.js', 'katex/katex.min.js'],

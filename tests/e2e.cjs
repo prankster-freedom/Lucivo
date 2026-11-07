@@ -2302,7 +2302,7 @@ async function testOffline(browser) {
   record('TC-OFF-002', fonts.loaded.length === 4 && fonts.math > 0, JSON.stringify(fonts));
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-export-html')]);
   const exported = fs.readFileSync(await download.path(), 'utf8');
-  record('TC-OFF-003', !exported.includes('./vendor/') && exported.includes('fonts.googleapis.com/css2') && /marked@[\d.]+\/marked\.min\.js/.test(exported),
+  record('TC-OFF-003', !exported.includes('./vendor/') && exported.includes('fonts.googleapis.com/css2') && /marked@[\d.]+\/lib\/marked\.umd\.js/.test(exported),
     `localRefs=${(exported.match(/\.\/vendor\//g) || []).length}`);
   await ctx.close();
 }
