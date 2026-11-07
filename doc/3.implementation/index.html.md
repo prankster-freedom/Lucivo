@@ -37,7 +37,7 @@ flowchart TD
 
 ## 変更するときの注意
 
-- **要素の id**: `app.js` と `tests/e2e.cjs` が id で参照している。id を変えるときは、両方を検索して直す。
+- **要素の id**: `app.js` と `tests/e2e.cjs` が id で参照している（`#shortcut-modal`、`#zoom-modal` など）。id を変えるときは、両方を検索して直す。
 - **head に書かないライブラリ**: Mermaid と KaTeX は、`app.js` の `LIBRARIES` が必要になったときに読み込む（版もそこで固定している）。
 - **同梱のライブラリの版**: SVG の後処理の多くが Mermaid の出力の構造（class 名、id、要素の並び）に依存している。版を上げるときは、テストを全件実行し、図の画像を目視で確認する。
 - **HTML エクスポート**: `document.documentElement.outerHTML` を書き出すため、`<head>` の読み込み（KaTeX の CSS など）は書き出した HTML にもそのまま入る。

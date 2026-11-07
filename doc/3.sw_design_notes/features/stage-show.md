@@ -63,7 +63,7 @@ tags: ["Lucivo", "詳細設計", "Visualモード", "アニメーション"]
 
 | DD-SHOW-040 | 俯瞰の開閉       | `openOverview()` は自動進行とポインターを止め、光を止め（`suspendLights(true)`）、`layoutOverview()` で並べ方を決めてから `html.is-stage-overview` を付け、開く前のシーンを選ぶ。`closeOverview(index, build)` はクラスとアニメーションを消し、シーンと項目の表示数を決めて `applyScene()` を呼び、光を再開する。別のシーンへ入るときは `applyScene(true)` で通常の転換を見せる | `FR-022`, `DTP-SHOW-070` |
 | DD-SHOW-041 | 俯瞰の並べ方     | `layoutOverview()` は、列の数 1〜6（`OVERVIEW.maxCols`）ごとに画面の幅の 88% と高さの 78% に収まる縮小率を求め、最も大きくなる列の数と、その縮小率（下限 0.12）を、`.exhibition-wrap` の `--ov-cols`・`--ov-s`・`--ov-gap` に書く。CSS は各シーンを `100vw × 100vh` で組み、`transform: scale(var(--ov-s))`（原点は左上）で縮小し、右と下の負のマージン（`100vw × (s − 1)`）で縮小後の大きさだけを升目に取らせる。発表と同じ余白（`6vh` / `max(6vw, (100vw − 76rem) / 2)` / `9vh`）で組み、中身を上下の中央に置く | `FR-022`, `DTP-SHOW-070` |
-| DD-SHOW-042 | 俯瞰の転換       | `zoomTile(tile, toTile)` は、縮小図の矩形 `rect` から、全画面の位置 `translate(−rect.left, −rect.top) scale(1)` と縮小図の位置 `scale(s)` の間を、`Element.animate()` で 0.42 秒補間する。開くときは全画面 → 縮小図、入るときは縮小図 → 全画面（`fill: 'forwards'` で保ち、`closeOverview()` で取り消す）。`prefers-reduced-motion: reduce` では動かさない | `FR-022`, `DTP-SHOW-070` |
+| DD-SHOW-042 | 俯瞰の転換       | `zoomTile(tile, toTile)` は、縮小図の矩形 `rect` から、全画面の位置 `translate(−rect.left, −rect.top) scale(1)` と縮小図の位置 `scale(s)` の間を、`Element.animate()` で 0.34 秒補間する。開くときは全画面 → 縮小図、入るときは縮小図 → 全画面（`fill: 'forwards'` で保ち、`closeOverview()` で取り消す）。`prefers-reduced-motion: reduce` では動かさない | `FR-022`, `DTP-SHOW-070` |
 | DD-SHOW-043 | 俯瞰の操作       | `onShowKey()` は俯瞰の間、`onOverviewKey()` に渡す（矢印・`Home` / `End` で `selectTile()`、`Enter` / `Space` で選んだシーン、`O` / `Esc` で開く前のシーンへ `openFromOverview()`、`T` は明暗）。クリックは捕捉フェーズで受け、押したシーンへ入る。転換の途中の操作は `ov.busy` で受け付けない | `FR-022` |
 | DD-SHOW-044 | 光の停止と再開   | `lightsSuspended` が真の間、`startFlow()` は何もしない。再開時は、俯瞰の間も画面に入っていた図に交差の通知が来ないため、今のシーンの図の `startFlow()` を直接呼ぶ | `FR-022`, `DTP-LIGHT-060` |
 | DD-SHOW-045 | 再描画と終了     | 俯瞰の間に図が描き直されたら（明暗の切替）、`refreshScenes()` が並べ方と選択を付け直す。`exitShow()` は俯瞰のクラス・CSS 変数・アニメーションと、ポインターを消す | `FR-022`, `FR-023` |
@@ -75,3 +75,16 @@ tags: ["Lucivo", "詳細設計", "Visualモード", "アニメーション"]
 - **背景（DD-SHOW-041）**: 縮小には `zoom` でなく `transform: scale()` を使う。`transform` は合成だけで動かせるため、転換のアニメーションをレイアウトなしで描ける。`DD-SHOW-003` で `transform: scale` を採らなかったのは、拡大すると文字がにじむためで、縮小図ではこの問題がない（動きが止まると、縮小後の大きさで描き直される）。
 - **背景（DD-SHOW-044）**: 俯瞰ではすべての図が画面に入るため、光をそのままにすると、図の数だけ毎フレームの描画が増える。縮小図の光は小さく、見えても意味が伝わらない。
 - **背景（DD-SHOW-050）**: 位置の反映は `mousemove` ごとではなく 1 フレームに 1 回にまとめる。高頻度のマウスでも描画は画面の更新の回数を超えない。
+
+## 5. 通常閲覧画面のキーボードナビゲーション（js/app.js, css/style.css）
+
+| ID         | 項目                     | 設計                                                                                                                                                                                         | 対応する要求 |
+| :--------- | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------- |
+| DD-KEY-001 | 入力ガードとイベント捕捉 | `document` の `keydown` で、発表中でなく、`activeElement` が `isEditable(el)`（`textarea`, `input`, `select`, `[contenteditable]`）でない場合にショートカットを処理する                      | `FR-025`     |
+| DD-KEY-002 | 章スクロール（J/K）      | `J`（次へ）/ `K`（前へ）押下時、高速モードなら `#standard-doc-container h2`、Visualモードなら `#visual-stage-container .exhibition-slab` の位置を取得し、現在位置から前後の章へスムーズにスクロールする | `FR-025` |
+| DD-KEY-003 | モード・スタイル切替     | `M` で高速モード ⇔ Visualモードをトグル切り替え。`1`〜`4` で対応するインフォグラフィックスタイル（Pastel / Cards / Circles / Editorial）を適用する（高速モード中の場合はVisualモードへ移行） | `FR-025`     |
+| DD-KEY-004 | 発表開始とヘルプ         | `P` または `F5` でステージ発表（`enterShow()`）を開始。`?` でショートカット一覧モーダル（`#shortcut-modal`）を開閉。`Esc` でモーダルを閉じる                                                 | `FR-025`     |
+
+- **背景（DD-KEY-001）**: エディタ入力中に文字がショートカットとして誤動作するのを防ぐため、入力判定を厳密に行う。
+- **背景（DD-KEY-002）**: マウスを使わずに章単位のレビューや移動を高速に行えるようにし、思考の流れを止めない。
+
