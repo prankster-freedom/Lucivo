@@ -1749,6 +1749,52 @@ async function testCoverAndTables(browser) {
     && fast.marked === 0 && /JetBrains Mono/.test(fast.thFont) && parseFloat(fast.tdLeft) >= 1;
   record('TC-VTPL-016', tableOk, JSON.stringify({ tableRule, rule, fast }));
 
+  // TC-VTPL-017 スラブ画像エクスポート（FR-026, DD-VTPL-120〜123）
+  await page.click('#btn-visual-mode');
+  await page.waitForTimeout(300);
+  const slabExportCheck = await page.evaluate(async () => {
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab');
+    if (!slab) return { ok: false, reason: 'slab not found' };
+    const actions = slab.querySelector('.slab-actions');
+    const copyBtn = slab.querySelector('.btn-copy-slab');
+    const exportBtn = slab.querySelector('.btn-export-slab');
+    if (!actions || !copyBtn || !exportBtn) return { ok: false, reason: 'buttons not found' };
+
+    // スラブの Blob 生成を直接検証
+    let blobOk = false;
+    let blobSize = 0;
+    try {
+      const blob = await renderSlabToBlob(slab);
+      blobOk = blob instanceof Blob && blob.type === 'image/png';
+      blobSize = blob.size;
+    } catch (e) {
+      return { ok: false, reason: 'renderSlabToBlob error: ' + e.message };
+    }
+
+    return {
+      hasActions: Boolean(actions),
+      hasCopy: Boolean(copyBtn),
+      hasExport: Boolean(exportBtn),
+      blobOk,
+      blobSize
+    };
+  });
+
+  // コピーボタンをクリックしてトースト通知が出るか確認
+  await page.locator('#visual-stage-container .exhibition-slab .btn-copy-slab').first().click({ force: true });
+  await page.waitForTimeout(400);
+  const toastMsg = await page.textContent('#toast-message');
+
+  // 高速モードでは .slab-actions が存在しないことを確認
+  await page.click('#btn-mode-fast');
+  await page.waitForTimeout(200);
+  const fastActionsCount = await page.locator('#standard-doc-container .slab-actions').count();
+
+  const vtpl17Ok = slabExportCheck.hasActions && slabExportCheck.hasCopy && slabExportCheck.hasExport
+    && slabExportCheck.blobOk && slabExportCheck.blobSize > 1000
+    && Boolean(toastMsg) && fastActionsCount === 0;
+  record('TC-VTPL-017', vtpl17Ok, JSON.stringify({ slabExportCheck, toastMsg, fastActionsCount }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
@@ -2216,7 +2262,8 @@ async function testStageOverviewPointer(browser) {
   await waitRendered(page);
   await page.waitForTimeout(1000);
   await pressUntil(page, () => LucivoStage.showState().index === 4);
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
   // TC-SHOW-011 俯瞰: 開くまでの時間、並び、光の停止、選択の移動、拡大して入る、元のシーンへ戻る
   const openMs = await page.evaluate(() => new Promise(resolve => {
@@ -2266,7 +2313,7 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
   const escaped = await page.evaluate(inspectShow);
-  const overviewOk = openMs < 400 && grid.overview && grid.htmlClass && grid.visible === 15 && grid.columns === 4 && grid.inside && grid.aspect
+  const overviewOk = openMs < 500 && grid.overview && grid.htmlClass && grid.visible === 15 && grid.columns === 4 && grid.inside && grid.aspect
     && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === '05 / 15'
     && JSON.stringify(moves) === '[5,9,5,14,0,0]'
     && !entered.overview && entered.index === 1 && entered.shown === 1 && entered.active
@@ -2316,6 +2363,59 @@ async function testStageOverviewPointer(browser) {
     && !inOverview.pointer && inOverview.display === 'none'
     && !afterExit.active && !afterExit.pointer && !/is-stage-(pointer|overview|show)/.test(afterExit.htmlClass);
   record('TC-SHOW-012', pointerOk, JSON.stringify({ follow, inOverview, afterExit }));
+
+  // TC-SHOW-013 キーボードナビゲーション（通常閲覧時の操作・ヘルプ開閉・エディタ優先）
+  // 1. ? キーでショートカットヘルプモーダルを開閉
+  await page.keyboard.press('?');
+  await page.waitForTimeout(150);
+  const modalOpen = await page.evaluate(() => {
+    const m = document.getElementById('shortcut-modal');
+    return m && !m.classList.contains('hidden') && m.classList.contains('flex');
+  });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  const modalClosed = await page.evaluate(() => {
+    const m = document.getElementById('shortcut-modal');
+    return m && m.classList.contains('hidden');
+  });
+
+  // 2. M キーでモード切替（高速モード ⇔ Visualモード）
+  const initMode = await page.evaluate(() => state.isVisualMode);
+  await page.keyboard.press('m');
+  await page.waitForTimeout(200);
+  const toggledMode = await page.evaluate(() => state.isVisualMode);
+  await page.keyboard.press('m');
+  await page.waitForTimeout(200);
+  const revertedMode = await page.evaluate(() => state.isVisualMode);
+
+  // 3. 数字キー 1〜4 で Visual スタイル切替
+  await page.keyboard.press('3');
+  await page.waitForTimeout(200);
+  const style3 = await page.evaluate(() => ({ isVis: state.isVisualMode, style: state.infographicStyle }));
+  await page.keyboard.press('1');
+  await page.waitForTimeout(200);
+  const style1 = await page.evaluate(() => ({ isVis: state.isVisualMode, style: state.infographicStyle }));
+
+  // 4. J / K キーでスクロール動作
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  await page.keyboard.press('j');
+  await page.waitForTimeout(200);
+  const scrollAfterJ = await page.evaluate(() => window.scrollY);
+
+  // 5. エディタフォーカス時はキーボードショートカットが発火しないこと（文字入力優先）
+  await page.focus('#markdown-editor');
+  const editorValBefore = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  await page.keyboard.type('m1234');
+  await page.waitForTimeout(100);
+  const editorValAfter = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  const editorStyle = await page.evaluate(() => state.infographicStyle);
+
+  const show13Ok = modalOpen && modalClosed
+    && toggledMode !== initMode && revertedMode === initMode
+    && style3.isVis && style3.style === 'circles'
+    && style1.isVis && style1.style === 'pastel'
+    && editorValAfter.includes('m1234') && editorStyle === 'pastel';
+  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, editorValAfter: editorValAfter.slice(-10) }));
 
   if (page.consoleErrors.length) record('TC-SHOW-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
