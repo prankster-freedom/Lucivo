@@ -150,13 +150,13 @@ async function testFileLoading(browser) {
   await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('# Lucivo 誌面雛形・ボリューム＆図表サイズ総合サンプル'));
   await waitRendered(page);
   const visualSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
-  const visualSampleMatched = visualSampleValue === fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8').replace(/^﻿/, '');
+  const visualSampleMatched = visualSampleValue === fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8').replace(/^\uFEFF/, '');
   await page.click('#btn-file-menu');
   await page.click('#menu-sample-notation');
   await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('\n# Lucivo サンプル文書'));
   await waitRendered(page);
   const notationSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
-  const notationSampleMatched = notationSampleValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^﻿/, '');
+  const notationSampleMatched = notationSampleValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^\uFEFF/, '');
   await page.evaluate(() => { document.getElementById('markdown-editor').value = ''; lastLoadedMarkdown = ''; renderApp(); });
   await waitRendered(page);
   const dialogOnFirstLoad = await loadSample(page);
@@ -167,7 +167,7 @@ async function testFileLoading(browser) {
     toast: document.getElementById('toast-message').textContent
   }));
   const editorValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
-  after.sameAsFile = editorValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^﻿/, '');
+  after.sameAsFile = editorValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^\uFEFF/, '');
   record('TC-FILE-003',
     !dialogOnFirstLoad && visualSampleMatched && notationSampleMatched && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast),
     JSON.stringify({ dialogOnFirstLoad, visualSampleMatched, notationSampleMatched, ...after }));
@@ -222,7 +222,7 @@ async function testFileLoading(browser) {
   await page.setInputFiles('#file-input', SAMPLE);
   await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('\n# Lucivo サンプル文書'));
   page.off('dialog', onDialogAfterSave);
-  record('TC-FILE-012', savedName === 'notation_sample.md' && savedText === '---\ntitle: 保存のテスト\n---\n# 保存した文書\n' && !savedText.startsWith('﻿') && !dialogAfterSave,
+  record('TC-FILE-012', savedName === 'notation_sample.md' && savedText === '---\ntitle: 保存のテスト\n---\n# 保存した文書\n' && !savedText.startsWith('\uFEFF') && !dialogAfterSave,
     JSON.stringify({ savedName, savedLength: savedText.length, dialogAfterSave }));
 
   // TC-FILE-008 埋め込みサンプルの削除

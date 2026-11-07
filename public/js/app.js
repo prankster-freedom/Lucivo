@@ -2038,7 +2038,7 @@ function confirmDiscardEdits(fileName) {
 }
 
 function applyLoadedMarkdown(rawText, fileName) {
-  const text = String(rawText).replace(/^﻿/, '');
+  const text = String(rawText).replace(/^\uFEFF/, '');
   document.getElementById('markdown-editor').value = text;
   lastLoadedMarkdown = text;
   currentFileName = fileName;
