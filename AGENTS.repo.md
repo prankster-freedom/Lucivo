@@ -12,14 +12,14 @@
 
 プロジェクトのルートはリポジトリ直下（`<プロジェクト>/` = `./`）。作業の流れに沿った番号付きの構成を正とする。
 
-| 種類                 | doc スキルの既定                                | 本リポジトリ                                                |
-| :------------------- | :---------------------------------------------- | :---------------------------------------------------------- |
-| DTP デザイン仕様     | `doc/DTP/`                                      | `doc/0.DTP/`（本番素材は `public/assets/`）                 |
-| 要求仕様書           | `doc/SRS.md`, `doc/SRS/features/<feature名>.md` | `doc/1.SRS.md`, `doc/1.SRS/features/<feature名>.md`         |
-| アーキテクチャ設計書 | `doc/ADS.md`                                    | `doc/2.ARCHITECTURE.md`                                     |
-| 詳細設計書           | `doc/DesignNotes/<対象>.md`（必要な場合のみ）   | `doc/3.sw_design_notes/features/`（目次は `README.md`）     |
-| 実装ドキュメント     | ソースコード（および Design Notes）             | `doc/3.implementation/`                                     |
-| テスト仕様書         | `doc/5.test_spec/`                              | `doc/4.test_spec/`                                          |
+| 種類             | doc スキルの既定                                | 本リポジトリ                                |
+| :--------------- | :---------------------------------------------- | :------------------------------------------ |
+| DTP デザイン仕様 | `doc/DTP/`                                      | `doc/0.DTP/`（本番素材は `public/assets/`） |
+| 要求仕様書       | `doc/SRS.md`, `doc/SRS/features/<feature名>.md` | `doc/1.SRS.md`, `doc/1.SRS/features/<feature名>.md` |
+| アーキテクチャ設計書 | `doc/ADS.md`                                | `doc/2.ARCHITECTURE.md`                     |
+| 詳細設計書       | `doc/DesignNotes/<対象>.md`（必要な場合のみ）   | `doc/3.sw_design_notes/features/`（目次は `README.md`） |
+| 実装ドキュメント | ソースコード（および Design Notes）             | `doc/3.implementation/`                     |
+| テスト仕様書     | `doc/5.test_spec/`                              | `doc/4.test_spec/`                          |
 
 dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は、本リポジトリでは `public/assets/` と読み替える。
 
@@ -35,6 +35,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
   - ツールの警告（Python の `SyntaxWarning` など）は誤りとして扱い、原因を直してから進める
   - `npm run lint` で、制御文字、正規表現の中の制御文字、見えない空白を検出する（CI の `lint` ジョブ）。見えない文字が必要なときは `﻿` のようにエスケープで書く
 - ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`public/index.html` を `file://` で開き、Playwright（Chromium）で確認する
+  - 特定の機能やテストケースだけを確認・再テストするときは、`node tests/e2e.cjs <関数名またはTC ID>`（例: `node tests/e2e.cjs TC-SHOW-011`、`node tests/e2e.cjs testCoverAndTables`）で対象スイートだけを部分実行する（`work/test/results.json` は該当 TC の結果だけが差分更新される）。`node -e` のワンライナーでテストコードを実行しない
 - Markdown ファイル内の表整形には `node agents-support-tools/md-table-align/align-tables.cjs <Markdown ファイル>` を使用する
 
 ## 4. 版番号（`AGENTS.md` 1.9・release スキルの例外）
