@@ -819,7 +819,11 @@
   function enterShow() {
     if (show.active) return;
     const scroller = document.getElementById('preview-scroll');
-    show.restore = { appearance: state.appearance, viewMode: state.viewMode, scrollTop: scroller.scrollTop, fullscreen: false };
+    show.restore = { appearance: state.appearance, viewMode: state.viewMode, isVisualMode: state.isVisualMode, scrollTop: scroller.scrollTop, fullscreen: false };
+    if (!state.isVisualMode) {
+      const btnVisual = document.getElementById('btn-visual-mode');
+      if (btnVisual) btnVisual.click();
+    }
     if (state.viewMode !== 'canvas') document.querySelector('[data-view-mode="canvas"]').click();
     // 舞台は暗転から始める。Dark の加算で光が本来の輝きになる（DTP-SHOW-010）
     if (state.appearance !== 'dark') toggleShowAppearance();
@@ -857,9 +861,13 @@
   }
 
   function restoreView() {
-    const { appearance, viewMode } = show.restore;
+    const { appearance, viewMode, isVisualMode } = show.restore;
     if (state.appearance !== appearance) toggleShowAppearance();
     if (state.viewMode !== viewMode) document.querySelector(`[data-view-mode="${viewMode}"]`).click();
+    if (state.isVisualMode !== isVisualMode) {
+      const targetBtn = document.getElementById(isVisualMode ? 'btn-visual-mode' : 'btn-mode-fast');
+      if (targetBtn) targetBtn.click();
+    }
   }
 
   function exitShow() {
@@ -899,7 +907,12 @@
     });
     restoreView();
     // 発表を終えた章を、通常の表示でも見える位置に出す
-    const target = collectScenes()[lastIndex] || lastScene;
+    const target = state.isVisualMode ? (collectScenes()[lastIndex] || lastScene) : (() => {
+      const std = document.getElementById('standard-doc-container');
+      const h2s = std ? Array.from(std.querySelectorAll('h2')) : [];
+      // 0 番目は表紙（ヒーロー）なので 1 番目以降が h2、あるいは見出し全体から対応する位置
+      return h2s[Math.max(0, lastIndex - 1)] || h2s[0];
+    })();
     if (target && target.isConnected) target.scrollIntoView({ block: 'start' });
     updateAllSlabSplits(stageContainer());
   }

@@ -5,7 +5,7 @@ const path = require('path');
 
 const SAMPLES_DIR = path.resolve(__dirname, '..', 'public', 'samples');
 const OUT = path.join(SAMPLES_DIR, 'samples-data.js');
-const FILES = ['visual-sample.md', 'notation_sample.md'];
+const FILES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md'];
 
 const entries = {};
 for (const name of FILES) {
