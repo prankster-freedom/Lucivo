@@ -59,3 +59,7 @@ jobs:
         git merge-base --is-ancestor origin/main "$head" || reject "PR が最新の main の上にありません。リベースしてください。"
 
         git push origin "$head:refs/heads/main" || reject "main への push が拒否されました。Actions のログを確認してください。"
+
+        # fast-forward の反映では、マージ後のブランチの自動削除が働かない
+        branch=$(gh api "$api/pulls/$PR" --jq '.head.ref')
+        git push origin --delete "$branch"
