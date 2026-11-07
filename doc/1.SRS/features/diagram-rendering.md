@@ -74,7 +74,7 @@ tags: ["Lucivo", "SRS", "diagram-rendering"]
 
 ### FR-008: 同梱サンプルの全図種の描画
 
-- `notation_sample.md` に記載された Markdown 記法および Mermaid（`10.9.1`）で描ける主要図種（flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, gitGraph, gantt, pie, journey, mindmap 等）をすべて意図どおりに描画すること。
+- `notation_sample.md` に記載された Markdown 記法および Mermaid（`12.3.0`）で描ける主要図種（flowchart, sequenceDiagram, classDiagram, stateDiagram, erDiagram, gitGraph, gantt, pie, journey, mindmap 等）をすべて意図どおりに描画すること。
 - 「意図どおり」の基準：
   - 構文エラーにならず、Mermaid が生成した図の構造（要素の形・配置・接続）が崩れない。
   - 文字・線・矢じり・塗りが背景と見分けられ、判読できる（NFR-004）。
