@@ -261,7 +261,7 @@ const VISUAL_THEMES_DARK = Object.fromEntries(Object.entries(VISUAL_THEMES).map(
 const NODE_DECORATED_TYPES = ['flowchart-v2', 'flowchart', 'stateDiagram'];
 
 // 図種ごとの矢印の既定の形状（FR-012）。フローチャートは業務フロー図で一般的な直角にする
-const DEFAULT_CURVES = { flowchart: 'step' };
+const DEFAULT_CURVES = { flowchart: 'step', state: 'smooth', class: 'step' };
 const CURVE_LABELS = { smooth: '曲線', step: '直角', straight: '直線' };
 
 // Fit 表示で保つ、図の中の文字の表示上の最小サイズ（NFR-005）と、小さな図の拡大の上限
@@ -405,10 +405,13 @@ function getMermaidCurve(curve) {
   return 'basis';
 }
 
-// 矢印の形状を選べる図種か。Mermaid で curve の設定が効くのはフローチャートだけ（DD-EDGE-001）
+// 矢印の形状を選べる図種か。Mermaid 12 で curve の設定が効くのはフローチャート・状態遷移図・クラス図（DD-EDGE-001）
 function getCurveTarget(code) {
   const first = code.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.startsWith('%%')) || '';
-  return /^(flowchart|graph)\b/.test(first) ? 'flowchart' : null;
+  if (/^(flowchart|graph)\b/.test(first)) return 'flowchart';
+  if (/^stateDiagram(-v2)?\b/.test(first)) return 'state';
+  if (/^classDiagram(-v2)?\b/.test(first)) return 'class';
+  return null;
 }
 
 // 図の矢印の形状。利用者が選んでいなければ、図種の既定の形状（DD-EDGE-002, 003）
@@ -485,11 +488,15 @@ function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 
       useMaxWidth: true
     },
     state: {
+      curve: getMermaidCurve(curve),
       padding: 8,
       minNodeWidth: 0,
       dividerMargin: 18,
       sizeUnit: 8,
       useMaxWidth: true
+    },
+    class: {
+      curve: getMermaidCurve(curve)
     },
     themeVariables: {
       darkMode: isDark,

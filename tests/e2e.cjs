@@ -892,7 +892,7 @@ function inspectEdgeStyle(isVisual) {
   return Array.from(root.querySelectorAll('[id^="diagram-frame-"]')).map(card => {
     const svg = card.querySelector('[data-stage-index] > svg');
     const active = card.querySelector('.edge-curve-btn.is-active');
-    const paths = svg ? Array.from(svg.querySelectorAll('path.flowchart-link')).map(p => p.getAttribute('d') || '') : [];
+    const paths = svg ? Array.from(svg.querySelectorAll('path.flowchart-link, path.transition, path.relation')).map(p => p.getAttribute('d') || '') : [];
     return {
       idx: card.id.replace('diagram-frame-', ''),
       type: svg ? svg.getAttribute('aria-roledescription') : null,
@@ -911,12 +911,31 @@ async function testEdgeStyle(browser) {
   await loadSample(page);
   const byIdx = (list, idx) => list.find(c => c.idx === String(idx));
 
-  // TC-EDGE-001 既定: フローチャートだけに選択があり直角、他の図種には選択がない
+  // TC-EDGE-001 既定: フローチャートとクラス図は直角、状態遷移図は曲線で選択があり、他の図種には選択がない
   const initial = await page.evaluate(inspectEdgeStyle, false);
   const flows = initial.filter(c => c.type === 'flowchart-v2');
-  const others = initial.filter(c => c.type !== 'flowchart-v2');
-  record('TC-EDGE-001', flows.length >= 3 && flows.every(c => c.picker === 3 && c.active === 'step' && c.pressed === 'true' && !c.curved) && others.every(c => c.picker === 0),
-    JSON.stringify({ flows: flows.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), otherPickers: others.filter(c => c.picker).map(c => c.idx) }));
+  const states = initial.filter(c => c.type === 'stateDiagram');
+  const classes = initial.filter(c => c.type === 'classDiagram');
+  const others = initial.filter(c => !['flowchart-v2', 'stateDiagram', 'classDiagram'].includes(c.type));
+  const isDefault = (c, curve, curved) => c.picker === 3 && c.active === curve && c.pressed === 'true' && c.curved === curved;
+  record('TC-EDGE-001', flows.length >= 3 && flows.every(c => isDefault(c, 'step', false))
+    && states.length >= 1 && states.every(c => isDefault(c, 'smooth', true))
+    && classes.length >= 1 && classes.every(c => isDefault(c, 'step', false))
+    && others.every(c => c.picker === 0),
+    JSON.stringify({ flows: flows.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), states: states.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), classes: classes.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), otherPickers: others.filter(c => c.picker).map(c => c.idx) }));
+
+  // TC-EDGE-006 状態遷移図とクラス図も、図ごとに形状を変えられる
+  const st = states[0].idx, cl = classes[0].idx;
+  await page.click(`#standard-doc-container .edge-curve-btn[data-index="${st}"][data-curve="straight"]`);
+  await waitRendered(page);
+  await page.click(`#standard-doc-container .edge-curve-btn[data-index="${cl}"][data-curve="smooth"]`);
+  await waitRendered(page);
+  const changed = await page.evaluate(inspectEdgeStyle, false);
+  record('TC-EDGE-006', byIdx(changed, st).active === 'straight' && !byIdx(changed, st).curved && byIdx(changed, st).sig !== byIdx(initial, st).sig
+    && byIdx(changed, cl).active === 'smooth' && byIdx(changed, cl).curved,
+    JSON.stringify({ state: { active: byIdx(changed, st).active, curved: byIdx(changed, st).curved }, class: { active: byIdx(changed, cl).active, curved: byIdx(changed, cl).curved } }));
+  await page.setInputFiles('#file-input', SAMPLE);
+  await waitRendered(page);
 
   // TC-EDGE-002 1 つの図だけ形状を変えられる
   const otherFlow = flows[1].idx;
