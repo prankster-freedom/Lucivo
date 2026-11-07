@@ -50,6 +50,16 @@ flowchart TD
 - **背景（DD-DIAG-010）**: Mermaid は、シーケンス図の矢じり（`#arrowhead`, `#crosshead`, `#filled-head`, `#sequencenumber`）、ER 図の端点、ジャーニー図・タイムラインの矢じりを、図をまたいで同じ id で出力する。同じページに同じ id があると、`url(#…)` は文書中で最初の要素を参照する。参照先が非表示の要素や別の図の要素になると、矢じりやグラデーションが描かれないか、別の図の配色になる。
 - **背景（DD-DIAG-011）**: 判定に `aria-roledescription` を使うのは、Mermaid 10.9.1 がすべての図種でこの属性に図種名を出力するため。
 
+### DD-DIAG-043 Mermaid 12 の出力への対応（`FR-008`）
+
+Mermaid 12 は既定の見た目・レイアウト・余白が 10 系と異なり、図の装飾が前提にする出力の構造も変わった。従来の組版と装飾を保つため、次の設定と後処理を行う。
+
+- `look: 'classic'` と `layout: 'dagre'` を指定する。既定の `neo` と `elk` では `flowchart.curve` が効かず、矢印の形状を選べない（`FR-012`）
+- マインドマップには `layout` を指定しない。`dagre` を指定すると、放射状ではなく樹形に配置される。`layout` は図種によらず図全体に効くため、図ごとに `setupMermaid` の引数で切り替える
+- `flowchart.padding` と `state.padding` は 10 系の約半分の値にし、`minNodeWidth` を 0 にする。12 は余白を両側に効かせ、短いラベルも最小幅まで広げるので、そのままでは図が広がり、Visualモードの 2 段組みが 1 段に変わる
+- フローチャートのスタジアム形のノードは `path` で出力されるので、`rect` に置き換える（`normalizeStadiumNodes`）。クラス図や要件図の箱も同じ `g.basic.label-container` で出力されるので、フローチャートの `outer-path` に限る
+- 矢印のラベルは `.labelBkg` と `p` で包まれる。背景と余白が重なって十字形に見えないよう、背景は `span.edgeLabel` の 1 枚だけにする（`style.css`）
+
 ## 4. 配色
 
 ### DD-DIAG-020 シーケンス図の配色（`NFR-004`）
