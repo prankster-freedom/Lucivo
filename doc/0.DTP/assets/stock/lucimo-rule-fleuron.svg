@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 24" fill="none">
+  <!-- AST-112 (Stock): Lucimo series hairline rule with a quiet fleuron (calm, academic). Monochrome (currentColor). -->
+  <!-- For the future Lucimo line (SRS 1.2.6), not for Lucivo. Hairlines and a symmetric diamond, no glow. -->
+  <path d="M24 12H178" stroke="currentColor" stroke-width="0.75" stroke-opacity="0.55"/>
+  <path d="M222 12H376" stroke="currentColor" stroke-width="0.75" stroke-opacity="0.55"/>
+  <path d="M60 15.5H178" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.3"/>
+  <path d="M222 15.5H340" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.3"/>
+  <!-- Fleuron: diamond flanked by two small dots -->
+  <path d="M200 4L207 12L200 20L193 12Z" stroke="currentColor" stroke-width="0.9" stroke-linejoin="round"/>
+  <path d="M200 8.5L203.2 12L200 15.5L196.8 12Z" fill="currentColor" fill-opacity="0.7"/>
+  <circle cx="186" cy="12" r="1.2" fill="currentColor" fill-opacity="0.6"/>
+  <circle cx="214" cy="12" r="1.2" fill="currentColor" fill-opacity="0.6"/>
+</svg>

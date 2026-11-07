@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- AST-106 (Stock): Stage Spotlight Cone. Monochrome (currentColor) for CSS mask-image. -->
+  <defs>
+    <linearGradient id="ast106-beam" x1="200" y1="0" x2="200" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="0.6" stop-color="currentColor" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="ast106-pool" cx="200" cy="268" r="150" gradientTransform="matrix(1 0 0 0.22 0 209)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="currentColor" stop-opacity="0.45"/>
+      <stop offset="0.55" stop-color="currentColor" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Beam: narrow source at top, soft wide spread toward the floor -->
+  <path d="M184 0H216L340 268H60L184 0Z" fill="url(#ast106-beam)"/>
+  <!-- Inner core: a thinner, brighter beam for depth -->
+  <path d="M194 0H206L262 268H138L194 0Z" fill="url(#ast106-beam)" fill-opacity="0.6"/>
+  <!-- Floor pool: an elliptical light pool where the subject stands -->
+  <ellipse cx="200" cy="268" rx="150" ry="33" fill="url(#ast106-pool)"/>
+  <!-- Lamp source -->
+  <rect x="182" y="0" width="36" height="5" rx="2.5" fill="currentColor" fill-opacity="0.9"/>
+</svg>

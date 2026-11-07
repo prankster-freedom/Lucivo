@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <!-- AST-107 (Stock): Brand Light Leak Backdrop (16:9). Fixed brand colors: Obsidian / Deep Slate + Luminous Cyan / Electric Light. -->
+  <!-- For Lucivo's own surfaces only (stage cover, OGP). Not for Visual mode content colors (DTP-003). -->
+  <defs>
+    <linearGradient id="ast107-base" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#080a0f"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <radialGradient id="ast107-leak-cyan" cx="1320" cy="-60" r="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00f0ff" stop-opacity="0.42"/>
+      <stop offset="0.35" stop-color="#38bdf8" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ast107-leak-deep" cx="180" cy="980" r="680" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0284c7" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#0284c7" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ast107-streak" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f8fafc" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#f8fafc" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#f8fafc" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="ast107-vignette" cx="800" cy="450" r="940" gradientUnits="userSpaceOnUse">
+      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.55"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#ast107-base)"/>
+  <rect width="1600" height="900" fill="url(#ast107-leak-cyan)"/>
+  <rect width="1600" height="900" fill="url(#ast107-leak-deep)"/>
+  <!-- Diagonal streaks: light passing across a darkened hall -->
+  <rect x="-200" y="250" width="2000" height="70" fill="url(#ast107-streak)" transform="rotate(-18 800 285)"/>
+  <rect x="-200" y="380" width="2000" height="22" fill="url(#ast107-streak)" transform="rotate(-18 800 391)"/>
+  <rect width="1600" height="900" fill="url(#ast107-vignette)"/>
+</svg>
