@@ -707,7 +707,7 @@ function scopeSvgIds(svg) {
 
 // シーケンス図のライフライン・活性区間・メッセージ線・矢じりを、背景と見分けられる配色にする（NFR-004）
 function styleSequenceDiagram(svg, colors) {
-  // Mermaid 10.9 はライフラインの class を "200" で上書きして出力するため、id でも拾う
+  // Mermaid はライフラインの class に "200" を含めて出力する（10.9 系は "200"、12.3.0 は "actor-line 200"）ため、id でも拾う
   svg.querySelectorAll('line[id^="actor"], line[class~="200"], line.actor-line').forEach(line => {
     line.style.setProperty('stroke', colors.lifeline, 'important');
     line.style.setProperty('stroke-width', '1.25px', 'important');
@@ -786,24 +786,54 @@ function updateAllSlabSplits(container) {
   container.querySelectorAll('.exhibition-slab-split').forEach(updateSlabSplit);
 }
 
+// path の d（絶対座標）が囲む範囲。曲線の制御点も含むので、わずかに大きくなることがある
+function pathBox(path) {
+  const points = Array.from((path && path.getAttribute('d') || '').matchAll(/(-?[\d.]+)[\s,]+(-?[\d.]+)/g));
+  if (!points.length) return null;
+  const xs = points.map(p => parseFloat(p[1]));
+  const ys = points.map(p => parseFloat(p[2]));
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+}
+
+function createSvgElement(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs).forEach(([name, value]) => el.setAttribute(name, String(value)));
+  return el;
+}
+
 // Mermaid 12 はスタジアム形のノードを path で出力する。図の装飾は rect を前提にするので、rect に置き換える
 function normalizeStadiumNodes(svg) {
   svg.querySelectorAll('g.node > g.basic.label-container.outer-path').forEach(group => {
     const path = group.querySelector('path');
-    const points = Array.from((path && path.getAttribute('d') || '').matchAll(/(-?[\d.]+)\s+(-?[\d.]+)/g));
-    if (!points.length) return;
-    const xs = points.map(p => parseFloat(p[1]));
-    const ys = points.map(p => parseFloat(p[2]));
-    const x = Math.min(...xs);
-    const y = Math.min(...ys);
-    const width = Math.max(...xs) - x;
-    const height = Math.max(...ys) - y;
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('class', 'basic label-container');
-    const attrs = { x, y, width, height, rx: height / 2, ry: height / 2 };
-    Object.entries(attrs).forEach(([name, value]) => rect.setAttribute(name, String(value)));
+    const box = pathBox(path);
+    if (!box) return;
+    const rect = createSvgElement('rect', { class: 'basic label-container', ...box, rx: box.height / 2, ry: box.height / 2 });
     if (path.getAttribute('style')) rect.setAttribute('style', path.getAttribute('style'));
     group.replaceWith(rect);
+  });
+}
+
+// Mermaid 12 は状態遷移図の分岐（choice）とフォーク・ジョイン（fork / join）を path で出力する。
+// 図の装飾と CSS は 10 系の polygon.state-start と rect.fork-join を前提にするので、置き換える
+function normalizeStateNodes(svg) {
+  svg.querySelectorAll('g.node.statediagram-state').forEach(node => {
+    const group = node.querySelector(':scope > g:not(.label)');
+    if (!group || node.querySelector('text, foreignObject, rect, circle')) return;
+    const box = pathBox(group.querySelector('path'));
+    if (!box || !box.width || !box.height) return;
+    let shape;
+    if (box.height <= 12 && box.width > box.height * 2) {
+      shape = createSvgElement('rect', { class: 'fork-join', ...box });
+    } else {
+      const cx = box.x + box.width / 2;
+      const cy = box.y + box.height / 2;
+      const hw = box.width / 2;
+      const hh = box.height / 2;
+      shape = createSvgElement('polygon', { class: 'state-start', points: `${cx},${cy + hh} ${cx + hw},${cy} ${cx},${cy - hh} ${cx - hw},${cy}` });
+    }
+    group.replaceWith(shape);
   });
 }
 
@@ -817,6 +847,7 @@ function postProcessSvg(rawSvg, isVisualMode) {
     const diagramType = svg.getAttribute('aria-roledescription') || '';
     // クラス図や要件図の箱も同じ構造で出力されるので、フローチャートに限る
     if (diagramType === 'flowchart-v2') normalizeStadiumNodes(svg);
+    if (diagramType === 'stateDiagram') normalizeStateNodes(svg);
     if (isVisualMode) {
       decorateVisualSvg(svg, diagramType);
     } else {
