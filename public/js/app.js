@@ -330,10 +330,10 @@ const libraryLoads = new Map();
 const EXPORT_URLS = {
   './vendor/fonts/fonts.css': 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap',
   './vendor/marked.min.js': 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js',
-  './vendor/purify.min.js': 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js',
-  './vendor/mermaid.min.js': 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js',
-  './vendor/katex/katex.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
-  './vendor/katex/katex.min.css': 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css'
+  './vendor/purify.min.js': 'https://cdn.jsdelivr.net/npm/dompurify@3.4.17/dist/purify.min.js',
+  './vendor/mermaid.min.js': 'https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js',
+  './vendor/katex/katex.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.js',
+  './vendor/katex/katex.min.css': 'https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.css'
 };
 
 // CSS も <head> に入れるため、HTML エクスポート（outerHTML）にも含まれる
