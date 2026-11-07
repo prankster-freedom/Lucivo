@@ -311,9 +311,13 @@ const EMPTY_GUIDE_HTML = `
       <h4>🎨 Visualモード (展示品質)</h4>
       <p>講演資料や展示ブースの大画面で映えるプロ品質のインフォグラフィックへ瞬時に変換します。</p>
     </div>
+    <div class="empty-guide-card">
+      <h4>🎤 ステージ発表 (発表モード)</h4>
+      <p>ヘッダーの「発表」ボタンで全画面のプレゼンテーション舞台へ。章ごとのページ送り、光が伝わるシグナル・ライト、全シーン俯瞰 (Oキー) や光のポインター (Lキー) で魅せます。</p>
+    </div>
   </div>
 
-  <p class="empty-guide-footer">💡 画面上部中央の <strong>[ 高速モード | Visualモード ]</strong> セグメントからいつでもワンクリックで切り替えられます。</p>
+  <p class="empty-guide-footer">💡 画面上部の <strong>[ 高速モード | Visualモード ]</strong> や <strong>[ 発表 ]</strong> ボタンからいつでもワンクリックで体験できます。</p>
   <p class="empty-guide-latest">最新版はこちら: <a ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
 </div>`;
 
@@ -2022,7 +2026,6 @@ function setupEventListeners() {
   }
 
   document.getElementById('btn-stage-show').onclick = async () => {
-    setStageMode(true);
     if (await loadLibrary('stage')) LucivoStage.enterShow();
   };
 

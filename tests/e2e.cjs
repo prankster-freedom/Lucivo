@@ -83,6 +83,7 @@ async function testFileLoading(browser) {
       guide: !!guideEl,
       hasFastModeDesc: guideEl ? guideEl.textContent.includes('高速モード') : false,
       hasVisualModeDesc: guideEl ? guideEl.textContent.includes('Visualモード') : false,
+      hasShowModeDesc: guideEl ? guideEl.textContent.includes('ステージ発表') : false,
       fastBtnActive: document.getElementById('btn-mode-fast') ? document.getElementById('btn-mode-fast').classList.contains('is-active') : false,
       favHref: fav ? fav.getAttribute('href') : '',
       headerLightVisible: !!hLight && getComputedStyle(hLight).display !== 'none' && hLight.naturalWidth > 0,
@@ -111,7 +112,7 @@ async function testFileLoading(browser) {
   await page.click('#btn-theme-toggle');
   await waitRendered(page);
   record('TC-FILE-001',
-    init.editor === '' && init.guide && init.hasFastModeDesc && init.hasVisualModeDesc && init.fastBtnActive
+    init.editor === '' && init.guide && init.hasFastModeDesc && init.hasVisualModeDesc && init.hasShowModeDesc && init.fastBtnActive
     && init.favHref === './assets/logos/light/favicon.svg'
     && init.headerLightVisible && init.headerDarkHidden && init.guideLightVisible && init.guideDarkHidden
     && darkLogo.favHref === './assets/logos/dark/favicon.svg'
@@ -156,7 +157,7 @@ async function testFileLoading(browser) {
   const closedByEsc = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   record('TC-FILE-002',
     menuState.opened && closedByOutside && closedByEsc
-    && JSON.stringify(menuState.items) === JSON.stringify(['Markdown を開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)']),
+    && JSON.stringify(menuState.items) === JSON.stringify(['Markdown を開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)']),
     JSON.stringify({ ...menuState, closedByOutside, closedByEsc }));
 
   // TC-FILE-003 未編集の状態での読み込みと同梱サンプル選択
@@ -172,6 +173,12 @@ async function testFileLoading(browser) {
   await waitRendered(page);
   const notationSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
   const notationSampleMatched = notationSampleValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^\uFEFF/, '');
+  await page.click('#btn-file-menu');
+  await page.click('#menu-sample-notation-extra');
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('# Lucivo Markdown 発展・詳細記法サンプル'));
+  await waitRendered(page);
+  const extraSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  const extraSampleMatched = extraSampleValue === fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample_extra1.md'), 'utf8').replace(/^\uFEFF/, '');
   await page.evaluate(() => { document.getElementById('markdown-editor').value = ''; lastLoadedMarkdown = ''; renderApp(); });
   await waitRendered(page);
   const dialogOnFirstLoad = await loadSample(page);
@@ -184,8 +191,8 @@ async function testFileLoading(browser) {
   const editorValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
   after.sameAsFile = editorValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^\uFEFF/, '');
   record('TC-FILE-003',
-    !dialogOnFirstLoad && visualSampleMatched && notationSampleMatched && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast),
-    JSON.stringify({ dialogOnFirstLoad, visualSampleMatched, notationSampleMatched, ...after }));
+    !dialogOnFirstLoad && visualSampleMatched && notationSampleMatched && extraSampleMatched && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast),
+    JSON.stringify({ dialogOnFirstLoad, visualSampleMatched, notationSampleMatched, extraSampleMatched, ...after }));
   record('TC-FILE-006', after.inputCleared, `file-input.value cleared: ${after.inputCleared}`);
 
   // TC-FILE-011 読み込み直後は読み取り専用で、「編集」ボタンで編集できる
@@ -564,6 +571,11 @@ async function testMarkdownTypography(browser) {
   // TC-MD-009 サンプルの HTML の例に独自の class がない
   const sample = fs.readFileSync(SAMPLE, 'utf8').replace(/```[\s\S]*?```/g, '');
   record('TC-MD-009', !/<[a-z][^>]*\sclass=/i.test(sample), '');
+  // TC-MD-011 発展サンプル（notation_sample_extra1.md）の存在と HTML に独自 class がないこと
+  const EXTRA_SAMPLE = path.join(APP_DIR, 'samples', 'notation_sample_extra1.md');
+  const hasExtra = fs.existsSync(EXTRA_SAMPLE);
+  const extraContent = hasExtra ? fs.readFileSync(EXTRA_SAMPLE, 'utf8').replace(/```[\s\S]*?```/g, '') : '';
+  record('TC-MD-011', hasExtra && !/<[a-z][^>]*\sclass=/i.test(extraContent), `extra sample exists: ${hasExtra}`);
   if (page.consoleErrors.length) record('TC-MD-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }
@@ -2131,9 +2143,11 @@ async function testStageShow(browser) {
   await waitRendered(page);
   await page.waitForTimeout(500);
   const exited = await page.evaluate(i => {
-    const scenes = document.querySelectorAll('.exhibition-wrap > .exhibition-hero, .exhibition-wrap > .exhibition-slab');
     const scroller = document.getElementById('preview-scroll').getBoundingClientRect();
-    const rect = scenes[i].getBoundingClientRect();
+    const target = state.isVisualMode
+      ? document.querySelectorAll('.exhibition-wrap > .exhibition-hero, .exhibition-wrap > .exhibition-slab')[i]
+      : document.querySelectorAll('#standard-doc-container h2')[Math.max(0, i - 1)];
+    const rect = target ? target.getBoundingClientRect() : null;
     return {
       active: LucivoStage.showState().active,
       htmlClass: document.documentElement.classList.contains('is-stage-show'),
@@ -2141,11 +2155,11 @@ async function testStageShow(browser) {
       viewMode: state.viewMode,
       isVisual: state.isVisualMode,
       leftovers: document.querySelectorAll('.is-scene, .is-built, .is-building').length,
-      sceneInView: rect.top < scroller.bottom && rect.bottom > scroller.top,
+      sceneInView: rect ? (rect.top < scroller.bottom && rect.bottom > scroller.top) : false,
       rootFont: getComputedStyle(document.documentElement).fontSize
     };
   }, quoteIndex);
-  record('TC-SHOW-008', !exited.active && !exited.htmlClass && exited.appearance === 'light' && exited.viewMode === 'split' && exited.isVisual && exited.leftovers === 0 && exited.sceneInView && exited.rootFont === '16px', JSON.stringify(exited));
+  record('TC-SHOW-008', !exited.active && !exited.htmlClass && exited.appearance === 'light' && exited.viewMode === 'split' && !exited.isVisual && exited.leftovers === 0 && exited.sceneInView && exited.rootFont === '16px', JSON.stringify(exited));
 
   // 短い文書で、自動進行が最後の章から先頭へ戻ること
   await setDocument(page, '# 題名\n\n## 一\n\n短い章です。\n');
@@ -2200,8 +2214,9 @@ async function testStageOverviewPointer(browser) {
   await page.click('#btn-stage-show');
   await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(page);
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(1000);
   await pressUntil(page, () => LucivoStage.showState().index === 4);
+  await page.waitForTimeout(1000);
 
   // TC-SHOW-011 俯瞰: 開くまでの時間、並び、光の停止、選択の移動、拡大して入る、元のシーンへ戻る
   const openMs = await page.evaluate(() => new Promise(resolve => {
