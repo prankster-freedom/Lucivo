@@ -21,8 +21,11 @@
   <header class="glass-nav h-12 px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0 z-30">
     <div class="flex items-center gap-2 shrink-0">
       <div id="header-brand-logo" class="header-brand-logo shrink-0">
-        <img class="brand-logo-light" src="./assets/logos/light/logo_capsule.svg" alt="Lucivo" width="117" height="32" />
-        <img class="brand-logo-dark" src="./assets/logos/dark/logo_capsule.svg" alt="Lucivo" width="117" height="32" />
+        <!-- 公開リポジトリ（最新版）への導線（FR-024）。URL は app.js の REPOSITORY_URL と同じにする -->
+        <a class="brand-link" href="https://github.com/prankster-freedom/Lucivo" target="_blank" rel="noopener noreferrer" title="Lucivo の公開リポジトリ（最新版）を開く">
+          <img class="brand-logo-light" src="./assets/logos/light/logo_capsule.svg" alt="Lucivo（公開リポジトリを開く）" width="117" height="32" />
+          <img class="brand-logo-dark" src="./assets/logos/dark/logo_capsule.svg" alt="Lucivo（公開リポジトリを開く）" width="117" height="32" />
+        </a>
       </div>
 
       <!-- ファイルメニュー -->

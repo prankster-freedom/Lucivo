@@ -286,11 +286,18 @@ const CIRCLE_DARK_TEXT_FILLS = ['#ECB674'];
 // シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）
 const SEQUENCE_MATH_LIFT = 6;
 
+// 公開リポジトリ（最新版の配布元）。ヘッダーのロゴのリンク（index.html）も同じ URL にする（FR-024）
+const REPOSITORY_URL = 'https://github.com/prankster-freedom/Lucivo';
+// 新しいタブで開き、開いたページから Lucivo の画面を操作されないようにする
+const REPOSITORY_LINK_ATTRS = `href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer"`;
+
 const EMPTY_GUIDE_HTML = `
 <div class="empty-guide">
   <div class="empty-guide-logo">
-    <img class="brand-logo-light" src="./assets/logos/light/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —" width="264" height="72" />
-    <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —" width="264" height="72" />
+    <a class="brand-link" ${REPOSITORY_LINK_ATTRS} title="Lucivo の公開リポジトリ（最新版）を開く">
+      <img class="brand-logo-light" src="./assets/logos/light/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —（公開リポジトリを開く）" width="264" height="72" />
+      <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —（公開リポジトリを開く）" width="264" height="72" />
+    </a>
   </div>
   <h3 class="empty-guide-title">Markdown を開いてください</h3>
   <p class="empty-guide-desc">ヘッダーの「ファイル」メニューから「Markdown を開く…」でローカルファイルを読み込むか、同梱の <code>Visualモードサンプル (visual-sample.md)</code> / <code>記法サンプル (notation_sample.md)</code> をワンクリックで開けます。左のエディタに直接入力することもできます。</p>
@@ -307,6 +314,7 @@ const EMPTY_GUIDE_HTML = `
   </div>
 
   <p class="empty-guide-footer">💡 画面上部中央の <strong>[ 高速モード | Visualモード ]</strong> セグメントからいつでもワンクリックで切り替えられます。</p>
+  <p class="empty-guide-latest">最新版はこちら: <a ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
 </div>`;
 
 const state = {

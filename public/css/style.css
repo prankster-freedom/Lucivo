@@ -143,6 +143,19 @@ body[data-appearance="dark"] .brand-logo-light {
   width: auto;
   display: block;
 }
+/* 公開リポジトリへのリンクにしたロゴ（FR-024）。見た目はロゴのまま、触れたときだけ反応を返す */
+.brand-link {
+  display: inline-flex;
+  border-radius: 9999px;
+  transition: opacity 0.15s ease;
+}
+.brand-link:hover {
+  opacity: 0.82;
+}
+.brand-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 
 /* 起動直後・エディタが空のときの案内（FR-007） */
 .empty-guide {
@@ -216,6 +229,21 @@ body[data-appearance="dark"] .brand-logo-light {
   border-top: 1px dashed var(--border-subtle);
   padding-top: 1rem;
   margin-top: 0.5rem;
+}
+/* 最新版の配布元（FR-024）。案内の最後に、控えめな 1 行で置く */
+.empty-guide-latest {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+.empty-guide-latest a {
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.empty-guide-latest a:hover {
+  text-decoration-thickness: 2px;
 }
 
 .pill-container {
