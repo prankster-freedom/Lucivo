@@ -1,7 +1,6 @@
 name: E2E Tests
+# main へは検証済みのコミットだけが入るため、push では実行しない
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 jobs:
@@ -17,7 +16,7 @@ jobs:
         fetch-depth: 0
     - id: filter
       env:
-        BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        BASE: ${{ github.event.pull_request.base.sha }}
       run: |
         if ! files=$(git diff --name-only "$BASE" "$GITHUB_SHA"); then
           echo "e2e=true" >> "$GITHUB_OUTPUT"
