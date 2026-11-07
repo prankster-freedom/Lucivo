@@ -2125,3 +2125,80 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
   border-radius: 9999px;
 }
 
+/* ==================== キーボードバッジ ==================== */
+.kbd-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.35rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  background: var(--panel-bg);
+  border: 1px solid var(--border-subtle);
+  border-bottom-width: 2px;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== スラブ画像エクスポート操作部 ==================== */
+.slab-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  opacity: 0.35;
+  transition: opacity 0.18s ease-in-out;
+  z-index: 10;
+}
+.exhibition-slab:hover .slab-actions,
+.slab-actions:focus-within {
+  opacity: 1;
+}
+.slab-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  background: var(--panel-sub);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(4px);
+}
+.slab-action-btn:hover {
+  color: var(--text-primary);
+  background: var(--panel-bg);
+  border-color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.slab-action-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+.btn-copy-slab::after {
+  content: "コピー";
+}
+.btn-export-slab::after {
+  content: "PNG";
+}
+html.is-stage-show .slab-actions,
+@media print {
+  .slab-actions {
+    display: none !important;
+  }
+}
+
+
