@@ -64,3 +64,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 ## 6. `main` への反映
 
 `main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
+
+## 7. Dependabot security updates（branch-strategy スキルの例外）
+
+Dependabot security updates はオフにする。自動の PR は `package.json` と `package-lock.json` しか更新せず、配布物の `public/vendor/` と `public/js/app.js` の `EXPORT_URLS` が古いまま残るため。修正済みに見えて、利用者に配布される中身は直っていない状態になる。ライブラリの更新は、3 か所を揃えて手動で行う。
