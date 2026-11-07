@@ -1,0 +1,65 @@
+name: Self Approve
+# リポジトリの所有者が自分の PR に /self-approve とコメントしたら、PR のコミットを作り直さずに main へ fast-forward する。
+# 自分の PR は GitHub の Approve ができないため、コメントを承認の操作にする。
+# issue_comment は main にある定義で動くので、PR の中でこのファイルを書き換えても条件は緩められない。
+# PR のコードは実行しないこと（contents: write の権限で動くため）。
+on:
+  issue_comment:
+    types: [ created ]
+permissions: {}
+concurrency:
+  group: self-approve
+  cancel-in-progress: false
+jobs:
+  fast-forward:
+    if: ${{ github.event.issue.pull_request && github.event.comment.body == '/self-approve' }}
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+        fetch-depth: 0
+    - name: Fast-forward main
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR: ${{ github.event.issue.number }}
+        COMMENTER: ${{ github.event.comment.user.login }}
+        OWNER: ${{ github.repository_owner }}
+      run: |
+        api="repos/$GITHUB_REPOSITORY"
+        reject() {
+          gh api "$api/issues/$PR/comments" -f body="/self-approve を実行できません: $1" > /dev/null
+          exit 1
+        }
+
+        author=$(gh api "$api/pulls/$PR" --jq '.user.login')
+        state=$(gh api "$api/pulls/$PR" --jq '.state')
+        base=$(gh api "$api/pulls/$PR" --jq '.base.ref')
+        head=$(gh api "$api/pulls/$PR" --jq '.head.sha')
+
+        [ "$COMMENTER" = "$OWNER" ] || reject "コメントできるのはリポジトリの所有者だけです。"
+        [ "$author" = "$OWNER" ] || reject "所有者自身の PR だけが対象です。他の開発者の PR は Approve で承認します。"
+        [ "$state" = "open" ] || reject "PR がオープンではありません。"
+        [ "$base" = "main" ] || reject "main に対する PR ではありません。"
+
+        result=$(gh api "$api/commits/$head/check-runs?check_name=test" \
+          --jq '[.check_runs[] | select(.app.slug == "github-actions")][0].conclusion')
+        case "$result" in
+          success|skipped) ;;
+          *) reject "$head の test が完了していないか、失敗しています（$result）。" ;;
+        esac
+
+        git fetch origin "pull/$PR/head"
+        [ "$(git rev-parse FETCH_HEAD)" = "$head" ] || reject "PR の先頭コミットが変わりました。もう一度コメントしてください。"
+        git merge-base --is-ancestor origin/main "$head" || reject "PR が最新の main の上にありません。リベースしてください。"
+
+        git push origin "$head:refs/heads/main" || reject "main への push が拒否されました。Actions のログを確認してください。"
+
+        # fast-forward の反映では、マージ後のブランチの自動削除が働かない
+        branch=$(gh api "$api/pulls/$PR" --jq '.head.ref')
+        git push origin --delete "$branch"

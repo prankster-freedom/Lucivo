@@ -28,6 +28,7 @@ tags: ["Claude Code", "Cursor", "GitHub Copilot", "AGENTS.md", "CLAUDE.md", "ski
     ├── README.md      # 本ファイル
     ├── settings.json  # チームで共有する Claude Code の設定
     └── skills/
+        ├── branch-strategy/                 # /branch-strategy（SKILL.md + github.md + self-approve.yml）
         ├── commit/                          # /commit
         ├── cr/                              # /cr（SKILL.md + template.md）
         ├── devenv/                          # /devenv
@@ -71,7 +72,8 @@ tags: ["Claude Code", "Cursor", "GitHub Copilot", "AGENTS.md", "CLAUDE.md", "ski
 
 | スキル | 自動呼び出し | 説明                                                                                                             |
 | :----- | :----------- | :--------------------------------------------------------------------------------------------------------------- |
-| commit | 可           | git commit の実施（ブランチ・PR の確認、変更確認、Conventional Commits 準拠のコミット、セルフレビュー。承認工程なし、push は指示時のみ。main へのマージは PR 経由）（v2.0.0） |
+| branch-strategy | 可  | ブランチ戦略の考え方と、それに沿った Git ホスティングサービスの設定（GitHub の main の保護、main への反映、CI の必須チェック、Actions の権限、セキュリティ）。`/self-approve` のワークフローのひな形付き（v1.0.0） |
+| commit | 可           | git commit の実施（ブランチ・PR の確認、変更確認、Conventional Commits 準拠のコミット、セルフレビュー。承認工程なし、push は指示時のみ。main への反映は PR の承認を経る）（v2.0.0） |
 | cr     | 可           | 変更要求（CR）の登録・影響範囲の整理・対応の追跡。`doc/6.change_request/` に ID 付きで管理。ひな形付き（v2.0.0） |
 | devenv | 不可         | ローカルの開発環境（npm の開発サーバー）の起動・再起動・停止。承認工程なし（v2.0.0）                             |
 | devtools-update | 不可 | ローカル PC の開発ツール（Node.js・npm・Google Cloud SDK・GitHub CLI・uv）と、プロジェクトの Playwright（パッケージとブラウザー）の版とインストール方法の確認、更新計画の承認を得てからの更新（v1.0.0） |
