@@ -31,6 +31,9 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 - 開発 PC は Windows。シェルは Git Bash と PowerShell を使える
 - Python は uv で管理する（`uv python install --default` で、`python` / `python3` が uv の Python を指す）。`python` が Microsoft Store を開くだけの場合は、WindowsApps の仮のファイルが先に見つかっているため、`uv python list --only-installed` で確認する。パッケージが必要なときは `uv run --with <パッケージ>` を使う
 - バックスラッシュ・バッククォート・`$` を含む内容（正規表現、TeX、テンプレートリテラルなど）は、シェルのヒアドキュメントや `node -e` の引数で書かない。ファイルの作成・編集は、エディタ系のツール（AI エージェントのファイル編集機能など）で行う。ヒアドキュメント経由で `\\` が `\` に変わり、スクリプトや数式が壊れたことがある
+  - Python や sed などの文字列に置換の内容を埋め込んで回避しない。Python の通常の文字列では `\b` がバックスペース（0x08）に変わり、警告も出ない。一括の置換が必要なときは、置換の内容をエディタ系のツールで書いたファイルから読む
+  - ツールの警告（Python の `SyntaxWarning` など）は誤りとして扱い、原因を直してから進める
+  - `npm run lint` で、制御文字、正規表現の中の制御文字、見えない空白を検出する（CI の `lint` ジョブ）。見えない文字が必要なときは `﻿` のようにエスケープで書く
 - ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`public/index.html` を `file://` で開き、Playwright（Chromium）で確認する
 - Markdown ファイル内の表整形には `node agents-support-tools/md-table-align/align-tables.cjs <Markdown ファイル>` を使用する
 
