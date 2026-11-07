@@ -268,8 +268,8 @@ const CURVE_LABELS = { smooth: '曲線', step: '直角', straight: '直線' };
 const MIN_FIT_FONT_PX = 10;
 const MAX_FIT_SCALE = 1.5;
 
-// マインドマップなどの枝ごとの色（cScale）。Mermaid は darkMode のとき派生色を暗くしすぎ、
-// Dark の背景の上でノードと枝が黒く沈むので、明度をそろえた色を明示する（DD-DIAG-025）
+// マインドマップなどの枝ごとの色（cScale）と円グラフの色（pie）。Mermaid は darkMode のとき派生色を暗くしすぎ、
+// Dark の背景の上でノードと枝、スライスと凡例が黒く沈むので、明度をそろえた色を明示する（DD-DIAG-025）
 const DARK_SECTION_HUES = [215, 172, 262, 32, 145, 330, 195, 12, 95, 285, 50, 240];
 function darkSectionScale() {
   const vars = {};
@@ -277,6 +277,7 @@ function darkSectionScale() {
     vars[`cScale${i}`] = `hsl(${hue}, 45%, 38%)`;
     vars[`cScalePeer${i}`] = `hsl(${hue}, 50%, 58%)`;
     vars[`cScaleLabel${i}`] = '#F1F5F9';
+    vars[`pie${i + 1}`] = `hsl(${hue}, 45%, 42%)`;
   });
   return vars;
 }
@@ -564,7 +565,8 @@ function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 
       pieStrokeColor: spec.edgeStroke,
       pieOuterStrokeColor: spec.edgeStroke,
       pieTitleTextColor: spec.nodeText,
-      pieSectionTextColor: spec.nodeText,
+      // Dark ではスライスを明度をそろえた中間色で塗るので（darkSectionScale）、スライスの上の文字は明るくする
+      pieSectionTextColor: isDark ? '#F1F5F9' : spec.nodeText,
       pieLegendTextColor: spec.nodeText,
       // XY チャートの系列色（派生色のままだと白地に淡いクリーム色になり見分けにくい）
       xyChart: {
