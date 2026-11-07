@@ -118,6 +118,21 @@ async function testFileLoading(browser) {
     && darkLogo.headerDarkVisible && darkLogo.headerLightHidden && darkLogo.guideDarkVisible && darkLogo.guideLightHidden,
     JSON.stringify({ init, darkLogo }));
 
+  // TC-FILE-014 ヘッダーと案内のロゴ、案内の「最新版はこちら」が公開リポジトリへのリンクになっている
+  const repoLinks = await page.evaluate(() => {
+    const url = 'https://github.com/prankster-freedom/Lucivo';
+    const describe = a => a && { href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'), ok: a.getAttribute('href') === url && a.getAttribute('target') === '_blank' && /\bnoopener\b/.test(a.getAttribute('rel') || '') && /\bnoreferrer\b/.test(a.getAttribute('rel') || '') };
+    const latest = document.querySelector('#standard-doc-container .empty-guide-latest');
+    return {
+      header: describe(document.querySelector('#header-brand-logo a.brand-link')),
+      guideLogo: describe(document.querySelector('#standard-doc-container .empty-guide-logo a.brand-link')),
+      latestText: latest ? latest.textContent.trim() : null,
+      latest: describe(latest && latest.querySelector('a'))
+    };
+  });
+  record('TC-FILE-014', !!(repoLinks.header && repoLinks.header.ok && repoLinks.guideLogo && repoLinks.guideLogo.ok && repoLinks.latest && repoLinks.latest.ok
+    && /^最新版はこちら/.test(repoLinks.latestText || '')), JSON.stringify(repoLinks));
+
   // TC-FILE-013 起動直後は編集でき、読み込む前の保存名は untitled.md
   const startEditable = await page.evaluate(() => !document.getElementById('markdown-editor').readOnly && document.getElementById('editor-lock').classList.contains('hidden'));
   await page.fill('#markdown-editor', '# 新しい文書\n');
