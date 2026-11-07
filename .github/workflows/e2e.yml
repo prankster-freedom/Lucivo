@@ -4,6 +4,19 @@ on:
   pull_request:
     branches: [ main ]
 jobs:
+  # 壊れた文字列（制御文字、正規表現の中の制御文字、見えない空白）を検出する。ドキュメントも対象なので常に実行する
+  lint:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Lint
+      run: npm run lint
   # ワークフローごとスキップすると必須チェック test が待機のままになるため、ジョブの単位でスキップする
   changes:
     timeout-minutes: 5
