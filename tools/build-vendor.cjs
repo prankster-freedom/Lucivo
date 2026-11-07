@@ -53,8 +53,10 @@ fs.writeFileSync(path.join(VENDOR, 'fonts', 'fonts.css'), fontCss);
 const notices = LICENSED.map(name => {
   const dir = path.join(MODULES, name);
   const { version } = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
+  // LICENSE を含まないパッケージがあるので、その場合は tools/licenses/ に置いた上流のファイルを使う
   const file = fs.readdirSync(dir).find(f => /^LICENSE/i.test(f));
-  return `${'='.repeat(72)}\n${name} ${version}\n${'='.repeat(72)}\n\n${fs.readFileSync(path.join(dir, file), 'utf8').trim()}\n`;
+  const licensePath = file ? path.join(dir, file) : path.join(__dirname, 'licenses', `${name}.LICENSE`);
+  return `${'='.repeat(72)}\n${name} ${version}\n${'='.repeat(72)}\n\n${fs.readFileSync(licensePath, 'utf8').trim()}\n`;
 }).join('\n');
 fs.writeFileSync(path.join(ROOT_DIR, 'public', 'THIRD_PARTY_LICENSES.txt'),
   `Lucivo に同梱している第三者のソフトウェアとフォントのライセンスです。\n\n${notices}`);
