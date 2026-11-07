@@ -63,5 +63,4 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 ## 6. `main` への反映
 
-- リポジトリの所有者の PR は、CI の成功後に所有者が `/self-approve` とコメントして反映する。Actions がコミットを作り直さずに `main` へ fast-forward する（`.github/workflows/self-approve.yml`）
-- PR が最新の `main` の上にないときは、先にリベースする
+`main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
