@@ -398,7 +398,7 @@
 
   const show = { active: false, scenes: [], index: 0, build: 0, auto: false, timer: 0, idleTimer: 0, restore: null, hud: null };
   // 俯瞰（DTP-SHOW-070）と光のポインター（DTP-SHOW-080）
-  const OVERVIEW = { widthRatio: 0.88, heightRatio: 0.78, gapVw: 1.6, minScale: 0.12, maxCols: 6, zoomMs: 420 };
+  const OVERVIEW = { widthRatio: 0.88, heightRatio: 0.78, gapVw: 1.6, minScale: 0.12, maxCols: 6, zoomMs: 340 };
   const ov = { active: false, index: 0, busy: false };
   const pointer = { on: false, moved: false, x: 0, y: 0, frame: 0 };
 
@@ -690,8 +690,8 @@
     ov.active = true;
     suspendLights(true);
     layoutOverview();
-    document.documentElement.classList.add('is-stage-overview');
     stageContainer().scrollTop = 0;
+    document.documentElement.classList.add('is-stage-overview');
     selectTile(show.index);
     const wrap = overviewWrap();
     wrap.classList.add('is-ov-entering');

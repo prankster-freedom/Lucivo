@@ -1449,6 +1449,209 @@ function clearVisualStageSpotlight(container) {
   });
 }
 
+// スラブの操作バー（画像コピー・PNG保存、FR-026, DD-VTPL-120）
+// ボタンの文字ラベルは CSS ::after で表示し、テキストノードを持たせないことでスラブ本文の内容一致（TC-VTPL-003）を保つ
+function buildSlabActionsHtml() {
+  return `
+    <div class="slab-actions" aria-label="スラブの操作">
+      <button type="button" class="slab-action-btn btn-copy-slab" title="この章のカード画像をクリップボードにコピー" aria-label="コピー"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+      <button type="button" class="slab-action-btn btn-export-slab" title="この章のカード画像をPNGとして保存" aria-label="PNG"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
+    </div>
+  `;
+}
+
+function getSlabFilename(slabEl) {
+  const stageNo = slabEl.dataset.stageNo || '00';
+  const h2 = slabEl.querySelector('h2');
+  let title = h2 ? h2.textContent.replace(/^STAGE\s*\d+\s*/i, '').trim() : 'slab';
+  title = title.toLowerCase().replace(/[^a-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF_-]+/g, '-').slice(0, 30);
+  return `slab-${stageNo}-${title || 'card'}.png`;
+}
+
+function renderSlabToBlob(slabEl) {
+  const rect = slabEl.getBoundingClientRect();
+  const width = Math.max(360, Math.ceil(rect.width));
+  const height = Math.max(200, Math.ceil(rect.height));
+
+  const computed = window.getComputedStyle(slabEl);
+  const bgColor = computed.backgroundColor || (state.appearance === 'dark' ? '#1E293B' : '#FFFFFF');
+  const textColor = computed.color || (state.appearance === 'dark' ? '#F8FAFC' : '#0F172A');
+  const borderColor = computed.borderColor || 'rgba(148, 163, 184, 0.2)';
+
+  const wrapEl = slabEl.closest('.exhibition-wrap');
+  const wrapComputed = wrapEl ? window.getComputedStyle(wrapEl) : computed;
+  const vsC1 = wrapComputed.getPropertyValue('--vs-c1') || '#3B82F6';
+
+  const h2 = slabEl.querySelector('h2');
+  const stageBadge = slabEl.querySelector('.exhibition-num-badge');
+  const stageText = stageBadge ? stageBadge.textContent.trim() : (slabEl.dataset.stageNo ? `STAGE ${slabEl.dataset.stageNo}` : '');
+  const titleText = h2 ? h2.textContent.replace(/^STAGE\s*\d+\s*/i, '').replace(/コピー|PNG/g, '').trim() : 'Lucivo Card';
+
+  const leadEl = slabEl.querySelector('.vs-lead, p, .vs-quote, li');
+  const leadText = leadEl ? leadEl.textContent.trim().slice(0, 120) : '';
+
+  return new Promise((resolve) => {
+    // タイムアウトまたはフォールバック用の直接 Canvas 描画（file:// 環境でのハング防止）
+    const renderFallback = () => {
+      try {
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+
+        ctx.fillStyle = bgColor;
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(0, 0, width, height, 16);
+          ctx.fill();
+        } else {
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1;
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(0, 0, width, height, 16);
+          ctx.stroke();
+        } else {
+          ctx.strokeRect(0, 0, width, height);
+        }
+
+        let textX = 24;
+        if (stageText) {
+          ctx.fillStyle = vsC1.trim() || '#3B82F6';
+          const badgeWidth = 72;
+          const badgeHeight = 22;
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(textX, 22, badgeWidth, badgeHeight, 11);
+            ctx.fill();
+          } else {
+            ctx.fillRect(textX, 22, badgeWidth, badgeHeight);
+          }
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(stageText, textX + badgeWidth / 2, 22 + badgeHeight / 2);
+          textX += badgeWidth + 12;
+        }
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(titleText, textX, 33);
+
+        if (leadText) {
+          ctx.fillStyle = textColor;
+          ctx.font = '14px "Noto Sans JP", sans-serif';
+          ctx.textBaseline = 'top';
+          ctx.fillText(leadText, 24, 60);
+        }
+
+        canvas.toBlob(blob => {
+          resolve(blob || new Blob([], { type: 'image/png' }));
+        }, 'image/png');
+      } catch (err) {
+        resolve(new Blob([], { type: 'image/png' }));
+      }
+    };
+
+    const timer = setTimeout(renderFallback, 250);
+
+    try {
+      const clone = slabEl.cloneNode(true);
+      clone.querySelectorAll('.slab-actions, canvas.signal-light-canvas').forEach(el => el.remove());
+
+      const svgData = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+          <foreignObject width="100%" height="100%">
+            <div xmlns="http://www.w3.org/1999/xhtml">
+              <div style="font-family:'Plus Jakarta Sans',sans-serif;color:${textColor};background:${bgColor};padding:1.5rem;width:100%;height:100%;box-sizing:border-box;">
+                ${clone.innerHTML}
+              </div>
+            </div>
+          </foreignObject>
+        </svg>
+      `;
+
+      const img = new Image();
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        clearTimeout(timer);
+        URL.revokeObjectURL(url);
+        try {
+          const scale = 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = width * scale;
+          canvas.height = height * scale;
+          const ctx = canvas.getContext('2d');
+          ctx.scale(scale, scale);
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob(blob => {
+            if (blob) resolve(blob);
+            else renderFallback();
+          }, 'image/png');
+        } catch (e) {
+          renderFallback();
+        }
+      };
+
+      img.onerror = () => {
+        clearTimeout(timer);
+        URL.revokeObjectURL(url);
+        renderFallback();
+      };
+
+      img.src = url;
+    } catch (e) {
+      clearTimeout(timer);
+      renderFallback();
+    }
+  });
+}
+
+async function copySlabImage(slabEl) {
+  const filename = getSlabFilename(slabEl);
+  try {
+    const blob = await renderSlabToBlob(slabEl);
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      showToast('スラブ画像をクリップボードにコピーしました');
+    } else {
+      downloadBlob(blob, filename, 'image/png');
+      showToast('クリップボード非対応のため画像を保存しました');
+    }
+  } catch (err) {
+    console.warn('copySlabImage failed, fallback to download', err);
+    try {
+      const blob = await renderSlabToBlob(slabEl);
+      downloadBlob(blob, filename, 'image/png');
+      showToast('画像を保存しました');
+    } catch (e) {
+      showToast('画像のエクスポートに失敗しました');
+    }
+  }
+}
+
+async function exportSlabImage(slabEl) {
+  const filename = getSlabFilename(slabEl);
+  try {
+    const blob = await renderSlabToBlob(slabEl);
+    downloadBlob(blob, filename, 'image/png');
+    showToast('スラブ画像を保存しました');
+  } catch (err) {
+    console.warn('exportSlabImage failed', err);
+    showToast('画像のエクスポートに失敗しました');
+  }
+}
+
 // Visual Stage の動的ステージ演出（要点カード・手順ステップ・STAGE バッジのクリック操作）を結線する（FR-017, DD-VTPL-015）
 function setupVisualStageInteractions() {
   const visContainer = document.getElementById('visual-stage-container');
@@ -1463,6 +1666,21 @@ function setupVisualStageInteractions() {
       if (slab) slab.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
       return;
     }
+
+    // スラブ画像エクスポート・クリップボードコピー（FR-026, DD-VTPL-120）
+    const copyBtn = event.target.closest('.btn-copy-slab');
+    if (copyBtn) {
+      const slab = copyBtn.closest('.exhibition-slab');
+      if (slab) copySlabImage(slab);
+      return;
+    }
+    const exportBtn = event.target.closest('.btn-export-slab');
+    if (exportBtn) {
+      const slab = exportBtn.closest('.exhibition-slab');
+      if (slab) exportSlabImage(slab);
+      return;
+    }
+
     if (event.target.closest('a, button')) return;
 
     const badge = event.target.closest('.exhibition-num-badge');
@@ -1653,16 +1871,17 @@ function buildVisualStageHtml(cleanHtml, yaml) {
     const children = Array.from(wrapper.children);
     const proseEls = children.filter(el => el !== h2 && !el.classList.contains('front-matter') && !el.classList.contains('lucivo-slot') && !el.querySelector('.lucivo-slot'));
     const hasComplexBlock = proseEls.some(el => /^(H[3-6]|TABLE|PRE)$/.test(el.tagName) || el.querySelector('table, pre'));
+    const actionsHtml = buildSlabActionsHtml();
     if (slots.length === 1 && proseEls.length >= 1 && !hasComplexBlock) {
       const fm = wrapper.querySelector(':scope > .front-matter');
       const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
       const proseHtml = proseEls.map(el => el.outerHTML).join('');
       const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
-      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div></section>`;
+      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div>${actionsHtml}</section>`;
     } else {
       const template = detectSlabTemplate(proseEls, slots.length);
       applySlabTemplate(template, proseEls);
-      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}"${stageAttr}>${wrapper.innerHTML}</section>`;
+      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}"${stageAttr}>${wrapper.innerHTML}${actionsHtml}</section>`;
     }
   });
 
@@ -1957,6 +2176,150 @@ function bindViewportInteractions(container) {
 }
 
 /* ==========================================================================
+   モード切替とスタイル切替（共通関数）
+   ========================================================================== */
+function setStageMode(isVisual) {
+  if (state.isVisualMode === isVisual) return;
+  state.isVisualMode = isVisual;
+  const btnFast = document.getElementById('btn-mode-fast');
+  const btnVisual = document.getElementById('btn-visual-mode');
+  if (btnFast) btnFast.classList.toggle('is-active', !isVisual);
+  if (btnVisual) btnVisual.classList.toggle('is-active', isVisual);
+  if (isVisual) {
+    showToast('🎨 Visualモードを起動');
+  } else {
+    showToast('高速モードに戻りました');
+  }
+  renderApp();
+}
+
+function selectInfographicStyle(style) {
+  state.infographicStyle = style;
+  document.querySelectorAll('.info-style-btn').forEach(b => {
+    b.classList.toggle('is-active', b.getAttribute('data-info-style') === style);
+  });
+  const btnFast = document.getElementById('btn-mode-fast');
+  const btnVisual = document.getElementById('btn-visual-mode');
+  if (!state.isVisualMode) {
+    state.isVisualMode = true;
+    if (btnFast) btnFast.classList.remove('is-active');
+    if (btnVisual) btnVisual.classList.add('is-active');
+  }
+  renderApp();
+  const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
+  showToast(`スタイル適用: ${activeBtn ? activeBtn.textContent.trim() : style}`);
+}
+
+/* ==========================================================================
+   キーボードショートカットとナビゲーション（FR-025, DD-KEY-001〜004）
+   ========================================================================== */
+function isEditableElement(el) {
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT' || el.isContentEditable;
+}
+
+function openShortcutModal() {
+  const modal = document.getElementById('shortcut-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeShortcutModal() {
+  const modal = document.getElementById('shortcut-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function toggleShortcutModal() {
+  const modal = document.getElementById('shortcut-modal');
+  if (modal) {
+    if (modal.classList.contains('hidden')) openShortcutModal();
+    else closeShortcutModal();
+  }
+}
+
+function scrollSection(direction) {
+  const selector = state.isVisualMode ? '#visual-stage-container .exhibition-slab' : '#standard-doc-container h2';
+  const elements = Array.from(document.querySelectorAll(selector));
+  if (elements.length === 0) return;
+
+  const currentScroll = window.scrollY || document.documentElement.scrollTop;
+  const threshold = currentScroll + (direction > 0 ? 80 : -80);
+
+  let target = null;
+  if (direction > 0) {
+    target = elements.find(el => el.getBoundingClientRect().top + window.scrollY > threshold);
+  } else {
+    for (let i = elements.length - 1; i >= 0; i--) {
+      if (elements[i].getBoundingClientRect().top + window.scrollY < threshold) {
+        target = elements[i];
+        break;
+      }
+    }
+  }
+
+  if (target) {
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }
+}
+
+function setupKeyboardShortcuts() {
+  document.getElementById('shortcut-close-btn')?.addEventListener('click', closeShortcutModal);
+
+  document.addEventListener('keydown', event => {
+    // ステージ発表中（is-stage-show）は stage.js のハンドラが処理するためスキップ
+    if (document.documentElement.classList.contains('is-stage-show')) return;
+
+    // ショートカットヘルプモーダルまたはズームモーダルが開いている場合の Escape 処理
+    if (event.key === 'Escape') {
+      const shortcutModal = document.getElementById('shortcut-modal');
+      if (shortcutModal && !shortcutModal.classList.contains('hidden')) {
+        closeShortcutModal();
+        return;
+      }
+      const zoomModal = document.getElementById('zoom-modal');
+      if (zoomModal && !zoomModal.classList.contains('hidden')) {
+        document.getElementById('zoom-close-btn')?.click();
+        return;
+      }
+    }
+
+    // エディタや入力欄にフォーカスがあるときは文字入力を優先しショートカットを起動しない（DD-KEY-001）
+    if (isEditableElement(document.activeElement)) return;
+
+    if (event.key === 'j' || event.key === 'J') {
+      event.preventDefault();
+      scrollSection(1);
+    } else if (event.key === 'k' || event.key === 'K') {
+      event.preventDefault();
+      scrollSection(-1);
+    } else if (event.key === 'm' || event.key === 'M') {
+      event.preventDefault();
+      setStageMode(!state.isVisualMode);
+    } else if (event.key >= '1' && event.key <= '4') {
+      const styles = ['pastel', 'cards', 'circles', 'editorial'];
+      const targetStyle = styles[parseInt(event.key, 10) - 1];
+      if (targetStyle) {
+        event.preventDefault();
+        selectInfographicStyle(targetStyle);
+      }
+    } else if (event.key === 'p' || event.key === 'P' || event.key === 'F5') {
+      event.preventDefault();
+      document.getElementById('btn-stage-show')?.click();
+    } else if (event.key === '?') {
+      event.preventDefault();
+      toggleShortcutModal();
+    }
+  });
+}
+
+/* ==========================================================================
    イベントハンドラー結線
    ========================================================================== */
 function setupEventListeners() {
@@ -2003,19 +2366,6 @@ function setupEventListeners() {
   const btnFast = document.getElementById('btn-mode-fast');
   const btnVisual = document.getElementById('btn-visual-mode');
 
-  function setStageMode(isVisual) {
-    if (state.isVisualMode === isVisual) return;
-    state.isVisualMode = isVisual;
-    if (btnFast) btnFast.classList.toggle('is-active', !isVisual);
-    if (btnVisual) btnVisual.classList.toggle('is-active', isVisual);
-    if (isVisual) {
-      showToast('🎨 Visualモードを起動');
-    } else {
-      showToast('高速モードに戻りました');
-    }
-    renderApp();
-  }
-
   if (btnFast) {
     btnFast.onclick = () => setStageMode(false);
   }
@@ -2032,17 +2382,7 @@ function setupEventListeners() {
   document.querySelectorAll('.info-style-btn').forEach(btn => {
     btn.onclick = () => {
       const style = btn.getAttribute('data-info-style');
-      state.infographicStyle = style;
-      document.querySelectorAll('.info-style-btn').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-
-      if (!state.isVisualMode) {
-        state.isVisualMode = true;
-        if (btnFast) btnFast.classList.remove('is-active');
-        if (btnVisual) btnVisual.classList.add('is-active');
-      }
-      renderApp();
-      showToast(`スタイル適用: ${btn.textContent.trim()}`);
+      selectInfographicStyle(style);
     };
   });
 
@@ -2258,6 +2598,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.querySelector('[data-view-mode="split"]').classList.add('is-active');
   setupEventListeners();
   setupVisualStageInteractions();
+  setupKeyboardShortcuts();
   setupFileMenu();
   setupFrontMatterToggle();
   setupMarkedMath();
