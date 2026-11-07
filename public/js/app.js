@@ -267,6 +267,19 @@ const CURVE_LABELS = { smooth: '曲線', step: '直角', straight: '直線' };
 // Fit 表示で保つ、図の中の文字の表示上の最小サイズ（NFR-005）と、小さな図の拡大の上限
 const MIN_FIT_FONT_PX = 10;
 const MAX_FIT_SCALE = 1.5;
+
+// マインドマップなどの枝ごとの色（cScale）。Mermaid は darkMode のとき派生色を暗くしすぎ、
+// Dark の背景の上でノードと枝が黒く沈むので、明度をそろえた色を明示する（DD-DIAG-025）
+const DARK_SECTION_HUES = [215, 172, 262, 32, 145, 330, 195, 12, 95, 285, 50, 240];
+function darkSectionScale() {
+  const vars = {};
+  DARK_SECTION_HUES.forEach((hue, i) => {
+    vars[`cScale${i}`] = `hsl(${hue}, 45%, 38%)`;
+    vars[`cScalePeer${i}`] = `hsl(${hue}, 50%, 58%)`;
+    vars[`cScaleLabel${i}`] = '#F1F5F9';
+  });
+  return vars;
+}
 // Vibrant Circles で、白文字では読みにくい明るい塗り
 const CIRCLE_DARK_TEXT_FILLS = ['#ECB674'];
 // シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）
@@ -480,6 +493,7 @@ function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 
     },
     themeVariables: {
       darkMode: isDark,
+      ...(isDark ? darkSectionScale() : {}),
       background: 'transparent',
       mainBkg: spec.nodeBg,
       primaryColor: spec.nodeBg,
