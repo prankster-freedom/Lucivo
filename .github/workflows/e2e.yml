@@ -5,7 +5,34 @@ on:
   pull_request:
     branches: [ main ]
 jobs:
+  # ワークフローごとスキップすると必須チェック test が待機のままになるため、ジョブの単位でスキップする
+  changes:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    outputs:
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - id: filter
+      env:
+        BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+      run: |
+        if ! files=$(git diff --name-only "$BASE" "$GITHUB_SHA"); then
+          echo "e2e=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        rest=$(printf '%s\n' "$files" | grep -Pv '^(doc/|\.claude/|\.agent/|\.github/(?!workflows/)|[^/]+\.md$)' || true)
+        if [ -n "$rest" ]; then
+          echo "e2e=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "e2e=false" >> "$GITHUB_OUTPUT"
+        fi
   test:
+    needs: changes
+    # changes が失敗したときは出力が空になり、E2E を実行する
+    if: ${{ !cancelled() && needs.changes.outputs.e2e != 'false' }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
