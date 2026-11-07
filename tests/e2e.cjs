@@ -2456,30 +2456,74 @@ async function testOffline(browser) {
   await ctx.close();
 }
 
+const SUITE_TIMEOUT_MS = 90000;
+const SUITES = [
+  { name: 'testFileLoading', tcPrefix: ['TC-FILE-'], fn: testFileLoading },
+  { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering },
+  { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-'], fn: testMarkdownTypography },
+  { name: 'testMathRendering', tcPrefix: ['TC-MATH-'], fn: testMathRendering },
+  { name: 'testFrontMatter', tcPrefix: ['TC-FM-'], fn: testFrontMatter },
+  { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },
+  { name: 'testVisualStageQuality', tcPrefix: ['TC-STAGE-'], fn: testVisualStageQuality },
+  { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates },
+  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-017'], fn: testCoverAndTables },
+  { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
+  { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007'], fn: testStageShow },
+  { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013'], fn: testStageOverviewPointer },
+  { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
+  { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
+];
+
+function runWithTimeout(fn, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Suite timeout (${ms}ms): ${label}`)), ms);
+    Promise.resolve(fn()).then(
+      val => { clearTimeout(timer); resolve(val); },
+      err => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
 (async () => {
+  const filters = process.argv.slice(2).map(s => s.toLowerCase());
+  const selected = filters.length === 0
+    ? SUITES
+    : SUITES.filter(s => filters.some(f =>
+      s.name.toLowerCase().includes(f) ||
+      s.tcPrefix.some(p => p.toLowerCase().includes(f) || f.startsWith(p.toLowerCase()))
+    ));
+  if (selected.length === 0) {
+    console.error(`No test suite matched filter: ${process.argv.slice(2).join(', ')}`);
+    process.exitCode = 1;
+    return;
+  }
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await chromium.launch();
   try {
-    await testFileLoading(browser);
-    await testDiagramRendering(browser);
-    await testMarkdownTypography(browser);
-    await testMathRendering(browser);
-    await testFrontMatter(browser);
-    await testEdgeStyle(browser);
-    await testVisualStageQuality(browser);
-    await testVisualTemplates(browser);
-    await testCoverAndTables(browser);
-    await testSignalLight(browser);
-    await testStageShow(browser);
-    await testStageOverviewPointer(browser);
-    await testStartupAndCache(browser);
-    await testOffline(browser);
+    for (const suite of selected) {
+      await runWithTimeout(() => suite.fn(browser), SUITE_TIMEOUT_MS, suite.name);
+    }
   } catch (e) {
     record('RUNTIME', false, e.stack);
   } finally {
     await browser.close();
   }
-  fs.writeFileSync(path.join(OUT_DIR, 'results.json'), JSON.stringify(results, null, 2));
+  const resultsPath = path.join(OUT_DIR, 'results.json');
+  let mergedResults = results;
+  if (filters.length > 0 && fs.existsSync(resultsPath)) {
+    try {
+      const prev = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+      if (Array.isArray(prev)) {
+        const updatedMap = new Map(results.map(r => [r.id, r]));
+        mergedResults = prev.map(r => updatedMap.has(r.id) ? updatedMap.get(r.id) : r);
+        const existingIds = new Set(prev.map(r => r.id));
+        for (const r of results) {
+          if (!existingIds.has(r.id)) mergedResults.push(r);
+        }
+      }
+    } catch (_) {}
+  }
+  fs.writeFileSync(resultsPath, JSON.stringify(mergedResults, null, 2));
   const failed = results.filter(r => !r.ok).length;
   console.log(`\n${results.length - failed}/${results.length} passed`);
   process.exitCode = failed ? 1 : 0;
