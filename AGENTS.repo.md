@@ -60,3 +60,8 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 3. **`test`（E2E 自動検証）**: テスト仕様書（`doc/4.test_spec/`）と Playwright テスト（`tests/e2e.cjs`）を更新・実行し、全テストケースの合格とスクリーンショット（ゲラ）出力を確認する。特にビューモード切替（Split / Canvas）、図表倍率切替（Fit / 1:1）、多列テーブルの枠内収容など、表示崩れや動作逆転が起きやすい境界値の検証を含める。
 4. **`dtp`（Phase 2: 校正・デザインチェック）**: 出力されたゲラを用いてデザイン仕様および校正チェックリストに照らして検査し、枠はみ出しや文字潰れ、倍率異常がないか目視確認したうえで校正結果（`work/dtp_review/`）を記録して校了とする。
 5. **`commit` → PR 発行**: feature ブランチを作成し、Conventional Commits に従ってコミットを分割・push し、`gh pr create` で Pull Request を発行する。
+
+## 6. `main` への反映
+
+- リポジトリの所有者の PR は、CI の成功後に所有者が `/self-approve` とコメントして反映する。Actions がコミットを作り直さずに `main` へ fast-forward する（`.github/workflows/self-approve.yml`）
+- PR が最新の `main` の上にないときは、先にリベースする
