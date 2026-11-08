@@ -37,4 +37,4 @@ flowchart TD
 - **`samples/visual-sample.md` への依存**: `TC-LIGHT-*`、`TC-SHOW-*` は、章の番号と図の並び（9 章のフローチャートが 1 つ目、シーケンス図が 4 つ目）を前提にしている。
 - **光の確認**: 時刻で変わる光は `LucivoStage.seekLights()` で止めてから調べる。止めずに撮影すると、画像が実行のたびに変わる。
 - **出力の上書き**: 実行すると `work/test/` を上書きする。前回の出力を残す場合は、実行前に別のフォルダへ移す（test スキル）。
-- **部分実行と結果の差分更新**: 引数にテスト関数名または TC ID（例: `node tests/e2e.cjs TC-SHOW-011`、`node tests/e2e.cjs testCoverAndTables`）を渡すと、該当するテスト関数だけを実行し、既存の `work/test/results.json` の該当 TC 分だけを上書き更新する。各スイートには 90 秒のタイムアウトを設けている。
+- **部分実行と結果の差分更新**: 引数にテスト関数名または TC ID（例: `node tests/e2e.cjs TC-SHOW-011`、`node tests/e2e.cjs testCoverAndTables`）を渡すと、該当するテスト関数だけを実行し、既存の `work/test/results.json` の該当 TC 分だけを上書き更新する。各スイートには、止まったスイートを打ち切るためのタイムアウト（既定 90 秒）を設けている。所要時間が既定に近いスイートは、`SUITES` の `timeoutMs` で個別に延ばす（`testDiagramRendering` は 10 モード × 全図のスクリーンショットでローカルで約 90 秒かかるため 240 秒）。スイートを増やす・重くするときは、所要時間を測り、既定の半分を超えるなら `timeoutMs` を設定する。1 つのスイートが例外・タイムアウトで止まっても残りのスイートは実行し、`RUNTIME <スイート名>` を失敗として記録する。
