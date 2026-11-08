@@ -2603,10 +2603,11 @@ function setupKeyboardShortcuts() {
     // エディタや入力欄にフォーカスがあるときは文字入力を優先しショートカットを起動しない（DD-KEY-001）
     if (isEditableElement(document.activeElement)) return;
 
-    if (event.key === 'j' || event.key === 'J') {
+    // ] / [ はキーボードの左右の並び（右が次、左が前）で章を移る（FR-025, DD-KEY-002）
+    if (event.key === 'j' || event.key === 'J' || event.key === ']') {
       event.preventDefault();
       scrollSection(1);
-    } else if (event.key === 'k' || event.key === 'K') {
+    } else if (event.key === 'k' || event.key === 'K' || event.key === '[') {
       event.preventDefault();
       scrollSection(-1);
     } else if (event.key === 'm' || event.key === 'M') {
