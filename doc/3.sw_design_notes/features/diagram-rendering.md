@@ -170,3 +170,11 @@ Mermaid 12 は既定の見た目・レイアウト・余白が 10 系と異な�
 | DD-DIAG-063 | Visualモードのときだけ表示 | スタイルバー（`#style-bar`）は、初期値で `.is-hidden`（`display: none`）とする。`syncStageModeUi(isVisual)` が、モードの切替ボタンの `is-active` と、スタイルバーの `.is-hidden` をまとめて切り替える。`setStageMode()` と、キーボードの `1`〜`4` で高速モードから Visualモードに切り替える `selectInfographicStyle()` から呼ぶ |
 
 - **背景（DD-DIAG-063）**: スタイルは Visualモードの配色・装飾にしか効かない。以前は高速モードでも表示し、押すと Visualモードへ切り替えていたため、モードを変えるつもりのない操作で画面が変わった（要求仕様書 `FR-003`）。表示の切り替えは、Tailwind の `flex` より詳細度の高い `.style-bar.is-hidden` で行う（`tailwind.css` は事前生成のため、新しいユーティリティを増やさない）。
+
+## 9. 構文エラーの図の後片付け（`NFR-002`）
+
+| ID          | 項目                             | 設計 |
+| :---------- | :------------------------------- | :--- |
+| DD-DIAG-064 | Mermaid にエラーの図を描かせない | `setupMermaid()` で `suppressErrorRendering: true` を設定する。`processDirtyBlocks()` の `catch` では、Mermaid が描画のために `body` に置いた一時的な要素（`#d<描画 ID>`）が残っていれば消してから、直前の正常な図（LKG）か自前のエラー表示を出す |
+
+- **背景（DD-DIAG-064）**: Mermaid の `mermaid.render()` は、構文エラーのとき、エラーの図（「Syntax error in text」）を `body` の一時的な要素に描いたまま例外を投げる。描画 ID は毎回 `Date.now()` で変わるため、入力の途中で構文エラーになるたびに、プレビューの外（ページの下）にエラーの図が積み上がり、正しい構文に直しても消えなかった。エラーはアプリが図のカードの中に表示するため、Mermaid のエラーの図は要らない。
