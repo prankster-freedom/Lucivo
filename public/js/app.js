@@ -2457,10 +2457,6 @@ function isEditableElement(el) {
   return tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT' || el.isContentEditable;
 }
 
-function openShortcutModal() {
-  setModalOpen('shortcut-modal', true);
-}
-
 function closeShortcutModal() {
   setModalOpen('shortcut-modal', false);
 }
