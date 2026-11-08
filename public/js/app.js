@@ -489,6 +489,9 @@ function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 
     ...(layout ? { layout } : {}),
     // 開いた Markdown の図の中の HTML タグとクリック時のスクリプト呼び出しを無効にする（NFR-003）
     securityLevel: 'strict',
+    // 構文エラーの図を Mermaid に描かせない。描かせると body に要素が残り、編集のたびに積み上がる。
+    // エラーはアプリが図のカードの中に表示する（DD-DIAG-064）
+    suppressErrorRendering: true,
     fontFamily: '"Inter", "Noto Sans JP", -apple-system, sans-serif',
     fontSize: 13,
     flowchart: {
@@ -2280,6 +2283,8 @@ async function processDirtyBlocks(dirtyBlocks, target) {
         mountStage(stageViewport);
       }
     } catch (err) {
+      // Mermaid が描画のために body に置いた一時的な要素が残っていれば消す（DD-DIAG-064）
+      document.getElementById(`d${renderId}`)?.remove();
       console.error(`Mermaid render failed for block ${block.index}:`, err);
       if (isStale()) return;
       const fallback = lkgCache.get(lkgKey);
