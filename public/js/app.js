@@ -317,7 +317,7 @@ const EMPTY_GUIDE_HTML = `
     </div>
   </div>
 
-  <p class="empty-guide-footer">💡 画面上部の <strong>[ 高速モード | Visualモード ]</strong> や <strong>[ 発表 ]</strong> ボタンからいつでもワンクリックで体験できます。</p>
+  <p class="empty-guide-footer">💡 画面上部の <strong>[ 高速モード | Visualモード ]</strong> や <strong>[ 発表 ]</strong> ボタンからいつでもワンクリックで体験できます。キーボードの <kbd class="kbd-key">?</kbd> キーでショートカット一覧を表示できます。</p>
   <p class="empty-guide-latest">最新版はこちら: <a ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
 </div>`;
 
@@ -2243,29 +2243,58 @@ function toggleShortcutModal() {
   }
 }
 
+let lastNavTargetTop = null;
+let lastNavTime = 0;
+
 function scrollSection(direction) {
-  const selector = state.isVisualMode ? '#visual-stage-container .exhibition-slab' : '#standard-doc-container h2';
+  const scroller = document.getElementById('preview-scroll');
+  if (!scroller) return;
+  const selector = state.isVisualMode
+    ? '#visual-stage-container .exhibition-slab'
+    : '#standard-doc-container h2';
   const elements = Array.from(document.querySelectorAll(selector));
   if (elements.length === 0) return;
 
-  const currentScroll = window.scrollY || document.documentElement.scrollTop;
-  const threshold = currentScroll + (direction > 0 ? 80 : -80);
+  const now = performance.now();
+  const scrollerRect = scroller.getBoundingClientRect();
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  // スムーズスクロール進行中に連続で J / K を押した場合も次の章へ進めるよう、直近の目標位置を引き継ぐ
+  const currentTop = (lastNavTargetTop !== null && now - lastNavTime < 500)
+    ? lastNavTargetTop
+    : scroller.scrollTop;
 
-  let target = null;
+  const positions = elements.map(el =>
+    Math.max(0, Math.round(el.getBoundingClientRect().top - scrollerRect.top + scroller.scrollTop - 16))
+  );
+
+  let nextTop = null;
   if (direction > 0) {
-    target = elements.find(el => el.getBoundingClientRect().top + window.scrollY > threshold);
+    if (currentTop >= maxScroll - 2) return;
+    // 先頭付近（scrollTop <= 16）で最初の章が画面上端付近（<= 64px）にある場合は、すでに1章目を表示中とみなして2章目へ進む
+    nextTop = positions.find((pos, idx) =>
+      pos > currentTop + 8 && !(idx === 0 && currentTop <= 16 && pos <= 64 && positions.length > 1)
+    );
+    if (nextTop !== undefined && nextTop !== null) {
+      nextTop = Math.min(maxScroll, nextTop);
+    }
   } else {
-    for (let i = elements.length - 1; i >= 0; i--) {
-      if (elements[i].getBoundingClientRect().top + window.scrollY < threshold) {
-        target = elements[i];
+    for (let i = positions.length - 1; i >= 0; i--) {
+      if (positions[i] < currentTop - 8) {
+        nextTop = positions[i];
         break;
       }
     }
+    // 最初の章より上に表紙（ヒーローや h1）がある場合は最上部（0）へ戻る
+    if (nextTop === null && currentTop > 0) {
+      nextTop = 0;
+    }
   }
 
-  if (target) {
+  if (nextTop !== null && nextTop !== undefined) {
+    lastNavTargetTop = nextTop;
+    lastNavTime = now;
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    scroller.scrollTo({ top: nextTop, behavior: reduce ? 'auto' : 'smooth' });
   }
 }
 
@@ -2273,6 +2302,7 @@ function setupKeyboardShortcuts() {
   document.getElementById('shortcut-close-btn')?.addEventListener('click', closeShortcutModal);
 
   document.addEventListener('keydown', event => {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
     // ステージ発表中（is-stage-show）は stage.js のハンドラが処理するためスキップ
     if (document.documentElement.classList.contains('is-stage-show')) return;
 
@@ -2303,7 +2333,7 @@ function setupKeyboardShortcuts() {
       event.preventDefault();
       setStageMode(!state.isVisualMode);
     } else if (event.key >= '1' && event.key <= '4') {
-      const styles = ['pastel', 'cards', 'circles', 'editorial'];
+      const styles = ['shapes', 'cards', 'circles', 'editorial'];
       const targetStyle = styles[parseInt(event.key, 10) - 1];
       if (targetStyle) {
         event.preventDefault();

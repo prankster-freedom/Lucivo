@@ -412,7 +412,7 @@
     hud.className = 'stage-hud';
     hud.innerHTML = `
       <div class="stage-sweep" aria-hidden="true"></div>
-      <div class="stage-hint">→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ A 自動進行 ／ T 明暗 ／ Esc 終了</div>
+      <div class="stage-hint">→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了</div>
       <div class="stage-pointer" aria-hidden="true"><span class="stage-pointer-dot"></span></div>
       <div class="stage-hud-bar">
         <span class="stage-hud-title"></span>
@@ -587,6 +587,25 @@
 
   function onShowKey(event) {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const shortcutModal = document.getElementById('shortcut-modal');
+    if (shortcutModal && !shortcutModal.classList.contains('hidden')) {
+      if (event.key === 'Escape' || event.key === '?') {
+        event.preventDefault();
+        event.stopPropagation();
+        shortcutModal.classList.add('hidden');
+        shortcutModal.classList.remove('flex');
+      }
+      return;
+    }
+    if (event.key === '?') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (shortcutModal) {
+        shortcutModal.classList.remove('hidden');
+        shortcutModal.classList.add('flex');
+      }
+      return;
+    }
     if (ov.active) {
       onOverviewKey(event);
       return;
@@ -657,10 +676,10 @@
   // 全画面のシーンと一覧の縮小図の間を、transform の補間だけで動かす（toTile: 全画面 → 縮小図）
   function zoomTile(tile, toTile) {
     if (prefersReducedMotion() || !tile.animate) return Promise.resolve();
+    tile.classList.add('is-ov-zooming');
     const rect = tile.getBoundingClientRect();
     const full = `translate(${-rect.left}px, ${-rect.top}px) scale(1)`;
     const small = `scale(${overviewScale()})`;
-    tile.classList.add('is-ov-zooming');
     const animation = tile.animate([{ transform: toTile ? full : small }, { transform: toTile ? small : full }], {
       duration: OVERVIEW.zoomMs,
       easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
@@ -691,13 +710,17 @@
     suspendLights(true);
     layoutOverview();
     stageContainer().scrollTop = 0;
-    document.documentElement.classList.add('is-stage-overview');
-    selectTile(show.index);
     const wrap = overviewWrap();
+    const scene = currentScene();
     wrap.classList.add('is-ov-entering');
-    zoomTile(currentScene(), true).then(() => {
+    scene.classList.add('is-ov-zooming');
+    document.documentElement.classList.add('is-stage-overview');
+    ov.index = Math.max(0, Math.min(show.scenes.length - 1, show.index));
+    show.scenes.forEach((s, k) => s.classList.toggle('is-ov-selected', k === ov.index));
+    updateHud();
+    zoomTile(scene, true).then(() => {
       wrap.classList.remove('is-ov-entering');
-      currentScene().classList.remove('is-ov-zooming');
+      scene.classList.remove('is-ov-zooming');
     });
   }
 
