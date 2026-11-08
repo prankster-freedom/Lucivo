@@ -1795,6 +1795,149 @@ async function testCoverAndTables(browser) {
     && Boolean(toastMsg) && fastActionsCount === 0;
   record('TC-VTPL-017', vtpl17Ok, JSON.stringify({ slabExportCheck, toastMsg, fastActionsCount }));
 
+  // TC-VTPL-018 KPI メトリクス・ショーケース（FR-027, DD-VTPL-035）
+  await page.click('#btn-visual-mode');
+  const SHOWCASE_EXT_MD = [
+    '---',
+    'title: Lucivo 新規訴求ショーケース',
+    'description: KPI メトリクス・タイムライン・比較ペア・コードショーケースの検証',
+    'author: Lucivo Design Team',
+    'date: 2026-11-08',
+    'tags: [Showcase, Metrics]',
+    '---',
+    '',
+    '## 1. KPI メトリクス',
+    '',
+    '- **120 ms**: 初回描画のレスポンス時間',
+    '- **99.9%**: オフライン環境での再現率',
+    '- **4.2倍**: プレゼン準備の速度向上',
+    '',
+    '## 2. 通常の要点カード',
+    '',
+    '- **高速描画**: 待ち時間ゼロのプレビュー',
+    '- **展示品質**: カンファレンス登壇に耐える組版',
+    '',
+    '## 3. ロードマップ（タイムライン）',
+    '',
+    '- **2026 Q1**: コア描画エンジンと4大スタイルの確立',
+    '- **2026 Q3**: シグナル・ライトとステージ発表の統合',
+    '- **2027 Q1**: KPIショーケースと質疑待機幕の展開',
+    '',
+    '## 4. 従来方式との比較（Before / After）',
+    '',
+    '- **Before**: スライド作成ツールへ手動で図表を貼り直し、修正のたびに二重管理が発生する',
+    '- **After**: Markdown原稿をそのまま展示品質のステージ発表へ昇華し、単一ソースで完結する',
+    '',
+    '## 5. コード・ショーケースと図版',
+    '',
+    '```javascript',
+    'const stage = LucivoStage.enterShow();',
+    '```',
+    '',
+    '```mermaid',
+    'flowchart LR',
+    '  A[Markdown] --> B[Stage]',
+    '```'
+  ].join('\n');
+  await setDocument(page, SHOWCASE_EXT_MD);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(300);
+
+  const vtpl18 = await page.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab');
+    const metricSlab = slabs[0];
+    const normalSlab = slabs[1];
+    const metricItems = Array.from(metricSlab.querySelectorAll('.vs-points > li.vs-metric-item'));
+    const metricVals = Array.from(metricSlab.querySelectorAll('.vs-point-title.vs-metric-value'));
+    const normalTitle = normalSlab.querySelector('.vs-point-title');
+    const metricFontPx = metricVals[0] ? parseFloat(getComputedStyle(metricVals[0]).fontSize) : 0;
+    const normalFontPx = normalTitle ? parseFloat(getComputedStyle(normalTitle).fontSize) : 0;
+    const tabular = metricVals.every(el => /tabular-nums/.test(getComputedStyle(el).fontVariantNumeric));
+    const barAfter = metricVals.every(el => parseFloat(getComputedStyle(el, '::after').height) >= 2);
+    const normalHasMetric = normalSlab.querySelectorAll('.vs-metric-item, .vs-metric-value').length;
+    return {
+      tpl: metricSlab.classList.contains('vs-tpl-points'),
+      metricCount: metricItems.length,
+      valCount: metricVals.length,
+      metricFontPx,
+      normalFontPx,
+      tabular,
+      barAfter,
+      normalHasMetric
+    };
+  });
+  await page.locator('#visual-stage-container .exhibition-slab').nth(0).screenshot({ path: path.join(SHOT_DIR, 'vtpl-kpi-metrics.png') });
+  const vtpl18Ok = vtpl18.tpl && vtpl18.metricCount === 3 && vtpl18.valCount === 3
+    && vtpl18.metricFontPx >= vtpl18.normalFontPx * 1.4 && vtpl18.tabular && vtpl18.barAfter && vtpl18.normalHasMetric === 0;
+  record('TC-VTPL-018', vtpl18Ok, JSON.stringify(vtpl18));
+
+  // TC-VTPL-019 タイムライン・ロードマップ修飾（FR-029）と Before / After 比較ペアカード修飾（FR-030）
+  const vtpl19 = await page.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab');
+    const timelineSlab = slabs[2];
+    const compareSlab = slabs[3];
+    const tlList = timelineSlab.querySelector('ul.vs-points');
+    const tlItems = Array.from(timelineSlab.querySelectorAll('.vs-timeline-item'));
+    const tlBadges = Array.from(timelineSlab.querySelectorAll('.vs-timeline-badge'));
+    const cmpList = compareSlab.querySelector('ul.vs-points');
+    const beforeCard = compareSlab.querySelector('li.vs-compare-before');
+    const afterCard = compareSlab.querySelector('li.vs-compare-after');
+    return {
+      tlHasClass: tlList && tlList.classList.contains('vs-points-timeline'),
+      tlCount: tlItems.length,
+      tlBadgeCount: tlBadges.length,
+      tlBadgeRadius: tlBadges[0] ? parseFloat(getComputedStyle(tlBadges[0]).borderTopLeftRadius) : 0,
+      cmpHasClass: cmpList && cmpList.classList.contains('vs-points-compare'),
+      hasBefore: Boolean(beforeCard),
+      hasAfter: Boolean(afterCard),
+      beforeBorderStyle: beforeCard ? getComputedStyle(beforeCard).borderTopStyle : '',
+      afterBandHeight: afterCard ? parseFloat(getComputedStyle(afterCard, '::after').height) : 0
+    };
+  });
+  await page.locator('#visual-stage-container .exhibition-slab').nth(2).screenshot({ path: path.join(SHOT_DIR, 'vtpl-timeline-cards.png') });
+  await page.locator('#visual-stage-container .exhibition-slab').nth(3).screenshot({ path: path.join(SHOT_DIR, 'vtpl-compare-cards.png') });
+  const vtpl19Ok = vtpl19.tlHasClass && vtpl19.tlCount === 3 && vtpl19.tlBadgeCount === 3 && vtpl19.tlBadgeRadius >= 10
+    && vtpl19.cmpHasClass && vtpl19.hasBefore && vtpl19.hasAfter
+    && vtpl19.beforeBorderStyle === 'dashed' && vtpl19.afterBandHeight >= 5;
+  record('TC-VTPL-019', vtpl19Ok, JSON.stringify(vtpl19));
+
+  // TC-VTPL-020 コード・ショーケース（FR-031）と表紙スペックバッジ・ドットマトリクス透かし（FR-032）
+  const vtpl20Before = await page.evaluate(() => {
+    const hero = document.querySelector('#visual-stage-container .exhibition-hero.vs-cover');
+    const texture = hero && hero.querySelector('.vs-cover-texture');
+    const pills = hero ? Array.from(hero.querySelectorAll('.vs-cover-spec-pill')).map(p => [p.dataset.specKind, p.dataset.specLabel]) : [];
+    const pre = document.querySelector('#visual-stage-container .exhibition-slab pre.vs-code-block');
+    const caret = pre && pre.querySelector('.vs-code-caret');
+    const copyBtn = pre && pre.querySelector('.vs-code-copy-btn');
+    const maskOf = el => {
+      if (!el) return '';
+      const s = getComputedStyle(el);
+      return (s.maskImage && s.maskImage !== 'none' ? s.maskImage : s.webkitMaskImage) || '';
+    };
+    return {
+      textureMask: /dot-matrix-texture\.svg/.test(maskOf(texture)),
+      pills,
+      codeLang: pre ? pre.getAttribute('data-code-lang') : null,
+      caretMask: /rounded-caret-glyph\.svg/.test(maskOf(caret)),
+      copyLabelBefore: copyBtn ? copyBtn.getAttribute('data-copy-label') : null
+    };
+  });
+  await page.click('#visual-stage-container .vs-code-copy-btn');
+  await page.waitForTimeout(150);
+  const vtpl20After = await page.evaluate(() => {
+    const copyBtn = document.querySelector('#visual-stage-container .vs-code-copy-btn');
+    return {
+      copyLabelAfter: copyBtn ? copyBtn.getAttribute('data-copy-label') : null,
+      isCopied: copyBtn ? copyBtn.classList.contains('is-copied') : false,
+      toast: document.getElementById('toast-message').textContent
+    };
+  });
+  const vtpl20Ok = vtpl20Before.textureMask
+    && JSON.stringify(vtpl20Before.pills) === JSON.stringify([['author', 'Lucivo Design Team'], ['date', '2026-11-08'], ['stages', '5 STAGES'], ['figures', '1 FIGURE']])
+    && vtpl20Before.codeLang === 'JS' && vtpl20Before.caretMask && vtpl20Before.copyLabelBefore === 'Copy'
+    && vtpl20After.copyLabelAfter === 'Copied' && vtpl20After.isCopied && /コードをクリップボードにコピー/.test(vtpl20After.toast);
+  record('TC-VTPL-020', vtpl20Ok, JSON.stringify({ vtpl20Before, vtpl20After }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
@@ -2458,6 +2601,72 @@ async function testStageOverviewPointer(browser) {
     && editorValAfter.includes('m1234') && editorStyle === 'shapes';
   record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, guideHasQuestion, editorValAfter: editorValAfter.slice(-10) }));
 
+  // TC-SHOW-014 幕間・質疑（Q&A）スタンバイカーテン（FR-028）と自動進行ループ待機パルス（FR-033）
+  await setDocument(page, showcaseMd);
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
+  await waitRendered(page);
+  await page.waitForTimeout(400);
+  // B キーで幕間を開く
+  await page.keyboard.press('b');
+  await page.waitForTimeout(250);
+  const curtainOpen = await page.evaluate(() => {
+    const c = document.querySelector('#stage-hud .stage-curtain');
+    const orbit = document.querySelector('#stage-hud .stage-curtain-orbit');
+    const pills = document.querySelectorAll('#stage-hud .stage-curtain-pill');
+    const s = orbit ? getComputedStyle(orbit) : null;
+    const mask = s ? ((s.maskImage && s.maskImage !== 'none' ? s.maskImage : s.webkitMaskImage) || '') : '';
+    return {
+      state: LucivoStage.showState().curtain,
+      htmlClass: document.documentElement.classList.contains('is-stage-curtain'),
+      display: c ? getComputedStyle(c).display : 'none',
+      orbitMask: /luminous-orbit\.svg/.test(mask),
+      pillCount: pills.length,
+      lightsOff: LucivoStage.lightPlans().every(p => !p.active)
+    };
+  });
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-curtain-qa.png') });
+  // 章番号ピル（08）をクリックすると幕が閉じて該当シーン（index: 8）へ直接移動する
+  await page.click('#stage-hud .stage-curtain-pill[data-curtain-scene="8"]');
+  await page.waitForTimeout(300);
+  const afterPillJump = await page.evaluate(() => ({
+    curtain: LucivoStage.showState().curtain,
+    index: LucivoStage.showState().index,
+    active: LucivoStage.showState().active
+  }));
+  // Q キーで再度開き、Escape で発表を終了せずに幕間だけ閉じることを確認
+  await page.keyboard.press('q');
+  await page.waitForTimeout(200);
+  const qOpened = await page.evaluate(() => LucivoStage.showState().curtain);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  const escClosedCurtainOnly = await page.evaluate(() => ({
+    curtain: LucivoStage.showState().curtain,
+    active: LucivoStage.showState().active,
+    index: LucivoStage.showState().index
+  }));
+  // 最終シーンから自動進行で先頭へ巡回したときに is-stage-ambient（Vivo アンビエント・パルス）が付くことを確認
+  await page.keyboard.press('End');
+  await page.evaluate(() => {
+    const s = document.getElementById('visual-stage-container');
+    if (s) s.scrollTop = s.scrollHeight;
+  });
+  await page.keyboard.press('a');
+  await page.waitForFunction(() => LucivoStage.showState().index === 0 && LucivoStage.showState().autoLooped, null, { timeout: 10000 });
+  const ambientState = await page.evaluate(() => ({
+    autoLooped: LucivoStage.showState().autoLooped,
+    ambientClass: document.documentElement.classList.contains('is-stage-ambient'),
+    titleAnim: getComputedStyle(document.querySelector('.is-scene .vs-cover-title')).animationName
+  }));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const show14Ok = curtainOpen.state && curtainOpen.htmlClass && curtainOpen.display === 'flex'
+    && curtainOpen.orbitMask && curtainOpen.pillCount === 15 && curtainOpen.lightsOff
+    && !afterPillJump.curtain && afterPillJump.index === 8 && afterPillJump.active
+    && qOpened && !escClosedCurtainOnly.curtain && escClosedCurtainOnly.active && escClosedCurtainOnly.index === 8
+    && ambientState.autoLooped && ambientState.ambientClass && ambientState.titleAnim === 'lucivo-ambient-breathe';
+  record('TC-SHOW-014', show14Ok, JSON.stringify({ curtainOpen, afterPillJump, qOpened, escClosedCurtainOnly, ambientState }));
+
   if (page.consoleErrors.length) record('TC-SHOW-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
@@ -2507,10 +2716,10 @@ const SUITES = [
   { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },
   { name: 'testVisualStageQuality', tcPrefix: ['TC-STAGE-'], fn: testVisualStageQuality },
   { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates },
-  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-017'], fn: testCoverAndTables },
+  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-017', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020'], fn: testCoverAndTables },
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007'], fn: testStageShow },
-  { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013'], fn: testStageOverviewPointer },
+  { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014'], fn: testStageOverviewPointer },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
 ];
