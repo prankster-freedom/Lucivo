@@ -600,32 +600,19 @@ body[data-appearance="dark"] :is(.prose-doc, .exhibition-slab) mark {
   color: var(--text-muted);
 }
 
-/* エディタの読み取り専用の表示と「編集」ボタン（FR-014, DD-FILE-006） */
-.editor-lock {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-}
+/* エディタの「閲覧 | 編集」の切り替え（FR-014, DD-FILE-006）。
+   今の状態のほうを選択中の形で示す。高速モード / Visualモードの切り替えと同じ形にする（DTP-006） */
 .editor-lock.hidden {
   display: none;
 }
-.editor-lock-label {
-  padding: 0.05rem 0.45rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-strong);
-  font-size: 0.625rem;
-  font-weight: 700;
-  color: var(--text-secondary);
+.editor-lock-btn {
+  font-size: 10px;
+  padding: 1px 9px;
 }
-.editor-unlock-btn {
-  padding: 0.1rem 0.55rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.625rem;
-  font-weight: 700;
-  cursor: pointer;
+
+/* スタイルバーは Visualモードのときだけ表示する（FR-003, DD-DIAG-063） */
+.style-bar.is-hidden {
+  display: none;
 }
 #markdown-editor[readonly] {
   cursor: default;

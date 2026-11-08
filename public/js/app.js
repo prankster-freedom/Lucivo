@@ -2402,13 +2402,18 @@ function bindViewportInteractions(container) {
 /* ==========================================================================
    モード切替とスタイル切替（共通関数）
    ========================================================================== */
+// モードの切替ボタンの選択状態と、スタイルバーの表示を揃える。
+// スタイルバーは Visualモードの配色・装飾にしか効かないため、Visualモードのときだけ表示する（DD-DIAG-063）
+function syncStageModeUi(isVisual) {
+  document.getElementById('btn-mode-fast')?.classList.toggle('is-active', !isVisual);
+  document.getElementById('btn-visual-mode')?.classList.toggle('is-active', isVisual);
+  document.getElementById('style-bar')?.classList.toggle('is-hidden', !isVisual);
+}
+
 function setStageMode(isVisual) {
   if (state.isVisualMode === isVisual) return;
   state.isVisualMode = isVisual;
-  const btnFast = document.getElementById('btn-mode-fast');
-  const btnVisual = document.getElementById('btn-visual-mode');
-  if (btnFast) btnFast.classList.toggle('is-active', !isVisual);
-  if (btnVisual) btnVisual.classList.toggle('is-active', isVisual);
+  syncStageModeUi(isVisual);
   if (isVisual) {
     showToast('🎨 Visualモードを起動');
   } else {
@@ -2422,12 +2427,11 @@ function selectInfographicStyle(style) {
   document.querySelectorAll('.info-style-btn').forEach(b => {
     b.classList.toggle('is-active', b.getAttribute('data-info-style') === style);
   });
-  const btnFast = document.getElementById('btn-mode-fast');
-  const btnVisual = document.getElementById('btn-visual-mode');
+  // スタイルバーは Visualモードのときだけ表示する。高速モードから選べるのはキーボードの 1〜4 だけで、
+  // その場合は Visualモードに切り替えて適用する（FR-025）
   if (!state.isVisualMode) {
     state.isVisualMode = true;
-    if (btnFast) btnFast.classList.remove('is-active');
-    if (btnVisual) btnVisual.classList.add('is-active');
+    syncStageModeUi(true);
   }
   renderApp();
   const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
@@ -2819,10 +2823,16 @@ async function loadBundledSample(fileName) {
   applyLoadedMarkdown(text, fileName);
 }
 
-// 読み込み直後の閲覧中に誤って編集しないよう、エディタと、内容を変えるボタンをまとめて切り替える（DD-FILE-040）
+// 読み込み直後の閲覧中に誤って編集しないよう、エディタと、内容を変えるボタンをまとめて切り替える（DD-FILE-040）。
+// 「閲覧 | 編集」の切り替えは、ファイルを読み込んだ後は表示したままにし、今の状態のほうを選択中にする（DD-FILE-041）
 function setEditorReadOnly(isReadOnly) {
   document.getElementById('markdown-editor').readOnly = isReadOnly;
-  document.getElementById('editor-lock').classList.toggle('hidden', !isReadOnly);
+  document.getElementById('editor-lock').classList.remove('hidden');
+  for (const [id, active] of [['btn-edit-lock', isReadOnly], ['btn-edit-unlock', !isReadOnly]]) {
+    const btn = document.getElementById(id);
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  }
   document.getElementById('btn-test-err').disabled = isReadOnly;
 }
 
@@ -2866,6 +2876,7 @@ function setupFileMenu() {
     setEditorReadOnly(false);
     document.getElementById('markdown-editor').focus();
   };
+  document.getElementById('btn-edit-lock').onclick = () => setEditorReadOnly(true);
   input.onchange = () => {
     const file = input.files && input.files[0];
     // 同じファイルを続けて選んでも change が発生するよう、選択を解除する
