@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 24" fill="none">
+  <!-- AST-109: Rounded Caret Glyph. Prompt chevron + soft-terminal caret, "from typing to the stage". Monochrome (currentColor). -->
+  <path d="M4 6L11 12L4 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="17" y="16.6" width="11" height="2.4" rx="1.2" fill="currentColor" fill-opacity="0.45"/>
+  <!-- Caret with rounded terminals; the glow ring hints at Luc- (light) -->
+  <rect x="34" y="3" width="4" height="18" rx="2" fill="currentColor"/>
+  <rect x="31.5" y="0.5" width="9" height="23" rx="4.5" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
+</svg>

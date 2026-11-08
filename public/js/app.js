@@ -54,6 +54,23 @@ function downloadBlob(content, filename, mimeType) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// モーダル要素（#settings-modal, #zoom-modal, #shortcut-modal）の開閉状態を統一的に扱う共通ヘルパー
+function resolveModal(idOrEl) {
+  return typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
+}
+
+function isModalOpen(idOrEl) {
+  const modal = resolveModal(idOrEl);
+  return Boolean(modal && !modal.classList.contains('hidden'));
+}
+
+function setModalOpen(idOrEl, open) {
+  const modal = resolveModal(idOrEl);
+  if (!modal) return;
+  modal.classList.toggle('hidden', !open);
+  modal.classList.toggle('flex', Boolean(open));
+}
+
 const THEMES = {
   light: {
     cobalt: {
@@ -257,6 +274,7 @@ const VISUAL_DARK_ACCENTS = {
 };
 const VISUAL_THEMES_DARK = Object.fromEntries(Object.entries(VISUAL_THEMES).map(([style, spec]) =>
   [style, { ...spec, ...VISUAL_DARK_BASE, ...VISUAL_DARK_ACCENTS[style] }]));
+const VISUAL_STYLE_KEYS = Object.keys(VISUAL_THEMES);
 
 const NODE_DECORATED_TYPES = ['flowchart-v2', 'flowchart', 'stateDiagram'];
 
@@ -1394,7 +1412,17 @@ function detectSlabTemplate(els, slotCount) {
   return 'standard';
 }
 
-// 雛形に合わせて本文要素を組み替える（DD-VTPL-010〜014）。els はスラブの DOM の中の要素で、直接書き換える
+// 要点カードの先頭太字が KPI 数値（例: "120 ms", "99.9%", "+38%", "4.2倍", "0件", "$1.2M"）である場合の判定（FR-027, DTP-VTPL-035）
+const METRIC_TITLE_RE = /^[+\-−±≈~]?[¥$€£]?\d[\d,]*(?:\.\d+)?[ \t]*(?:%|％|ms|s|sec|min|h|fps|Hz|kHz|MHz|GHz|KB|MB|GB|TB|px|rem|em|vw|vh|x|×|倍|件|個|円|万|億|回|人|台|年|月|日|時間|分|秒|字|項目|行|列|枚|種|点|章|節|段|[a-zA-Z]{1,4})?(?:\s*[/／]\s*[a-zA-Z0-9一-龠ぁ-んァ-ヶ]+)?$/;
+
+// 要点カードの全項目の太字タイトルが年・四半期・年月・Phase・Step・vX.Y 等の時系列ラベルである場合の判定（FR-029, DTP-VTPL-036）
+const TIMELINE_TITLE_RE = /^(?:(?:19|20)\d{2}(?:[年/\-.\s]*(?:Q[1-4]|H[12]|[01]?\d(?:月)?))?|Q[1-4]\s*(?:19|20)?\d{2}|(?:Phase|Step|Stage|Wave|Sprint|Day|Week|Month|Year)\s*\d+|第\s*\d+\s*(?:期|世代|段階|フェーズ)|v\d+\.\d+(?:\.\d+)?)$/i;
+
+// 2 項目の要点カードが Before / After（従来 / 新方式、課題 / 解決 等）の対である場合の判定（FR-030, DTP-VTPL-037）
+const COMPARE_BEFORE_RE = /^(?:Before|As[\s-]?Is|Legacy|Old|従来(?:方式|手法)?|旧(?:方式|世代|システム)?|変更前|導入前|課題|問題点)(?:\s*[:：\-—/／(（].*)?$/i;
+const COMPARE_AFTER_RE = /^(?:After|To[\s-]?Be|New|Modern|Lucivo|新(?:方式|手法|世代|システム)?|変更後|導入後|解決(?:策)?|改善後)(?:\s*[:：\-—/／(（].*)?$/i;
+
+// 雛形に合わせて本文要素を組み替える（DD-VTPL-010〜014, 035〜037）。els はスラブの DOM の中の要素で、直接書き換える
 function applySlabTemplate(template, els) {
   const last = els[els.length - 1];
   if (template === 'lead') {
@@ -1404,23 +1432,47 @@ function applySlabTemplate(template, els) {
     els.forEach(el => lead.appendChild(el));
   } else if (template === 'points') {
     // 列の数は項目の数から決め、最後の行に 1 枚だけ残る端数を作らない（DTP-VTPL-030, RGH-902）
-    const count = last.children.length;
+    const items = Array.from(last.children);
+    const count = items.length;
     last.classList.add('vs-points');
     last.style.setProperty('--vs-cols', String(count === 4 ? 2 : Math.min(count, 3)));
     last.style.setProperty('--vs-cols-wide', String(count === 4 ? 4 : Math.min(count, 3)));
     // 「**題**: 説明」の項目は、太字を題として切り出し、区切りの : を消す（DTP-VTPL-030）
-    Array.from(last.children).forEach(li => {
+    const titles = [];
+    items.forEach(li => {
       const head = li.firstChild;
       const rest = head && head.nextSibling;
       if (head && head.nodeName === 'STRONG' && rest && rest.nodeType === 3 && /^\s*[:：]/.test(rest.textContent)) {
         head.classList.add('vs-point-title');
         rest.textContent = rest.textContent.replace(/^\s*[:：]\s*/, '');
+        const titleText = head.textContent.trim();
+        titles.push({ li, head, titleText });
+        if (METRIC_TITLE_RE.test(titleText) && !TIMELINE_TITLE_RE.test(titleText)) {
+          li.classList.add('vs-metric-item');
+          head.classList.add('vs-metric-value');
+        }
       }
       const ornament = document.createElement('span');
       ornament.className = 'vs-card-ornament';
       ornament.setAttribute('aria-hidden', 'true');
       li.appendChild(ornament);
     });
+    // 全項目が時系列・マイルストーン（2026 Q1, Phase 1, v1.0 等）の場合はタイムライン修飾を付与（FR-029）
+    if (titles.length === count && titles.every(t => TIMELINE_TITLE_RE.test(t.titleText))) {
+      last.classList.add('vs-points-timeline');
+      titles.forEach(({ li, head }) => {
+        li.classList.remove('vs-metric-item');
+        head.classList.remove('vs-metric-value');
+        li.classList.add('vs-timeline-item');
+        head.classList.add('vs-timeline-badge');
+      });
+    } else if (count === 2 && titles.length === 2
+      && COMPARE_BEFORE_RE.test(titles[0].titleText) && COMPARE_AFTER_RE.test(titles[1].titleText)) {
+      // 2 項目が Before / After の対である場合は比較ペア修飾を付与（FR-030）
+      last.classList.add('vs-points-compare');
+      titles[0].li.classList.add('vs-compare-before');
+      titles[1].li.classList.add('vs-compare-after');
+    }
   } else if (template === 'steps') {
     const count = last.children.length;
     last.classList.add('vs-steps');
@@ -1681,6 +1733,25 @@ function setupVisualStageInteractions() {
       return;
     }
 
+    // コード・ショーケースのワンクリックコピー（FR-031, DD-VTPL-038）
+    const codeCopyBtn = event.target.closest('.vs-code-copy-btn');
+    if (codeCopyBtn) {
+      const pre = codeCopyBtn.closest('pre');
+      const codeEl = pre && pre.querySelector('code');
+      const codeText = codeEl ? codeEl.textContent : '';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(codeText).catch(() => {});
+      }
+      codeCopyBtn.setAttribute('data-copy-label', 'Copied');
+      codeCopyBtn.classList.add('is-copied');
+      showToast('コードをクリップボードにコピーしました');
+      setTimeout(() => {
+        codeCopyBtn.setAttribute('data-copy-label', 'Copy');
+        codeCopyBtn.classList.remove('is-copied');
+      }, 1600);
+      return;
+    }
+
     if (event.target.closest('a, button')) return;
 
     const badge = event.target.closest('.exhibition-num-badge');
@@ -1728,10 +1799,10 @@ function setupVisualStageInteractions() {
 // 目次は章が 3〜15 個のときだけ出す。タグは先頭の 4 個まで（DTP-VTPL-100）
 const COVER_LIMITS = { agenda: [3, 15], tags: 4 };
 
-// 表紙に使うフロントマターの値（title / description / tags）だけを取り出す。
+// 表紙に使うフロントマターの値（title / description / tags / author / date）を取り出す。
 // YAML の完全な解析はしない。先頭の列から始まるキーだけを見て、入れ子のキーは読まない（DD-VTPL-040）
 function readCoverMeta(yaml) {
-  const meta = { title: '', description: '', tags: [] };
+  const meta = { title: '', description: '', tags: [], author: '', date: '' };
   if (!yaml) return meta;
   const lines = yaml.split(/\r?\n/);
   const scalar = v => {
@@ -1739,7 +1810,7 @@ function readCoverMeta(yaml) {
     return q ? q[2].trim() : v.replace(/\s+#.*$/, '').trim();
   };
   for (let i = 0; i < lines.length; i++) {
-    const m = /^(title|description|tags)[ \t]*:[ \t]*(.*)$/.exec(lines[i]);
+    const m = /^(title|description|tags|author|date)[ \t]*:[ \t]*(.*)$/.exec(lines[i]);
     if (!m) continue;
     const [, key, raw] = m;
     // 続く字下げの行（ブロックの値・リスト）を集める
@@ -1757,6 +1828,9 @@ function readCoverMeta(yaml) {
         meta.tags = block.filter(l => l.startsWith('-')).map(l => scalar(l.replace(/^-\s*/, '')));
       }
       meta.tags = meta.tags.filter(Boolean).slice(0, COVER_LIMITS.tags);
+    } else if (key === 'author' || key === 'date') {
+      // 入れ子のマップ（author:\n  title: ...）は読まず、単一スカラー値のみ採用する（FR-032）
+      if (value && !/^[>|][+-]?$/.test(value)) meta[key] = scalar(value);
     } else {
       meta[key] = (!value || /^[>|][+-]?$/.test(value)) ? block.join(' ') : scalar(value);
     }
@@ -1765,11 +1839,21 @@ function readCoverMeta(yaml) {
 }
 
 // 表紙の HTML。文字はすべてエスケープしてから埋め込む（NFR-003）
-function buildCoverHtml(title, meta, agenda) {
+function buildCoverHtml(title, meta, agenda, figureCount = 0) {
   const eyebrow = meta.tags.length
     ? `<p class="vs-cover-eyebrow">${meta.tags.map(escapeHtml).join('<span class="vs-cover-sep" aria-hidden="true">/</span>')}</p>`
     : '';
   const deck = meta.description ? `<p class="vs-cover-deck">${escapeHtml(meta.description)}</p>` : '';
+  const specItems = [];
+  if (meta.author) specItems.push({ kind: 'author', label: meta.author });
+  if (meta.date) specItems.push({ kind: 'date', label: meta.date });
+  if (agenda.length > 0) specItems.push({ kind: 'stages', label: `${agenda.length} ${agenda.length === 1 ? 'STAGE' : 'STAGES'}` });
+  if (figureCount > 0) specItems.push({ kind: 'figures', label: `${figureCount} ${figureCount === 1 ? 'FIGURE' : 'FIGURES'}` });
+  const specsHtml = specItems.length
+    ? `<div class="vs-cover-specs" aria-label="文書スペック">${specItems.map(item =>
+      `<span class="vs-cover-spec-pill" data-spec-kind="${item.kind}" data-spec-label="${escapeHtml(item.label)}"></span>`
+    ).join('')}</div>`
+    : '';
   const [min, max] = COVER_LIMITS.agenda;
   let agendaHtml = '';
   if (agenda.length >= min && agenda.length <= max) {
@@ -1782,6 +1866,7 @@ function buildCoverHtml(title, meta, agenda) {
   }
   return `
       <div class="exhibition-hero vs-cover">
+        <span class="vs-cover-texture" aria-hidden="true"></span>
         <div class="exhibition-hero-top">
           <span class="exhibition-hero-emblem" aria-hidden="true"></span>
           <div class="four-color-bar"><span></span><span></span><span></span><span></span></div>
@@ -1789,6 +1874,7 @@ function buildCoverHtml(title, meta, agenda) {
         ${eyebrow}
         <h1 class="vs-cover-title font-display">${escapeHtml(title)}</h1>
         ${deck}
+        ${specsHtml}
         ${agendaHtml}
       </div>`;
 }
@@ -1821,10 +1907,43 @@ function markTableColumns(table) {
   }
 }
 
+// Visualモードのコードブロックに言語ラベル・丸端キャレット（AST-109）・ワンクリック Copy ボタンを付与する（FR-031, DD-VTPL-038）
+// ラベルはすべて属性＋CSS 擬似要素で描画し、テキストノードを増やさない（TC-VTPL-003）
+const CODE_LANG_ALIASES = {
+  javascript: 'JS', js: 'JS', typescript: 'TS', ts: 'TS', python: 'PY', py: 'PY',
+  bash: 'SH', sh: 'SH', shell: 'SH', zsh: 'SH', markdown: 'MD', md: 'MD', yml: 'YAML'
+};
+
+function decorateCodeBlocks(container) {
+  container.querySelectorAll('pre').forEach(pre => {
+    if (pre.closest('.front-matter')) return;
+    const code = pre.querySelector('code');
+    if (!code) return;
+    const m = /language-([a-z0-9_+-]+)/i.exec(code.className || '');
+    const rawLang = m ? m[1].toLowerCase() : '';
+    const langLabel = CODE_LANG_ALIASES[rawLang] || (rawLang ? rawLang.toUpperCase() : 'CODE');
+    pre.classList.add('vs-code-block');
+    pre.setAttribute('data-code-lang', langLabel);
+    const caret = document.createElement('span');
+    caret.className = 'vs-code-caret';
+    caret.setAttribute('aria-hidden', 'true');
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'vs-code-copy-btn';
+    copyBtn.setAttribute('data-copy-label', 'Copy');
+    copyBtn.setAttribute('title', 'コードをクリップボードにコピー');
+    copyBtn.setAttribute('aria-label', 'コードをコピー');
+    pre.appendChild(caret);
+    pre.appendChild(copyBtn);
+  });
+}
+
 function buildVisualStageHtml(cleanHtml, yaml) {
   const temp = document.createElement('div');
   temp.innerHTML = cleanHtml;
   temp.querySelectorAll('table').forEach(markTableColumns);
+  decorateCodeBlocks(temp);
+  const totalFigures = temp.querySelectorAll('.lucivo-slot').length;
 
   // 題名は h1、フロントマターの title、読み込んだファイル名の順に探す。どれもなければヒーローを出さない（DD-VTPL-040）
   const coverMeta = readCoverMeta(yaml);
@@ -1887,7 +2006,7 @@ function buildVisualStageHtml(cleanHtml, yaml) {
 
   // 見出しの文字（textContent）はエスケープしてから埋め込む。そのまま入れると、見出しに書いた
   // &lt;img …&gt; などが HTML として解釈される（NFR-003）
-  const heroHtml = heroTitle ? buildCoverHtml(heroTitle, coverMeta, agenda) : '';
+  const heroHtml = heroTitle ? buildCoverHtml(heroTitle, coverMeta, agenda, totalFigures) : '';
 
   // 雛形・バッジ・4 色バーの配色は、スタイルのクラスが定義する --vs-c1〜4 から取る（DTP-VTPL-070）
   return `
@@ -2165,11 +2284,9 @@ function bindViewportInteractions(container) {
       const svgEl = vp.querySelector('svg');
       if (!svgEl) return;
 
-      const modal = document.getElementById('zoom-modal');
       const zoomCanvas = document.getElementById('zoom-canvas');
       zoomCanvas.innerHTML = svgEl.outerHTML;
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      setModalOpen('zoom-modal', true);
       if (state.isVisualMode && window.LucivoStage) LucivoStage.mountLights(zoomCanvas);
     };
   });
@@ -2220,27 +2337,15 @@ function isEditableElement(el) {
 }
 
 function openShortcutModal() {
-  const modal = document.getElementById('shortcut-modal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-  }
+  setModalOpen('shortcut-modal', true);
 }
 
 function closeShortcutModal() {
-  const modal = document.getElementById('shortcut-modal');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-  }
+  setModalOpen('shortcut-modal', false);
 }
 
 function toggleShortcutModal() {
-  const modal = document.getElementById('shortcut-modal');
-  if (modal) {
-    if (modal.classList.contains('hidden')) openShortcutModal();
-    else closeShortcutModal();
-  }
+  setModalOpen('shortcut-modal', !isModalOpen('shortcut-modal'));
 }
 
 let lastNavTargetTop = null;
@@ -2308,13 +2413,11 @@ function setupKeyboardShortcuts() {
 
     // ショートカットヘルプモーダルまたはズームモーダルが開いている場合の Escape 処理
     if (event.key === 'Escape') {
-      const shortcutModal = document.getElementById('shortcut-modal');
-      if (shortcutModal && !shortcutModal.classList.contains('hidden')) {
+      if (isModalOpen('shortcut-modal')) {
         closeShortcutModal();
         return;
       }
-      const zoomModal = document.getElementById('zoom-modal');
-      if (zoomModal && !zoomModal.classList.contains('hidden')) {
+      if (isModalOpen('zoom-modal')) {
         document.getElementById('zoom-close-btn')?.click();
         return;
       }
@@ -2333,8 +2436,7 @@ function setupKeyboardShortcuts() {
       event.preventDefault();
       setStageMode(!state.isVisualMode);
     } else if (event.key >= '1' && event.key <= '4') {
-      const styles = ['shapes', 'cards', 'circles', 'editorial'];
-      const targetStyle = styles[parseInt(event.key, 10) - 1];
+      const targetStyle = VISUAL_STYLE_KEYS[parseInt(event.key, 10) - 1];
       if (targetStyle) {
         event.preventDefault();
         selectInfographicStyle(targetStyle);
@@ -2452,20 +2554,11 @@ function setupEventListeners() {
     renderApp();
   };
 
-  const settingsModal = document.getElementById('settings-modal');
-  document.getElementById('btn-open-settings').onclick = () => {
-    settingsModal.classList.remove('hidden');
-    settingsModal.classList.add('flex');
-  };
-  document.getElementById('btn-close-settings').onclick = () => {
-    settingsModal.classList.add('hidden');
-    settingsModal.classList.remove('flex');
-  };
+  document.getElementById('btn-open-settings').onclick = () => setModalOpen('settings-modal', true);
+  document.getElementById('btn-close-settings').onclick = () => setModalOpen('settings-modal', false);
 
-  const zoomModal = document.getElementById('zoom-modal');
   document.getElementById('zoom-close-btn').onclick = () => {
-    zoomModal.classList.add('hidden');
-    zoomModal.classList.remove('flex');
+    setModalOpen('zoom-modal', false);
     // 閉じた後に複製した SVG を残さない
     document.getElementById('zoom-canvas').innerHTML = '';
   };

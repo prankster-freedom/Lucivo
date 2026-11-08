@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- AST-108: Luminous Orbit. Three dots on one orbit = the three syllables Lu-ci-vo. Monochrome (currentColor). -->
+  <!-- Rotate the whole group with CSS for an interlude / loading indicator; keep it static while reading (RGH-903). -->
+  <ellipse cx="32" cy="32" rx="26" ry="11" transform="rotate(-24 32 32)" stroke="currentColor" stroke-width="1.25" stroke-opacity="0.35"/>
+  <!-- Lu: soft, largest -->
+  <!-- Dots sit on the orbit at t = 170, 250, 320 degrees -->
+  <circle cx="9.4" cy="44.2" r="4" fill="currentColor" fill-opacity="0.45"/>
+  <!-- ci: crisp, middle -->
+  <circle cx="19.7" cy="26.2" r="3" fill="currentColor" fill-opacity="0.75"/>
+  <!-- vo: brightest, leading with a short trail along the orbit (t = 295 to 315) -->
+  <path d="M38 18.4Q42.7 17.4 46 17.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <circle cx="47.3" cy="17.4" r="2.4" fill="currentColor"/>
+  <!-- Core -->
+  <circle cx="32" cy="32" r="1.6" fill="currentColor" fill-opacity="0.6"/>
+</svg>
