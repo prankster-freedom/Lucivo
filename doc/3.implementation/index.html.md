@@ -42,4 +42,5 @@ flowchart TD
 - **同梱のライブラリの版**: SVG の後処理の多くが Mermaid の出力の構造（class 名、id、要素の並び）に依存している。版を上げるときは、テストを全件実行し、図の画像を目視で確認する。
 - **ファイルメニューの項目**: 項目の並び（「Markdown を開く…」、同梱サンプル 3 件、「印刷 / PDF として保存…」）は `TC-FILE-002` が文字で照合している。項目を増やすときはテストも直す。
 - **印刷で隠れる場所**: `body` の直下（`main` 以外）と、`#pane-preview` の中の `#preview-scroll` 以外は、印刷で刷らない（`DD-VTPL-131`）。文書の一部として刷る要素は `#preview-scroll` の中に置く。
+- **初期値で隠す要素**: スタイルバー（`#style-bar`）は `.is-hidden`、エディタの「閲覧 / 編集」の切り替え（`#editor-lock`）は `.hidden` を初期値に持ち、`app.js` が表示する（`DD-DIAG-063`、`DD-FILE-041`）。どちらも Tailwind の `flex` などと同じ要素に付くため、`style.css` の詳細度の高い規則で隠している。初期値のクラスを外すと、起動直後に表示される。
 - **HTML エクスポート**: `document.documentElement.outerHTML` を書き出すため、`<head>` の読み込み（KaTeX の CSS など）は書き出した HTML にもそのまま入る。
