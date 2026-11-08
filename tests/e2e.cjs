@@ -19,6 +19,10 @@ const MODES = [
   ...VISUAL_STYLES.map(style => ({ style, appearance: 'dark' }))
 ];
 
+// samples/visual-sample.md の発表のシーン数（表紙 + 前書き + 17 章）。章を増減したらここだけを直す
+const SHOWCASE_SCENES = 19;
+const sceneCount = n => `${String(n).padStart(2, '0')} / ${String(SHOWCASE_SCENES).padStart(2, '0')}`;
+
 const results = [];
 function record(id, ok, detail) {
   results.push({ id, ok, detail });
@@ -157,7 +161,7 @@ async function testFileLoading(browser) {
   const closedByEsc = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   record('TC-FILE-002',
     menuState.opened && closedByOutside && closedByEsc
-    && JSON.stringify(menuState.items) === JSON.stringify(['Markdown を開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)']),
+    && JSON.stringify(menuState.items) === JSON.stringify(['Markdown を開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)', '印刷 / PDF として保存…']),
     JSON.stringify({ ...menuState, closedByOutside, closedByEsc }));
 
   // TC-FILE-003 未編集の状態での読み込みと同梱サンプル選択
@@ -1534,6 +1538,9 @@ async function testVisualTemplates(browser) {
     const hasCodeShowcase = slabs[13] ? !!slabs[13].querySelector('pre.vs-code-block .vs-code-copy-btn') : false;
     const hasTimeline = slabs[14] ? !!slabs[14].querySelector('ul.vs-points-timeline .vs-timeline-badge') : false;
     const hasCompare = slabs[15] ? !!(slabs[15].querySelector('.vs-compare-before') && slabs[15].querySelector('.vs-compare-after')) : false;
+    // 16 章: 用語集（FR-035）、17 章: コールアウト（FR-034）
+    const glossaryRows = slabs[16] ? slabs[16].querySelectorAll('dl.vs-glossary > .vs-gloss-row > dt + dd').length : 0;
+    const calloutTypes = slabs[17] ? Array.from(slabs[17].querySelectorAll('.md-alert')).map(a => a.className.replace('md-alert md-alert-', '')) : [];
     return {
       slabCount: slabs.length,
       tpls,
@@ -1545,7 +1552,9 @@ async function testVisualTemplates(browser) {
       hasMetrics,
       hasCodeShowcase,
       hasTimeline,
-      hasCompare
+      hasCompare,
+      glossaryRows,
+      calloutTypes
     };
   });
   // STAGE 10（横に広い図）で Fit より 1:1（実寸）の方が大きく表示されること
@@ -1576,8 +1585,10 @@ async function testVisualTemplates(browser) {
   await page.click('.view-mode-btn[data-view-mode="split"]');
   await page.waitForTimeout(300);
 
-  const showcaseExpectedTpls = ['lead', 'lead', 'standard', 'points', 'points', 'standard', 'steps', 'steps', 'quote', 'split', 'split', 'standard', 'standard', 'standard', 'points', 'points'];
-  const showcaseOk = showcase.slabCount === 16
+  const showcaseExpectedTpls = ['lead', 'lead', 'standard', 'points', 'points', 'standard', 'steps', 'steps', 'quote', 'split', 'split', 'standard', 'standard', 'standard', 'points', 'points', 'glossary', 'standard'];
+  const showcaseOk = showcase.slabCount === 18
+    && showcase.glossaryRows === 8
+    && JSON.stringify(showcase.calloutTypes) === JSON.stringify(['tip', 'important', 'warning'])
     && JSON.stringify(showcase.tpls) === JSON.stringify(showcaseExpectedTpls)
     && !showcase.split9Stacked
     && showcase.split10Stacked
@@ -2238,8 +2249,8 @@ async function testStageShow(browser) {
   await page.waitForTimeout(900);
   const entered = await page.evaluate(inspectShow);
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-00-hero.png') });
-  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.topElement && entered.scenes === 17 && entered.shown === 1
-    && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === '01 / 17', JSON.stringify(entered));
+  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.topElement && entered.scenes === SHOWCASE_SCENES && entered.shown === 1
+    && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === sceneCount(1), JSON.stringify(entered));
 
   // TC-SHOW-002 ページ送り（→ / Space / ← / End / Home）
   await page.keyboard.press('ArrowRight');
@@ -2252,7 +2263,7 @@ async function testStageShow(browser) {
   const last = await page.evaluate(inspectShow);
   await page.keyboard.press('Home');
   const first = await page.evaluate(inspectShow);
-  record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === 16 && first.index === 0 && first.shown === 1,
+  record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === SHOWCASE_SCENES - 1 && first.index === 0 && first.shown === 1,
     JSON.stringify([second.index, third.index, back.index, last.index, first.index]));
 
   // TC-SHOW-003 要点カード・手順は 1 項目ずつ見せる
@@ -2329,7 +2340,7 @@ async function testStageShow(browser) {
   await page.keyboard.press('t');
   await waitRendered(page);
   await page.waitForTimeout(500);
-  record('TC-SHOW-007', beforeToggle.index === afterToggle.index && afterToggle.appearance === 'light' && afterToggle.shown === 1 && afterToggle.scenes === 17, JSON.stringify({ before: beforeToggle.appearance, after: afterToggle.appearance, index: afterToggle.index }));
+  record('TC-SHOW-007', beforeToggle.index === afterToggle.index && afterToggle.appearance === 'light' && afterToggle.shown === 1 && afterToggle.scenes === SHOWCASE_SCENES, JSON.stringify({ before: beforeToggle.appearance, after: afterToggle.appearance, index: afterToggle.index }));
 
   // TC-SHOW-006 自動進行（項目ごとの送りと、最後の章から先頭への巡回）
   await page.keyboard.press('Home');
@@ -2395,7 +2406,7 @@ async function testStageShow(browser) {
   await page.click('#btn-stage-show');
   await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(page);
-  for (let i = 0; i < 17; i++) {
+  for (let i = 0; i < SHOWCASE_SCENES; i++) {
     await page.waitForTimeout(950);
     await page.screenshot({ path: path.join(SHOT_DIR, `show-scene-${String(i).padStart(2, '0')}.png`) });
     // 項目の送りとスクロールを含めて、次の章へ進むまで送る
@@ -2471,9 +2482,9 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
   const escaped = await page.evaluate(inspectShow);
-  const overviewOk = openMs < 500 && grid.overview && grid.htmlClass && grid.visible === 17 && grid.columns === 5 && grid.inside && grid.aspect
-    && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === '05 / 17'
-    && JSON.stringify(moves) === '[5,10,5,16,0,0]'
+  const overviewOk = openMs < 500 && grid.overview && grid.htmlClass && grid.visible === SHOWCASE_SCENES && grid.columns === 5 && grid.inside && grid.aspect
+    && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === sceneCount(5)
+    && JSON.stringify(moves) === JSON.stringify([5, 10, 5, SHOWCASE_SCENES - 1, 0, 0])
     && !entered.overview && entered.index === 1 && entered.shown === 1 && entered.active
     && !clicked.overview && clicked.index === 10 && clicked.lightsOn
     && !escaped.overview && escaped.active && escaped.index === 10 && escaped.shown === 1;
@@ -2683,7 +2694,7 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   const show14Ok = curtainOpen.state && curtainOpen.htmlClass && curtainOpen.display === 'flex'
-    && curtainOpen.orbitMask && curtainOpen.pillCount === 17 && curtainOpen.lightsOff
+    && curtainOpen.orbitMask && curtainOpen.pillCount === SHOWCASE_SCENES && curtainOpen.lightsOff
     && !afterPillJump.curtain && afterPillJump.index === 8 && afterPillJump.active
     && qOpened && !escClosedCurtainOnly.curtain && escClosedCurtainOnly.active && escClosedCurtainOnly.index === 8
     && ambientState.autoLooped && ambientState.ambientClass && ambientState.titleAnim === 'lucivo-ambient-breathe';
@@ -2728,6 +2739,204 @@ async function testOffline(browser) {
   await ctx.close();
 }
 
+// PDF のページ数と、1 ページ目の用紙の向き（MediaBox の幅 > 高さなら横）
+function inspectPdf(buffer) {
+  const text = buffer.toString('latin1');
+  const box = /\/MediaBox\s*\[\s*[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(text);
+  return {
+    pages: (text.match(/\/Type\s*\/Page\b(?!s)/g) || []).length,
+    landscape: box ? parseFloat(box[1]) > parseFloat(box[2]) : null
+  };
+}
+
+// TC-MD-012 コールアウト、TC-VTPL-021 定義リスト型、TC-VTPL-022 印刷・PDF の配布資料（FR-034〜036）
+async function testCalloutsGlossaryPrint(browser) {
+  const page = await openStagePage(browser);
+  const extraMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample_extra1.md'), 'utf8');
+  await setDocument(page, extraMd);
+
+  // TC-MD-012 5 種類のコールアウト（高速モード・Visualモード × Light・Dark）。種類外・同じ行に文字が続く引用は通常の引用のまま
+  const inspectAlerts = () => {
+    const root = document.querySelector(state.isVisualMode ? '#visual-stage-container' : '#standard-doc-container');
+    const alerts = Array.from(root.querySelectorAll('.md-alert'));
+    const cs = el => getComputedStyle(el);
+    return {
+      types: alerts.map(a => a.className.replace('md-alert md-alert-', '')),
+      labels: alerts.map(a => a.querySelector('.md-alert-title').textContent),
+      shownLabels: alerts.map(a => cs(a.querySelector('.md-alert-title')).textTransform),
+      markerLeft: alerts.some(a => /\[!/.test(a.textContent)),
+      icons: alerts.every(a => { const i = a.querySelector('.md-alert-icon'); return i && cs(i).maskImage.includes('alert-') && cs(i).width === cs(i).height; }),
+      borderColors: [...new Set(alerts.map(a => cs(a).borderLeftColor))].length,
+      roles: alerts.every(a => a.getAttribute('role') === 'note'),
+      importantList: alerts[2] ? alerts[2].querySelectorAll('li').length : 0,
+      plainQuotes: Array.from(root.querySelectorAll('blockquote')).filter(b => /^\[!(NOTE|HINT)\]/.test(b.textContent.trim())).length
+    };
+  };
+  const alertModes = [];
+  for (const mode of [{ style: 'std', appearance: 'light' }, { style: 'std', appearance: 'dark' }, { style: 'cards', appearance: 'light' }, { style: 'editorial', appearance: 'dark' }]) {
+    await setMode(page, mode);
+    alertModes.push({ mode: `${mode.style}-${mode.appearance}`, ...(await page.evaluate(inspectAlerts)) });
+  }
+  await page.evaluate(() => Array.from(document.querySelectorAll('#visual-stage-container .md-alert')).pop().closest('.exhibition-slab').scrollIntoView());
+  await page.waitForTimeout(300);
+  await page.locator('#visual-stage-container .md-alert').first().locator('xpath=ancestor::section[1]').screenshot({ path: path.join(SHOT_DIR, 'md-alerts-editorial-dark.png') });
+  // コールアウトだけの章は、ステートメント型にしない
+  await setMode(page, { style: 'cards', appearance: 'light' });
+  await setDocument(page, '# 題名\n\n## 注意\n\n> [!WARNING]\n> 電源を切ってから作業します。\n');
+  const onlyAlertTpl = await page.evaluate(() => document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="01"]').className);
+  const expectedTypes = ['note', 'tip', 'important', 'warning', 'caution'];
+  const alertOk = alertModes.every(m => JSON.stringify(m.types) === JSON.stringify(expectedTypes)
+    && JSON.stringify(m.labels) === JSON.stringify(['Note', 'Tip', 'Important', 'Warning', 'Caution'])
+    && m.shownLabels.every(t => t === 'uppercase') && !m.markerLeft && m.icons && m.borderColors === 5 && m.roles
+    && m.importantList === 2 && m.plainQuotes === 2)
+    && /vs-tpl-standard/.test(onlyAlertTpl) && page.consoleErrors.length === 0;
+  record('TC-MD-012', alertOk, JSON.stringify({ alertModes, onlyAlertTpl, consoleErrors: page.consoleErrors }));
+
+  // TC-VTPL-021 定義リスト型: ダッシュ区切りだけを用語集にし、7 項目以上は広い版面で 2 段にする
+  const glossaryMd = [
+    '# 用語', '', '## 3 項目', '', '- **Slab** — 1 章を載せる面', '- **Scene** – 発表で 1 度に映す単位', '- **Signal `Light`** ― 図の構造に沿って伝わる光', '',
+    '## コロン区切り', '', '- **Slab**: 1 章を載せる面', '- **Scene**: 発表で 1 度に映す単位', '',
+    '## 8 項目', '', '用語の一覧です。', '', ...Array.from({ length: 8 }, (_, i) => `- **Term ${i + 1}** — 説明 ${i + 1}`), '',
+    '## 入れ子', '', '- **Slab** — 面', '  - 入れ子の項目', '- **Scene** — 単位', ''
+  ].join('\n');
+  await setDocument(page, glossaryMd);
+  const inspectGlossary = () => {
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab[data-stage-no]'));
+    const tpl = s => Array.from(s.classList).find(c => c.startsWith('vs-tpl-')).slice(7);
+    const dl = slabs[0].querySelector('dl.vs-glossary');
+    const dl8 = slabs[2].querySelector('dl.vs-glossary');
+    const cs = el => getComputedStyle(el);
+    return {
+      tpls: slabs.map(tpl),
+      terms: dl ? Array.from(dl.querySelectorAll('dt')).map(d => d.textContent) : [],
+      defs: dl ? Array.from(dl.querySelectorAll('dd')).map(d => d.textContent) : [],
+      termCode: dl ? !!dl.querySelector('dt code') : false,
+      termFont: dl ? cs(dl.querySelector('dt')).fontFamily : '',
+      twoUp: dl8 ? dl8.classList.contains('is-two-up') : false,
+      intro: slabs[2].querySelector(':scope > p') ? true : false,
+      cols8: dl8 ? cs(dl8).gridTemplateColumns.split(' ').length : 0,
+      rowCols: dl ? cs(dl.querySelector('.vs-gloss-row')).gridTemplateColumns.split(' ').length : 0
+    };
+  };
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(300);
+  const glossaryWide = await page.evaluate(inspectGlossary);
+  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="03"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-glossary-two-up.png') });
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  // Split 表示（版面 52rem 未満）は 1 段、スマートフォンの幅（版面 36rem 未満）は用語の下に説明を置く 1 列
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await page.waitForTimeout(300);
+  const glossaryNarrow = await page.evaluate(inspectGlossary);
+  await page.setViewportSize({ width: 560, height: 900 });
+  await page.waitForTimeout(300);
+  const glossaryPhone = await page.evaluate(inspectGlossary);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  const glossaryOk = JSON.stringify(glossaryWide.tpls) === JSON.stringify(['glossary', 'points', 'glossary', 'standard'])
+    && JSON.stringify(glossaryWide.terms) === JSON.stringify(['Slab', 'Scene', 'Signal Light'])
+    && JSON.stringify(glossaryWide.defs) === JSON.stringify(['1 章を載せる面', '発表で 1 度に映す単位', '図の構造に沿って伝わる光'])
+    && glossaryWide.termCode && /JetBrains Mono/.test(glossaryWide.termFont) && glossaryWide.intro
+    && glossaryWide.twoUp && glossaryWide.cols8 === 2 && glossaryWide.rowCols === 2
+    && glossaryNarrow.cols8 === 1 && glossaryNarrow.rowCols === 2
+    && glossaryPhone.cols8 === 1 && glossaryPhone.rowCols === 1;
+  record('TC-VTPL-021', glossaryOk, JSON.stringify({ glossaryWide, glossaryNarrow, glossaryPhone }));
+
+  // TC-VTPL-022 印刷: 刷らないものを隠し、Visualモードは表紙と章を A4 横に 1 ページずつ、高速モードは A4 縦で刷る
+  const printMd = '---\ntitle: 印刷の確認\n---\n# 印刷の確認\n\n## 第 1 章\n\n短い導入の文です。\n\n## 第 2 章\n\n- **A**: 一つ目\n- **B**: 二つ目\n\n## 第 3 章\n\n```js\nconst a = 1;\n```\n';
+  await setDocument(page, printMd);
+  // スポットライトを当てた状態から刷る。印刷の直前（beforeprint）に減光を外す
+  await page.click('.vs-tpl-points li');
+  await page.emulateMedia({ media: 'print' });
+  const printed = await page.evaluate(() => {
+    window.dispatchEvent(new Event('beforeprint'));
+    const cs = sel => { const el = document.querySelector(sel); return el ? getComputedStyle(el) : null; };
+    // 祖先で隠したものも含めて、描画される箱があるか
+    const shown = sel => { const el = document.querySelector(sel); return !!el && el.getClientRects().length > 0; };
+    const wrapChildren = Array.from(document.querySelectorAll('.exhibition-wrap > *'));
+    return {
+      hidden: ['header', '#pane-editor', '#telemetry-pill', '.slab-actions', '.vs-code-copy-btn'].filter(shown),
+      preview: shown('#visual-stage-container'),
+      pageNames: [...new Set(wrapChildren.map(el => getComputedStyle(el).page))],
+      breaks: wrapChildren.map(el => getComputedStyle(el).breakBefore),
+      scrollOverflow: cs('#preview-scroll').overflowY,
+      animation: cs('.exhibition-slab').animationName,
+      dimmed: document.querySelectorAll('.has-spotlight, .is-spotlight').length
+    };
+  });
+  // media を null に戻す。'screen' を指定したままだと page.pdf() も画面の CSS で出力される
+  await page.emulateMedia({ media: null });
+  const visualPdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
+  await setMode(page, { style: 'std', appearance: 'light' });
+  const fastPdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
+  // ファイルメニューの「印刷 / PDF として保存…」でブラウザの印刷を開く
+  await page.evaluate(() => { window.__printCalls = 0; window.print = () => { window.__printCalls++; }; });
+  await page.click('#btn-file-menu');
+  await page.click('#menu-print');
+  const printCalls = await page.evaluate(() => ({ calls: window.__printCalls, menuClosed: document.getElementById('file-menu').classList.contains('hidden') }));
+  const printOk = printed.hidden.length === 0 && printed.preview && JSON.stringify(printed.pageNames) === '["lucivo-visual"]'
+    && JSON.stringify(printed.breaks) === JSON.stringify(['auto', 'page', 'page', 'page']) && printed.scrollOverflow === 'visible'
+    && printed.animation === 'none' && printed.dimmed === 0
+    && visualPdf.pages === 4 && visualPdf.landscape === true && fastPdf.pages >= 1 && fastPdf.landscape === false
+    && printCalls.calls === 1 && printCalls.menuClosed;
+  record('TC-VTPL-022', printOk, JSON.stringify({ printed, visualPdf, fastPdf, printCalls }));
+  await page.context().close();
+}
+
+// TC-DIAG-022, 023 Split 表示の編集位置への追従（FR-037）。スクロールを即座に終えるため、動きを減らす設定で開く
+async function testEditFollow(browser) {
+  const page = await openStagePage(browser, { reducedMotion: 'reduce' });
+  const md = fs.readFileSync(SAMPLE, 'utf8');
+  await setDocument(page, md);
+  // カーソルを置いてキー操作のイベントを送り、追従の後のプレビューの状態を返す
+  const caretAt = async (needle, offset = 0, scrollFirst = null) => {
+    return page.evaluate(async ({ needle, offset, scrollFirst }) => {
+      const editor = document.getElementById('markdown-editor');
+      const scroller = document.getElementById('preview-scroll');
+      if (scrollFirst !== null) scroller.scrollTop = scrollFirst;
+      const pos = needle === null ? 0 : editor.value.indexOf(needle) + offset;
+      editor.focus();
+      editor.setSelectionRange(pos, pos);
+      editor.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }));
+      await new Promise(r => setTimeout(r, 250));
+      const top = el => Math.round(el.getBoundingClientRect().top - scroller.getBoundingClientRect().top);
+      const heads = Array.from(document.querySelectorAll('#standard-doc-container h2, #visual-stage-container .exhibition-slab[data-stage-no]'));
+      const visible = heads.find(h => Math.abs(top(h) - 16) <= 2);
+      return { scrollTop: Math.round(scroller.scrollTop), at: visible ? visible.textContent.trim().slice(0, 24) : null };
+    }, { needle, offset, scrollFirst });
+  };
+  // 見出しの data-src-line が元の行と一致する（コードブロックの中の # は数えない）
+  const lines = await page.evaluate(() => {
+    const src = document.getElementById('markdown-editor').value.split('\n');
+    return Array.from(document.querySelectorAll('#standard-doc-container [data-src-line]')).map(h => ({ line: Number(h.dataset.srcLine), src: src[Number(h.dataset.srcLine)] || '', text: h.textContent.trim() }));
+  });
+  const linesOk = lines.length > 20 && lines.every(l => /^#{1,6}\s/.test(l.src) && l.src.replace(/^#+\s*/, '').trim() === l.text);
+  const toSection12 = await caretAt('## 12.', 8);
+  const sameSection = await caretAt('## 12.', 40, 0);
+  const toSection3 = await caretAt('## 3.', 3);
+  const toFrontMatter = await caretAt(null);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  const inCanvas = await caretAt('## 20.', 3, 0);
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  record('TC-DIAG-022', linesOk && /^12\./.test(toSection12.at || '') && sameSection.scrollTop === 0 && /^3\./.test(toSection3.at || '')
+    && toFrontMatter.scrollTop === 0 && inCanvas.scrollTop === 0 && page.consoleErrors.length === 0,
+  JSON.stringify({ linesOk, sample: lines.slice(0, 3), toSection12, sameSection, toSection3, toFrontMatter, inCanvas }));
+
+  // TC-DIAG-023 Visualモードは章の上端へ送り、同じ章の小見出しの間では送り直さない。コードブロックの中の # は見出しにしない
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const showcaseMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
+  await setDocument(page, showcaseMd);
+  const toSlab13 = await caretAt('### 13.2', 5);
+  const withinSlab = await caretAt('### 13.3', 5, 0);
+  const toSlab14 = await caretAt('## 14.', 5);
+  const extraMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample_extra1.md'), 'utf8');
+  await setMode(page, { style: 'std', appearance: 'light' });
+  await setDocument(page, extraMd);
+  const inCodeBlock = await caretAt('# チルダによるコードブロック', 3);
+  record('TC-DIAG-023', /STAGE 13/.test(toSlab13.at || '') && withinSlab.scrollTop === 0 && /STAGE 14/.test(toSlab14.at || '')
+    && /^6\./.test(inCodeBlock.at || '') && page.consoleErrors.length === 0,
+  JSON.stringify({ toSlab13, withinSlab, toSlab14, inCodeBlock }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
@@ -2739,11 +2948,13 @@ const SUITES = [
   { name: 'testFrontMatter', tcPrefix: ['TC-FM-'], fn: testFrontMatter },
   { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },
   { name: 'testVisualStageQuality', tcPrefix: ['TC-STAGE-'], fn: testVisualStageQuality },
-  { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates },
+  { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates, timeoutMs: 150000 },
   { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-017', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020'], fn: testCoverAndTables },
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
-  { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007'], fn: testStageShow },
+  { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007'], fn: testStageShow, timeoutMs: 180000 },
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014'], fn: testStageOverviewPointer },
+  { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022'], fn: testCalloutsGlossaryPrint },
+  { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
 ];
@@ -2776,11 +2987,14 @@ function runWithTimeout(fn, ms, label) {
   try {
     // 1 つのスイートが例外・タイムアウトで止まっても、残りのスイートは実行する（失敗が後続のテストの結果を隠さないようにする）
     for (const suite of selected) {
+      const startedAt = Date.now();
       try {
         await runWithTimeout(() => suite.fn(browser), suite.timeoutMs || SUITE_TIMEOUT_MS, suite.name);
       } catch (e) {
         record(`RUNTIME ${suite.name}`, false, e.stack);
       }
+      // 上限（timeoutMs）を見直すための所要時間
+      console.log(`SUITE ${suite.name} ${((Date.now() - startedAt) / 1000).toFixed(1)}s / ${((suite.timeoutMs || SUITE_TIMEOUT_MS) / 1000).toFixed(0)}s`);
     }
   } finally {
     await browser.close();
