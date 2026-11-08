@@ -1529,13 +1529,23 @@ async function testVisualTemplates(browser) {
     const tableEl = slab12 ? slab12.querySelector('table') : null;
     const tableContained = !!(slab12 && tableWrap && tableEl
       && tableWrap.getBoundingClientRect().right <= slab12.getBoundingClientRect().right + 1);
+    const specPills = Array.from(root.querySelectorAll('.vs-cover-spec-pill')).map(el => el.getAttribute('data-spec-label'));
+    const hasMetrics = slabs[4] ? slabs[4].querySelectorAll('.vs-metric-item .vs-metric-value').length === 4 : false;
+    const hasCodeShowcase = slabs[13] ? !!slabs[13].querySelector('pre.vs-code-block .vs-code-copy-btn') : false;
+    const hasTimeline = slabs[14] ? !!slabs[14].querySelector('ul.vs-points-timeline .vs-timeline-badge') : false;
+    const hasCompare = slabs[15] ? !!(slabs[15].querySelector('.vs-compare-before') && slabs[15].querySelector('.vs-compare-after')) : false;
     return {
       slabCount: slabs.length,
       tpls,
       split9Stacked: splitStd ? splitStd.classList.contains('is-stacked') : true,
       split10Stacked: splitWide ? splitWide.classList.contains('is-stacked') : false,
       split10Contained: splitWide && wrap ? splitWide.getBoundingClientRect().width <= wrap.getBoundingClientRect().width + 1 : false,
-      tableContained
+      tableContained,
+      specPills,
+      hasMetrics,
+      hasCodeShowcase,
+      hasTimeline,
+      hasCompare
     };
   });
   // STAGE 10（横に広い図）で Fit より 1:1（実寸）の方が大きく表示されること
@@ -1566,13 +1576,18 @@ async function testVisualTemplates(browser) {
   await page.click('.view-mode-btn[data-view-mode="split"]');
   await page.waitForTimeout(300);
 
-  const showcaseExpectedTpls = ['lead', 'lead', 'standard', 'points', 'points', 'standard', 'steps', 'steps', 'quote', 'split', 'split', 'standard', 'standard', 'standard'];
-  const showcaseOk = showcase.slabCount === 14
+  const showcaseExpectedTpls = ['lead', 'lead', 'standard', 'points', 'points', 'standard', 'steps', 'steps', 'quote', 'split', 'split', 'standard', 'standard', 'standard', 'points', 'points'];
+  const showcaseOk = showcase.slabCount === 16
     && JSON.stringify(showcase.tpls) === JSON.stringify(showcaseExpectedTpls)
     && !showcase.split9Stacked
     && showcase.split10Stacked
     && showcase.split10Contained
     && showcase.tableContained
+    && showcase.specPills.length === 4
+    && showcase.hasMetrics
+    && showcase.hasCodeShowcase
+    && showcase.hasTimeline
+    && showcase.hasCompare
     && canvasTableFits
     && scaleWideOk;
   record('TC-VTPL-014', showcaseOk, JSON.stringify({ wideFitWidth, wideActual, canvasTableFits, ...showcase }));
@@ -2223,8 +2238,8 @@ async function testStageShow(browser) {
   await page.waitForTimeout(900);
   const entered = await page.evaluate(inspectShow);
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-00-hero.png') });
-  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.topElement && entered.scenes === 15 && entered.shown === 1
-    && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === '01 / 15', JSON.stringify(entered));
+  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.topElement && entered.scenes === 17 && entered.shown === 1
+    && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === '01 / 17', JSON.stringify(entered));
 
   // TC-SHOW-002 ページ送り（→ / Space / ← / End / Home）
   await page.keyboard.press('ArrowRight');
@@ -2237,7 +2252,7 @@ async function testStageShow(browser) {
   const last = await page.evaluate(inspectShow);
   await page.keyboard.press('Home');
   const first = await page.evaluate(inspectShow);
-  record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === 14 && first.index === 0 && first.shown === 1,
+  record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === 16 && first.index === 0 && first.shown === 1,
     JSON.stringify([second.index, third.index, back.index, last.index, first.index]));
 
   // TC-SHOW-003 要点カード・手順は 1 項目ずつ見せる
@@ -2314,7 +2329,7 @@ async function testStageShow(browser) {
   await page.keyboard.press('t');
   await waitRendered(page);
   await page.waitForTimeout(500);
-  record('TC-SHOW-007', beforeToggle.index === afterToggle.index && afterToggle.appearance === 'light' && afterToggle.shown === 1 && afterToggle.scenes === 15, JSON.stringify({ before: beforeToggle.appearance, after: afterToggle.appearance, index: afterToggle.index }));
+  record('TC-SHOW-007', beforeToggle.index === afterToggle.index && afterToggle.appearance === 'light' && afterToggle.shown === 1 && afterToggle.scenes === 17, JSON.stringify({ before: beforeToggle.appearance, after: afterToggle.appearance, index: afterToggle.index }));
 
   // TC-SHOW-006 自動進行（項目ごとの送りと、最後の章から先頭への巡回）
   await page.keyboard.press('Home');
@@ -2380,7 +2395,7 @@ async function testStageShow(browser) {
   await page.click('#btn-stage-show');
   await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(page);
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 17; i++) {
     await page.waitForTimeout(950);
     await page.screenshot({ path: path.join(SHOT_DIR, `show-scene-${String(i).padStart(2, '0')}.png`) });
     // 項目の送りとスクロールを含めて、次の章へ進むまで送る
@@ -2456,9 +2471,9 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
   const escaped = await page.evaluate(inspectShow);
-  const overviewOk = openMs < 500 && grid.overview && grid.htmlClass && grid.visible === 15 && grid.columns === 4 && grid.inside && grid.aspect
-    && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === '05 / 15'
-    && JSON.stringify(moves) === '[5,9,5,14,0,0]'
+  const overviewOk = openMs < 500 && grid.overview && grid.htmlClass && grid.visible === 17 && grid.columns === 5 && grid.inside && grid.aspect
+    && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === '05 / 17'
+    && JSON.stringify(moves) === '[5,10,5,16,0,0]'
     && !entered.overview && entered.index === 1 && entered.shown === 1 && entered.active
     && !clicked.overview && clicked.index === 10 && clicked.lightsOn
     && !escaped.overview && escaped.active && escaped.index === 10 && escaped.shown === 1;
@@ -2584,6 +2599,13 @@ async function testStageOverviewPointer(browser) {
   await page.waitForTimeout(600);
   const scrollAfterK = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
   const guideHasQuestion = await page.evaluate(() => /\?.*ショートカット一覧/.test(EMPTY_GUIDE_HTML));
+  // F5 キーはブラウザのページ更新と競合しないよう捕捉しないこと（defaultPrevented === false かつ発表が起動しないこと）
+  const f5NotIntercepted = await page.evaluate(() => {
+    const ev = new KeyboardEvent('keydown', { key: 'F5', cancelable: true, bubbles: true });
+    const notPrevented = document.dispatchEvent(ev);
+    const modalText = document.getElementById('shortcut-modal')?.textContent || '';
+    return notPrevented && !ev.defaultPrevented && !LucivoStage.showState().active && !/\bF5\b/.test(modalText);
+  });
 
   // 5. エディタフォーカス時はキーボードショートカットが発火しないこと（文字入力優先）
   await page.focus('#markdown-editor');
@@ -2597,9 +2619,9 @@ async function testStageOverviewPointer(browser) {
     && style3.isVis && style3.style === 'circles'
     && style1.isVis && style1.style === 'shapes'
     && scrollBefore === 0 && scrollAfterJ1 > scrollBefore && scrollAfterJ2 > scrollAfterJ1 && scrollAfterK < scrollAfterJ2
-    && guideHasQuestion
+    && guideHasQuestion && f5NotIntercepted
     && editorValAfter.includes('m1234') && editorStyle === 'shapes';
-  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, guideHasQuestion, editorValAfter: editorValAfter.slice(-10) }));
+  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, guideHasQuestion, f5NotIntercepted, editorValAfter: editorValAfter.slice(-10) }));
 
   // TC-SHOW-014 幕間・質疑（Q&A）スタンバイカーテン（FR-028）と自動進行ループ待機パルス（FR-033）
   await setDocument(page, showcaseMd);
@@ -2661,7 +2683,7 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   const show14Ok = curtainOpen.state && curtainOpen.htmlClass && curtainOpen.display === 'flex'
-    && curtainOpen.orbitMask && curtainOpen.pillCount === 15 && curtainOpen.lightsOff
+    && curtainOpen.orbitMask && curtainOpen.pillCount === 17 && curtainOpen.lightsOff
     && !afterPillJump.curtain && afterPillJump.index === 8 && afterPillJump.active
     && qOpened && !escClosedCurtainOnly.curtain && escClosedCurtainOnly.active && escClosedCurtainOnly.index === 8
     && ambientState.autoLooped && ambientState.ambientClass && ambientState.titleAnim === 'lucivo-ambient-breathe';
