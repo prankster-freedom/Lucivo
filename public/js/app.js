@@ -461,9 +461,13 @@ function getDiagramSpec(isVisual) {
   return getThemeSpec();
 }
 
-// Mermaid 12 の layout は図全体に効く。マインドマップは dagre だと放射状でなくなるので、既定のレイアウトにする
-function getMermaidLayout(code) {
-  return /^\s*mindmap\b/m.test(code) ? null : 'dagre';
+// Mermaid 12 の layout は図全体に効く。マインドマップは dagre だと放射状でなくなるので、既定のレイアウトにする。
+// 直角のクラス図も既定のレイアウトにする。dagre の stepAfter は線の出発点で横に進むため、
+// 出発点に付く継承などの記号が横を向く。既定のレイアウトは縦 → 横 → 縦の直角で結ぶ（DD-EDGE-005）
+function getMermaidLayout(code, curve = null) {
+  if (/^\s*mindmap\b/m.test(code)) return null;
+  if (curve === 'step' && getCurveTarget(code) === 'class') return null;
+  return 'dagre';
 }
 
 function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 'dagre') {
@@ -2262,7 +2266,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
     const lkgKey = `${block.index}-${block.modeTag}`;
     const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
     try {
-      setupMermaid(target.isVisual, block.curve || 'smooth', getMermaidLayout(block.code));
+      setupMermaid(target.isVisual, block.curve || 'smooth', getMermaidLayout(block.code, block.curve));
       const { svg } = await mermaid.render(renderId, block.code);
       if (isStale()) return;
       const finalSvg = postProcessSvg(svg, target.isVisual);
