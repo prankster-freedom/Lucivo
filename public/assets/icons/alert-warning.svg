@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-113: Callout Glyph / Warning (rounded triangle, monochrome currentColor) -->
+  <path d="M6.95 2.85C7.42 2.05 8.58 2.05 9.05 2.85L14.1 11.6C14.57 12.4 13.99 13.4 13.06 13.4H2.94C2.01 13.4 1.43 12.4 1.9 11.6L6.95 2.85Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M8 6.25V8.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="8" cy="10.9" r="0.95" fill="currentColor"/>
+</svg>

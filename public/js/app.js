@@ -664,6 +664,52 @@ function setupMarkedMath() {
   marked.use({ extensions: [mathBlockExtension, mathInlineExtension] });
 }
 
+// 見出しに元の Markdown の行番号（renderApp() が最上位の見出しのトークンに付けた srcLine）を data-src-line として出力する。
+// Split 表示の編集位置への追従（FR-037）が、プレビューの見出しと元の行を対応づけるために使う（DD-DIAG-060）
+function setupMarkedHeadings() {
+  marked.use({
+    renderer: {
+      heading(token) {
+        const attr = Number.isInteger(token.srcLine) ? ` data-src-line="${token.srcLine}"` : '';
+        return `<h${token.depth}${attr}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`;
+      }
+    }
+  });
+}
+
+/* ==========================================================================
+   コールアウト（GitHub アラート記法, FR-034）: サニタイズ後の DOM で、最初の行がマーカーだけの引用を注意書きのパネルにする
+   ========================================================================== */
+const ALERT_LABELS = { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' };
+// マーカーの後ろに同じ行で文字が続くもの（[!NOTE] 本文）は、GitHub と同じく通常の引用のままにする
+const ALERT_MARKER_RE = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*(?:\n|$)/i;
+
+// 引用の最初の段落の先頭の文字だけを調べ、要素の大きさは計測しない（NFR-006, DD-MD-021）
+function decorateAlerts(container) {
+  container.querySelectorAll('blockquote').forEach(quote => {
+    const first = quote.firstElementChild;
+    const head = first && first.tagName === 'P' ? first.firstChild : null;
+    const match = head && head.nodeType === Node.TEXT_NODE ? ALERT_MARKER_RE.exec(head.textContent) : null;
+    if (!match) return;
+    const type = match[1].toLowerCase();
+    head.textContent = head.textContent.slice(match[0].length);
+    if (!head.textContent && head.nextSibling && head.nextSibling.nodeName === 'BR') head.nextSibling.remove();
+    if (!first.textContent.trim() && !first.querySelector('img, .lucivo-math')) first.remove();
+
+    const alert = document.createElement('div');
+    alert.className = `md-alert md-alert-${type}`;
+    alert.setAttribute('role', 'note');
+    const title = document.createElement('p');
+    title.className = 'md-alert-title';
+    const icon = document.createElement('span');
+    icon.className = 'md-alert-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    title.append(icon, ALERT_LABELS[type]);
+    alert.append(title, ...quote.childNodes);
+    quote.replaceWith(alert);
+  });
+}
+
 // サニタイズ後の HTML に入れた置き場所へ描画する。trust: false で、リンクや任意の属性を作るコマンドは描画しない
 // KaTeX は、数式が初めて現れたときに読み込む。読み込めなければ置き場所の原文のまま（DD-MATH-022）。
 // 描画結果は TeX ごとにキャッシュし、入力のたびに描画し直さない
@@ -1386,7 +1432,32 @@ function createDiagramCard(index, svgHtml, isRendering, isVisual, curve = null) 
    ========================================================================== */
 // 記述パターン別の雛形の判定（FR-016, DD-VTPL-001）。els: スラブの本文要素（h2・フロントマター・図を除く）。
 // タグ名と文字数だけで判定し、計算後のスタイルは使わない（TC-PERF-002）。順序は DTP-VTPL-001 の表のとおり
-const TEMPLATE_LIMITS = { leadChars: 160, itemChars: 100, quoteChars: 240, points: [2, 6], steps: [2, 8] };
+const TEMPLATE_LIMITS = {
+  leadChars: 160, itemChars: 100, quoteChars: 240, points: [2, 6], steps: [2, 8],
+  glossary: [2, 12], glossaryTermChars: 40, glossaryItemChars: 200, glossaryTwoUp: 7
+};
+// 雛形の項目に入れると組めない要素（入れ子のリスト・コード・表・引用・チェックボックス）
+const TEMPLATE_ITEM_BLOCKERS = 'ul, ol, pre, table, blockquote, input';
+
+// 定義リスト型（FR-035, DTP-VTPL-045）: 「**用語** — 説明」の太字とダッシュ。コロン区切りは要点カード型の書き方のため含めない（RGH-909）
+const GLOSSARY_SEPARATOR_RE = /^\s*[—–―]\s*/;
+
+function glossaryParts(li) {
+  const head = li.firstChild;
+  const rest = head && head.nextSibling;
+  if (!head || head.nodeName !== 'STRONG' || !rest || rest.nodeType !== Node.TEXT_NODE || !GLOSSARY_SEPARATOR_RE.test(rest.textContent)) return null;
+  return { head, rest };
+}
+
+function isGlossaryList(items) {
+  const [min, max] = TEMPLATE_LIMITS.glossary;
+  return items.length >= min && items.length <= max && items.every(li => {
+    const parts = glossaryParts(li);
+    return parts && !li.querySelector(TEMPLATE_ITEM_BLOCKERS)
+      && parts.head.textContent.trim().length <= TEMPLATE_LIMITS.glossaryTermChars
+      && li.textContent.trim().length <= TEMPLATE_LIMITS.glossaryItemChars;
+  });
+}
 
 function detectSlabTemplate(els, slotCount) {
   if (slotCount > 0 || els.length === 0) return 'standard';
@@ -1400,7 +1471,8 @@ function detectSlabTemplate(els, slotCount) {
   const hasIntro = els.length === 2 && tags[0] === 'P';
   if ((els.length === 1 || hasIntro) && (list.tagName === 'UL' || list.tagName === 'OL')) {
     const items = Array.from(list.children);
-    const plain = items.every(li => !li.querySelector('ul, ol, pre, table, blockquote, input') && textLen(li) <= TEMPLATE_LIMITS.itemChars);
+    if (list.tagName === 'UL' && isGlossaryList(items)) return 'glossary';
+    const plain = items.every(li => !li.querySelector(TEMPLATE_ITEM_BLOCKERS) && textLen(li) <= TEMPLATE_LIMITS.itemChars);
     const [min, max] = list.tagName === 'UL' ? TEMPLATE_LIMITS.points : TEMPLATE_LIMITS.steps;
     if (plain && items.length >= min && items.length <= max) return list.tagName === 'UL' ? 'points' : 'steps';
   }
@@ -1473,6 +1545,26 @@ function applySlabTemplate(template, els) {
       titles[0].li.classList.add('vs-compare-before');
       titles[1].li.classList.add('vs-compare-after');
     }
+  } else if (template === 'glossary') {
+    // 箇条書きを定義リストに組み替える。行ごとの div は、2 段組みで用語と説明の対を崩さないため（DD-VTPL-019）
+    const items = Array.from(last.children);
+    const dl = document.createElement('dl');
+    dl.className = 'vs-glossary';
+    if (items.length >= TEMPLATE_LIMITS.glossaryTwoUp) dl.classList.add('is-two-up');
+    items.forEach(li => {
+      const { head, rest } = glossaryParts(li);
+      rest.textContent = rest.textContent.replace(GLOSSARY_SEPARATOR_RE, '');
+      const dt = document.createElement('dt');
+      dt.append(...head.childNodes);
+      head.remove();
+      const dd = document.createElement('dd');
+      dd.append(...li.childNodes);
+      const row = document.createElement('div');
+      row.className = 'vs-gloss-row';
+      row.append(dt, dd);
+      dl.appendChild(row);
+    });
+    last.replaceWith(dl);
   } else if (template === 'steps') {
     const count = last.children.length;
     last.classList.add('vs-steps');
@@ -1709,13 +1801,15 @@ function setupVisualStageInteractions() {
   const visContainer = document.getElementById('visual-stage-container');
   if (!visContainer) return;
 
+  // 紙は操作できないため、スポットライト・章の注目による減光を外した誌面を刷る（FR-036, DD-VTPL-131）
+  window.addEventListener('beforeprint', () => clearVisualStageSpotlight(visContainer));
+
   visContainer.addEventListener('click', event => {
     // 表紙の目次: 選んだ章の先頭までスクロールする（FR-020, DD-VTPL-042）
     const agendaItem = event.target.closest('.vs-cover-agenda-item');
     if (agendaItem) {
       const slab = visContainer.querySelector(`.exhibition-slab[data-stage-no="${agendaItem.dataset.stageTarget}"]`);
-      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (slab) slab.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      if (slab) slab.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
       return;
     }
 
@@ -1943,6 +2037,8 @@ function buildVisualStageHtml(cleanHtml, yaml) {
   temp.innerHTML = cleanHtml;
   temp.querySelectorAll('table').forEach(markTableColumns);
   decorateCodeBlocks(temp);
+  // 雛形の判定より前に置き換え、コールアウトだけの章をステートメント型にしない（FR-034）
+  decorateAlerts(temp);
   const totalFigures = temp.querySelectorAll('.lucivo-slot').length;
 
   // 題名は h1、フロントマターの title、読み込んだファイル名の順に探す。どれもなければヒーローを出さない（DD-VTPL-040）
@@ -2040,8 +2136,12 @@ function renderApp() {
 
   const mermaidBlocks = [];
   const tokensToKeep = [];
+  // 最上位のトークンの raw は本文を先頭から隙間なく覆うため、改行を数えれば各トークンの元の行がわかる（FR-037, DD-DIAG-060）
+  let srcLine = countLinesBefore(rawMarkdown, rawMarkdown.length - body.length);
 
   parsed.forEach(token => {
+    if (token.type === 'heading') token.srcLine = srcLine;
+    srcLine += countLinesBefore(token.raw, token.raw.length);
     if (token.type === 'code' && (token.lang || '').trim().toLowerCase() === 'mermaid') {
       const index = mermaidBlocks.length;
       const code = token.text.trim();
@@ -2087,6 +2187,7 @@ function renderApp() {
     visContainer.innerHTML = '';
     stdWrapper.classList.remove('hidden');
     stdContainer.innerHTML = isEmpty ? EMPTY_GUIDE_HTML : cleanHtml;
+    decorateAlerts(stdContainer);
   }
 
   const activeContainer = isVisual ? visContainer : stdContainer;
@@ -2119,6 +2220,8 @@ function renderApp() {
   });
   bindViewportInteractions(activeContainer);
   mountStage(activeContainer);
+  // 入力で見出しを書き足した直後は、描画が終わるまで新しい見出しがない。描画の後に区間を引き直す（DD-DIAG-061）
+  if (document.activeElement && document.activeElement.id === 'markdown-editor') scheduleFollow();
 
   if (dirtyBlocks.length > 0) {
     processDirtyBlocks(dirtyBlocks, { container: activeContainer, generation, isVisual });
@@ -2348,6 +2451,65 @@ function toggleShortcutModal() {
   setModalOpen('shortcut-modal', !isModalOpen('shortcut-modal'));
 }
 
+/* ==========================================================================
+   プレビューのスクロール（J/K の章移動 FR-025、編集位置への追従 FR-037 で共通）
+   ========================================================================== */
+const PREVIEW_SCROLL_MARGIN = 16;
+
+function scrollBehavior() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
+// 要素の上端を、プレビューの表示枠の上端から PREVIEW_SCROLL_MARGIN だけ下に置くときの scrollTop
+function previewScrollTopOf(el, scroller, scrollerRect = scroller.getBoundingClientRect()) {
+  return Math.max(0, Math.round(el.getBoundingClientRect().top - scrollerRect.top + scroller.scrollTop - PREVIEW_SCROLL_MARGIN));
+}
+
+/* ==========================================================================
+   Split 表示の編集位置への追従（FR-037, DD-DIAG-060〜062）
+   ========================================================================== */
+// 最後に送った見出しの行（'top' はプレビューの先頭）。同じ区間の中では送り直さない
+let followedKey = null;
+let followFrame = 0;
+
+// text の先頭から end までにある改行の数（= end の位置の 0 始まりの行番号）
+function countLinesBefore(text, end) {
+  let count = 0;
+  for (let i = text.indexOf('\n'); i !== -1 && i < end; i = text.indexOf('\n', i + 1)) count++;
+  return count;
+}
+
+// カーソルの行以前で最後の見出し（data-src-line は文書の順に並ぶ）。なければ null
+function findFollowTarget(container, caretLine) {
+  let target = null;
+  for (const el of container.querySelectorAll('[data-src-line]')) {
+    if (Number(el.dataset.srcLine) > caretLine) break;
+    target = el;
+  }
+  return target;
+}
+
+function followEditorCaret() {
+  followFrame = 0;
+  if (state.viewMode !== 'split' || document.documentElement.classList.contains('is-stage-show')) return;
+  const editor = document.getElementById('markdown-editor');
+  const scroller = document.getElementById('preview-scroll');
+  const container = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+  const target = findFollowTarget(container, countLinesBefore(editor.value, editor.selectionStart));
+  // Visualモードは章（スラブ）の上端へ送る。章の中の小見出しの間を動いても、同じ章なら送り直さない
+  const anchor = target && state.isVisualMode ? (target.closest('.exhibition-slab') || target) : target;
+  const keyEl = anchor && anchor !== target ? (anchor.querySelector('[data-src-line]') || target) : target;
+  const key = keyEl ? keyEl.dataset.srcLine : 'top';
+  if (key === followedKey) return;
+  followedKey = key;
+  scroller.scrollTo({ top: anchor ? previewScrollTopOf(anchor, scroller) : 0, behavior: scrollBehavior() });
+}
+
+// カーソルの移動・入力のたびに呼ぶ。スクロールは表示更新 1 回にまとめる
+function scheduleFollow() {
+  if (!followFrame) followFrame = requestAnimationFrame(followEditorCaret);
+}
+
 let lastNavTargetTop = null;
 let lastNavTime = 0;
 
@@ -2368,9 +2530,7 @@ function scrollSection(direction) {
     ? lastNavTargetTop
     : scroller.scrollTop;
 
-  const positions = elements.map(el =>
-    Math.max(0, Math.round(el.getBoundingClientRect().top - scrollerRect.top + scroller.scrollTop - 16))
-  );
+  const positions = elements.map(el => previewScrollTopOf(el, scroller, scrollerRect));
 
   let nextTop = null;
   if (direction > 0) {
@@ -2398,8 +2558,7 @@ function scrollSection(direction) {
   if (nextTop !== null && nextTop !== undefined) {
     lastNavTargetTop = nextTop;
     lastNavTime = now;
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    scroller.scrollTo({ top: nextTop, behavior: reduce ? 'auto' : 'smooth' });
+    scroller.scrollTo({ top: nextTop, behavior: scrollBehavior() });
   }
 }
 
@@ -2459,7 +2618,12 @@ function setupEventListeners() {
   editor.addEventListener('input', () => {
     clearTimeout(renderDebounceTimer);
     renderDebounceTimer = setTimeout(renderApp, 250);
+    scheduleFollow();
   });
+  // カーソルの移動（クリック・キー操作）で、カーソルのある見出しの区間へプレビューを送る（FR-037）。
+  // エディタのスクロールだけでは送らない
+  editor.addEventListener('click', scheduleFollow);
+  editor.addEventListener('keyup', scheduleFollow);
 
   document.querySelectorAll('.view-mode-btn').forEach(btn => {
     btn.onclick = () => {
@@ -2610,6 +2774,7 @@ function applyLoadedMarkdown(rawText, fileName) {
   clearTimeout(renderDebounceTimer);
   renderApp();
   document.getElementById('preview-scroll').scrollTop = 0;
+  followedKey = null;
   showToast(`「${fileName}」を読み込みました`);
 }
 
@@ -2687,6 +2852,11 @@ function setupFileMenu() {
       if (fileName) loadBundledSample(fileName);
     };
   });
+  // 印刷・PDF の配布資料（FR-036）。刷る内容は @media print（DD-VTPL-130〜132）で決める
+  document.getElementById('menu-print').onclick = () => {
+    closeFileMenu();
+    window.print();
+  };
   document.getElementById('btn-save-markdown').onclick = saveMarkdownFile;
   document.getElementById('btn-edit-unlock').onclick = () => {
     setEditorReadOnly(false);
@@ -2725,6 +2895,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupFileMenu();
   setupFrontMatterToggle();
   setupMarkedMath();
+  setupMarkedHeadings();
   setupMermaid();
   renderApp();
 });
