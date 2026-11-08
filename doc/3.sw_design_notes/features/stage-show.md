@@ -6,7 +6,7 @@ tags: ["Lucivo", "詳細設計", "Visualモード", "アニメーション"]
 
 # Visualモードの舞台演出（stage-show）
 
-対応する要求: `FR-018`, `FR-019`, `FR-022`, `FR-023`（[1.SRS/features/stage-show.md](../../1.SRS/features/stage-show.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.11／デザイン仕様: [0.DTP/features/stage-show.md](../../0.DTP/features/stage-show.md)
+対応する要求: `FR-018`, `FR-019`, `FR-022`, `FR-023`, `FR-025`, `FR-028`, `FR-033`（[1.SRS/features/stage-show.md](../../1.SRS/features/stage-show.md)）／アーキテクチャ: [2.ARCHITECTURE.md](../../2.ARCHITECTURE.md) 4.11／デザイン仕様: [0.DTP/features/stage-show.md](../../0.DTP/features/stage-show.md)
 
 ## 1. 読み込みと取り付け（js/app.js, js/stage.js）
 
@@ -68,6 +68,8 @@ tags: ["Lucivo", "詳細設計", "Visualモード", "アニメーション"]
 | DD-SHOW-044 | 光の停止と再開   | `lightsSuspended` が真の間、`startFlow()` は何もしない。再開時は、俯瞰の間も画面に入っていた図に交差の通知が来ないため、今のシーンの図の `startFlow()` を直接呼ぶ | `FR-022`, `DTP-LIGHT-060` |
 | DD-SHOW-045 | 再描画と終了     | 俯瞰の間に図が描き直されたら（明暗の切替）、`refreshScenes()` が並べ方と選択を付け直す。`exitShow()` は俯瞰のクラス・CSS 変数・アニメーションと、ポインターを消す | `FR-022`, `FR-023` |
 | DD-SHOW-050 | 光のポインター   | HUD に `.stage-pointer`（`.stage-pointer-dot` を含む）を置く。`pointermove` で位置を覚え、ポインターの表示中だけ `requestAnimationFrame` で `paintPointer()` を 1 回予約する。`paintPointer()` は `--px`・`--py`（スポットライトの放射グラデーションの中心）と粒の `translate3d()` を書き換えるだけで、要素の大きさ・位置を読まない。表示は `html.is-stage-pointer` で切り替える | `FR-023`, `DTP-SHOW-080` |
+| DD-SHOW-060 | 幕間・質疑スタンバイカーテン | HUD 内に `.stage-curtain`（背景 `AST-107`、軌道シンボル `.stage-curtain-orbit` `AST-108`、題名 `.stage-curtain-title`、章番号ピル列 `.stage-curtain-chapters`）を置く。`B` / `Q` / `.` キーまたは `[data-stage-act="curtain"]` ボタンで `setCurtain(on)` を呼び、`html.is-stage-curtain` の付与、シグナル・ライトの停止（`suspendLights(true)`）、自動進行とポインターの解除を行う。章番号ピル（`[data-curtain-scene]`）のクリックで幕を閉じて該当シーンへ遷移し、幕表示中の `Esc` は発表を終了せず `setCurtain(false)` のみを行う | `FR-028`, `AST-107`, `AST-108`, `DTP-SHOW-090` |
+| DD-SHOW-065 | Vivo アンビエント・パルス | 自動進行（`next(true)`）で最終シーンから先頭（シーン 0）へループしたときに `show.autoLooped = true` とし、`updateHud()` で `show.active && show.auto && show.autoLooped && show.index === 0 && !ov.active && !curtain.active` の間だけ `html.is-stage-ambient` を付与する。次のシーンへの進行、手動操作、自動進行の停止、俯瞰・幕間の開始、発表終了のいずれかで即座に解除する | `FR-033`, `DTP-SHOW-095` |
 
 - **背景（DD-SHOW-002）**: シーンのために図を描き直すと、ページ送りが待たされる（`NFR-007`）。既存の DOM の表示を切り替えるだけなら即座に反応する。
 - **背景（DD-SHOW-003）**: 図以外の全要素を個別に拡大する規則を持たずに済む。`transform: scale` は文字がにじみ、図の座標の計算も複雑になるため採らなかった。
