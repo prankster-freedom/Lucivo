@@ -1600,9 +1600,14 @@ function clearVisualStageSpotlight(container) {
   });
 }
 
+// 章の画像化（FR-026）は、出力が誌面にならないため 0.2.0 では操作部を出さない（DD-VTPL-124、CR-001）。
+// 画像化の処理（renderSlabToBlob など）は、CR-001 で作り直すまで残す
+const SLAB_IMAGE_EXPORT_ENABLED = false;
+
 // スラブの操作バー（画像コピー・PNG保存、FR-026, DD-VTPL-120）
 // ボタンの文字ラベルは CSS ::after で表示し、テキストノードを持たせないことでスラブ本文の内容一致（TC-VTPL-003）を保つ
 function buildSlabActionsHtml() {
+  if (!SLAB_IMAGE_EXPORT_ENABLED) return '';
   return `
     <div class="slab-actions" aria-label="スラブの操作">
       <button type="button" class="slab-action-btn btn-copy-slab" title="この章のカード画像をクリップボードにコピー" aria-label="コピー"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
@@ -2740,7 +2745,10 @@ function setupEventListeners() {
     document.getElementById('zoom-canvas').innerHTML = '';
   };
 
-  document.getElementById('btn-export-html').onclick = () => {
+  // HTML の書き出し（FR-005）は、書き出したファイルが持ち出し先で崩れるため 0.2.0 ではボタンを置かない（DD-OFF-005、CR-001）。
+  // 処理は CR-001 で作り直すまで残し、ボタンがあるときだけつなぐ
+  const exportHtmlBtn = document.getElementById('btn-export-html');
+  if (exportHtmlBtn) exportHtmlBtn.onclick = () => {
     const fullHtml = Object.entries(EXPORT_URLS).reduce(
       (html, [local, url]) => html.split(local).join(url),
       document.documentElement.outerHTML
