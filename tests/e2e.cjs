@@ -2349,6 +2349,35 @@ async function testStageOverviewPointer(browser) {
     };
   });
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-pointer.png') });
+  // Light モードでのポインターの視認性（暖色クリムゾン #E11D48 の芯）と案内文の ? 表記を確認
+  await page.keyboard.press('t');
+  await waitRendered(page);
+  await page.waitForTimeout(300);
+  const lightPointer = await page.evaluate(() => {
+    const dot = document.querySelector('.stage-pointer-dot');
+    const hint = document.querySelector('.stage-hint');
+    return {
+      dotBg: dot ? getComputedStyle(dot).backgroundColor : '',
+      dotShadow: dot ? getComputedStyle(dot).boxShadow : '',
+      hintHasQuestion: hint ? /\?.*ショートカット一覧/.test(hint.textContent) : false
+    };
+  });
+  // 発表中に ? でショートカット一覧が開き、Escape で発表を終了せずにモーダルだけ閉じること
+  await page.keyboard.press('?');
+  await page.waitForTimeout(150);
+  const showModalOpen = await page.evaluate(() => {
+    const m = document.getElementById('shortcut-modal');
+    return m && !m.classList.contains('hidden') && parseInt(getComputedStyle(m).zIndex, 10) >= 80 && LucivoStage.showState().active;
+  });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(150);
+  const showModalClosedStillActive = await page.evaluate(() => {
+    const m = document.getElementById('shortcut-modal');
+    return m && m.classList.contains('hidden') && LucivoStage.showState().active;
+  });
+  await page.keyboard.press('t');
+  await waitRendered(page);
+  await page.waitForTimeout(300);
   await page.keyboard.press('o');
   await page.waitForTimeout(500);
   const inOverview = await page.evaluate(() => ({ pointer: LucivoStage.showState().pointer, display: getComputedStyle(document.querySelector('.stage-pointer')).display }));
@@ -2360,9 +2389,11 @@ async function testStageOverviewPointer(browser) {
   const afterExit = await page.evaluate(() => ({ active: LucivoStage.showState().active, pointer: LucivoStage.showState().pointer, htmlClass: document.documentElement.className }));
   const pointerOk = follow.reads === 0 && follow.pointer && follow.display === 'block' && follow.px === '820px' && follow.py === '460px'
     && /translate3d\(820px, 460px/.test(follow.dot) && follow.cursor === 'none'
+    && lightPointer.dotBg === 'rgb(225, 29, 72)' && lightPointer.hintHasQuestion
+    && showModalOpen && showModalClosedStillActive
     && !inOverview.pointer && inOverview.display === 'none'
     && !afterExit.active && !afterExit.pointer && !/is-stage-(pointer|overview|show)/.test(afterExit.htmlClass);
-  record('TC-SHOW-012', pointerOk, JSON.stringify({ follow, inOverview, afterExit }));
+  record('TC-SHOW-012', pointerOk, JSON.stringify({ follow, lightPointer, showModalOpen, showModalClosedStillActive, inOverview, afterExit }));
 
   // TC-SHOW-013 キーボードナビゲーション（通常閲覧時の操作・ヘルプ開閉・エディタ優先）
   // 1. ? キーでショートカットヘルプモーダルを開閉
@@ -2396,15 +2427,23 @@ async function testStageOverviewPointer(browser) {
   await page.waitForTimeout(200);
   const style1 = await page.evaluate(() => ({ isVis: state.isVisualMode, style: state.infographicStyle }));
 
-  // 4. J / K キーでスクロール動作
-  const scrollBefore = await page.evaluate(() => window.scrollY);
+  // 4. J / K キーで #preview-scroll が確実に次章・前章へスクロールすること
+  await page.evaluate(() => { document.getElementById('preview-scroll').scrollTop = 0; lastNavTargetTop = null; });
+  await page.waitForTimeout(100);
+  const scrollBefore = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
   await page.keyboard.press('j');
-  await page.waitForTimeout(200);
-  const scrollAfterJ = await page.evaluate(() => window.scrollY);
+  await page.waitForTimeout(600);
+  const scrollAfterJ1 = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  await page.keyboard.press('j');
+  await page.waitForTimeout(600);
+  const scrollAfterJ2 = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  await page.keyboard.press('k');
+  await page.waitForTimeout(600);
+  const scrollAfterK = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  const guideHasQuestion = await page.evaluate(() => /\?.*ショートカット一覧/.test(EMPTY_GUIDE_HTML));
 
   // 5. エディタフォーカス時はキーボードショートカットが発火しないこと（文字入力優先）
   await page.focus('#markdown-editor');
-  const editorValBefore = await page.evaluate(() => document.getElementById('markdown-editor').value);
   await page.keyboard.type('m1234');
   await page.waitForTimeout(100);
   const editorValAfter = await page.evaluate(() => document.getElementById('markdown-editor').value);
@@ -2413,9 +2452,11 @@ async function testStageOverviewPointer(browser) {
   const show13Ok = modalOpen && modalClosed
     && toggledMode !== initMode && revertedMode === initMode
     && style3.isVis && style3.style === 'circles'
-    && style1.isVis && style1.style === 'pastel'
-    && editorValAfter.includes('m1234') && editorStyle === 'pastel';
-  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, editorValAfter: editorValAfter.slice(-10) }));
+    && style1.isVis && style1.style === 'shapes'
+    && scrollBefore === 0 && scrollAfterJ1 > scrollBefore && scrollAfterJ2 > scrollAfterJ1 && scrollAfterK < scrollAfterJ2
+    && guideHasQuestion
+    && editorValAfter.includes('m1234') && editorStyle === 'shapes';
+  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, guideHasQuestion, editorValAfter: editorValAfter.slice(-10) }));
 
   if (page.consoleErrors.length) record('TC-SHOW-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
