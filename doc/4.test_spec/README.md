@@ -21,7 +21,10 @@ tags: ["Lucivo", "テスト仕様"]
 
 ## 実行方法
 
-- 自動確認: リポジトリ直下で `node tests/e2e.cjs` を実行する。`index.html` を `file://` で開き、Chromium（Playwright）で確認する。
+- 初期設定: リポジトリ直下で `npm install` と `npx playwright install chromium` を実行する。
+- 自動確認: リポジトリ直下で `npm test`（`node tests/e2e.cjs`）を実行する。`index.html` を `file://` で開き、Chromium（Playwright）で確認する。
+- 部分実行: 特定の機能やテストケースだけを確かめるときは、`node tests/e2e.cjs <スイート名または TC ID>` を実行する（例: `node tests/e2e.cjs TC-SHOW-011`）。`work/test/results.json` は、該当する TC の結果だけが更新される。
+- 静的な検査: `npm run lint` で、制御文字・見えない空白の検査と ESLint を実行する。
 - 出力: `work/test/results.json`（TC ごとの合否と詳細）、`work/test/shots/`（図の画像）。いずれも git 管理外。
 - 目視確認: 「確認方法」が目視の TC は、`work/test/shots/` の画像で確認する。
 - 規模の目安: 自動確認は 3〜5 分、目視確認は 280 枚程度の画像。
