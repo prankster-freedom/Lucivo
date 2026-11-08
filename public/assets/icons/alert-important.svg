@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-113: Callout Glyph / Important (speech bubble with mark, monochrome currentColor) -->
+  <path d="M3.75 2.75H12.25C13.07 2.75 13.75 3.43 13.75 4.25V9.75C13.75 10.57 13.07 11.25 12.25 11.25H8.5L5.5 13.5V11.25H3.75C2.93 11.25 2.25 10.57 2.25 9.75V4.25C2.25 3.43 2.93 2.75 3.75 2.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M8 5V7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="8" cy="9.4" r="0.95" fill="currentColor"/>
+</svg>

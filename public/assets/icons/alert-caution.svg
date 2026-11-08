@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-113: Callout Glyph / Caution (rounded octagon, monochrome currentColor) -->
+  <path d="M5.6 2.25H10.4L13.75 5.6V10.4L10.4 13.75H5.6L2.25 10.4V5.6L5.6 2.25Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M8 5V8.25" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="8" cy="10.6" r="0.95" fill="currentColor"/>
+</svg>
