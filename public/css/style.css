@@ -778,6 +778,8 @@ body[data-appearance="dark"] #visual-stage-container {
   --motif-card-ornament: url("data:image/svg+xml,%3Csvg id='card-corner-ornament.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cpath d='M64 0H20L64 44V0Z' fill='black' fill-opacity='0.18'/%3E%3Cpath d='M64 0H38L64 26V0Z' fill='black' fill-opacity='0.26'/%3E%3Cpath d='M12 0L64 52' stroke='black' stroke-width='1.25' stroke-opacity='0.35'/%3E%3Cpath d='M28 0L64 36' stroke='black' stroke-width='1' stroke-opacity='0.25'/%3E%3Ccircle cx='48' cy='16' r='2.2' fill='black' fill-opacity='0.45'/%3E%3C/svg%3E");
   --motif-step-arrow: url("data:image/svg+xml,%3Csvg id='step-arrow.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M5.5 3.5L10 8L5.5 12.5' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9.5 5L12.5 8L9.5 11' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' stroke-opacity='0.55'/%3E%3C/svg%3E");
   --motif-flow-spark: url("data:image/svg+xml,%3Csvg id='flow-spark.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='10' stroke='black' stroke-width='1.25' stroke-opacity='0.35' stroke-dasharray='4 3'/%3E%3Cpath d='M12 3.5L13.6 9.4L19.5 11L13.6 12.6L12 18.5L10.4 12.6L4.5 11L10.4 9.4L12 3.5Z' fill='black' fill-opacity='0.85'/%3E%3C/svg%3E");
+  --motif-rounded-caret: url("data:image/svg+xml,%3Csvg id='rounded-caret-glyph.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 24' fill='none'%3E%3Cpath d='M4 6L11 12L4 18' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='17' y='16.6' width='11' height='2.4' rx='1.2' fill='black' fill-opacity='0.45'/%3E%3Crect x='34' y='3' width='4' height='18' rx='2' fill='black'/%3E%3Crect x='31.5' y='0.5' width='9' height='23' rx='4.5' stroke='black' stroke-width='1' stroke-opacity='0.25'/%3E%3C/svg%3E");
+  --motif-dot-matrix: url("data:image/svg+xml,%3Csvg id='dot-matrix-texture.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='6' cy='6' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='18' cy='6' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='6' cy='18' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='18' cy='18' r='1.3' fill='black' fill-opacity='0.38'/%3E%3C/svg%3E");
 }
 .vs-theme-shapes {
   --vs-glow: #0EA5B7;
@@ -2213,5 +2215,286 @@ html.is-stage-show .slab-actions {
     display: none !important;
   }
 }
+
+/* ==================== KPI メトリクス・ショーケース（FR-027, DTP-VTPL-035） ==================== */
+.exhibition-slab .vs-points > li.vs-metric-item {
+  padding-top: 1.35rem;
+}
+.exhibition-slab .vs-points > li.vs-metric-item .vs-point-title.vs-metric-value {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.28rem;
+  font-family: 'Plus Jakarta Sans', 'JetBrains Mono', sans-serif;
+  font-size: clamp(1.65rem, 2.5vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.exhibition-slab .vs-points > li.vs-metric-item .vs-point-title.vs-metric-value::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.25rem;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--vs-c), color-mix(in srgb, var(--vs-c) 30%, transparent));
+}
+
+/* ==================== タイムライン・ロードマップ修飾（FR-029, DTP-VTPL-036） ==================== */
+.exhibition-slab .vs-points.vs-points-timeline > li.vs-timeline-item::before {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  margin-bottom: 0.35rem;
+}
+.exhibition-slab .vs-points.vs-points-timeline > li.vs-timeline-item .vs-point-title.vs-timeline-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.55rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--vs-c) 18%, var(--vs-card-bg));
+  border: 1px solid color-mix(in srgb, var(--vs-c) 55%, var(--vs-card-border));
+  color: var(--text-primary);
+}
+
+/* ==================== Before / After 比較ペアカード修飾（FR-030, DTP-VTPL-037） ==================== */
+.exhibition-slab .vs-points.vs-points-compare > li.vs-compare-before {
+  --vs-c: var(--border-strong);
+  background: color-mix(in srgb, var(--vs-card-bg) 82%, transparent);
+  border-style: dashed;
+}
+.exhibition-slab .vs-points.vs-points-compare > li.vs-compare-after {
+  --vs-c: var(--vs-c1);
+  border-color: color-mix(in srgb, var(--vs-c1) 65%, var(--vs-card-border));
+  box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.22);
+}
+.exhibition-slab .vs-points.vs-points-compare > li.vs-compare-after::after {
+  height: 6px;
+  background: linear-gradient(90deg, var(--vs-c1), var(--vs-c3));
+}
+
+/* ==================== コード・ショーケース（FR-031, DTP-VTPL-038） ==================== */
+.exhibition-slab pre.vs-code-block {
+  position: relative;
+  padding-top: 2.45rem !important;
+}
+.exhibition-slab pre.vs-code-block::before {
+  content: attr(data-code-lang);
+  position: absolute;
+  top: 0.58rem;
+  left: 2.35rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.exhibition-slab pre.vs-code-block > .vs-code-caret {
+  position: absolute;
+  top: 0.62rem;
+  left: 0.85rem;
+  width: 1.2rem;
+  height: 0.65rem;
+  pointer-events: none;
+  background-color: var(--vs-c1);
+  -webkit-mask: var(--motif-rounded-caret) no-repeat center / contain;
+  mask: var(--motif-rounded-caret) no-repeat center / contain;
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.65rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn::after {
+  content: attr(data-copy-label);
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn:hover,
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn.is-copied {
+  color: var(--text-primary);
+  border-color: var(--vs-c1);
+}
+html.is-stage-show .exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
+  display: none;
+}
+
+/* ==================== 表紙のスペックバッジ＆ドットマトリクス透かし（FR-032, DTP-VTPL-105） ==================== */
+.vs-cover-texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: var(--vs-c1);
+  opacity: 0.16;
+  -webkit-mask: var(--motif-dot-matrix) repeat center / 24px 24px;
+  mask: var(--motif-dot-matrix) repeat center / 24px 24px;
+}
+.vs-cover-specs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.15rem auto 0;
+}
+.vs-cover-spec-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--vs-card-border);
+  background: color-mix(in srgb, var(--vs-card-bg) 88%, transparent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.vs-cover-spec-pill::after {
+  content: attr(data-spec-label);
+}
+
+/* ==================== ステージ発表の幕間・質疑（Q&A）スタンバイカーテン（FR-028, DTP-SHOW-090） ==================== */
+.stage-curtain {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: auto;
+  align-items: center;
+  justify-content: center;
+  padding: 6vh 6vw 10vh;
+  color: #F8FAFC;
+  background:
+    radial-gradient(circle at 82% -6%, rgba(0, 240, 255, 0.34), rgba(56, 189, 248, 0.12) 38%, transparent 70%),
+    radial-gradient(circle at 12% 108%, rgba(2, 132, 199, 0.28), transparent 65%),
+    linear-gradient(135deg, #080A0F 0%, #111827 100%);
+}
+html.is-stage-show.is-stage-curtain .stage-curtain {
+  display: flex;
+  animation: stage-ov-fade 0.32s ease both;
+}
+.stage-curtain-inner {
+  max-width: 54rem;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stage-curtain-orbit {
+  width: 4.2rem;
+  height: 4.2rem;
+  display: inline-block;
+  margin-bottom: 1.1rem;
+  background-color: #7DE3FF;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg id='luminous-orbit.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cellipse cx='32' cy='32' rx='26' ry='11' transform='rotate(-24 32 32)' stroke='black' stroke-width='1.25' stroke-opacity='0.45'/%3E%3Ccircle cx='9.4' cy='44.2' r='4' fill='black' fill-opacity='0.55'/%3E%3Ccircle cx='19.7' cy='26.2' r='3' fill='black' fill-opacity='0.8'/%3E%3Cpath d='M38 18.4Q42.7 17.4 46 17.4' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-opacity='0.6'/%3E%3Ccircle cx='47.3' cy='17.4' r='2.4' fill='black'/%3E%3Ccircle cx='32' cy='32' r='1.8' fill='black' fill-opacity='0.75'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg id='luminous-orbit.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cellipse cx='32' cy='32' rx='26' ry='11' transform='rotate(-24 32 32)' stroke='black' stroke-width='1.25' stroke-opacity='0.45'/%3E%3Ccircle cx='9.4' cy='44.2' r='4' fill='black' fill-opacity='0.55'/%3E%3Ccircle cx='19.7' cy='26.2' r='3' fill='black' fill-opacity='0.8'/%3E%3Cpath d='M38 18.4Q42.7 17.4 46 17.4' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-opacity='0.6'/%3E%3Ccircle cx='47.3' cy='17.4' r='2.4' fill='black'/%3E%3Ccircle cx='32' cy='32' r='1.8' fill='black' fill-opacity='0.75'/%3E%3C/svg%3E") no-repeat center / contain;
+  animation: lucivo-orbit-spin 14s linear infinite;
+}
+.stage-curtain-eyebrow {
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: #7DE3FF;
+}
+.stage-curtain-title {
+  margin: 0.65rem 0 0;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  font-size: clamp(1.6rem, 2.8vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.3;
+  color: #F8FAFC;
+  text-wrap: balance;
+  animation: lucivo-ambient-breathe 6s ease-in-out infinite;
+}
+.stage-curtain-sub {
+  margin: 0.6rem 0 1.6rem;
+  font-size: 0.75rem;
+  color: #94A3B8;
+}
+.stage-curtain-chapters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 48rem;
+}
+.stage-curtain-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(15, 23, 42, 0.65);
+  color: #E2E8F0;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+.stage-curtain-pill:hover,
+.stage-curtain-pill.is-current {
+  border-color: #7DE3FF;
+  background: rgba(14, 116, 144, 0.35);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+.stage-curtain-pill-no {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #7DE3FF;
+}
+.stage-curtain-pill-label {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==================== 自動進行ループ待機時の Vivo アンビエント・パルス（FR-033, DTP-SHOW-095） ==================== */
+html.is-stage-show.is-stage-ambient .is-scene .vs-cover-title {
+  animation: lucivo-ambient-breathe 6s ease-in-out infinite;
+}
+@keyframes lucivo-orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes lucivo-ambient-breathe {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.86; filter: brightness(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-curtain-orbit,
+  .stage-curtain-title,
+  html.is-stage-show.is-stage-ambient .is-scene .vs-cover-title {
+    animation: none !important;
+  }
+}
+
 
 

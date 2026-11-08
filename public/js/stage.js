@@ -396,11 +396,12 @@
   const SCENE_FIT = { maxScale: 2.4, bottomMargin: 88, minHeightRatio: 0.6, scrollRatio: 0.8 };
   const HUD_IDLE_MS = 2600;
 
-  const show = { active: false, scenes: [], index: 0, build: 0, auto: false, timer: 0, idleTimer: 0, restore: null, hud: null };
-  // 俯瞰（DTP-SHOW-070）と光のポインター（DTP-SHOW-080）
+  const show = { active: false, scenes: [], index: 0, build: 0, auto: false, autoLooped: false, timer: 0, idleTimer: 0, restore: null, hud: null };
+  // 俯瞰（DTP-SHOW-070）・光のポインター（DTP-SHOW-080）・幕間カーテン（DTP-SHOW-090）
   const OVERVIEW = { widthRatio: 0.88, heightRatio: 0.78, gapVw: 1.6, minScale: 0.12, maxCols: 6, zoomMs: 340 };
   const ov = { active: false, index: 0, busy: false };
   const pointer = { on: false, moved: false, x: 0, y: 0, frame: 0 };
+  const curtain = { active: false };
 
   const stageContainer = () => document.getElementById('visual-stage-container');
   const currentScene = () => show.scenes[show.index];
@@ -412,8 +413,17 @@
     hud.className = 'stage-hud';
     hud.innerHTML = `
       <div class="stage-sweep" aria-hidden="true"></div>
-      <div class="stage-hint">→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了</div>
+      <div class="stage-hint">→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ B・Q 幕間 ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了</div>
       <div class="stage-pointer" aria-hidden="true"><span class="stage-pointer-dot"></span></div>
+      <div class="stage-curtain" aria-hidden="true">
+        <div class="stage-curtain-inner">
+          <span class="stage-curtain-orbit" aria-hidden="true"></span>
+          <p class="stage-curtain-eyebrow">Q &amp; A / STANDBY</p>
+          <h2 class="stage-curtain-title"></h2>
+          <p class="stage-curtain-sub">章番号を押すとそのシーンへ直接戻ります（B / Q / Esc で復帰）</p>
+          <div class="stage-curtain-chapters" role="navigation" aria-label="章へ戻る"></div>
+        </div>
+      </div>
       <div class="stage-hud-bar">
         <span class="stage-hud-title"></span>
         <span class="stage-hud-count"></span>
@@ -422,16 +432,27 @@
           <button type="button" data-stage-action="next" aria-label="次へ">→</button>
           <button type="button" data-stage-action="overview" aria-pressed="false">一覧</button>
           <button type="button" data-stage-action="pointer" aria-pressed="false">ポインター</button>
+          <button type="button" data-stage-action="curtain" aria-pressed="false">幕間</button>
           <button type="button" data-stage-action="auto" aria-pressed="false">自動進行</button>
           <button type="button" data-stage-action="exit">終了</button>
         </div>
       </div>
       <div class="stage-hud-rail" aria-hidden="true"><span class="stage-hud-fill"></span></div>`;
     hud.addEventListener('click', event => {
+      const pill = event.target.closest('.stage-curtain-pill[data-curtain-scene]');
+      if (pill) {
+        event.stopPropagation();
+        const idx = parseInt(pill.dataset.curtainScene, 10);
+        setCurtain(false);
+        if (!Number.isNaN(idx) && idx >= 0 && idx < show.scenes.length) {
+          goToScene(idx, idx === show.index ? show.build : 'end');
+        }
+        return;
+      }
       const action = event.target.closest('[data-stage-action]');
       if (!action) return;
       event.stopPropagation();
-      ({ prev, next: () => next(), auto: toggleAuto, exit: exitShow, overview: toggleOverview, pointer: togglePointer })[action.dataset.stageAction]();
+      ({ prev, next: () => next(), auto: toggleAuto, exit: exitShow, overview: toggleOverview, pointer: togglePointer, curtain: toggleCurtain })[action.dataset.stageAction]();
     });
     document.body.appendChild(hud);
     return hud;
@@ -482,11 +503,13 @@
     const auto = hud.querySelector('[data-stage-action="auto"]');
     auto.setAttribute('aria-pressed', String(show.auto));
     auto.classList.toggle('is-active', show.auto);
-    [['overview', ov.active], ['pointer', pointer.on]].forEach(([name, on]) => {
+    [['overview', ov.active], ['pointer', pointer.on], ['curtain', curtain.active]].forEach(([name, on]) => {
       const button = hud.querySelector(`[data-stage-action="${name}"]`);
+      if (!button) return;
       button.setAttribute('aria-pressed', String(on));
       button.classList.toggle('is-active', on);
     });
+    document.documentElement.classList.toggle('is-stage-ambient', Boolean(show.active && show.auto && show.autoLooped && show.index === 0));
   }
 
   function replaySceneEntrance(scene) {
@@ -538,13 +561,16 @@
     } else if (scrollScene(1)) {
       scheduleAuto();
     } else if (show.index < show.scenes.length - 1) {
+      show.autoLooped = false;
       goToScene(show.index + 1, 0);
     } else if (loop) {
+      show.autoLooped = true;
       goToScene(0, 0);
     }
   }
 
   function prev() {
+    show.autoLooped = false;
     if (show.build > 0) {
       show.build -= 1;
       applyBuild(currentScene());
@@ -575,8 +601,53 @@
 
   function toggleAuto() {
     show.auto = !show.auto;
+    if (!show.auto) show.autoLooped = false;
     updateHud();
     scheduleAuto();
+  }
+
+  /* ----------------------------------------------------------------------
+     幕間・質疑（Q&A）スタンバイカーテン（DTP-SHOW-090, FR-028）
+     ---------------------------------------------------------------------- */
+  function renderCurtainChapters() {
+    if (!show.hud) return;
+    const firstHeading = show.scenes[0] && show.scenes[0].querySelector('h1, h2 span:last-child');
+    const titleEl = show.hud.querySelector('.stage-curtain-title');
+    if (titleEl) titleEl.textContent = firstHeading ? firstHeading.textContent.trim() : 'Lucivo Presentation';
+    const nav = show.hud.querySelector('.stage-curtain-chapters');
+    if (!nav) return;
+    nav.innerHTML = show.scenes.map((scene, idx) => {
+      const heading = scene.querySelector('h2 span:last-child, h1');
+      const label = heading ? heading.textContent.trim() : `Scene ${idx}`;
+      const no = String(idx).padStart(2, '0');
+      const activeClass = idx === show.index ? ' is-current' : '';
+      return `<button type="button" class="stage-curtain-pill${activeClass}" data-curtain-scene="${idx}" title="${escapeHtml(label)}"><span class="stage-curtain-pill-no">${no}</span><span class="stage-curtain-pill-label">${escapeHtml(label)}</span></button>`;
+    }).join('');
+  }
+
+  function setCurtain(on) {
+    const willActive = Boolean(on) && show.active;
+    if (willActive === curtain.active) return;
+    if (willActive) {
+      if (ov.active) closeOverview(show.index, show.build);
+      if (show.auto) toggleAuto();
+      setPointer(false);
+      curtain.active = true;
+      suspendLights(true);
+      renderCurtainChapters();
+      document.documentElement.classList.add('is-stage-curtain');
+      show.hud?.querySelector('.stage-curtain')?.setAttribute('aria-hidden', 'false');
+    } else {
+      curtain.active = false;
+      document.documentElement.classList.remove('is-stage-curtain');
+      show.hud?.querySelector('.stage-curtain')?.setAttribute('aria-hidden', 'true');
+      if (!ov.active) suspendLights(false);
+    }
+    updateHud();
+  }
+
+  function toggleCurtain() {
+    setCurtain(!curtain.active);
   }
 
   function wakeHud() {
@@ -587,22 +658,34 @@
 
   function onShowKey(event) {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const shortcutModal = document.getElementById('shortcut-modal');
-    if (shortcutModal && !shortcutModal.classList.contains('hidden')) {
+    if (typeof isModalOpen === 'function' && isModalOpen('shortcut-modal')) {
       if (event.key === 'Escape' || event.key === '?') {
         event.preventDefault();
         event.stopPropagation();
-        shortcutModal.classList.add('hidden');
-        shortcutModal.classList.remove('flex');
+        setModalOpen('shortcut-modal', false);
       }
       return;
     }
     if (event.key === '?') {
       event.preventDefault();
       event.stopPropagation();
-      if (shortcutModal) {
-        shortcutModal.classList.remove('hidden');
-        shortcutModal.classList.add('flex');
+      if (typeof setModalOpen === 'function') setModalOpen('shortcut-modal', true);
+      return;
+    }
+    if (curtain.active) {
+      if (['b', 'B', 'q', 'Q', 'Escape'].includes(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+        setCurtain(false);
+      } else if (event.key === 't' || event.key === 'T') {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleShowAppearance();
+      } else if (event.key === 'o' || event.key === 'O') {
+        event.preventDefault();
+        event.stopPropagation();
+        setCurtain(false);
+        openOverview();
       }
       return;
     }
@@ -613,12 +696,14 @@
     const actions = {
       ArrowRight: () => next(), ArrowDown: () => next(), PageDown: () => next(), ' ': () => next(), Enter: () => next(),
       ArrowLeft: prev, ArrowUp: prev, PageUp: prev, Backspace: prev,
-      Home: () => goToScene(0, 0),
-      End: () => goToScene(show.scenes.length - 1, 'end'),
+      Home: () => { show.autoLooped = false; goToScene(0, 0); },
+      End: () => { show.autoLooped = false; goToScene(show.scenes.length - 1, 'end'); },
       a: toggleAuto, A: toggleAuto,
       t: toggleShowAppearance, T: toggleShowAppearance,
       o: toggleOverview, O: toggleOverview,
       l: togglePointer, L: togglePointer,
+      b: toggleCurtain, B: toggleCurtain,
+      q: toggleCurtain, Q: toggleCurtain,
       Escape: exitShow
     };
     const action = actions[event.key];
@@ -704,6 +789,7 @@
 
   function openOverview() {
     if (!show.active || ov.active || ov.busy) return;
+    if (curtain.active) setCurtain(false);
     if (show.auto) toggleAuto();
     setPointer(false);
     ov.active = true;
@@ -798,7 +884,7 @@
   }
 
   function setPointer(on) {
-    pointer.on = Boolean(on) && show.active && !ov.active;
+    pointer.on = Boolean(on) && show.active && !ov.active && !curtain.active;
     document.documentElement.classList.toggle('is-stage-pointer', pointer.on);
     if (pointer.on) {
       if (!pointer.moved) {
@@ -862,6 +948,8 @@
     show.index = 0;
     show.build = 0;
     show.auto = false;
+    show.autoLooped = false;
+    curtain.active = false;
     show.hud = show.hud || buildHud();
     document.documentElement.classList.add('is-stage-show');
     document.addEventListener('keydown', onShowKey, true);
@@ -897,6 +985,12 @@
     if (!show.active) return;
     const lastScene = currentScene();
     const lastIndex = show.index;
+    if (curtain.active) {
+      curtain.active = false;
+      document.documentElement.classList.remove('is-stage-curtain');
+      show.hud?.querySelector('.stage-curtain')?.setAttribute('aria-hidden', 'true');
+      lightsSuspended = false;
+    }
     if (ov.active) {
       ov.active = false;
       ov.busy = false;
@@ -908,9 +1002,10 @@
     setPointer(false);
     show.active = false;
     show.auto = false;
+    show.autoLooped = false;
     clearTimeout(show.timer);
     clearTimeout(show.idleTimer);
-    document.documentElement.classList.remove('is-stage-show', 'is-stage-idle');
+    document.documentElement.classList.remove('is-stage-show', 'is-stage-idle', 'is-stage-ambient', 'is-stage-curtain');
     document.removeEventListener('keydown', onShowKey, true);
     document.removeEventListener('mousemove', wakeHud);
     document.removeEventListener('pointermove', onPointerMove);
@@ -964,8 +1059,8 @@
       front: f.front.canvas
     })),
     showState: () => ({
-      active: show.active, index: show.index, build: show.build, auto: show.auto, scenes: show.scenes.length,
-      overview: ov.active, selected: ov.index, pointer: pointer.on
+      active: show.active, index: show.index, build: show.build, auto: show.auto, autoLooped: Boolean(show.autoLooped), scenes: show.scenes.length,
+      overview: ov.active, selected: ov.index, pointer: pointer.on, curtain: curtain.active
     })
   };
 })();
