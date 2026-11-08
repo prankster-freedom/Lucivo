@@ -2005,10 +2005,16 @@ html.is-stage-show.is-stage-overview body:not([data-appearance="dark"]) .exhibit
 html.is-stage-show.is-stage-overview .exhibition-wrap > .is-ov-zooming {
   z-index: 2;
 }
-/* 縮小図の図は、升目の高さに収める（縦長の図が下へ切れないように） */
+/* 縮小図の図は、升目の高さに収める（縦長の図が下へ切れないように）。縮小図内の要素の影・フィルターを省き展開を高速化する */
 html.is-stage-show.is-stage-overview .exhibition-viewport svg {
   height: auto;
   max-height: 56vh;
+}
+html.is-stage-show.is-stage-overview .exhibition-slab *,
+html.is-stage-show.is-stage-overview .exhibition-hero * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
 }
 html.is-stage-overview .stage-hint,
 html.is-stage-overview .stage-sweep {
@@ -2032,7 +2038,7 @@ html.is-stage-show.is-stage-overview .is-ov-entering > :not(.is-ov-zooming) {
   background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), transparent 0, transparent 10vmin, rgba(2, 5, 12, 0.3) 24vmin, rgba(2, 5, 12, 0.46) 42vmin);
 }
 body:not([data-appearance="dark"]) .stage-pointer {
-  background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), transparent 0, transparent 10vmin, rgba(15, 23, 42, 0.14) 24vmin, rgba(15, 23, 42, 0.22) 42vmin);
+  background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), transparent 0, transparent 10vmin, rgba(15, 23, 42, 0.18) 24vmin, rgba(15, 23, 42, 0.30) 42vmin);
 }
 html.is-stage-pointer .stage-pointer {
   display: block;
@@ -2057,10 +2063,16 @@ html.is-stage-pointer #visual-stage-container {
   will-change: transform;
 }
 body:not([data-appearance="dark"]) .stage-pointer-dot {
+  background: #E11D48;
   box-shadow:
-    0 0 0 2px rgba(8, 145, 178, 0.75),
-    0 0 18px 6px rgba(8, 145, 178, 0.35),
-    0 0 46px 18px rgba(8, 145, 178, 0.14);
+    0 0 0 2px #FFFFFF,
+    0 0 0 4px rgba(225, 29, 72, 0.85),
+    0 0 20px 6px rgba(244, 63, 94, 0.5),
+    0 0 48px 18px rgba(244, 63, 94, 0.22);
+}
+
+#shortcut-modal {
+  z-index: 80;
 }
 
 @keyframes stage-rise {
@@ -2176,7 +2188,6 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
-  backdrop-filter: blur(4px);
 }
 .slab-action-btn:hover {
   color: var(--text-primary);
@@ -2194,7 +2205,9 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
 .btn-export-slab::after {
   content: "PNG";
 }
-html.is-stage-show .slab-actions,
+html.is-stage-show .slab-actions {
+  display: none !important;
+}
 @media print {
   .slab-actions {
     display: none !important;
