@@ -10,14 +10,14 @@ tags: ["Lucivo", "詳細設計", "ファイル読み込み"]
 
 ## 1. 画面要素
 
-| ID          | 要素                                             | 内容                                                                                                             | 対応する要求 |
-| :---------- | :----------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- | :----------- |
-| DD-FILE-001 | ファイルメニューボタン（`#btn-file-menu`）       | ヘッダーのロゴの右に置く。押すとメニューを開閉する。開閉の状態を `aria-expanded` に反映する                      | `FR-006`     |
-| DD-FILE-002 | ファイルメニュー（`#file-menu`）                 | 「Markdown を開く…」（`#menu-open-markdown`）の下に区切り線と「同梱サンプル」見出しを置き、上段に「`Visualモードサンプル (visual-sample.md)`」（`#menu-sample-visual`）、下段に「`記法サンプル (notation_sample.md)`」（`#menu-sample-notation`）を並べる。外側のクリックまたは Esc キーで閉じる | `FR-006` |
-| DD-FILE-003 | ファイル選択（`#file-input`）                    | 非表示の `<input type="file">`。受け付ける拡張子は `.md` / `.markdown` / `.txt`                                  | `FR-006`     |
-| DD-FILE-004 | 初期案内（`EMPTY_GUIDE_HTML`）                   | エディタが空（空白だけの場合を含む）のとき、プレビューに表示する。上部にブランド・フルバナーロゴ（`AST-012`）を配置し、高速モードではプレビューの本文に、Visualモードでは 1 枚のスラブに入れて表示する | `FR-007`, `DTP-005` |
-| DD-FILE-005 | 保存ボタン（`#btn-save-markdown`）               | ヘッダーのファイルメニューボタンの右に置く。表示は「保存」                                                       | `FR-013`     |
-| DD-FILE-006 | 編集の状態（`#editor-lock`、`#btn-edit-unlock`） | エディタのヘッダーに置く。読み取り専用のときは「読み取り専用」の表示と「編集」ボタンを出し、編集できるときは隠す | `FR-014`     |
+| ID          | 要素                                                               | 内容                                                                                                                                                                                                                                                                            | 対応する要求 |
+| :---------- | :----------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :----------- |
+| DD-FILE-001 | ファイルメニューボタン（`#btn-file-menu`）                         | ヘッダーのロゴの右に置く。押すとメニューを開閉する。開閉の状態を `aria-expanded` に反映する                                                                                                                                                                                     | `FR-006`     |
+| DD-FILE-002 | ファイルメニュー（`#file-menu`）                                   | 「Markdown を開く…」（`#menu-open-markdown`）の下に区切り線と「同梱サンプル」見出しを置き、上段に「`Visualモードサンプル (visual-sample.md)`」（`#menu-sample-visual`）、下段に「`記法サンプル (notation_sample.md)`」（`#menu-sample-notation`）を並べる。外側のクリックまたは Esc キーで閉じる | `FR-006` |
+| DD-FILE-003 | ファイル選択（`#file-input`）                                      | 非表示の `<input type="file">`。受け付ける拡張子は `.md` / `.markdown` / `.txt`                                                                                                                                                                                                 | `FR-006`     |
+| DD-FILE-004 | 初期案内（`EMPTY_GUIDE_HTML`）                                     | エディタが空（空白だけの場合を含む）のとき、プレビューに表示する。上部にブランド・フルバナーロゴ（`AST-012`）を配置し、高速モードではプレビューの本文に、Visualモードでは 1 枚のスラブに入れて表示する                                                                          | `FR-007`, `DTP-005` |
+| DD-FILE-005 | 保存ボタン（`#btn-save-markdown`）                                 | ヘッダーのファイルメニューボタンの右に置く。表示は「保存」                                                                                                                                                                                                                      | `FR-013`     |
+| DD-FILE-006 | 編集の状態（`#editor-lock`、`#btn-edit-lock`、`#btn-edit-unlock`） | エディタのヘッダーに、`閲覧` / `編集` の 2 つ並びの切り替え（`.pill-container` + `.pill-btn.editor-lock-btn`、`role="group"`）を置く。今の状態のボタンに `is-active` と `aria-pressed="true"` を付ける（`DTP-006`）。起動直後は隠し、ファイルを読み込んだ後は表示したままにする | `FR-014`     |
 | DD-FILE-007 | ブランドロゴと Favicon（`#app-favicon`、`.brand-logo-light`、`.brand-logo-dark`） | `<head>` に Favicon（`AST-010`）、ヘッダー左端にカプセルロゴ（`AST-011`）、初期案内にフルバナーロゴ（`AST-012`）を配置する。画像ロゴは Light 用・Dark 用の両方を配置して `body[data-appearance]` の CSS で即座に表示を切り替え、Favicon はテーマ切替時に `href` を `./assets/logos/${state.appearance}/favicon.svg` に更新する | `FR-004`, `FR-007`, `DTP-005` |
 
 ## 2. 処理
@@ -74,6 +74,12 @@ sequenceDiagram
 
 ### DD-FILE-040 読み取り専用
 
-- `setEditorReadOnly(isReadOnly)` は、エディタの `readOnly` 属性、DD-FILE-006 の表示、エディタの内容を変えるボタン（`#btn-test-err`）の `disabled` をまとめて切り替える。
-- DD-FILE-010 で読み込みに成功したら、`setEditorReadOnly(true)` を呼ぶ。「編集」ボタンを押したら `setEditorReadOnly(false)` を呼び、エディタにフォーカスを移す。
+- `setEditorReadOnly(isReadOnly)` は、エディタの `readOnly` 属性、DD-FILE-006 の切り替えの表示と選択状態、エディタの内容を変えるボタン（`#btn-test-err`）の `disabled` をまとめて切り替える。
+- DD-FILE-010 で読み込みに成功したら、`setEditorReadOnly(true)` を呼ぶ。`編集` を押したら `setEditorReadOnly(false)` を呼び、エディタにフォーカスを移す。
+
+### DD-FILE-041 読み取り専用に戻す
+
+- `閲覧`（`#btn-edit-lock`）を押したら `setEditorReadOnly(true)` を呼ぶ。編集中の内容はそのまま残す（保存していない内容は、次のファイルの読み込み時に DD-FILE-010 の確認で守る）。
+- `setEditorReadOnly` は、どちらの状態でも切り替えを表示する。切り替えを隠すのは、起動直後にファイルをまだ読み込んでいない間だけ（初期値の `hidden`）とする。
+- **背景**: 以前は読み取り専用のときだけ「読み取り専用」の表示とアクセント色の「編集」ボタンを出し、編集を始めると隠していた。ボタンの色が選択中の印に見えて編集中に見えたうえ、読み取り専用に戻す手段がなかった（要求仕様書 `FR-014`）。
 - 起動時は `setEditorReadOnly(false)` の状態とする（DD-FILE-020）。
