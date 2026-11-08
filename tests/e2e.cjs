@@ -2728,10 +2728,12 @@ async function testOffline(browser) {
   await ctx.close();
 }
 
+// スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-'], fn: testFileLoading },
-  { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering },
+  // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
+  { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
   { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-'], fn: testMarkdownTypography },
   { name: 'testMathRendering', tcPrefix: ['TC-MATH-'], fn: testMathRendering },
   { name: 'testFrontMatter', tcPrefix: ['TC-FM-'], fn: testFrontMatter },
@@ -2772,11 +2774,14 @@ function runWithTimeout(fn, ms, label) {
   fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await chromium.launch();
   try {
+    // 1 つのスイートが例外・タイムアウトで止まっても、残りのスイートは実行する（失敗が後続のテストの結果を隠さないようにする）
     for (const suite of selected) {
-      await runWithTimeout(() => suite.fn(browser), SUITE_TIMEOUT_MS, suite.name);
+      try {
+        await runWithTimeout(() => suite.fn(browser), suite.timeoutMs || SUITE_TIMEOUT_MS, suite.name);
+      } catch (e) {
+        record(`RUNTIME ${suite.name}`, false, e.stack);
+      }
     }
-  } catch (e) {
-    record('RUNTIME', false, e.stack);
   } finally {
     await browser.close();
   }
