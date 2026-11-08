@@ -20,6 +20,8 @@
 | 詳細設計書       | `doc/DesignNotes/<対象>.md`（必要な場合のみ）   | `doc/3.sw_design_notes/features/`（目次は `README.md`） |
 | 実装ドキュメント | ソースコード（および Design Notes）             | `doc/3.implementation/`                     |
 | テスト仕様書     | `doc/5.test_spec/`                              | `doc/4.test_spec/`                          |
+| 変更要求         | `doc/6.change_request/<サービス>/`              | `doc/6.change_request/`（サービスが 1 つのため階層を省く。ID は `CR-<nnn>`） |
+| README の画像    | （定めなし）                                    | `doc/images/readme/`（配布物の `public/` に入れない） |
 
 dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は、本リポジトリでは `public/assets/` と読み替える。
 
@@ -43,6 +45,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 - ユーザーから `1.0.0` に上げる指示があるまで、版を `0.y.z` に保つ。この間は、MAJOR に当たる変更（`!` または `BREAKING CHANGE:` を含むコミット）があっても MINOR を上げ、PATCH を 0 に戻す。`feat` は MINOR、`fix` は PATCH を上げる（通常どおり）
 - 背景: `1.0.0` は、ユーザーが製品の仕様がある程度固まったと判断した時点で上げる。それまでは仕様の変更が多く、互換性のない変更のたびに MAJOR を上げると版の意味が薄れるため（Semantic Versioning 2.0.0 の `0.y.z` は初期開発の段階を表す）
 - コミットの型（`feat!` など）と `BREAKING CHANGE:` は、通常どおり変更の内容に合わせて付ける。リリースノートでは、互換性のない変更であることを明記する
+- 版番号は、README の本文の「**Version**」と `package.json` の `version` の 2 か所に書き、この 2 か所を正とする（release スキルの「README の Front Matter の `version`」の例外）。リリースでは 2 か所を同じ版にそろえる
 
 ## 5. 「Visualモードの追加訴求ポイントの提案依頼」の定型ワークフロー
 
@@ -72,3 +75,24 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 ## 7. Dependabot security updates（branch-strategy スキルの例外）
 
 Dependabot security updates はオフにする。自動の PR は `package.json` と `package-lock.json` しか更新せず、配布物の `public/vendor/` と `public/js/app.js` の `EXPORT_URLS` が古いまま残るため。修正済みに見えて、利用者に配布される中身は直っていない状態になる。ライブラリの更新は、3 か所を揃えて手動で行う。
+
+## 8. GitHub Release（release スキルの追加手順）
+
+利用者には GitHub Release で配布する（README の「はじめかた」）。release スキルの手順 7（タグ）の後に、次の手順を行う。単位名は `lucivo` とし、タグは `lucivo-v<版>` になる。
+
+1. **配布用の ZIP の作成**: タグの時点の `public/` だけを、`lucivo-v<版>/` のフォルダに入れた ZIP にする。
+
+   ```sh
+   git archive --format=zip --prefix=lucivo-v<版>/ -o work/release/lucivo-v<版>.zip lucivo-v<版>:public
+   ```
+
+2. **ZIP の確認**: ZIP を `work/release/` に展開し、`lucivo-v<版>/index.html` を `file://` で開いて、起動と同梱サンプルの表示を確かめる。
+3. **【承認】GitHub Release の作成**: タグの push と GitHub Release の作成は外部に公開する操作のため、ユーザーの指示を受けてから行う。リリースノートは、README の「リリースノート」の該当する版の節を使う。
+
+   ```sh
+   gh release create lucivo-v<版> work/release/lucivo-v<版>.zip --title "Lucivo v<版>" --notes-file <リリースノートのファイル>
+   ```
+
+4. **公開後の確認**: Release のページから ZIP をダウンロードして展開し、`index.html` を開けることを確かめる。
+
+- 背景: 利用者に要るのは配布物の `public/` だけで、`doc/`・`tests/`・`tools/` は要らない（1 章）。GitHub が自動で添付するソースコードの ZIP はリポジトリ全体を含むため、別に配布用の ZIP を添付する。`git archive` でタグから作るのは、作業ツリーの未コミットの変更や `work/` などの不要なファイルが混ざらず、同じタグから同じ中身を作り直せるため。ZIP の中を `lucivo-v<版>/` のフォルダに入れるのは、展開したときにファイルが散らばらず、版の違うものを並べて置けるため
