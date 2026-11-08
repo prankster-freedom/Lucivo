@@ -110,8 +110,8 @@
     </div>
   </header>
 
-  <!-- ==================== クイック・スタイルバー ==================== -->
-  <div class="h-9 px-3 sm:px-5 border-b flex items-center justify-between gap-2 overflow-x-auto shrink-0 z-20" style="background: var(--panel-sub); border-color: var(--border-subtle);">
+  <!-- ==================== クイック・スタイルバー（Visualモードのときだけ表示する） ==================== -->
+  <div id="style-bar" class="style-bar is-hidden h-9 px-3 sm:px-5 border-b flex items-center justify-between gap-2 overflow-x-auto shrink-0 z-20" style="background: var(--panel-sub); border-color: var(--border-subtle);">
     <div class="flex items-center gap-2 shrink-0">
       <span class="text-[10px] font-mono font-bold uppercase tracking-wider" style="color: var(--text-muted);">デザインスタイル:</span>
       <div class="pill-container">
@@ -120,8 +120,6 @@
         <button type="button" data-info-style="circles" class="info-style-btn pill-btn text-[10px] py-0.5 px-2">⭕ 5色サークル</button>
         <button type="button" data-info-style="editorial" class="info-style-btn pill-btn text-[10px] py-0.5 px-2">📖 クリームチャート</button>
       </div>
-    </div>
-
     </div>
   </div>
 
@@ -133,9 +131,9 @@
       <div class="h-8 px-4 border-b flex items-center justify-between text-xs shrink-0" style="border-color: var(--border-subtle); background: var(--panel-sub);">
         <span class="font-mono text-[10px] font-bold" style="color: var(--text-muted);">SOURCE MARKDOWN</span>
         <div class="flex items-center gap-1.5">
-          <span id="editor-lock" class="editor-lock hidden">
-            <span class="editor-lock-label">読み取り専用</span>
-            <button id="btn-edit-unlock" type="button" class="editor-unlock-btn">編集</button>
+          <span id="editor-lock" class="editor-lock pill-container hidden" role="group" aria-label="エディタの状態">
+            <button id="btn-edit-lock" type="button" class="pill-btn editor-lock-btn is-active" aria-pressed="true" title="読み取り専用で閲覧する">閲覧</button>
+            <button id="btn-edit-unlock" type="button" class="pill-btn editor-lock-btn" aria-pressed="false" title="エディタで編集する">編集</button>
           </span>
           <button id="btn-test-cache" type="button" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 cursor-pointer">
             + 0ms Test
