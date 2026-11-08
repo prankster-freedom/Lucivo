@@ -649,11 +649,8 @@ async function testMathRendering(browser) {
   for (const [tc, list] of Object.entries(rows)) record(tc, list.every(x => x.ok), JSON.stringify(list));
   if (page.consoleErrors.length) record('TC-MATH-CONSOLE', false, JSON.stringify(page.consoleErrors));
 
-  // TC-MATH-009 HTML エクスポートに数式と KaTeX の CSS が含まれる
+  // TC-MATH-009（HTML エクスポートの数式）は、0.2.0 で HTML の書き出しを外したため保留（CR-001）
   await setMode(page, { style: 'std', appearance: 'light' });
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-export-html')]);
-  const exported = fs.readFileSync(await download.path(), 'utf8');
-  record('TC-MATH-009', /katex@[\d.]+\/dist\/katex\.min\.css/.test(exported) && /class="katex"/.test(exported), `css=${/katex\.min\.css/.test(exported)} katex=${(exported.match(/class="katex"/g) || []).length}`);
 
   // TC-MATH-003 誤りのある数式・TC-MATH-006 安全性
   const doc = [
@@ -667,7 +664,7 @@ async function testMathRendering(browser) {
     const ed = document.getElementById('markdown-editor');
     ed.value = src;
     renderApp();
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => { setTimeout(r, 300); });
     const root = document.getElementById('standard-doc-container');
     return {
       errorShown: root.querySelectorAll('.katex-error').length >= 1,
@@ -700,8 +697,13 @@ async function testMathRendering(browser) {
   await ctx.close();
 }
 
-// 色の明るさ（0〜1）。ページ内で実行する関数からも使えるよう、文字列として渡す
-const LUMINANCE_SRC = `c => { const m = (c || '').match(/[\\d.]+/g); if (!m) return null; const [r, g, b] = m.map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; }`;
+// 色の明るさ（0〜1）。ページ内では色の文字列だけを集め、明るさはテスト側で計算する
+function luminance(c) {
+  const m = (c || '').match(/[\d.]+/g);
+  if (!m) return null;
+  const [r, g, b] = m.map(Number);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
 
 // TC-DIAG-015〜019: 安全性、Visual Stage の細部と Dark
 async function testVisualStageQuality(browser) {
@@ -771,7 +773,6 @@ async function testVisualStageQuality(browser) {
     }).filter(v => v !== null);
   });
   await setMode(page, { style: 'circles', appearance: 'light' });
-  const lum = eval(LUMINANCE_SRC);
   const camel = await page.evaluate(() => {
     const svg = document.querySelector('#visual-stage-container [data-stage-index="0"] svg');
     const node = Array.from(svg.querySelectorAll('g.node')).find(g => {
@@ -790,7 +791,7 @@ async function testVisualStageQuality(browser) {
   });
   const detail = {
     cardsMaxOverlap: Math.max(...cards.map(c => c.overlap)), cardsCenterBelow: cards.every(c => c.centerBelow), cardsCount: cards.length,
-    camelText: camel.color, camelLum: camel.color && +lum(camel.color).toFixed(2), fixedHero: camel.hero, table
+    camelText: camel.color, camelLum: camel.color && +luminance(camel.color).toFixed(2), fixedHero: camel.hero, table
   };
   record('TC-DIAG-018', cards.length >= 3 && detail.cardsCenterBelow && detail.cardsMaxOverlap <= 2 && camel.found && detail.camelLum < 0.4 && !camel.hero && table.style !== 'none' && table.border !== table.slab, JSON.stringify(detail));
 
@@ -798,14 +799,12 @@ async function testVisualStageQuality(browser) {
   const rows = [];
   for (const style of VISUAL_STYLES) {
     await setMode(page, { style, appearance: 'dark' });
-    const r = await page.evaluate(src => {
-      const lumOf = eval(src);
+    const colors = await page.evaluate(() => {
       const root = document.getElementById('visual-stage-container');
       const card = root.querySelector('.exhibition-diagram-card');
       const cs = getComputedStyle(card);
-      const colors = (cs.backgroundImage + ' ' + cs.backgroundColor).match(/rgba?\([^)]+\)/g) || [];
-      const opaque = colors.filter(c => { const a = c.match(/[\d.]+/g); return a.length < 4 || +a[3] > 0.5; });
-      const bgLum = opaque.reduce((sum, c) => sum + lumOf(c), 0) / opaque.length;
+      const bg = (cs.backgroundImage + ' ' + cs.backgroundColor).match(/rgba?\([^)]+\)/g) || [];
+      const opaque = bg.filter(c => { const a = c.match(/[\d.]+/g); return a.length < 4 || +a[3] > 0.5; });
       const svgOf = type => Array.from(root.querySelectorAll('[data-stage-index] > svg')).find(s => s.getAttribute('aria-roledescription') === type);
       const flow = svgOf('flowchart-v2'), cls = svgOf('classDiagram'), seq = svgOf('sequence');
       const edge = flow.querySelector('path.flowchart-link');
@@ -813,13 +812,21 @@ async function testVisualStageQuality(browser) {
       const lifeline = seq.querySelector('line[class~="200"], line[id^="actor"]');
       const msg = seq.querySelector('text.messageText');
       return {
-        bgLum: +bgLum.toFixed(2),
-        edgeLum: +lumOf(getComputedStyle(edge).stroke).toFixed(2),
-        classTextLum: +lumOf(getComputedStyle(clsText).color === 'rgb(0, 0, 0)' ? getComputedStyle(clsText).fill : getComputedStyle(clsText).color).toFixed(2),
-        lifelineLum: +lumOf(getComputedStyle(lifeline).stroke).toFixed(2),
-        messageLum: +lumOf(getComputedStyle(msg).fill).toFixed(2)
+        bg: opaque,
+        edge: getComputedStyle(edge).stroke,
+        classText: getComputedStyle(clsText).color === 'rgb(0, 0, 0)' ? getComputedStyle(clsText).fill : getComputedStyle(clsText).color,
+        lifeline: getComputedStyle(lifeline).stroke,
+        message: getComputedStyle(msg).fill
       };
-    }, LUMINANCE_SRC);
+    });
+    const round2 = v => +v.toFixed(2);
+    const r = {
+      bgLum: round2(colors.bg.reduce((sum, c) => sum + luminance(c), 0) / colors.bg.length),
+      edgeLum: round2(luminance(colors.edge)),
+      classTextLum: round2(luminance(colors.classText)),
+      lifelineLum: round2(luminance(colors.lifeline)),
+      messageLum: round2(luminance(colors.message))
+    };
     // Circles の結線はパレットの色（暗めの色を含む）のため、明るさは判定しない
     const edgeOk = style === 'circles' || r.edgeLum > 0.5;
     rows.push({ style, ok: r.bgLum < 0.3 && edgeOk && r.classTextLum > 0.6 && r.lifelineLum > 0.4 && r.messageLum > 0.6, ...r });
@@ -1825,51 +1832,16 @@ async function testCoverAndTables(browser) {
     && fast.marked === 0 && /JetBrains Mono/.test(fast.thFont) && parseFloat(fast.tdLeft) >= 1;
   record('TC-VTPL-016', tableOk, JSON.stringify({ tableRule, rule, fast }));
 
-  // TC-VTPL-017 スラブ画像エクスポート（FR-026, DD-VTPL-120〜123）
+  // TC-VTPL-017（スラブ画像エクスポート）は、0.2.0 で章の画像化の操作部を外したため保留（CR-001）
+  // TC-VTPL-024 章の画像化の操作部を出さない（DD-VTPL-124）
   await page.click('#btn-visual-mode');
   await page.waitForTimeout(300);
-  const slabExportCheck = await page.evaluate(async () => {
-    const slab = document.querySelector('#visual-stage-container .exhibition-slab');
-    if (!slab) return { ok: false, reason: 'slab not found' };
-    const actions = slab.querySelector('.slab-actions');
-    const copyBtn = slab.querySelector('.btn-copy-slab');
-    const exportBtn = slab.querySelector('.btn-export-slab');
-    if (!actions || !copyBtn || !exportBtn) return { ok: false, reason: 'buttons not found' };
-
-    // スラブの Blob 生成を直接検証
-    let blobOk = false;
-    let blobSize = 0;
-    try {
-      const blob = await renderSlabToBlob(slab);
-      blobOk = blob instanceof Blob && blob.type === 'image/png';
-      blobSize = blob.size;
-    } catch (e) {
-      return { ok: false, reason: 'renderSlabToBlob error: ' + e.message };
-    }
-
-    return {
-      hasActions: Boolean(actions),
-      hasCopy: Boolean(copyBtn),
-      hasExport: Boolean(exportBtn),
-      blobOk,
-      blobSize
-    };
-  });
-
-  // コピーボタンをクリックしてトースト通知が出るか確認
-  await page.locator('#visual-stage-container .exhibition-slab .btn-copy-slab').first().click({ force: true });
-  await page.waitForTimeout(400);
-  const toastMsg = await page.textContent('#toast-message');
-
-  // 高速モードでは .slab-actions が存在しないことを確認
+  const visualSlabs = await page.locator('#visual-stage-container .exhibition-slab').count();
+  const visualActions = await page.locator('#visual-stage-container .slab-actions, #visual-stage-container .btn-copy-slab, #visual-stage-container .btn-export-slab').count();
   await page.click('#btn-mode-fast');
   await page.waitForTimeout(200);
-  const fastActionsCount = await page.locator('#standard-doc-container .slab-actions').count();
-
-  const vtpl17Ok = slabExportCheck.hasActions && slabExportCheck.hasCopy && slabExportCheck.hasExport
-    && slabExportCheck.blobOk && slabExportCheck.blobSize > 1000
-    && Boolean(toastMsg) && fastActionsCount === 0;
-  record('TC-VTPL-017', vtpl17Ok, JSON.stringify({ slabExportCheck, toastMsg, fastActionsCount }));
+  const fastActions = await page.locator('#standard-doc-container .slab-actions').count();
+  record('TC-VTPL-024', visualSlabs > 0 && visualActions === 0 && fastActions === 0, JSON.stringify({ visualSlabs, visualActions, fastActions }));
 
   // TC-VTPL-018 KPI メトリクス・ショーケース（FR-027, DD-VTPL-035）
   await page.click('#btn-visual-mode');
@@ -2482,7 +2454,7 @@ async function testStageOverviewPointer(browser) {
   await page.waitForTimeout(1000);
   await pressUntil(page, () => LucivoStage.showState().index === 4);
   await page.waitForTimeout(2000);
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.evaluate(() => new Promise(resolve => { requestAnimationFrame(() => requestAnimationFrame(resolve)); }));
 
   // TC-SHOW-011 俯瞰: 開くまでの時間、並び、光の停止、選択の移動、拡大して入る、元のシーンへ戻る
   const openMs = await page.evaluate(() => new Promise(resolve => {
@@ -2659,6 +2631,17 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('k');
   await page.waitForTimeout(600);
   const scrollAfterK = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  // ] / [ も J / K と同じく次章・前章へ移り、ショートカット一覧に載っていること（FR-025, DD-KEY-002）
+  await page.keyboard.press(']');
+  await page.waitForTimeout(600);
+  const scrollAfterBracketR = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  await page.keyboard.press('[');
+  await page.waitForTimeout(600);
+  const scrollAfterBracketL = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  const modalListsBrackets = await page.evaluate(() => {
+    const keys = Array.from(document.querySelectorAll('#shortcut-modal kbd')).map(k => k.textContent.trim());
+    return keys.includes('[') && keys.includes(']');
+  });
   const guideHasQuestion = await page.evaluate(() => /\?.*ショートカット一覧/.test(EMPTY_GUIDE_HTML));
   // F5 キーはブラウザのページ更新と競合しないよう捕捉しないこと（defaultPrevented === false かつ発表が起動しないこと）
   const f5NotIntercepted = await page.evaluate(() => {
@@ -2680,9 +2663,10 @@ async function testStageOverviewPointer(browser) {
     && style3.isVis && style3.style === 'circles'
     && style1.isVis && style1.style === 'shapes'
     && scrollBefore === 0 && scrollAfterJ1 > scrollBefore && scrollAfterJ2 > scrollAfterJ1 && scrollAfterK < scrollAfterJ2
+    && scrollAfterBracketR > scrollAfterK && scrollAfterBracketL < scrollAfterBracketR && modalListsBrackets
     && guideHasQuestion && f5NotIntercepted
     && editorValAfter.includes('m1234') && editorStyle === 'shapes';
-  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, guideHasQuestion, f5NotIntercepted, editorValAfter: editorValAfter.slice(-10) }));
+  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, scrollAfterBracketR, scrollAfterBracketL, modalListsBrackets, guideHasQuestion, f5NotIntercepted, editorValAfter: editorValAfter.slice(-10) }));
 
   // TC-SHOW-014 幕間・質疑（Q&A）スタンバイカーテン（FR-028）と自動進行ループ待機パルス（FR-033）
   await setDocument(page, showcaseMd);
@@ -2782,10 +2766,10 @@ async function testOffline(browser) {
   });
   record('TC-OFF-001', external.length === 0 && errors.length === 0, JSON.stringify({ external: external.slice(0, 5), errors: errors.slice(0, 5) }));
   record('TC-OFF-002', fonts.loaded.length === 4 && fonts.math > 0, JSON.stringify(fonts));
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-export-html')]);
-  const exported = fs.readFileSync(await download.path(), 'utf8');
-  record('TC-OFF-003', !exported.includes('./vendor/') && exported.includes('fonts.googleapis.com/css2') && /marked@[\d.]+\/lib\/marked\.umd\.js/.test(exported),
-    `localRefs=${(exported.match(/\.\/vendor\//g) || []).length}`);
+  // TC-OFF-003（HTML エクスポートの参照の置き換え）は、0.2.0 で HTML の書き出しを外したため保留（CR-001）
+  // TC-OFF-004 HTML の書き出しのボタンを置かない（DD-OFF-005）
+  const exportBtnCount = await page.locator('#btn-export-html').count();
+  record('TC-OFF-004', exportBtnCount === 0, `exportBtnCount=${exportBtnCount}`);
   await ctx.close();
 }
 
@@ -2946,7 +2930,7 @@ async function testEditFollow(browser) {
       editor.focus();
       editor.setSelectionRange(pos, pos);
       editor.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }));
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => { setTimeout(r, 250); });
       const top = el => Math.round(el.getBoundingClientRect().top - scroller.getBoundingClientRect().top);
       const heads = Array.from(document.querySelectorAll('#standard-doc-container h2, #visual-stage-container .exhibition-slab[data-stage-no]'));
       const visible = heads.find(h => Math.abs(top(h) - 16) <= 2);
@@ -2988,6 +2972,38 @@ async function testEditFollow(browser) {
 }
 
 // TC-DIAG-024 スタイルバーは Visualモードのときだけ表示する（FR-003, DD-DIAG-063）
+// TC-DIAG-025: 構文エラーの図を描いても、Mermaid のエラーの図が body に残らない（DD-DIAG-064）
+async function testSyntaxErrorCleanup(browser) {
+  const page = await openStagePage(browser);
+  const ok = '# 図\n\n```mermaid\nflowchart TD\n  A --> B\n```\n';
+  const bad = '# 図\n\n```mermaid\nflowchart TD\n  A -->\n```\n';
+  const inspect = () => page.evaluate(() => ({
+    // Mermaid が描画のために body の直下に置く一時的な要素（id は d + 描画 ID）
+    leftovers: document.querySelectorAll('body > [id^="dmermaid-render"]').length,
+    // プレビューの外にある Mermaid のエラーの図
+    errorSvgsOutside: Array.from(document.querySelectorAll('svg[aria-roledescription="error"]')).filter(s => !s.closest('#preview-scroll')).length,
+    previewSvg: Boolean(document.querySelector('#preview-scroll [data-stage-index="0"] svg')),
+    previewError: /構文エラー/.test(document.querySelector('#preview-scroll [data-stage-index="0"]')?.textContent || '')
+  }));
+  const rows = [];
+  for (const mode of ['fast', 'visual']) {
+    if (mode === 'visual') await page.click('#btn-visual-mode');
+    await setDocument(page, ok);
+    const okState = await inspect();
+    await setDocument(page, bad);
+    const bad1 = await inspect();
+    await setDocument(page, bad + ' ');
+    const bad2 = await inspect();
+    await setDocument(page, ok);
+    const fixed = await inspect();
+    const pass = [okState, bad1, bad2, fixed].every(s => s.leftovers === 0 && s.errorSvgsOutside === 0)
+      && (bad1.previewSvg || bad1.previewError) && fixed.previewSvg;
+    rows.push({ mode, pass, okState, bad1, bad2, fixed });
+  }
+  record('TC-DIAG-025', rows.every(r => r.pass), JSON.stringify(rows));
+  await page.context().close();
+}
+
 async function testStyleBar(browser) {
   const page = await openStagePage(browser);
   await setDocument(page, fs.readFileSync(SAMPLE, 'utf8'));
@@ -3038,13 +3054,14 @@ const SUITES = [
   { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },
   { name: 'testVisualStageQuality', tcPrefix: ['TC-STAGE-'], fn: testVisualStageQuality },
   { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates, timeoutMs: 150000 },
-  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-017', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020'], fn: testCoverAndTables },
+  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024'], fn: testCoverAndTables },
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007'], fn: testStageShow, timeoutMs: 180000 },
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014'], fn: testStageOverviewPointer },
   { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022'], fn: testCalloutsGlossaryPrint },
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
+  { name: 'testSyntaxErrorCleanup', tcPrefix: ['TC-DIAG-025'], fn: testSyntaxErrorCleanup },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
 ];
@@ -3102,7 +3119,9 @@ function runWithTimeout(fn, ms, label) {
           if (!existingIds.has(r.id)) mergedResults.push(r);
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // 前回の結果が壊れていて読めないときは、今回の結果だけを書き出す
+    }
   }
   fs.writeFileSync(resultsPath, JSON.stringify(mergedResults, null, 2));
   const failed = results.filter(r => !r.ok).length;
