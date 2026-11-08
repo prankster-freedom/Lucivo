@@ -42,4 +42,6 @@ flowchart TD
 - **発表中の拡大**: `html.is-stage-show` の `font-size` で誌面全体を拡大する。ここに `px` で書いた寸法は拡大されない（`DD-SHOW-003`）。
 - **雛形の値の正**: 雛形（`.vs-*`）の寸法・色は、デザイン仕様（[0.DTP/features/visual-templates.md](../../0.DTP/features/visual-templates.md)）を正とする。値を変えるときは、先にデザイン仕様を直す。
 - **コンテナクエリの基準**: `.exhibition-wrap` は `container-type: inline-size` のコンテナで、雛形の `@container` はその幅（版面の幅）で判定する。`.exhibition-wrap` の幅を中身に合わせる指定（`width: max-content` など）にすると、コンテナの大きさが決まらなくなる（`DD-VTPL-022`）。
+- **コールアウトのアイコン**: `assets/icons/alert-*.svg`（`AST-113`）と同一の定義を、`:root` の `--icon-alert-*` に data URI で持つ（`file://` の CORS のため。モチーフと同じ理由）。アイコンを直すときは、素材のファイルと data URI の両方を直す（`DD-MD-022`）。
+- **印刷の指定**: `@media print` と `@page` は本ファイルの末尾にまとめている。刷らないものは `body > :not(main)` などの構造で隠すため、`body` の直下や `#pane-preview` の中に要素を足すと、印刷でも隠れる。刷りたい要素は `#preview-scroll` の中に置く（`DD-VTPL-130`〜`132`）。印刷の中で `zoom` を使うと、Chromium がページに分割しなくなる。
 - **Visualモードの表**: 高速モードの表（`th, td`）は `!important` で枠線・余白を指定しているため、Visualモードの表（`.exhibition-wrap :is(th, td)`）も `!important` で上書きする。`!important` を外すと、高速モードの格子の枠線が残る（`DD-VTPL-044`）。
