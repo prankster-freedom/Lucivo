@@ -57,6 +57,12 @@ async function loadSample(page) {
   return dialog;
 }
 
+// Visualモードのスタイルを選ぶ。スタイルバーは Visualモードのときだけ表示されるため、先に Visualモードにする（DD-DIAG-063）
+async function selectVisualStyle(page, style) {
+  if (!(await page.evaluate(() => state.isVisualMode))) await page.click('#btn-visual-mode');
+  await page.click(`.info-style-btn[data-info-style="${style}"]`);
+}
+
 // 表示モードの切替（Visual Stage はスタイルバーのボタン、通常モードは高速モードボタンで戻す）
 async function setMode(page, { style, appearance }) {
   const current = await page.evaluate(() => state.appearance);
@@ -65,7 +71,7 @@ async function setMode(page, { style, appearance }) {
   if (style === 'std') {
     if (isVisual) await page.click('#btn-mode-fast');
   } else {
-    await page.click(`.info-style-btn[data-info-style="${style}"]`);
+    await selectVisualStyle(page, style);
   }
   await waitRendered(page);
 }
@@ -199,25 +205,37 @@ async function testFileLoading(browser) {
     JSON.stringify({ dialogOnFirstLoad, visualSampleMatched, notationSampleMatched, extraSampleMatched, ...after }));
   record('TC-FILE-006', after.inputCleared, `file-input.value cleared: ${after.inputCleared}`);
 
-  // TC-FILE-011 読み込み直後は読み取り専用で、「編集」ボタンで編集できる
-  const lockedEditor = await page.evaluate(() => ({
+  // TC-FILE-011 読み込み直後は読み取り専用で、「閲覧 | 編集」の切り替えの「編集」で編集できる
+  const editorLockState = () => ({
     readOnly: document.getElementById('markdown-editor').readOnly,
     lockShown: !document.getElementById('editor-lock').classList.contains('hidden'),
+    viewActive: document.getElementById('btn-edit-lock').classList.contains('is-active') && document.getElementById('btn-edit-lock').getAttribute('aria-pressed') === 'true',
+    editActive: document.getElementById('btn-edit-unlock').classList.contains('is-active') && document.getElementById('btn-edit-unlock').getAttribute('aria-pressed') === 'true',
     errBtnDisabled: document.getElementById('btn-test-err').disabled
-  }));
+  });
+  const lockedEditor = await page.evaluate(editorLockState);
   const beforeType = await page.evaluate(() => document.getElementById('markdown-editor').value);
   await page.click('#markdown-editor');
   await page.keyboard.type('XYZ');
   const afterType = await page.evaluate(() => document.getElementById('markdown-editor').value);
   await page.click('#btn-edit-unlock');
-  const unlockedEditor = await page.evaluate(() => ({
-    readOnly: document.getElementById('markdown-editor').readOnly,
-    lockShown: !document.getElementById('editor-lock').classList.contains('hidden'),
-    errBtnDisabled: document.getElementById('btn-test-err').disabled
-  }));
-  record('TC-FILE-011', lockedEditor.readOnly && lockedEditor.lockShown && lockedEditor.errBtnDisabled && beforeType === afterType
-    && !unlockedEditor.readOnly && !unlockedEditor.lockShown && !unlockedEditor.errBtnDisabled,
+  const unlockedEditor = await page.evaluate(editorLockState);
+  record('TC-FILE-011', lockedEditor.readOnly && lockedEditor.lockShown && lockedEditor.viewActive && !lockedEditor.editActive && lockedEditor.errBtnDisabled && beforeType === afterType
+    && !unlockedEditor.readOnly && unlockedEditor.lockShown && !unlockedEditor.viewActive && unlockedEditor.editActive && !unlockedEditor.errBtnDisabled,
     JSON.stringify({ lockedEditor, typedIgnored: beforeType === afterType, unlockedEditor }));
+
+  // TC-FILE-015 「閲覧」を押すと読み取り専用に戻り、入力しても内容が変わらない。「編集」で再び編集できる
+  await page.click('#btn-edit-lock');
+  const relockedEditor = await page.evaluate(editorLockState);
+  const beforeRelockType = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  await page.click('#markdown-editor');
+  await page.keyboard.type('XYZ');
+  const afterRelockType = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  await page.click('#btn-edit-unlock');
+  const reunlockedEditor = await page.evaluate(editorLockState);
+  record('TC-FILE-015', relockedEditor.readOnly && relockedEditor.viewActive && !relockedEditor.editActive && relockedEditor.errBtnDisabled && beforeRelockType === afterRelockType
+    && !reunlockedEditor.readOnly && reunlockedEditor.editActive,
+    JSON.stringify({ relockedEditor, typedIgnored: beforeRelockType === afterRelockType, reunlockedEditor }));
 
   // TC-FILE-004 編集後の読み込み：キャンセルで内容を保つ（TC-FILE-011 で編集できる状態にしてある）
   await page.fill('#markdown-editor', '# 編集中の文書');
@@ -277,11 +295,11 @@ async function testDiagramRendering(browser) {
   }));
   record('TC-DIAG-001', first.svgs === expected && first.pending === 0 && first.hiddenSide === 0 && first.visualActive && !first.fastActive, JSON.stringify({ expected, ...first }));
 
-  // TC-DIAG-002 描画中のモード切替
+  // TC-DIAG-002 描画中のモード切替。高速モードではスタイルバーが隠れるため、スタイルはキーボードの 3（circles）・4（editorial）で選ぶ
   await page.click('#btn-visual-mode');
-  await page.click('.info-style-btn[data-info-style="circles"]');
+  await page.keyboard.press('3');
   await page.click('#btn-visual-mode');
-  await page.click('.info-style-btn[data-info-style="editorial"]');
+  await page.keyboard.press('4');
   await waitRendered(page);
   const rapid = await page.evaluate(() => {
     const vps = Array.from(document.querySelectorAll('#visual-stage-container [data-stage-index]'));
@@ -936,6 +954,28 @@ function inspectEdgeStyle(isVisual) {
   });
 }
 
+// クラス図の線の端の向き（DD-EDGE-005）を調べる。ページ内で実行する。
+// 記号（継承の三角形など）が付く端ごとに、端の区間が縦（x の差が 0.5px 未満）かを返す
+function inspectClassEdgeEnds(isVisual) {
+  const root = document.querySelector(isVisual ? '#visual-stage-container' : '#standard-doc-container');
+  const svg = Array.from(root.querySelectorAll('[data-stage-index] > svg')).find(s => s.getAttribute('aria-roledescription') === 'classDiagram');
+  if (!svg) return null;
+  const ends = [];
+  for (const p of svg.querySelectorAll('path.relation')) {
+    const nums = (p.getAttribute('d') || '').match(/-?\d+(?:\.\d+)?(?:e-?\d+)?/g) || [];
+    const pts = [];
+    for (let i = 0; i + 1 < nums.length; i += 2) pts.push([+nums[i], +nums[i + 1]]);
+    if (pts.length < 2) continue;
+    const id = p.id.split('-').slice(-1)[0];
+    if (p.getAttribute('marker-start')) ends.push({ id, end: 'start', dx: +Math.abs(pts[1][0] - pts[0][0]).toFixed(2) });
+    if (p.getAttribute('marker-end')) {
+      const n = pts.length;
+      ends.push({ id, end: 'end', dx: +Math.abs(pts[n - 1][0] - pts[n - 2][0]).toFixed(2) });
+    }
+  }
+  return { ends, vertical: ends.length > 0 && ends.every(e => e.dx < 0.5) };
+}
+
 async function testEdgeStyle(browser) {
   const page = await openApp(browser);
   await waitRendered(page);
@@ -954,6 +994,8 @@ async function testEdgeStyle(browser) {
     && classes.length >= 1 && classes.every(c => isDefault(c, 'step', false))
     && others.every(c => c.picker === 0),
     JSON.stringify({ flows: flows.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), states: states.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), classes: classes.map(c => ({ idx: c.idx, active: c.active, curved: c.curved })), otherPickers: others.filter(c => c.picker).map(c => c.idx) }));
+  // TC-EDGE-007（高速モードの分）直角のクラス図で、記号が付く端の区間が縦になる。判定は Visual Stage の分と合わせて後で記録する
+  const classEndsFast = await page.evaluate(inspectClassEdgeEnds, false);
 
   // TC-EDGE-006 状態遷移図とクラス図も、図ごとに形状を変えられる
   const st = states[0].idx, cl = classes[0].idx;
@@ -989,6 +1031,14 @@ async function testEdgeStyle(browser) {
     JSON.stringify({ visual0: byIdx(visual, 0).active, visualOther: byIdx(visual, otherFlow).active, globalSwitch }));
   const card = await page.$('#visual-stage-container #diagram-frame-0');
   if (card) await card.screenshot({ path: path.join(SHOT_DIR, 'edge-shapes-light-00-straight.png') });
+
+  // TC-EDGE-007 直角のクラス図は、継承の三角形などの記号が付く端で、線が箱に垂直に出入りする（高速モード・Visual Stage）
+  const classEndsVisual = await page.evaluate(inspectClassEdgeEnds, true);
+  record('TC-EDGE-007', !!classEndsFast && classEndsFast.vertical && classEndsFast.ends.some(e => e.end === 'start')
+    && !!classEndsVisual && classEndsVisual.vertical,
+    JSON.stringify({ fast: classEndsFast, visual: classEndsVisual }));
+  const classCard = await page.$(`#visual-stage-container #diagram-frame-${cl}`);
+  if (classCard) await classCard.screenshot({ path: path.join(SHOT_DIR, 'edge-shapes-light-class-step.png') });
 
   // TC-EDGE-004 ファイルを読み込み直すと既定に戻る
   await setMode(page, { style: 'std', appearance: 'light' });
@@ -1649,7 +1699,7 @@ const TABLE_RULE_MD = [
 
 async function testCoverAndTables(browser) {
   const page = await openStagePage(browser);
-  await page.click('.info-style-btn[data-info-style="shapes"]');
+  await selectVisualStyle(page, 'shapes');
   await waitRendered(page);
 
   // TC-VTPL-015 表紙（フロントマターの題名・リード文・タグと目次）
@@ -2042,7 +2092,7 @@ async function testSignalLight(browser) {
   }));
   record('TC-LIGHT-007', !fast.loaded && !fast.script && fast.canvases === 0, JSON.stringify(fast));
 
-  await page.click('.info-style-btn[data-info-style="shapes"]');
+  await selectVisualStyle(page, 'shapes');
   await waitRendered(page);
   await page.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.lightPlans().length >= 5);
 
@@ -2937,6 +2987,45 @@ async function testEditFollow(browser) {
   await page.context().close();
 }
 
+// TC-DIAG-024 スタイルバーは Visualモードのときだけ表示する（FR-003, DD-DIAG-063）
+async function testStyleBar(browser) {
+  const page = await openStagePage(browser);
+  await setDocument(page, fs.readFileSync(SAMPLE, 'utf8'));
+  const barState = () => page.evaluate(() => {
+    const bar = document.getElementById('style-bar');
+    const workspace = document.getElementById('workspace-main');
+    return {
+      visual: state.isVisualMode,
+      style: state.infographicStyle,
+      barShown: getComputedStyle(bar).display !== 'none',
+      workspaceTop: Math.round(workspace.getBoundingClientRect().top)
+    };
+  });
+  const fastStart = await barState();
+  await page.click('#btn-visual-mode');
+  await waitRendered(page);
+  const visual = await barState();
+  // Visualモードでスタイルを押しても、モードは Visualモードのまま
+  await page.click('.info-style-btn[data-info-style="cards"]');
+  await waitRendered(page);
+  const styled = await barState();
+  await page.click('#btn-mode-fast');
+  await waitRendered(page);
+  const backToFast = await barState();
+  // 高速モードからキーボードの 3 でスタイルを選ぶと、Visualモードに切り替わり、スタイルバーが現れる
+  await page.locator('#btn-mode-fast').focus();
+  await page.keyboard.press('3');
+  await waitRendered(page);
+  const byKey = await barState();
+  record('TC-DIAG-024', !fastStart.visual && !fastStart.barShown
+    && visual.visual && visual.barShown && visual.workspaceTop > fastStart.workspaceTop
+    && styled.visual && styled.style === 'cards' && styled.barShown
+    && !backToFast.visual && !backToFast.barShown && backToFast.workspaceTop === fastStart.workspaceTop
+    && byKey.visual && byKey.style === 'circles' && byKey.barShown && page.consoleErrors.length === 0,
+  JSON.stringify({ fastStart, visual, styled, backToFast, byKey, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
@@ -2955,6 +3044,7 @@ const SUITES = [
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014'], fn: testStageOverviewPointer },
   { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022'], fn: testCalloutsGlossaryPrint },
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
+  { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
 ];
