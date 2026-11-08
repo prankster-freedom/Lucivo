@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.1.0`
+- **Version**: `0.2.0`
 
 Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラムを表示する、ブラウザだけで動く Markdown ビューアーです。いつもの Markdown をそのまま開くだけで、2 つの見せ方を切り替えられます。
 
@@ -153,6 +153,32 @@ Visualモードに切り替えると、上部にスタイルバーが現れ、4 
 [MIT License](LICENSE)。同梱のライブラリとフォントのライセンスは [public/THIRD_PARTY_LICENSES.txt](public/THIRD_PARTY_LICENSES.txt) にあります。
 
 ## リリースノート
+
+### 0.2.0（2026-11-09）
+
+- feat: ライブラリとフォントを同梱し、インターネットに接続せずに動くようにする
+- feat(edge-style): 状態遷移図とクラス図でも矢印の形状を選べるようにする
+- feat(file-loading): ロゴと起動時の案内から公開リポジトリを開けるようにする
+- feat(samples): 記法サンプル追補版の追加とステージ発表の復元処理を改善する
+- feat(viewing): 通常閲覧時のキーボードショートカットとスラブ画像エクスポートを追加する
+- feat: Visualモードの誌面表現拡充と発表の幕間・待機演出を追加する
+- feat: コールアウト・用語集・印刷の配布資料・Split 表示の編集位置への追従を追加する
+- feat(samples): 用語集・コールアウト・印刷・編集位置への追従をサンプルで確認できるようにする
+- feat(ui): スタイルバーを Visualモードだけに表示し、編集の状態を閲覧と編集の切り替えで示す
+- feat(ui): ] と [ で次と前の章へ移れるようにする
+- fix(build-vendor): LICENSE を含まないパッケージでも同梱できるようにする
+- fix(deps): 脆弱性の修正を含む版へライブラリを更新する
+- fix(deps): Mermaid を 12.3.0、marked を 18.1.3 に更新する
+- fix(diagram-rendering): 状態遷移図の分岐とフォークの装飾を Mermaid 12 で戻す
+- fix(diagram-rendering): Dark のマインドマップなどの枝ごとの色を明示する
+- fix(diagram-rendering): Dark の円グラフのスライスと凡例を読めるようにする
+- fix(viewing): J/K 章スクロールと Light 発表時のポインター視認性および ? 案内を改善する
+- fix: ステージ発表開始ショートカットのF5競合解消とvisual-sample.mdへの新規訴求ポイント追加
+- fix(diagram): 直角のクラス図で継承の三角形が横を向く問題を直す
+- fix(diagram): 構文エラーの図がページの下に積み上がる問題を直す
+- fix(ui): 誌面にならない章の画像化と、持ち出し先で崩れる HTML の書き出しの操作部を外す
+
+注意: 章の画像化（スラブ画像エクスポート）と HTML の書き出しは、0.2.0 では操作部を外している。作り直しは [CR-001](doc/6.change_request/CR-001_章の画像化とHTMLの書き出しの作り直し.md) で扱う。
 
 ### 0.1.0（初期構成）
 
