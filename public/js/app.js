@@ -331,7 +331,7 @@ const EMPTY_GUIDE_HTML = `
     </div>
     <div class="empty-guide-card">
       <h4>🎤 ステージ発表 (発表モード)</h4>
-      <p>ヘッダーの「発表」ボタンで全画面のプレゼンテーション舞台へ。章ごとのページ送り、光が伝わるシグナル・ライト、全シーン俯瞰 (Oキー) や光のポインター (Lキー) で魅せます。</p>
+      <p>ヘッダーの「発表」ボタン（または <kbd class="kbd-key">P</kbd> キー）で全画面のプレゼンテーション舞台へ。章ごとのページ送り、光が伝わるシグナル・ライト、全シーン俯瞰 (Oキー)、光のポインター (Lキー)、幕間・質疑カーテン (B/Qキー)、自動進行ループ (Aキー) で魅せます。</p>
     </div>
   </div>
 
@@ -2441,7 +2441,7 @@ function setupKeyboardShortcuts() {
         event.preventDefault();
         selectInfographicStyle(targetStyle);
       }
-    } else if (event.key === 'p' || event.key === 'P' || event.key === 'F5') {
+    } else if (event.key === 'p' || event.key === 'P') {
       event.preventDefault();
       document.getElementById('btn-stage-show')?.click();
     } else if (event.key === '?') {
