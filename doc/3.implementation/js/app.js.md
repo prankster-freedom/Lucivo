@@ -44,7 +44,10 @@ flowchart TD
 - **描画結果のキャッシュのキー**: 図の SVG は、Mermaid のコードと見た目に関わる設定（外観、パレット、矢印の形状、スタイル、モード）のハッシュをキーにキャッシュする。図の見た目に影響する設定を追加したら、キーにも含める。含めないと、設定を変えても古い図が表示される。
 - **要素の探索範囲**: 図のカードの要素は、表示中のコンテナの中だけから探す。`document` 全体から探すと、別のモードの同じ番号のカードを拾う（`DD-DIAG-003`）。
 - **DOM に入れる前と後**: `postProcessSvg()` は文書に入れていない要素を処理するため、計算後のスタイルや大きさは取れない。それらが必要な処理は `applyReadableFit()`（およびその中の `updateSlabSplit()`）のように DOM に入れた後に行う。キャッシュから表示するたびにも呼ぶ。
-- **雛形の判定の閾値**: 雛形を選ぶ条件の数値（`TEMPLATE_LIMITS`）は、デザイン仕様 `DTP-VTPL-001` と同じ値にする。変えるときは、デザイン仕様とテスト仕様（`TC-VTPL-*`）も直す（`DD-VTPL-001`）。
+- **雛形の判定の閾値**: 雛形を選ぶ条件の数値（`TEMPLATE_LIMITS`）は、デザイン仕様 `DTP-VTPL-001` と同じ値にする。変えるときは、デザイン仕様とテスト仕様（`TC-VTPL-*`）も直す（`DD-VTPL-001`）。定義リスト型（`isGlossaryList()`）は要点カード型より先に調べる。順を入れ替えると、2〜6 個のダッシュ区切りの箇条書きが要点カード型になる（`DD-VTPL-019`）。
+- **コールアウトを置き換える位置**: `decorateAlerts()` は、Visualモードでは `buildVisualStageHtml()` で雛形の判定より前に呼ぶ。判定の後に動かすと、コールアウトだけの章がステートメント型になる（`DD-MD-021`）。
+- **見出しの元の行**: `renderApp()` は最上位のトークンの `raw` の改行を数えて `srcLine` を付ける。トークンを足す・除く処理（図のスロットへの置き換えなど）を入れるときも、行の数え方は元のトークンの `raw` で進める。`renderer.heading`（`setupMarkedHeadings()`）を別の拡張で上書きすると、`data-src-line` が出力されず、編集位置への追従（`FR-037`）が止まる（`DD-DIAG-060`）。
+- **プレビューのスクロール**: J/K の章移動と編集位置への追従は、`previewScrollTopOf()` と `scrollBehavior()` を共有する。上端からの余白（`PREVIEW_SCROLL_MARGIN`）を変えると、両方とテスト（`TC-DIAG-022`）に効く。
 - **雛形の装飾要素とスポットライト**: `applySlabTemplate()` で追加する `.vs-card-ornament`・`.vs-step-chevron`、および `decorateCodeBlocks()` で追加する `.vs-code-caret`・`.vs-code-copy-btn`、表紙の `.vs-cover-spec-pill` はテキストノードを持たない空要素とし、ラベルは `data-*` 属性＋CSS 擬似要素で描画する（`TC-VTPL-003` が高速モードと Visualモードの `textContent` およびインライン要素数の完全一致を検査するため）。また、スポットライト操作（`setupVisualStageInteractions()`）は `#visual-stage-container` へのイベントデリゲーションとクラス付け替えだけで行い、`getComputedStyle` や再描画を呼ばない（`DD-VTPL-015`, `TC-PERF-002`）。
 - **表紙の値と表の列の判定**: 表紙は `readCoverMeta()` がフロントマターの原文から読んだ値で組むため、`renderApp()` は `buildVisualStageHtml()` に YAML の原文を渡す。`author` / `date` は単一行スカラー値のみを読み取り、入れ子ブロックは無視する（`TC-VTPL-015` の入れ子 `author.title` を除外するため）。表紙の上限（`COVER_LIMITS`）と表の列の判定（`NUMERIC_CELL`・`EMPTY_CELL`・`TABLE_LABEL_CHARS`）の値は、デザイン仕様 `DTP-VTPL-100`・`110` と同じにする。目次の項目は `button` のため、クリックの委譲で `a, button` を除外する前に処理する（`DD-VTPL-040`〜`045`）。
 - **モーダル開閉の共通化**: `#zoom-modal` と `#shortcut-modal` の表示状態確認・開閉は `isModalOpen(id)` / `setModalOpen(id, open)` に統一しており、`stage.js` からもこれを参照する。
