@@ -3060,6 +3060,124 @@ body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
   }
 }
 
+/* ==================== 関数のグラフ（FR-048, DTP-VTPL-065, DD-VTPL-143） ==================== */
+/* 曲線は --vs-c1〜4 で塗り、うっすら光をまとわせる。目盛りは等幅の数字。描き始めに曲線を左から引く */
+.exhibition-slab .vs-plot {
+  margin: 1rem 0 0.5rem;
+  padding: 1rem 1.1rem 0.85rem;
+  border: 1px solid var(--vs-card-border);
+  border-radius: 16px;
+  background: var(--vs-card-bg);
+  color: var(--vs-ink);
+}
+body[data-appearance="dark"] .exhibition-slab .vs-plot {
+  color: #E2E8F0;
+}
+.exhibition-slab .vs-plot-title {
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--vs-sub-text, var(--text-secondary));
+}
+.exhibition-slab .vs-plot-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  overflow: visible;
+}
+.exhibition-slab .vs-plot-bg {
+  fill: var(--vs-slab-bg);
+}
+.exhibition-slab .vs-plot-frame {
+  fill: none;
+  stroke: var(--vs-card-border);
+  stroke-width: 1;
+}
+.exhibition-slab .vs-plot-grid line {
+  stroke: currentColor;
+  stroke-opacity: 0.09;
+  stroke-width: 1;
+}
+.exhibition-slab .vs-plot-axes line {
+  stroke: currentColor;
+  stroke-opacity: 0.5;
+  stroke-width: 1.25;
+}
+.exhibition-slab .vs-plot-labels text {
+  fill: var(--vs-sub-text, var(--text-secondary));
+  font-family: 'JetBrains Mono', 'Noto Sans JP', monospace;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.exhibition-slab .vs-plot-labels text.is-x { text-anchor: middle; }
+.exhibition-slab .vs-plot-labels text.is-y { text-anchor: end; }
+.exhibition-slab .vs-plot :is(.vs-plot-curve, .vs-plot-legend li) { --vs-c: var(--vs-c1); }
+.exhibition-slab .vs-plot :is(.vs-plot-curve, .vs-plot-legend li).is-c2 { --vs-c: var(--vs-c2); }
+.exhibition-slab .vs-plot :is(.vs-plot-curve, .vs-plot-legend li).is-c3 { --vs-c: var(--vs-c3); }
+.exhibition-slab .vs-plot :is(.vs-plot-curve, .vs-plot-legend li).is-c4 { --vs-c: var(--vs-c4); }
+.exhibition-slab .vs-plot-curve {
+  fill: none;
+  stroke: var(--vs-c);
+  stroke-width: 2.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--vs-c) 55%, transparent));
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: vs-plot-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.exhibition-slab .vs-plot-curve.is-c2 { animation-delay: 0.15s; }
+.exhibition-slab .vs-plot-curve.is-c3 { animation-delay: 0.3s; }
+.exhibition-slab .vs-plot-curve.is-c4 { animation-delay: 0.45s; }
+@keyframes vs-plot-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.exhibition-slab .vs-plot-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.exhibition-slab .vs-plot-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  font-family: 'JetBrains Mono', 'Noto Sans JP', monospace;
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--vs-c) 55%, var(--vs-tone));
+}
+.exhibition-slab .vs-plot-legend li::before { content: none; }
+.exhibition-slab .vs-plot-swatch {
+  flex: none;
+  width: 1.4rem;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--vs-c);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--vs-c) 60%, transparent);
+}
+.exhibition-slab .vs-plot-expr sup {
+  font-size: 0.72em;
+}
+.exhibition-slab .vs-plot-error-msg {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #DC2626;
+}
+body[data-appearance="dark"] .exhibition-slab .vs-plot-error-msg {
+  color: #F87171;
+}
+@media (prefers-reduced-motion: reduce) {
+  .exhibition-slab .vs-plot-curve { animation: none; }
+}
+
 /* ==================== 印刷・PDF の配布資料（FR-036, DTP-VTPL-120, DD-VTPL-130〜132） ==================== */
 /* 高速モードは既定のページ（A4 縦）で流し、Visualモードの表紙とスラブは名前付きページ（A4 横）に 1 枚ずつ置く */
 @page {

@@ -839,6 +839,264 @@ function treeTokenFor(token) {
   return { type: 'html', raw: html, text: html, block: true };
 }
 
+/* ==========================================================================
+   関数のグラフ（FR-048, DD-VTPL-140〜144）: 言語名 plot のコードブロックに書いた y = f(x) を、
+   Visualモードで SVG のグラフにする。式は自前の構文解析で読み、eval・new Function は使わない（NFR-003）
+   ========================================================================== */
+const PLOT_LANGS = ['plot'];
+// 描画の座標系（viewBox）と、目盛りの文字を置く余白
+const PLOT_BOX = { w: 640, h: 360, left: 52, right: 18, top: 14, bottom: 34 };
+const PLOT_SAMPLES = 600;
+const PLOT_MAX_FUNCS = 4;
+const PLOT_FUNCS = {
+  sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan,
+  sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh, sqrt: Math.sqrt, abs: Math.abs, exp: Math.exp,
+  ln: Math.log, log: Math.log10, floor: Math.floor, ceil: Math.ceil, sign: Math.sign
+};
+const PLOT_CONSTS = { pi: Math.PI, e: Math.E };
+// Visualモードで図版として扱う要素（表紙の図の数・解説＋図版型の判定）
+const VS_FIGURE_SEL = '.lucivo-slot, .vs-plot';
+const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
+// 式を字句に分ける。全角の記号（− × ·）と ** と π は、半角の演算子と pi に読み替える（DD-VTPL-140）
+function tokenizePlotExpr(src) {
+  const text = src.replace(/[−–]/g, '-').replace(/[×·]/g, '*').replace(/\*\*/g, '^').replace(/π/g, ' pi ');
+  const tokens = [];
+  const re = /\s*(?:(\d+(?:\.\d*)?|\.\d+)|([a-zA-Z]+)|([-+*/^()]))/y;
+  while (re.lastIndex < text.length && text.slice(re.lastIndex).trim()) {
+    const start = re.lastIndex;
+    const m = re.exec(text);
+    if (!m) throw new Error(`「${text.slice(start).trim()[0]}」は式に使えません`);
+    if (m[1]) tokens.push({ t: 'num', v: parseFloat(m[1]) });
+    else if (m[2]) tokens.push({ t: 'id', v: m[2].toLowerCase() });
+    else tokens.push({ t: m[3] });
+  }
+  return tokens;
+}
+
+// 式を x の関数（クロージャ）に組み立てる。優先順位は + - < * /・暗黙の掛け算（2x, 3sin(x)）< 単項の - < ^（右結合）（DD-VTPL-140）
+function parsePlotExpr(src) {
+  const tokens = tokenizePlotExpr(src);
+  let pos = 0;
+  const take = t => {
+    if (tokens[pos] && tokens[pos].t === t) { pos++; return true; }
+    return false;
+  };
+  const startsOperand = tok => tok && (tok.t === 'num' || tok.t === 'id' || tok.t === '(');
+  const show = tok => (tok.t === 'num' || tok.t === 'id' ? String(tok.v) : tok.t);
+  function expr() {
+    let left = term();
+    for (;;) {
+      const a = left;
+      if (take('+')) { const b = term(); left = x => a(x) + b(x); }
+      else if (take('-')) { const b = term(); left = x => a(x) - b(x); }
+      else return left;
+    }
+  }
+  function term() {
+    let left = unary();
+    for (;;) {
+      const a = left;
+      if (take('*')) { const b = unary(); left = x => a(x) * b(x); }
+      else if (take('/')) { const b = unary(); left = x => a(x) / b(x); }
+      else if (startsOperand(tokens[pos])) { const b = power(); left = x => a(x) * b(x); }
+      else return left;
+    }
+  }
+  function unary() {
+    if (take('-')) { const a = unary(); return x => -a(x); }
+    if (take('+')) return unary();
+    return power();
+  }
+  function power() {
+    const base = primary();
+    if (take('^')) { const exp = unary(); return x => Math.pow(base(x), exp(x)); }
+    return base;
+  }
+  function primary() {
+    const tok = tokens[pos++];
+    if (!tok) throw new Error('式が途中で終わっています');
+    if (tok.t === 'num') { const v = tok.v; return () => v; }
+    if (tok.t === '(') {
+      const inner = expr();
+      if (!take(')')) throw new Error('「)」が足りません');
+      return inner;
+    }
+    if (tok.t === 'id') {
+      if (tok.v === 'x') return x => x;
+      if (hasOwn(PLOT_CONSTS, tok.v)) { const v = PLOT_CONSTS[tok.v]; return () => v; }
+      if (hasOwn(PLOT_FUNCS, tok.v)) {
+        const fn = PLOT_FUNCS[tok.v];
+        if (!take('(')) throw new Error(`${tok.v} の後には ( ) で引数を書きます`);
+        const arg = expr();
+        if (!take(')')) throw new Error('「)」が足りません');
+        return x => fn(arg(x));
+      }
+      throw new Error(`「${tok.v}」は式に使えません`);
+    }
+    throw new Error(`「${show(tok)}」の位置が正しくありません`);
+  }
+  const fn = expr();
+  if (pos < tokens.length) throw new Error(`「${show(tokens[pos])}」の位置が正しくありません`);
+  return fn;
+}
+
+// plot のコードブロックを読む。1 行に 1 つ、y = 式（f(x) = 式）・x: 最小, 最大・y: 最小, 最大・title: 題。# 以降は注釈（DD-VTPL-141）
+function parsePlotSpec(text) {
+  const spec = { fns: [], x: null, y: null, title: '', xPi: false };
+  text.split(/\r?\n/).forEach((raw, i) => {
+    const line = raw.replace(/(?:^|\s)#.*$/, '').trim();
+    if (!line) return;
+    try {
+      let m;
+      if ((m = /^([xy])\s*[:：]\s*(.+)$/i.exec(line))) {
+        const parts = m[2].split(/\s*(?:,|、|\.\.|〜|~)\s*/).filter(Boolean);
+        if (parts.length !== 2) throw new Error('範囲は「最小, 最大」の 2 つの値で書きます');
+        const [lo, hi] = parts.map(p => parsePlotExpr(p)(0));
+        if (!(Number.isFinite(lo) && Number.isFinite(hi) && lo < hi)) throw new Error('範囲は 最小 < 最大 になる数で書きます');
+        const axis = m[1].toLowerCase();
+        spec[axis] = [lo, hi];
+        if (axis === 'x') spec.xPi = /pi|π/i.test(m[2]);
+      } else if ((m = /^title\s*[:：]\s*(.+)$/i.exec(line))) {
+        spec.title = m[1];
+      } else if ((m = /^(y|[a-z]\s*\(\s*x\s*\))\s*=\s*(.+)$/i.exec(line))) {
+        if (spec.fns.length >= PLOT_MAX_FUNCS) throw new Error(`関数は ${PLOT_MAX_FUNCS} 個までです`);
+        spec.fns.push({ label: line, fn: parsePlotExpr(m[2]) });
+      } else {
+        throw new Error('「y = 式」「x: 最小, 最大」「y: 最小, 最大」「title: 題」のどれかで書きます');
+      }
+    } catch (e) {
+      throw new Error(`${i + 1} 行目: ${e.message}`);
+    }
+  });
+  if (!spec.fns.length) throw new Error('「y = 式」の行がありません');
+  if (!spec.x) spec.x = [-10, 10];
+  return spec;
+}
+
+// y の範囲を指定しないときは、値の 2〜98% の範囲に余白を足す。tan などの発散で、ほかの部分が潰れないようにする（DD-VTPL-142）
+function autoPlotRange(series) {
+  const ys = series.flat().map(p => p[1]).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!ys.length) throw new Error('x の範囲に、描ける値がありません');
+  let lo = ys[Math.floor((ys.length - 1) * 0.02)];
+  let hi = ys[Math.ceil((ys.length - 1) * 0.98)];
+  if (hi - lo < 1e-9) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.08;
+  return [lo - pad, hi + pad];
+}
+
+// 目盛りの数を、1・2・5 × 10^n の切りのよい間隔で決める
+function plotTicks(lo, hi, target) {
+  const raw = (hi - lo) / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 5, 10].map(k => k * mag).find(s => s >= raw * 0.999);
+  const digits = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+  const ticks = [];
+  for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + step * 1e-9; v += step) {
+    const value = Math.abs(v) < step * 1e-9 ? 0 : v;
+    ticks.push({ v: value, label: Number(value.toFixed(digits)).toString().replace('-', '−') });
+  }
+  return ticks;
+}
+
+// x の範囲を π で書いたときは、π/2（多いときは π）ごとに π の分数で目盛りを打つ
+function plotPiTicks(lo, hi) {
+  for (const unit of [1, 2]) {
+    const step = Math.PI / 2 * unit;
+    const ticks = [];
+    for (let k = Math.ceil(lo / step - 1e-9); k * step <= hi + 1e-9; k++) {
+      const half = k * unit;
+      const sign = half < 0 ? '−' : '';
+      const n = Math.abs(half);
+      const label = n === 0 ? '0' : n % 2 === 0 ? `${sign}${n / 2 === 1 ? '' : n / 2}π` : `${sign}${n === 1 ? '' : n}π/2`;
+      ticks.push({ v: k * step, label });
+    }
+    if (ticks.length <= 11) return ticks;
+  }
+  return plotTicks(lo, hi, 8);
+}
+
+// 凡例の式: ^ の後ろ（数・1 文字・括弧）を上付きにする。文字はエスケープしてから組む（NFR-003）
+function formatPlotLabel(label) {
+  return escapeHtml(label.replace(/\*\*/g, '^').replace(/\*/g, '·').replace(/-/g, '−'))
+    .replace(/\^(\d+(?:\.\d+)?|[a-zA-Z]|\([^()]*\))/g, (_, p) => `<sup>${p.replace(/^\((.*)\)$/, '$1')}</sup>`);
+}
+
+// グラフの HTML（SVG と凡例）を組む。色は --vs-c1〜4 の CSS 変数で塗り、スタイルと Light / Dark に追従させる（DD-VTPL-143）
+function buildPlotHtml(spec) {
+  const { w, h, left, right, top, bottom } = PLOT_BOX;
+  const pw = w - left - right;
+  const ph = h - top - bottom;
+  const [x0, x1] = spec.x;
+  const series = spec.fns.map(f => {
+    const pts = [];
+    for (let i = 0; i <= PLOT_SAMPLES; i++) {
+      const x = x0 + (x1 - x0) * i / PLOT_SAMPLES;
+      pts.push([x, f.fn(x)]);
+    }
+    return pts;
+  });
+  const [y0, y1] = spec.y || autoPlotRange(series);
+  const sx = x => (x - x0) / (x1 - x0) * pw;
+  const sy = y => (y1 - y) / (y1 - y0) * ph;
+  const r = v => Math.round(v * 10) / 10;
+
+  // 値が描けない点（NaN・無限大・範囲から大きく外れた点）と、漸近線をまたぐ急な跳びで線を切る
+  const paths = series.map(pts => {
+    let d = '';
+    let prev = null;
+    pts.forEach(([x, y]) => {
+      const py = Number.isFinite(y) ? sy(y) : NaN;
+      const ok = Number.isFinite(py) && py > -ph * 4 && py < ph * 5;
+      if (!ok) { prev = null; return; }
+      const jump = prev !== null && Math.abs(py - prev) > ph * 1.5;
+      d += `${prev === null || jump ? 'M' : 'L'}${r(sx(x))} ${r(py)}`;
+      prev = py;
+    });
+    return d;
+  });
+
+  const xTicks = spec.xPi ? plotPiTicks(x0, x1) : plotTicks(x0, x1, 8);
+  const yTicks = plotTicks(y0, y1, 5);
+  const grid = [
+    ...xTicks.map(t => `<line x1="${r(sx(t.v))}" y1="0" x2="${r(sx(t.v))}" y2="${ph}"/>`),
+    ...yTicks.map(t => `<line x1="0" y1="${r(sy(t.v))}" x2="${pw}" y2="${r(sy(t.v))}"/>`)
+  ].join('');
+  const axes = [
+    y0 <= 0 && y1 >= 0 ? `<line x1="0" y1="${r(sy(0))}" x2="${pw}" y2="${r(sy(0))}"/>` : '',
+    x0 <= 0 && x1 >= 0 ? `<line x1="${r(sx(0))}" y1="0" x2="${r(sx(0))}" y2="${ph}"/>` : ''
+  ].join('');
+  const labels = [
+    ...xTicks.map(t => `<text class="is-x" x="${r(left + sx(t.v))}" y="${h - bottom + 20}">${escapeHtml(t.label)}</text>`),
+    ...yTicks.map(t => `<text class="is-y" x="${left - 8}" y="${r(top + sy(t.v) + 4)}">${escapeHtml(t.label)}</text>`)
+  ].join('');
+  const curves = paths.map((d, i) => (d ? `<path class="vs-plot-curve is-c${i + 1}" d="${d}" pathLength="1"/>` : '')).join('');
+  const legend = spec.fns.map((f, i) =>
+    `<li class="is-c${i + 1}"><span class="vs-plot-swatch" aria-hidden="true"></span><span class="vs-plot-expr">${formatPlotLabel(f.label)}</span></li>`
+  ).join('');
+  const aria = `関数のグラフ: ${spec.fns.map(f => f.label).join('、')}`;
+  const title = spec.title ? `<figcaption class="vs-plot-title">${escapeHtml(spec.title)}</figcaption>` : '';
+  return `<figure class="vs-plot" role="group" aria-label="${escapeHtml(aria)}">${title}`
+    + `<svg class="vs-plot-svg" viewBox="0 0 ${w} ${h}" aria-hidden="true">`
+    + `<g class="vs-plot-labels">${labels}</g>`
+    + `<svg class="vs-plot-area" x="${left}" y="${top}" width="${pw}" height="${ph}" viewBox="0 0 ${pw} ${ph}" overflow="hidden">`
+    + `<rect class="vs-plot-bg" width="${pw}" height="${ph}"/><g class="vs-plot-grid">${grid}</g><g class="vs-plot-axes">${axes}</g>${curves}</svg>`
+    + `<rect class="vs-plot-frame" x="${left}" y="${top}" width="${pw}" height="${ph}"/></svg>`
+    + `<ul class="vs-plot-legend">${legend}</ul></figure>\n`;
+}
+
+// Marked のトークンが plot のコードブロックなら、グラフ（読めないときは理由と元の記述）の HTML のトークンを返す（DD-VTPL-144）
+function plotTokenFor(token) {
+  if (token.type !== 'code' || !PLOT_LANGS.includes((token.lang || '').trim().toLowerCase())) return null;
+  let html;
+  try {
+    html = buildPlotHtml(parsePlotSpec(token.text));
+  } catch (e) {
+    html = `<div class="vs-plot-error" role="note"><p class="vs-plot-error-msg">グラフを描けません（${escapeHtml(e.message)}）</p><pre><code>${escapeHtml(token.text)}</code></pre></div>\n`;
+  }
+  return { type: 'html', raw: html, text: html, block: true };
+}
+
 // 見出しに元の Markdown の行番号（renderApp() が最上位の見出しのトークンに付けた srcLine）を data-src-line として出力する。
 // Split 表示の編集位置への追従（FR-037）が、プレビューの見出しと元の行を対応づけるために使う（DD-DIAG-060）
 function setupMarkedHeadings() {
@@ -2219,7 +2477,7 @@ function buildVisualStageHtml(cleanHtml, yaml) {
   decorateCodeBlocks(temp);
   // 雛形の判定より前に置き換え、コールアウトだけの章をステートメント型にしない（FR-034）
   decorateAlerts(temp);
-  const totalFigures = temp.querySelectorAll('.lucivo-slot').length;
+  const totalFigures = temp.querySelectorAll(VS_FIGURE_SEL).length;
 
   // 題名は h1、フロントマターの title、読み込んだファイル名の順に探す。どれもなければヒーローを出さない（DD-VTPL-040）
   const coverMeta = readCoverMeta(yaml);
@@ -2262,14 +2520,15 @@ function buildVisualStageHtml(cleanHtml, yaml) {
       agenda.push({ no: numStr, title: rawTitle });
     }
     const stageAttr = h2 ? ` data-stage-no="${String(sectionCounter).padStart(2, '0')}"` : '';
-    const slots = wrapper.querySelectorAll('.lucivo-slot');
+    // 図版は Mermaid の図と関数のグラフ（FR-048）。本文と図版が 1 つずつの章は解説＋図版型にする（DD-VTPL-144）
+    const slots = wrapper.querySelectorAll(VS_FIGURE_SEL);
     const children = Array.from(wrapper.children);
-    const proseEls = children.filter(el => el !== h2 && !el.classList.contains('front-matter') && !el.classList.contains('lucivo-slot') && !el.querySelector('.lucivo-slot'));
+    const proseEls = children.filter(el => el !== h2 && !el.classList.contains('front-matter') && !el.matches(VS_FIGURE_SEL) && !el.querySelector(VS_FIGURE_SEL));
     const hasComplexBlock = proseEls.some(el => /^(H[3-6]|TABLE|PRE)$/.test(el.tagName) || el.querySelector('table, pre'));
     const actionsHtml = buildSlabActionsHtml();
     if (slots.length === 1 && proseEls.length >= 1 && !hasComplexBlock) {
       const fm = wrapper.querySelector(':scope > .front-matter');
-      const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
+      const slotEl = children.find(el => el.matches(VS_FIGURE_SEL) || el.querySelector(VS_FIGURE_SEL));
       const proseHtml = proseEls.map(el => el.outerHTML).join('');
       const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
       slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div>${actionsHtml}</section>`;
@@ -2455,8 +2714,9 @@ function renderApp() {
         text: `<div class="lucivo-slot" data-slot="${index}"></div>`
       });
     } else {
-      // 罫線で書いたフォルダ構成は、ツリーにする（FR-047）
-      tokensToKeep.push(treeTokenFor(token) || token);
+      // 罫線で書いたフォルダ構成は、ツリーにする（FR-047）。関数のグラフは Visualモードだけで描く（FR-048）
+      const plotToken = state.isVisualMode ? plotTokenFor(token) : null;
+      tokensToKeep.push(plotToken || treeTokenFor(token) || token);
     }
   });
 
