@@ -413,6 +413,8 @@ let lastLoadedMarkdown = '';
 let currentFileName = 'untitled.md';
 // ファイルを読み込んだ後のウィンドウのタイトルは「ファイル名 - Lucivo」（DD-FILE-050）
 const APP_TITLE_SUFFIX = ' - Lucivo';
+// ドロップで開けるファイル。ファイル選択（#file-input の accept）と同じ拡張子にする（DD-FILE-060）
+const DROPPABLE_FILE_PATTERN = /\.(md|markdown|txt)$/i;
 
 function getThemeSpec() {
   const mode = THEMES[state.appearance] || THEMES.light;
@@ -2905,6 +2907,50 @@ function setupFileMenu() {
   });
 }
 
+// ウィンドウのどこにファイルを落としても開く（FR-041, DD-FILE-060）。ドラッグ中だけ、受け付けの表示（#drop-overlay）を重ねる
+function setupFileDrop() {
+  const overlay = document.getElementById('drop-overlay');
+  // 子要素への出入りでも dragenter / dragleave が起きるため、入った回数を数えて、ウィンドウの外へ出たときだけ消す
+  let depth = 0;
+  const hasFiles = event => Array.from((event.dataTransfer && event.dataTransfer.types) || []).includes('Files');
+  const setShown = shown => {
+    overlay.classList.toggle('is-shown', shown);
+    overlay.setAttribute('aria-hidden', String(!shown));
+  };
+
+  window.addEventListener('dragenter', event => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    depth += 1;
+    setShown(true);
+  });
+  window.addEventListener('dragover', event => {
+    if (!hasFiles(event)) return;
+    // 既定の動作（ブラウザがファイル自体を開く）を止め、コピーの形のカーソルにする
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  });
+  window.addEventListener('dragleave', event => {
+    if (!hasFiles(event)) return;
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) setShown(false);
+  });
+  window.addEventListener('drop', event => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    depth = 0;
+    setShown(false);
+    const files = Array.from(event.dataTransfer.files || []);
+    const file = files.find(f => DROPPABLE_FILE_PATTERN.test(f.name));
+    if (!file) {
+      showToast('開けるのは .md / .markdown / .txt のファイルです');
+      return;
+    }
+    // 複数のファイルを落としたときは、開ける 1 つ目だけを開く
+    loadMarkdownFile(file);
+  });
+}
+
 // フロントマターの表示 ON / OFF。モードにかかわらず効き、モードを切り替えても状態を保つ（DD-FM-011）
 function setupFrontMatterToggle() {
   const btn = document.getElementById('btn-front-matter');
@@ -2922,6 +2968,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupVisualStageInteractions();
   setupKeyboardShortcuts();
   setupFileMenu();
+  setupFileDrop();
   setupFrontMatterToggle();
   setupMarkedMath();
   setupMarkedHeadings();
