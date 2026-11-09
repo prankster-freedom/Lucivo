@@ -2790,6 +2790,8 @@ function inspectPdf(buffer) {
 async function testCalloutsGlossaryPrint(browser) {
   const page = await openStagePage(browser);
   const extraMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample_extra1.md'), 'utf8');
+  // 同梱サンプルとして開いた扱いにする（11 章の画像を samples フォルダから読む。DD-FILE-081）
+  await page.evaluate(() => { currentSampleFile = 'notation_sample_extra1.md'; });
   await setDocument(page, extraMd);
 
   // TC-MD-012 5 種類のコールアウト（高速モード・Visualモード × Light・Dark）。種類外・同じ行に文字が続く引用は通常の引用のまま
@@ -2966,6 +2968,8 @@ async function testEditFollow(browser) {
   const toSlab14 = await caretAt('## 14.', 5);
   const extraMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample_extra1.md'), 'utf8');
   await setMode(page, { style: 'std', appearance: 'light' });
+  // 同梱サンプルとして開いた扱いにする（11 章の画像を samples フォルダから読む。DD-FILE-081）
+  await page.evaluate(() => { currentSampleFile = 'notation_sample_extra1.md'; });
   await setDocument(page, extraMd);
   const inCodeBlock = await caretAt('# チルダによるコードブロック', 3);
   record('TC-DIAG-023', /STAGE 13/.test(toSlab13.at || '') && withinSlab.scrollTop === 0 && /STAGE 14/.test(toSlab14.at || '')
@@ -3501,12 +3505,54 @@ async function testFolder(browser) {
   await page.context().close();
 }
 
+// 同梱サンプルの画像と、サンプルの間のリンク（TC-FILE-028）
+async function testSampleLinks(browser) {
+  const page = await openStagePage(browser);
+  await page.click('#btn-file-menu');
+  await page.click('#menu-sample-notation-extra');
+  await page.waitForFunction(() => document.title.startsWith('notation_sample_extra1.md'));
+  await waitRendered(page);
+  await page.waitForTimeout(500);
+  const images = await page.evaluate(() => Array.from(document.querySelectorAll('#standard-doc-container img')).map(i => ({
+    src: i.getAttribute('src'), loaded: i.complete && i.naturalWidth > 0, width: Math.round(i.getBoundingClientRect().width)
+  })));
+  // 同じ文書の中の見出しへのリンク
+  await page.click('#standard-doc-container a:text-is("この文書の「2. リンクと参照リンク」")');
+  const headingTop = text => page.evaluate(t => {
+    const scroller = document.getElementById('preview-scroll');
+    const h = Array.from(scroller.querySelectorAll('h2')).find(x => x.textContent.trim() === t);
+    return h ? Math.round(h.getBoundingClientRect().top - scroller.getBoundingClientRect().top) : null;
+  }, text);
+  // 文書の末尾から先頭近くまで滑らかにスクロールするため、届くまで待つ
+  const waitHeading = t => page.waitForFunction(text => {
+    const scroller = document.getElementById('preview-scroll');
+    const h = Array.from(scroller.querySelectorAll('h2')).find(x => x.textContent.trim() === text);
+    const top = h ? h.getBoundingClientRect().top - scroller.getBoundingClientRect().top : -1;
+    return top >= 0 && top < 120;
+  }, t, { timeout: 5000 }).catch(() => null);
+  await waitHeading('2. リンクと参照リンク（Reference Links）');
+  const selfTop = await headingTop('2. リンクと参照リンク（Reference Links）');
+  // 別のサンプルの見出しへのリンク
+  await page.click('#standard-doc-container a:text-is("記法サンプルの「6. 表」")');
+  await page.waitForFunction(() => document.title.startsWith('notation_sample.md'));
+  await waitRendered(page);
+  await waitHeading('6. 表');
+  const otherTop = await headingTop('6. 表');
+  const url = page.url();
+  record('TC-FILE-028', images.length === 2 && images.every(i => i.loaded && i.src === 'samples/images/lucivo-flow.svg') && images[1].width === 320
+    && selfTop !== null && selfTop >= 0 && selfTop < 120 && otherTop !== null && otherTop >= 0 && otherTop < 120
+    && url.endsWith('/public/index.html') && page.consoleErrors.length === 0,
+  JSON.stringify({ images, selfTop, otherTop, url: url.slice(-30), errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019'], fn: testTitleAndDrop },
-  { name: 'testFolder', tcPrefix: ['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
+  { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
+  { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
   { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011'], fn: testMarkdownTypography },
