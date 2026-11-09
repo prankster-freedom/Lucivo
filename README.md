@@ -44,7 +44,7 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
 | :------------------------------------------------------ | :--------------------------------------------------------- |
 | [visual-sample.md](public/samples/visual-sample.md)     | Visualモードの表紙・誌面の雛形・表・光の演出・ステージ発表 |
 | [notation_sample.md](public/samples/notation_sample.md) | Markdown と Mermaid の記法の一覧（全図種・数式・コールアウトなど） |
-| [notation_sample_extra1.md](public/samples/notation_sample_extra1.md) | Markdown の発展的な記法とエッジケース（CommonMark・GFM）、画像と別の文書へのリンク、フォルダ構成のツリーの例 |
+| [notation_sample_extra1.md](public/samples/notation_sample_extra1.md) | Markdown の発展的な記法とエッジケース（CommonMark・GFM）、画像と別の文書へのリンク、フォルダ構成のツリー、数式の補足グラフの例 |
 
 動作確認は Chromium 系のブラウザ（Google Chrome / Microsoft Edge）で行っています。
 
@@ -87,6 +87,7 @@ Visualモードに切り替えると、上部にスタイルバーが現れ、4 
   - 短い引用 → 中央揃えのステートメント
   - 本文と図が 1 つずつの章 → 本文と図の 2 段組み
 - **誌面の表とコード**: 表は数値の列が右揃えの誌面の表に、コードブロックは言語ラベルとコピーボタン付きのコンソール枠になります。
+- **数式の補足グラフ**: 本文のインライン数式（`$y = \sin(x)$` など）やブロック数式から $x$ の関数を自動で見つけ、数式の横にプロット計算した PNG 画像の補足グラフを並べて表示します。
 - **光の演出**: フローチャートと状態遷移図では結線をたどって光が伝わり、シーケンス図ではメッセージが時系列の順に光ります。要点カードや手順を押すと、そこにスポットライトを当てられます（もう一度押すか `Esc` で解除）。
 
 ### ステージ発表
