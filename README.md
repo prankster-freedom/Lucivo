@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.2.0`
+- **Version**: `0.3.0`
 
 Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラムを表示する、ブラウザだけで動く Markdown ビューアーです。いつもの Markdown をそのまま開くだけで、2 つの見せ方を切り替えられます。
 
@@ -157,6 +157,20 @@ Visualモードに切り替えると、上部にスタイルバーが現れ、4 
 [MIT License](LICENSE)。同梱のライブラリとフォントのライセンスは [public/THIRD_PARTY_LICENSES.txt](public/THIRD_PARTY_LICENSES.txt) にあります。
 
 ## リリースノート
+
+### 0.3.0（2026-11-09）
+
+- feat(file-loading): ファイルをドラッグ&ドロップで開けるようにする
+- feat(diagram): 図をドラッグで動かし、Ctrl + ホイールで拡大・縮小できるようにする
+- feat(file-loading): フォルダを開いて左の一覧から Markdown を開き、相対パスの画像を表示する
+- feat(file-loading): 同梱サンプルの相対パスの画像とリンクを、samples フォルダを基準に開く
+- feat(samples): 発展サンプルに、画像と別の文書へのリンクの例を追加する
+- fix(file-loading): PDF として保存の既定のファイル名を、開いているファイルの名前にする
+- fix(markdown): file:// の URL と Windows のパスで書いた画像が表示されない不具合を修正する
+- fix(file-loading): 文書の中の Markdown へのリンクを押すと、Lucivo の画面から移ってしまう不具合を修正する
+- fix(markdown): HTML で直に書いた画像が、直後の段落とくっついて見える問題を直す
+
+注意: ヘッダーの「ファイル」メニューを「開く」と「保存」の 2 つのメニューに分けた。Markdown の保存は「保存」→「Markdown を保存」、印刷 / PDF は「保存」→「印刷 / PDF として保存…」に移っている。
 
 ### 0.2.0（2026-11-09）
 
