@@ -3419,25 +3419,88 @@ async function openFolderFromHandle(handle) {
   }
 }
 
-// 一覧のファイルを開く（DD-FILE-075）
+// フォルダの中のファイルを開く（一覧と、文書の中のリンクから。DD-FILE-075, DD-FILE-079）。
+// 一覧に載らないファイル（件数の上限を超えたものなど）も、フォルダの中にあれば開く。開けたら true
 async function openFolderFile(path) {
   const folder = openedFolder;
-  const entry = folder && folder.files.find(f => f.path === path);
-  if (!entry || !confirmDiscardEdits(entry.name)) return;
+  if (!folder) return false;
+  const name = path.slice(path.lastIndexOf('/') + 1);
   const file = await folder.getFile(path);
-  if (!file || folder !== openedFolder) {
-    showToast(`「${entry.name}」を読み込めませんでした`);
-    return;
+  if (folder !== openedFolder) return false;
+  if (!file) {
+    showToast(`「${path}」はフォルダの中に見つかりません`);
+    return false;
   }
+  if (!confirmDiscardEdits(name)) return false;
   try {
-    applyLoadedMarkdown(await file.text(), entry.name, path);
+    applyLoadedMarkdown(await file.text(), name, path);
   } catch (err) {
     console.error('Failed to read file:', err);
-    showToast(`「${entry.name}」を読み込めませんでした`);
-    return;
+    showToast(`「${name}」を読み込めませんでした`);
+    return false;
   }
   // 狭い画面では一覧が文書に重なるため、選んだら隠す
   if (window.matchMedia('(max-width: 1023.98px)').matches) setFolderPaneCollapsed(true);
+  return true;
+}
+
+// 見出しの文字から、GitHub と同じ形のアンカー（小文字、記号を除く、空白は -）を作る（DD-FILE-080）
+function headingSlug(text) {
+  return String(text).trim().toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+    .replace(/\s/g, '-');
+}
+
+// プレビューの中で、アンカー（#以降）に当たる見出しへ送る。見つからなければ false
+function scrollToHeadingAnchor(anchor) {
+  let target = anchor;
+  try {
+    target = decodeURIComponent(anchor);
+  } catch (_) {
+    // % の並びが壊れているときは、書いたままで探す
+  }
+  const slug = headingSlug(target);
+  const scroller = document.getElementById('preview-scroll');
+  const heading = Array.from(scroller.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+    .find(h => headingSlug(h.textContent) === slug);
+  if (!heading) return false;
+  // Visualモードの章の見出しは、章（スラブ）の上端へ送る
+  const el = heading.closest('.exhibition-slab') || heading;
+  scroller.scrollTo({ top: previewScrollTopOf(el, scroller), behavior: scrollBehavior() });
+  return true;
+}
+
+// 文書の中のリンク（DD-FILE-079, 080）。相対パスの Markdown へのリンクと、見出しへのリンク（#…）は、
+// ブラウザの既定の動作（Lucivo の画面から、Markdown のファイルそのものへ移ってしまう）を止めて、Lucivo の中で開く
+function setupDocumentLinks() {
+  document.getElementById('preview-scroll').addEventListener('click', event => {
+    const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+    if (!link || event.defaultPrevented || event.button !== 0) return;
+    const href = link.getAttribute('href');
+    if (href.startsWith('#')) {
+      event.preventDefault();
+      if (!scrollToHeadingAnchor(href.slice(1))) showToast('リンク先の見出しが見つかりません');
+      return;
+    }
+    if (!isRelativeSrc(href)) return;
+    const [pathPart, ...rest] = href.split('#');
+    const anchor = rest.join('#');
+    if (!DROPPABLE_FILE_PATTERN.test(pathPart.split('?')[0])) return;
+    event.preventDefault();
+    if (!openedFolder || currentFolderPath === null) {
+      showToast('Markdown へのリンクは、「開く」→「フォルダを開く…」で開いた文書で使えます');
+      return;
+    }
+    const path = resolveFolderPath(folderDirOf(currentFolderPath), pathPart);
+    if (path === null) {
+      showToast('開いたフォルダの外のファイルは開けません');
+      return;
+    }
+    const open = path === currentFolderPath ? Promise.resolve(true) : openFolderFile(path);
+    open.then(opened => {
+      if (opened && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+    });
+  });
 }
 
 // 一覧を描き直す。フォルダを開いていなければ、一覧も帯も出さない（DD-FILE-074）
@@ -3584,6 +3647,7 @@ function setupFolder() {
   document.getElementById('btn-folder-hide').onclick = () => setFolderPaneCollapsed(true);
   document.getElementById('btn-folder-show').onclick = () => setFolderPaneCollapsed(false);
   document.getElementById('btn-folder-close').onclick = closeFolder;
+  setupDocumentLinks();
   loadRecentFolderHandle();
 }
 
