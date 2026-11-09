@@ -214,3 +214,10 @@ sequenceDiagram
 - `href` が `#` で始まるときは、`preventDefault()` して `scrollToHeadingAnchor()` を呼ぶ。見つからなければトースト「リンク先の見出しが見つかりません」。
 - `scrollToHeadingAnchor(anchor)` は、`decodeURIComponent()` で戻したアンカーを `headingSlug()` にかけ、プレビューの `h1`〜`h6` の中から、文字を `headingSlug()` にかけたものが一致する最初の見出しを探す。Visualモードでは見出しを含むスラブ（`.exhibition-slab`）を、高速モードでは見出しを、`previewScrollTopOf()` と `scrollBehavior()`（J/K の章移動と同じ）で送る。
 - `headingSlug(text)`: 前後の空白を除き、小文字にし、文字（`\p{L}`）・数字（`\p{N}`）・空白・`_`・`-` 以外を除き、空白を `-` にする（GitHub の見出しのアンカーと同じ形。同じ見出しが複数あるときの `-1` などの番号には対応しない）。
+
+### DD-FILE-081 同梱サンプルの相対パス（`FR-046`）
+
+- `loadBundledSample()` は `applyLoadedMarkdown(text, fileName, null, true)` で読み込み、`currentSampleFile` にファイル名を入れる。ファイル選択・ドロップ・フォルダの一覧から開いたときは `null` にする。
+- 画像: DOMPurify のフック（`DD-MD-040`）で、フォルダの文書（DD-FILE-076）でなく、`currentSampleFile` があり、`src` が相対パスのときは、`resolveFolderPath('', src)` で `samples` フォルダの中のパスにし、`samples/` を前に付けて（パスの区切りごとに `encodeURIComponent()`）`src` にする。`index.html` から見た相対パスのため、`file://` でもそのまま読める。`samples` の外を指すときは何もしない（読み込めない表示になる）。
+- リンク: DD-FILE-079 の処理で、フォルダの文書でなく、`currentSampleFile` があるときは、`resolveFolderPath('', パス)` が `BUNDLED_SAMPLES`（`tools/build-samples-data.cjs` の `FILES` と同じ 3 件）にあれば `loadBundledSample()` で開き、`#` 以降があれば DD-FILE-080 で見出しへ送る。今の文書と同じなら開き直さない。なければ「「パス」は同梱サンプルにありません」と知らせる。
+- `loadBundledSample()` は、開けたら `true`、取り消し・読み込みの失敗は `false` を返す（リンクから開いた後に見出しへ送るかを決めるため）。

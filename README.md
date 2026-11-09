@@ -44,7 +44,7 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
 | :------------------------------------------------------ | :--------------------------------------------------------- |
 | [visual-sample.md](public/samples/visual-sample.md)     | Visualモードの表紙・誌面の雛形・表・光の演出・ステージ発表 |
 | [notation_sample.md](public/samples/notation_sample.md) | Markdown と Mermaid の記法の一覧（全図種・数式・コールアウトなど） |
-| [notation_sample_extra1.md](public/samples/notation_sample_extra1.md) | Markdown の発展的な記法とエッジケース（CommonMark・GFM） |
+| [notation_sample_extra1.md](public/samples/notation_sample_extra1.md) | Markdown の発展的な記法とエッジケース（CommonMark・GFM）、画像と別の文書へのリンクの例 |
 
 動作確認は Chromium 系のブラウザ（Google Chrome / Microsoft Edge）で行っています。
 
