@@ -3546,6 +3546,71 @@ async function testSampleLinks(browser) {
   await page.context().close();
 }
 
+// フォルダ構成のツリー（TC-MD-017〜019）
+async function testTree(browser) {
+  const page = await openStagePage(browser);
+  const md = [
+    '# ツリー', '',
+    'フォルダ1', '├フォルダ2', '└ファイル', '',
+    '```', 'lucivo/', '├── public/', '│   ├── index.html', '│   └── js/', '│       ├── app.js      # 本体', '│       └── profile.png', '└── README  ← 説明', '```', '',
+    '```tree', 'project', '|-- src', '|   `-- main.py', '`-- assets', '```', '',
+    '```tree', 'docs/', '  guide/', '    intro.md', '  ...', '```', '',
+    '```text', '├ そのまま', '└ 表示する', '```', '',
+    '├ 1 行だけの罫線は段落のまま', '',
+    '記号の入った文章', '|- この行と', '|- この行があっても、段落の ASCII の罫線はツリーにしない', ''
+  ].join('\n');
+  const inspect = () => page.evaluate(() => {
+    const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+    return {
+      trees: Array.from(root.querySelectorAll('.md-tree')).map(t => Array.from(t.querySelectorAll('.md-tree-row')).map(r =>
+        Array.from(r.querySelectorAll('.md-tree-g')).map(g => g.className.replace('md-tree-g is-', '')).join(',') + '|'
+        + r.querySelector('.md-tree-icon').className.replace('md-tree-icon is-', '') + '|' + r.querySelector('.md-tree-name').textContent)),
+      notes: Array.from(root.querySelectorAll('.md-tree-note')).map(n => n.textContent).filter(Boolean),
+      pres: Array.from(root.querySelectorAll('pre')).map(p => p.textContent.trim().split('\n')[0]),
+      paras: Array.from(root.querySelectorAll('p')).map(p => p.textContent.trim()).filter(t => /罫線|文章/.test(t)),
+      // 縦線と横線が描かれている（::before / ::after の枠）
+      lineShown: (() => {
+        const g = root.querySelector('.md-tree-g.is-tee');
+        if (!g) return false;
+        const before = getComputedStyle(g, '::before');
+        const after = getComputedStyle(g, '::after');
+        return before.borderLeftStyle === 'solid' && after.borderTopStyle === 'solid';
+      })()
+    };
+  });
+  await setDocument(page, md);
+  const fast = await inspect();
+  const expected = [
+    ['|folder|フォルダ1', 'tee|folder|フォルダ2', 'end|file|ファイル'],
+    ['|folder|lucivo', 'tee|folder|public', 'pipe,tee|code|index.html', 'pipe,end|folder|js', 'pipe,blank,tee|code|app.js', 'pipe,blank,end|image|profile.png', 'end|file|README'],
+    ['|folder|project', 'tee|folder|src', 'pipe,end|code|main.py', 'end|folder|assets'],
+    ['|folder|docs', 'tee|folder|guide', 'pipe,end|doc|intro.md', 'end|file|...']
+  ];
+  // TC-MD-017: 段落・言語名なし・ASCII・字下げの書き方を、階層・枝の形・アイコン・注釈として読む
+  record('TC-MD-017', JSON.stringify(fast.trees) === JSON.stringify(expected) && fast.notes.join() === '本体,説明' && fast.lineShown,
+    JSON.stringify({ trees: fast.trees, notes: fast.notes, lineShown: fast.lineShown }));
+  // TC-MD-018: text と書いたコードブロック、罫線が 1 行だけの段落、記号の入った普通の文章は、ツリーにしない
+  record('TC-MD-018', fast.pres.length === 1 && fast.pres[0] === '├ そのまま' && fast.paras.length === 2,
+    JSON.stringify({ pres: fast.pres, paras: fast.paras }));
+
+  // TC-MD-019: Visualモード（Light / Dark）でも同じツリーを描き、同梱の発展サンプルの 12 章もツリーになる
+  const visualRows = [];
+  for (const appearance of ['light', 'dark']) {
+    await setMode(page, { style: 'cards', appearance });
+    const v = await inspect();
+    visualRows.push({ appearance, same: JSON.stringify(v.trees) === JSON.stringify(expected), lineShown: v.lineShown });
+  }
+  await setMode(page, { style: 'std', appearance: 'light' });
+  await page.evaluate(() => { currentSampleFile = 'notation_sample_extra1.md'; });
+  await setDocument(page, fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample_extra1.md'), 'utf8'));
+  const sample = await inspect();
+  record('TC-MD-019', visualRows.every(r => r.same && r.lineShown) && sample.trees.length === 3
+    && sample.trees[1].join('/') === '|folder|資料/tee|doc|企画書.md/tee|folder|画像フォルダ/pipe,end|image|全体図.png/end|doc|議事録.md'
+    && page.consoleErrors.length === 0,
+  JSON.stringify({ visualRows, sampleTrees: sample.trees, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
@@ -3557,6 +3622,7 @@ const SUITES = [
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
   { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011'], fn: testMarkdownTypography },
   { name: 'testLocalImages', tcPrefix: ['TC-MD-013', 'TC-MD-014', 'TC-MD-015'], fn: testLocalImages },
+  { name: 'testTree', tcPrefix: ['TC-MD-017', 'TC-MD-018', 'TC-MD-019'], fn: testTree },
   { name: 'testMathRendering', tcPrefix: ['TC-MATH-'], fn: testMathRendering },
   { name: 'testFrontMatter', tcPrefix: ['TC-FM-'], fn: testFrontMatter },
   { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },
