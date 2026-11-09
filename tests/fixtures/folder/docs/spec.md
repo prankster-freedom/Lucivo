@@ -9,3 +9,5 @@
 ![missing](missing.svg)
 
 ![outside](../../outside.svg)
+
+[overview](sub/2_overview.md#details) / [self](#spec) / [nothing](none.md)

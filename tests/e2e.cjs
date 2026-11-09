@@ -3397,6 +3397,33 @@ async function testFolder(browser) {
     && imagesOk(fast) && fast.htmlWidth === 40 && imagesOk(visual),
   JSON.stringify({ listed, toast, fast, visual }));
 
+  // TC-FILE-027: 文書の中の Markdown へのリンク。Lucivo の中で開き、#以降の見出しへ送る。フォルダにないファイルは知らせる
+  await page.click('#btn-mode-fast');
+  await waitRendered(page);
+  const appUrl = page.url();
+  await page.click('#standard-doc-container a:text-is("nothing")');
+  await page.waitForTimeout(200);
+  const notFound = await page.evaluate(() => ({ toast: document.getElementById('toast-message').textContent, title: document.title }));
+  await page.click('#standard-doc-container a:text-is("overview")');
+  await page.waitForFunction(() => document.title.startsWith('2_overview.md'));
+  await page.waitForTimeout(900);
+  const linked = await page.evaluate(() => {
+    const scroller = document.getElementById('preview-scroll');
+    const h = Array.from(scroller.querySelectorAll('h2')).find(x => x.textContent === 'Details');
+    return {
+      current: Array.from(document.querySelectorAll('.folder-list-item.is-current')).map(e => e.dataset.path),
+      headingTop: h ? Math.round(h.getBoundingClientRect().top - scroller.getBoundingClientRect().top) : null,
+      scrollTop: Math.round(scroller.scrollTop)
+    };
+  });
+  record('TC-FILE-027', /「docs\/none\.md」はフォルダの中に見つかりません/.test(notFound.toast) && notFound.title === 'spec.md - Lucivo'
+    && linked.current.join() === 'docs/sub/2_overview.md' && linked.scrollTop > 0 && linked.headingTop >= 0 && linked.headingTop < 120
+    && page.url() === appUrl, JSON.stringify({ notFound, linked, url: page.url() === appUrl }));
+  // 以降の確かめのため、spec.md に戻す
+  await page.click('.folder-list-item[data-path="docs/spec.md"]');
+  await page.waitForFunction(() => document.title.startsWith('spec.md'));
+  await page.waitForTimeout(500);
+
   // TC-FILE-023: 一覧を隠す・戻す（隠したことを覚える）。フォルダを閉じる
   await page.click('#btn-folder-hide');
   const hidden = await folderState(page);
@@ -3407,10 +3434,15 @@ async function testFolder(browser) {
   await waitRendered(page);
   await page.waitForTimeout(300);
   const closed = await folderState(page);
+  // フォルダを閉じた後の Markdown へのリンクは、画面を移さずに案内する
+  await page.click('#standard-doc-container a:text-is("overview")');
+  await page.waitForTimeout(200);
+  const linkWithoutFolder = await page.evaluate(() => ({ toast: document.getElementById('toast-message').textContent, title: document.title }));
   record('TC-FILE-023', !hidden.paneShown && hidden.railShown && remembered === '1' && shown.paneShown && !shown.railShown
     && !closed.paneShown && !closed.railShown && closed.loaded.length === 0
-    && closed.missing.some(m => m.path === '../images/logo.svg' && /フォルダを開く/.test(m.hint)),
-  JSON.stringify({ hidden, remembered, shown, closed }));
+    && closed.missing.some(m => m.path === '../images/logo.svg' && /フォルダを開く/.test(m.hint))
+    && /フォルダを開く/.test(linkWithoutFolder.toast) && linkWithoutFolder.title === 'spec.md - Lucivo' && page.url() === appUrl,
+  JSON.stringify({ hidden, remembered, shown, closed, linkWithoutFolder }));
 
   // TC-FILE-024: File System Access API の方式（模したハンドル）。日本語の名前、node_modules と隠しフォルダの除外、前回のフォルダ
   await page.evaluate(() => {
@@ -3474,7 +3506,7 @@ const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019'], fn: testTitleAndDrop },
-  { name: 'testFolder', tcPrefix: ['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025'], fn: testFolder },
+  { name: 'testFolder', tcPrefix: ['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
   { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011'], fn: testMarkdownTypography },
