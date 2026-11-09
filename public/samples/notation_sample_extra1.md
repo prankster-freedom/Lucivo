@@ -213,3 +213,22 @@ Markdown 本文内に埋め込み可能な、サニタイズを通過するセ�
 
 > [!HINT]
 > 5 種類以外のマーカーの引用
+
+## 11. 画像と、別の文書へのリンク
+
+画像と別の Markdown へのリンクは、この文書のある場所（`samples` フォルダ）を基準にした相対パスで書けます。同梱サンプルとして開いたとき、または「開く」→「フォルダを開く…」で開いたフォルダの文書で使えます。
+
+Markdown の記法で書いた画像:
+
+![Markdown を Lucivo で誌面と発表に組む流れ](images/lucivo-flow.svg)
+
+HTML で、幅を指定して書いた画像:
+
+<img src="images/lucivo-flow.svg" alt="幅 320px で表示した流れの図" width="320">
+
+別の Markdown へのリンクは、Lucivo の中で開きます。`#` の後に見出しを書くと、その見出しへ移ります。
+
+- [記法サンプル（notation_sample.md）](notation_sample.md)
+- [記法サンプルの「6. 表」](notation_sample.md#6-表)
+- [Visualモードサンプル（visual-sample.md）](visual-sample.md)
+- [この文書の「2. リンクと参照リンク」](#2-リンクと参照リンクreference-links)
