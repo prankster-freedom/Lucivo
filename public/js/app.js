@@ -913,6 +913,10 @@ const MATH_PLOT_FUNCS = {
 };
 const MATH_PLOT_CONSTS = { pi: Math.PI, e: Math.E };
 const MATH_PLOT_TRIG_RE = /\b(?:sin|cos|tan|sec|csc|cot)\b/;
+const TEX_FRAC_RE = /\\(?:d|t)?frac\b/;
+const TEX_SQRT_RE = /\\sqrt\b/;
+const TEX_OPERATOR_NAME_RE = /\\(?:operatorname|mathrm)\s*\{\s*([a-zA-Z]+)\s*\}/g;
+const TEX_TRIG_FUNCS_RE = /\\(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sec|csc|cot|exp|ln|log|sqrt|abs|floor|ceil|sign|sinc)\b/g;
 // 1 変数の陽関数ではない数式（定積分・総和・極限・行列・テキスト添字・漸化式・微分記号など）を早期に除外する
 const MATH_PLOT_REJECT_RE = /\\(?:int|iint|iiint|oint|sum|prod|coprod|lim|limsup|liminf|infty|partial|nabla|pm|mp|approx|sim|simeq|cong|equiv|ne|neq|propto|subset|subseteq|cup|cap|forall|exists|Rightarrow|Leftrightarrow|to|rightarrow|mapsto|text|textbf|textit|mathbf|mathcal|mathbb)\b|\\begin\{(?:[pbBvV]?matrix|cases| subarray)\}|[_']/;
 const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
@@ -939,7 +943,7 @@ function extractBracedGroup(str, start) {
 function expandTexConstructs(input) {
   let s = input;
   for (let guard = 0; guard < 32; guard++) {
-    const fracMatch = /\\(?:d|t)?frac\b/.exec(s);
+    const fracMatch = TEX_FRAC_RE.exec(s);
     if (fracMatch) {
       const num = extractBracedGroup(s, fracMatch.index + fracMatch[0].length);
       const den = num ? extractBracedGroup(s, num.end) : null;
@@ -947,7 +951,7 @@ function expandTexConstructs(input) {
       s = `${s.slice(0, fracMatch.index)}((${num.content})/(${den.content}))${s.slice(den.end)}`;
       continue;
     }
-    const sqrtMatch = /\\sqrt\b/.exec(s);
+    const sqrtMatch = TEX_SQRT_RE.exec(s);
     if (sqrtMatch) {
       let after = sqrtMatch.index + sqrtMatch[0].length;
       while (after < s.length && /\s/.test(s[after])) after++;
@@ -976,15 +980,14 @@ function normalizeTexPlotExpr(raw) {
     .replace(/~/g, ' ')
     .replace(/\\(?:left|right|[bB]ig(?:l|r|m)?|[bB]igg(?:l|r|m)?)\s*(?=[()[\]|\\])/g, '')
     .replace(/\\(?:lvert|rvert|vert)\b/g, '|')
-    .replace(/\\operatorname\s*\{\s*([a-zA-Z]+)\s*\}/g, ' $1 ')
-    .replace(/\\mathrm\s*\{\s*([a-zA-Z]+)\s*\}/g, ' $1 ');
+    .replace(TEX_OPERATOR_NAME_RE, ' $1 ');
   s = expandTexConstructs(s);
   if (s === null) return null;
   s = s
     .replace(/\\arcsin\b/g, ' asin ')
     .replace(/\\arccos\b/g, ' acos ')
     .replace(/\\arctan\b/g, ' atan ')
-    .replace(/\\(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sec|csc|cot|exp|ln|log|sqrt|abs|floor|ceil|sign|sinc)\b/g, ' $1 ')
+    .replace(TEX_TRIG_FUNCS_RE, ' $1 ')
     .replace(/\\pi\b/g, ' pi ')
     .replace(/\\(?:cdot|times|ast)\b/g, '*')
     .replace(/\\div\b/g, '/');
@@ -1277,6 +1280,31 @@ function plotPiTicks(lo, hi, maxTicks = 9) {
   return plotTicks(lo, hi, Math.max(3, maxTicks - 2));
 }
 
+// サンプリング点列から不連続点（漸近線や定義域外）で切断した連続区間の点列群を生成する（DD-VTPL-142）
+function splitPlotSegments(pts, top, ph, sx, sy) {
+  const segments = [];
+  let current = [];
+  let prevPy = null;
+  pts.forEach(([x, y]) => {
+    const py = Number.isFinite(y) ? sy(y) : NaN;
+    const ok = Number.isFinite(py) && py > top - ph * 3 && py < top + ph * 4;
+    if (!ok) {
+      if (current.length > 1) segments.push(current);
+      current = [];
+      prevPy = null;
+      return;
+    }
+    if (prevPy !== null && Math.abs(py - prevPy) > ph * 1.4) {
+      if (current.length > 1) segments.push(current);
+      current = [];
+    }
+    current.push([sx(x), py]);
+    prevPy = py;
+  });
+  if (current.length > 1) segments.push(current);
+  return segments;
+}
+
 // 関数仕様 spec をオフスクリーン Canvas にプロット描画し、PNG ラスター画像の Data URL に変換する（DD-VTPL-143）
 function renderMathPlotToDataUrl(spec, isDisplay, style, appearance) {
   const box = isDisplay ? MATH_PLOT_BOX.block : MATH_PLOT_BOX.inline;
@@ -1360,29 +1388,7 @@ function renderMathPlotToDataUrl(spec, isDisplay, style, appearance) {
 
   // 4. 連続区間に分割した点列を作成（漸近線や定義域外で線を切る）
   const basePy = sy(Math.min(y1, Math.max(y0, 0)));
-  const segmentsBySeries = series.map(pts => {
-    const segments = [];
-    let current = [];
-    let prevPy = null;
-    pts.forEach(([x, y]) => {
-      const py = Number.isFinite(y) ? sy(y) : NaN;
-      const ok = Number.isFinite(py) && py > top - ph * 3 && py < top + ph * 4;
-      if (!ok) {
-        if (current.length > 1) segments.push(current);
-        current = [];
-        prevPy = null;
-        return;
-      }
-      if (prevPy !== null && Math.abs(py - prevPy) > ph * 1.4) {
-        if (current.length > 1) segments.push(current);
-        current = [];
-      }
-      current.push([sx(x), py]);
-      prevPy = py;
-    });
-    if (current.length > 1) segments.push(current);
-    return segments;
-  });
+  const segmentsBySeries = series.map(pts => splitPlotSegments(pts, top, ph, sx, sy));
 
   // 5. 単一関数のときは曲線と基準線の間に淡いグラデーション塗りを施す
   if (segmentsBySeries.length === 1) {
