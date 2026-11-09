@@ -2065,6 +2065,38 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
 }
 
 /* ==========================================================================
+   読み込めない画像（FR-042, DD-MD-041）
+   ========================================================================== */
+/* 画像の代わりに置く枠。破線の枠で「ここに画像があるはず」と示し、src を等幅で添える */
+.img-missing {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 100%;
+  margin: 0.25rem 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+.img-missing-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.img-missing-path {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.img-missing-hint {
+  font-size: 0.75rem;
+}
+
+/* ==========================================================================
    図のドラッグ移動と Ctrl + ホイールの拡大・縮小（FR-038, FR-039, DTP-007）
    ========================================================================== */
 /* --zoom-width: Ctrl + ホイールで決めた図の幅（app.js の zoomDiagram が設定。DD-DIAG-071） */
