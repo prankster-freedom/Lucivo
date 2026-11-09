@@ -2065,6 +2065,28 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
 }
 
 /* ==========================================================================
+   図のドラッグ移動と Ctrl + ホイールの拡大・縮小（FR-038, FR-039, DTP-007）
+   ========================================================================== */
+/* --zoom-width: Ctrl + ホイールで決めた図の幅（app.js の zoomDiagram が設定。DD-DIAG-071） */
+:is(.diagram-viewport, .exhibition-viewport).is-zoomed svg {
+  width: var(--zoom-width) !important;
+  min-width: var(--zoom-width) !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
+/* スクロール表示の図だけ、つかめることを示す。図の中のリンクとボタンは通常のカーソルのまま（DD-DIAG-070） */
+:is(.diagram-viewport, .exhibition-viewport).is-pannable {
+  cursor: grab;
+}
+:is(.diagram-viewport, .exhibition-viewport).is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+:is(.diagram-viewport, .exhibition-viewport).is-pannable a {
+  cursor: pointer;
+}
+
+/* ==========================================================================
    ファイルのドロップの受け付け（FR-041, DTP-007）
    ========================================================================== */
 /* ドラッグ中だけ画面全体に重ねる。文書の中身ではなく Lucivo 自身の表現のため、
