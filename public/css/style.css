@@ -123,10 +123,209 @@ body {
   white-space: nowrap;
   cursor: pointer;
 }
+/* 前回のフォルダの項目は、覚えたフォルダがないときは隠す。.file-menu-item の display: block が Tailwind の .hidden より後に効くため、ここで隠す */
+.file-menu-item.hidden {
+  display: none;
+}
 .file-menu-item:hover,
 .file-menu-item:focus-visible {
   background: var(--panel-sub);
   outline: none;
+}
+
+/* ==========================================================================
+   フォルダの一覧（FR-044, DTP-008）
+   ========================================================================== */
+/* エディタの左に置く細い列。広い画面（lg）では並べ、狭い画面ではエディタとプレビューの上に重ねる */
+.folder-pane {
+  display: flex;
+  flex-direction: column;
+  width: 15.5rem;
+  min-height: 0;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  z-index: 15;
+}
+.folder-pane.hidden {
+  display: none;
+}
+@media (max-width: 1023.98px) {
+  .folder-pane {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: min(17rem, 85vw);
+    box-shadow: 12px 0 32px -12px rgba(15, 23, 42, 0.35);
+    z-index: 30;
+  }
+}
+.folder-pane-header {
+  height: 2rem;
+  padding: 0 0.25rem 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+}
+.folder-pane-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.folder-pane-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.folder-pane-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.folder-pane-btn svg,
+.folder-rail svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+.folder-pane-btn:hover,
+.folder-pane-btn:focus-visible {
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  outline: none;
+}
+.folder-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.35rem 0.35rem 1rem;
+  scrollbar-width: thin;
+}
+/* サブフォルダの区切り。パスを等幅で小さく示す */
+.folder-list-dir {
+  margin: 0.6rem 0.4rem 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.folder-list-dir:first-child {
+  margin-top: 0.2rem;
+}
+.folder-list-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.3rem 0.5rem 0.3rem 0.6rem;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.folder-list-item > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-list-item svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.folder-list-item:hover,
+.folder-list-item:focus-visible {
+  background: var(--panel-sub);
+  color: var(--text-primary);
+  outline: none;
+}
+/* 開いているファイル。操作部の選択中と同じく、面の背景と濃い文字で示し、左にアクセントの線を引く（DTP-006, DTP-008） */
+.folder-list-item.is-current {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.folder-list-item.is-current::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.folder-list-item.is-current svg {
+  color: var(--accent);
+}
+.folder-list-empty {
+  padding: 0.75rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+/* 一覧を隠したときの細い帯。フォルダのアイコンと、開く向きの矢印を縦に並べる */
+.folder-rail {
+  width: 1.75rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.45rem;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 15;
+}
+.folder-rail.hidden {
+  display: none;
+}
+.folder-rail:hover,
+.folder-rail:focus-visible {
+  color: var(--accent);
+  outline: none;
+}
+/* 狭い画面では、エディタの見出しに重ならないよう、左下に浮かぶ丸いボタンにする */
+@media (max-width: 1023.98px) {
+  .folder-rail {
+    position: absolute;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.15rem;
+    padding-top: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: var(--panel-bg);
+    box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.35);
+    z-index: 30;
+  }
 }
 
 /* ブランドロゴ（Light / Dark 連動、DD-FILE-007） */
@@ -2763,6 +2962,8 @@ body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
   }
   /* 刷らないもの: ヘッダー・スタイルバー・モーダル・トースト・発表の操作部（body 直下）、エディタ、操作ボタン、光の層（DD-VTPL-131） */
   body > :not(main),
+  #folder-pane,
+  #btn-folder-show,
   #pane-editor,
   #pane-preview > :not(#preview-scroll),
   .slab-actions,
