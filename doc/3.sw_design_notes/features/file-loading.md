@@ -185,7 +185,7 @@ sequenceDiagram
 
 ### DD-FILE-075 一覧からファイルを開く（`FR-044`）
 
-- `openFolderFile(path)` は、`confirmDiscardEdits(name)`（DD-FILE-010）で確かめてから、`getFile(path)` → `file.text()`（UTF-8）で読み、`applyLoadedMarkdown(text, name, path)` を呼ぶ。
+- `openFolderFile(path)` は、`getFile(path)` でファイルを探し、見つからなければ「「パス」はフォルダの中に見つかりません」と知らせる。見つかったら `confirmDiscardEdits(name)`（DD-FILE-010）で確かめてから、`file.text()`（UTF-8）で読み、`applyLoadedMarkdown(text, name, path)` を呼ぶ。開けたら `true` を返す。一覧に載らないファイル（件数の上限を超えたもの）も、フォルダの中にあれば開く（DD-FILE-079 のリンクから開くため）。
 - `applyLoadedMarkdown()` の第 3 引数 `folderPath` を `currentFolderPath` に入れる。ファイル選択・ドロップ・同梱サンプルは `null`（相対パスの基準がない）。
 - 読んでいる間に別のフォルダを開いた場合は、読んだ内容を使わない。
 
@@ -199,3 +199,18 @@ sequenceDiagram
 - `folderImageUrls` は、パス → blob URL（読み込み中は `Promise`）。同じ画像を何度描き直しても読み直さない。フォルダを閉じる・別のフォルダを開くときに `URL.revokeObjectURL()` で捨てる。
 - **背景（blob URL にする理由）**: File System Access API も入力欄も、ファイルの中身（`File`）は渡すが、`file://` のパスは渡さない。`URL.createObjectURL()` なら、`file://` のページでも画像として表示できる。DOMPurify は `blob:` の URL を許さないため、フックの中で `setAttribute()` して `forceKeepAttr` で残す（`DD-MD-040` と同じ）。
 - **背景（描画の後に読む理由）**: ファイルの読み込みは非同期で、DOMPurify のフックの中では待てない。描画の後に読み、読み込み済みの URL は次の描画からフックの中で使う。
+
+### DD-FILE-079 文書の中の Markdown へのリンク（`FR-046`）
+
+- `setupDocumentLinks()` で、`#preview-scroll` の `click` を受け取り、`a[href]` の `href` 属性（書いたままの値）を調べる。左クリックだけを扱う。
+- `href` が相対パス（`isRelativeSrc()`）で、`#` と `?` から前が `DROPPABLE_FILE_PATTERN` に合うときは、`preventDefault()` でブラウザの移動を止める。
+  - フォルダを開いていない（`openedFolder` がない、または `currentFolderPath` が `null`）→ トースト「Markdown へのリンクは、「開く」→「フォルダを開く…」で開いた文書で使えます」
+  - `resolveFolderPath(文書のフォルダ, パス)`（DD-FILE-076）が `null`（フォルダの外）→ トースト「開いたフォルダの外のファイルは開けません」
+  - それ以外 → `openFolderFile(path)`（DD-FILE-075）。今の文書と同じパスなら開き直さない。開けて、`#` 以降があれば DD-FILE-080 で見出しへ送る
+- それ以外のリンク（`https://` など、Markdown 以外の相対パス）は、何もしない（ブラウザの動作のまま）。
+
+### DD-FILE-080 見出しへのリンク（`FR-046`）
+
+- `href` が `#` で始まるときは、`preventDefault()` して `scrollToHeadingAnchor()` を呼ぶ。見つからなければトースト「リンク先の見出しが見つかりません」。
+- `scrollToHeadingAnchor(anchor)` は、`decodeURIComponent()` で戻したアンカーを `headingSlug()` にかけ、プレビューの `h1`〜`h6` の中から、文字を `headingSlug()` にかけたものが一致する最初の見出しを探す。Visualモードでは見出しを含むスラブ（`.exhibition-slab`）を、高速モードでは見出しを、`previewScrollTopOf()` と `scrollBehavior()`（J/K の章移動と同じ）で送る。
+- `headingSlug(text)`: 前後の空白を除き、小文字にし、文字（`\p{L}`）・数字（`\p{N}`）・空白・`_`・`-` 以外を除き、空白を `-` にする（GitHub の見出しのアンカーと同じ形。同じ見出しが複数あるときの `-1` などの番号には対応しない）。
