@@ -147,6 +147,7 @@ async function testFileLoading(browser) {
   // TC-FILE-013 起動直後は編集でき、読み込む前の保存名は untitled.md
   const startEditable = await page.evaluate(() => !document.getElementById('markdown-editor').readOnly && document.getElementById('editor-lock').classList.contains('hidden'));
   await page.fill('#markdown-editor', '# 新しい文書\n');
+  await page.click('#btn-save-menu');
   const [firstDownload] = await Promise.all([page.waitForEvent('download'), page.click('#btn-save-markdown')]);
   const firstName = firstDownload.suggestedFilename();
   const firstText = fs.readFileSync(await firstDownload.path(), 'utf8');
@@ -158,7 +159,8 @@ async function testFileLoading(browser) {
   await page.click('#btn-file-menu');
   const menuState = await page.evaluate(() => ({
     opened: !document.getElementById('file-menu').classList.contains('hidden') && document.getElementById('btn-file-menu').getAttribute('aria-expanded') === 'true',
-    items: Array.from(document.querySelectorAll('#file-menu [role="menuitem"]')).map(el => el.textContent.trim())
+    // 前回のフォルダの項目（ハンドルを覚えたときだけ出る）は、表示中の項目だけを数える
+    items: Array.from(document.querySelectorAll('#file-menu [role="menuitem"]:not(.hidden)')).map(el => el.textContent.trim())
   }));
   await page.mouse.click(700, 600);
   const closedByOutside = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
@@ -167,7 +169,7 @@ async function testFileLoading(browser) {
   const closedByEsc = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   record('TC-FILE-002',
     menuState.opened && closedByOutside && closedByEsc
-    && JSON.stringify(menuState.items) === JSON.stringify(['Markdown を開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)', '印刷 / PDF として保存…']),
+    && JSON.stringify(menuState.items) === JSON.stringify(['ファイルを開く…', 'フォルダを開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)']),
     JSON.stringify({ ...menuState, closedByOutside, closedByEsc }));
 
   // TC-FILE-003 未編集の状態での読み込みと同梱サンプル選択
@@ -257,6 +259,7 @@ async function testFileLoading(browser) {
   // TC-FILE-012 保存：読み込んだファイル名で、エディタの内容をダウンロードし、その後の読み込みで確認しない
   await page.click('#btn-edit-unlock');
   await page.fill('#markdown-editor', '---\ntitle: 保存のテスト\n---\n# 保存した文書\n');
+  await page.click('#btn-save-menu');
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-save-markdown')]);
   const savedText = fs.readFileSync(await download.path(), 'utf8');
   const savedName = download.suggestedFilename();
@@ -2901,11 +2904,11 @@ async function testCalloutsGlossaryPrint(browser) {
   const visualPdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
   await setMode(page, { style: 'std', appearance: 'light' });
   const fastPdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
-  // ファイルメニューの「印刷 / PDF として保存…」でブラウザの印刷を開く
+  // 保存メニューの「印刷 / PDF として保存…」でブラウザの印刷を開く
   await page.evaluate(() => { window.__printCalls = 0; window.print = () => { window.__printCalls++; }; });
-  await page.click('#btn-file-menu');
+  await page.click('#btn-save-menu');
   await page.click('#menu-print');
-  const printCalls = await page.evaluate(() => ({ calls: window.__printCalls, menuClosed: document.getElementById('file-menu').classList.contains('hidden') }));
+  const printCalls = await page.evaluate(() => ({ calls: window.__printCalls, menuClosed: document.getElementById('save-menu').classList.contains('hidden') }));
   const printOk = printed.hidden.length === 0 && printed.preview && JSON.stringify(printed.pageNames) === '["lucivo-visual"]'
     && JSON.stringify(printed.breaks) === JSON.stringify(['auto', 'page', 'page', 'page']) && printed.scrollOverflow === 'visible'
     && printed.animation === 'none' && printed.dimmed === 0
@@ -3321,11 +3324,157 @@ async function testLocalImages(browser) {
   await page.context().close();
 }
 
+// 開く・保存のメニュー（TC-FILE-021）とフォルダを開く機能（TC-FILE-022〜025）
+// Playwright は、日本語の名前のフォルダ・ファイルを入力欄に渡せない（止まる、または中身を読めない）ため、
+// 入力欄の方式は英字の名前の tests/fixtures/folder で、日本語の名前は File System Access API を模したハンドルで確かめる
+const FOLDER_FIXTURE = path.join(__dirname, 'fixtures', 'folder');
+
+async function folderState(page) {
+  return page.evaluate(() => {
+    const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+    const img = alt => root.querySelector(`img[alt="${alt}"]`);
+    const loaded = alt => { const i = img(alt); return Boolean(i && i.complete && i.naturalWidth > 0); };
+    return {
+      paneShown: !document.getElementById('folder-pane').classList.contains('hidden'),
+      railShown: !document.getElementById('btn-folder-show').classList.contains('hidden'),
+      name: document.getElementById('folder-pane-name').textContent,
+      items: Array.from(document.querySelectorAll('#folder-list > *')).map(e => (e.classList.contains('folder-list-dir') ? 'DIR ' : '') + e.textContent),
+      current: Array.from(document.querySelectorAll('.folder-list-item.is-current')).map(e => e.dataset.path),
+      title: document.title,
+      saveName: document.getElementById('save-file-name').textContent,
+      loaded: ['up', 'html', 'space', 'logo', '図'].filter(loaded),
+      htmlWidth: img('html') ? Math.round(img('html').getBoundingClientRect().width) : null,
+      missing: Array.from(root.querySelectorAll('.img-missing')).map(m => ({ path: m.querySelector('.img-missing-path').textContent, hint: (m.querySelector('.img-missing-hint') || {}).textContent || '' }))
+    };
+  });
+}
+
+async function testFolder(browser) {
+  const page = await openStagePage(browser);
+
+  // TC-FILE-021: 「開く」と「保存」のメニュー。片方を開くと、もう片方は閉じる
+  await page.click('#btn-file-menu');
+  const openMenu = await page.evaluate(() => ({
+    label: document.querySelector('#btn-file-menu span').textContent,
+    items: Array.from(document.querySelectorAll('#file-menu [role="menuitem"]:not(.hidden)')).map(e => e.textContent.trim())
+  }));
+  await page.click('#btn-save-menu');
+  const saveMenu = await page.evaluate(() => ({
+    label: document.querySelector('#btn-save-menu span').textContent,
+    items: Array.from(document.querySelectorAll('#save-menu [role="menuitem"]')).map(e => e.textContent.trim()),
+    fileMenuClosed: document.getElementById('file-menu').classList.contains('hidden'),
+    expanded: document.getElementById('btn-save-menu').getAttribute('aria-expanded')
+  }));
+  await page.keyboard.press('Escape');
+  const saveClosed = await page.evaluate(() => document.getElementById('save-menu').classList.contains('hidden'));
+  record('TC-FILE-021', openMenu.label === '開く' && openMenu.items.slice(0, 2).join() === 'ファイルを開く…,フォルダを開く…'
+    && saveMenu.label === '保存' && saveMenu.items.join() === 'Markdown を保存（untitled.md）,印刷 / PDF として保存…'
+    && saveMenu.fileMenuClosed && saveMenu.expanded === 'true' && saveClosed, JSON.stringify({ openMenu, saveMenu, saveClosed }));
+
+  // TC-FILE-022: 入力欄の方式でフォルダを開き、一覧から開いた文書の相対パスの画像を表示する
+  await page.evaluate(() => { preferFolderInput = true; });
+  await page.click('#btn-file-menu');
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#menu-open-folder')]);
+  await chooser.setFiles(FOLDER_FIXTURE);
+  await page.waitForFunction(() => openedFolder);
+  const listed = await folderState(page);
+  const toast = await page.evaluate(() => document.getElementById('toast-message').textContent);
+  await page.click('.folder-list-item[data-path="docs/spec.md"]');
+  await page.waitForFunction(() => document.title.startsWith('spec.md'));
+  await page.waitForTimeout(500);
+  const fast = await folderState(page);
+  await page.click('#btn-visual-mode');
+  await waitRendered(page);
+  await page.waitForTimeout(500);
+  const visual = await folderState(page);
+  const imagesOk = s => s.loaded.join() === 'up,html,space' && s.missing.length === 2
+    && s.missing[0].path === 'docs/missing.svg' && /見つかりません/.test(s.missing[0].hint)
+    && s.missing[1].path === '../../outside.svg' && /フォルダの外/.test(s.missing[1].hint);
+  record('TC-FILE-022', listed.paneShown && !listed.railShown && listed.name === 'folder'
+    && listed.items.join('|') === 'memo.txt|README.md|DIR docs/|spec.md|DIR docs/sub/|2_overview.md|10_detail.md'
+    && /「folder」を開きました。Markdown 5 件/.test(toast)
+    && fast.title === 'spec.md - Lucivo' && fast.saveName === 'spec.md' && fast.current.join() === 'docs/spec.md'
+    && imagesOk(fast) && fast.htmlWidth === 40 && imagesOk(visual),
+  JSON.stringify({ listed, toast, fast, visual }));
+
+  // TC-FILE-023: 一覧を隠す・戻す（隠したことを覚える）。フォルダを閉じる
+  await page.click('#btn-folder-hide');
+  const hidden = await folderState(page);
+  const remembered = await page.evaluate(() => localStorage.getItem('lucivo.folderPaneCollapsed'));
+  await page.click('#btn-folder-show');
+  const shown = await folderState(page);
+  await page.click('#btn-folder-close');
+  await waitRendered(page);
+  await page.waitForTimeout(300);
+  const closed = await folderState(page);
+  record('TC-FILE-023', !hidden.paneShown && hidden.railShown && remembered === '1' && shown.paneShown && !shown.railShown
+    && !closed.paneShown && !closed.railShown && closed.loaded.length === 0
+    && closed.missing.some(m => m.path === '../images/logo.svg' && /フォルダを開く/.test(m.hint)),
+  JSON.stringify({ hidden, remembered, shown, closed }));
+
+  // TC-FILE-024: File System Access API の方式（模したハンドル）。日本語の名前、node_modules と隠しフォルダの除外、前回のフォルダ
+  await page.evaluate(() => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="30" height="30" fill="#6CC4C9"/></svg>';
+    const file = (name, text, type) => ({ kind: 'file', name, getFile: async () => new File([text], name, { type }) });
+    const dir = (name, children) => ({
+      kind: 'directory', name,
+      async *entries() { for (const c of children) yield [c.name, c]; },
+      async getDirectoryHandle(n) { const c = children.find(x => x.name === n && x.kind === 'directory'); if (!c) throw new DOMException('', 'NotFoundError'); return c; },
+      async getFileHandle(n) { const c = children.find(x => x.name === n && x.kind === 'file'); if (!c) throw new DOMException('', 'NotFoundError'); return c; },
+      async queryPermission() { return 'granted'; },
+      async requestPermission() { return 'granted'; }
+    });
+    window.__fakeRoot = dir('資料', [
+      file('はじめに.md', '# はじめに\n\n![図](<画像/図 1.svg>)\n', 'text/markdown'),
+      dir('画像', [file('図 1.svg', svg, 'image/svg+xml')]),
+      dir('node_modules', [dir('pkg', [file('readme.md', '# x', 'text/markdown')])]),
+      dir('.git', [file('HEAD.md', 'x', 'text/markdown')])
+    ]);
+    window.showDirectoryPicker = async () => window.__fakeRoot;
+    preferFolderInput = false;
+  });
+  await page.click('#btn-file-menu');
+  await page.click('#menu-open-folder');
+  await page.waitForFunction(() => openedFolder && openedFolder.name === '資料');
+  const fsListed = await folderState(page);
+  // Visualモードの表紙に h1 が移るため、高速モードで確かめる
+  await page.click('#btn-mode-fast');
+  await page.click('.folder-list-item[data-path="はじめに.md"]');
+  await page.waitForFunction(() => document.title.startsWith('はじめに.md'));
+  await page.waitForTimeout(500);
+  const fsOpened = await folderState(page);
+  const recentItem = await page.evaluate(() => {
+    const item = document.getElementById('menu-open-recent-folder');
+    return item.classList.contains('hidden') ? null : item.textContent;
+  });
+  await page.click('#btn-folder-close');
+  await page.click('#btn-file-menu');
+  await page.click('#menu-open-recent-folder');
+  await page.waitForFunction(() => openedFolder && openedFolder.name === '資料');
+  const reopened = await folderState(page);
+  record('TC-FILE-024', fsListed.items.join('|') === 'はじめに.md' && fsListed.name === '資料'
+    && fsOpened.loaded.join() === '図' && fsOpened.current.join() === 'はじめに.md'
+    && recentItem === '前回のフォルダ「資料」を開く' && reopened.paneShown,
+  JSON.stringify({ fsListed, fsOpened, recentItem, reopened }));
+
+  // TC-FILE-025: File System Access API が使えないとき（file:// で拒まれたなど）は、入力欄の方式に切り替える
+  await page.evaluate(() => { window.showDirectoryPicker = async () => { throw new DOMException('blocked', 'SecurityError'); }; preferFolderInput = false; });
+  await page.click('#btn-file-menu');
+  const chooserPromise = page.waitForEvent('filechooser', { timeout: 5000 }).then(() => true, () => false);
+  await page.click('#menu-open-folder');
+  const fellBack = await chooserPromise;
+  const prefer = await page.evaluate(() => preferFolderInput);
+  const unexpected = page.consoleErrors.filter(e => !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(e));
+  record('TC-FILE-025', fellBack && prefer && unexpected.length === 0, JSON.stringify({ fellBack, prefer, errors: unexpected }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019'], fn: testTitleAndDrop },
+  { name: 'testFolder', tcPrefix: ['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
   { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011'], fn: testMarkdownTypography },
