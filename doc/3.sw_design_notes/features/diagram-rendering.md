@@ -178,3 +178,19 @@ Mermaid 12 は既定の見た目・レイアウト・余白が 10 系と異な�
 | DD-DIAG-064 | Mermaid にエラーの図を描かせない | `setupMermaid()` で `suppressErrorRendering: true` を設定する。`processDirtyBlocks()` の `catch` では、Mermaid が描画のために `body` に置いた一時的な要素（`#d<描画 ID>`）が残っていれば消してから、直前の正常な図（LKG）か自前のエラー表示を出す |
 
 - **背景（DD-DIAG-064）**: Mermaid の `mermaid.render()` は、構文エラーのとき、エラーの図（「Syntax error in text」）を `body` の一時的な要素に描いたまま例外を投げる。描画 ID は毎回 `Date.now()` で変わるため、入力の途中で構文エラーになるたびに、プレビューの外（ページの下）にエラーの図が積み上がり、正しい構文に直しても消えなかった。エラーはアプリが図のカードの中に表示するため、Mermaid のエラーの図は要らない。
+
+## 10. 図のドラッグ移動と Ctrl + ホイールの拡大・縮小（`FR-038`、`FR-039`）
+
+| ID          | 項目                 | 設計 |
+| :---------- | :------------------- | :--- |
+| DD-DIAG-070 | ドラッグ移動         | `setupDiagramPanZoom()` で、`document` の `pointerdown`・`pointermove`・`pointerup`・`pointercancel` を受け取る。マウスの左ボタンの `pointerdown` が、SVG を持つ図の表示枠（`.diagram-viewport`、`.exhibition-viewport`）の上で、表示枠がスクロールできる（`scrollWidth > clientWidth + 1`、縦も同じ）ときだけ始める。リンクとボタンの上では始めない。`setPointerCapture()` で表示枠の外へ出ても追い、移動量の分だけ表示枠の `scrollLeft`・`scrollTop` を戻す。ドラッグ中は `.is-panning`（`cursor: grabbing`、`user-select: none`）を付ける。4px（`PAN_CLICK_TOLERANCE_PX`）より動いたら、離した直後の `click` を、キャプチャの段階で 1 回だけ止める |
+| DD-DIAG-071 | Ctrl + ホイールの拡大・縮小 | `document` の `wheel` を `passive: false` で受け取り、`ctrlKey` が付いていて、図の表示枠の上のときだけ `preventDefault()` してページ全体のズームを止め、`zoomDiagram()` を呼ぶ。倍率は原寸（`viewBox` の幅）に対する比で、`DIAGRAM_ZOOM_MIN`（0.25）〜`DIAGRAM_ZOOM_MAX`（4）に収める。1 回の変化は `exp(-deltaY × 0.0015)` 倍（`deltaMode` が行のときは 16px / 行に換算）。表示枠に `.is-zoomed` と `data-zoom`、SVG に CSS 変数 `--zoom-width` を設定し、CSS で `width`・`min-width` をその幅にする（`max-width: none`）。`Fit` / `1:1` のボタンの選択を外し、`updateSlabSplit()` で 2 段組みを判定し直す |
+| DD-DIAG-072 | カーソルの位置を保つ | 拡大・縮小の前に、カーソルの下の点を SVG の幅・高さに対する比で求める。大きさを変えた後の SVG の位置から、同じ点がカーソルの下に来るよう、表示枠の `scrollLeft` と、縦にスクロールする最も近い祖先（`findScrollParent()`。プレビューの `#preview-scroll`）の `scrollTop` をずらす。表示枠より小さい図は、表示枠の中央に置かれる（DD-DIAG-032）ため、横の位置は保てない |
+| DD-DIAG-073 | 倍率の解除           | `Fit` / `1:1` のボタンを押したら、`clearDiagramZoom()` で `.is-zoomed`・`data-zoom`・`--zoom-width` を外してから、選んだ表示にする。描き直し（`renderApp()`）ではカードを作り直すため、`Fit` に戻る |
+| DD-DIAG-074 | つかめることの表示   | `mouseover` で、カーソルの下の図の表示枠に、スクロールできるときだけ `.is-pannable`（`cursor: grab`）を付ける。倍率を変えた後（DD-DIAG-071、073）も付け直す。表示枠の中のリンクは `cursor: pointer` のままにする |
+| DD-DIAG-075 | 受け付けない場面     | `html.is-stage-show`（ステージ発表中）は、ドラッグも拡大・縮小も受け付けない。発表は SVG の幅を `--scene-width` で決めるため。タッチ（`pointerType` が `mouse` 以外）は、ブラウザ標準のスクロールのままにする |
+
+- **背景（DD-DIAG-070、要素ごとにしない理由）**: 図のカードは描画のたびに作り直されるため、表示枠ごとにイベントを付けると、付け直しと二重の登録の管理が要る。`document` で 1 回だけ受け取り、`closest()` で表示枠を探す。
+- **背景（DD-DIAG-070、クリックを止める理由）**: Mermaid の図の中のリンクの上でドラッグを始めて離すと、`click` が起き、ドラッグしただけでリンクが動く。`click` が起きなかったときに次の本当のクリックを止めないよう、止める処理は直後のタスクで外す。
+- **背景（DD-DIAG-071、CSS 変数で幅を渡す理由）**: `Fit` と `1:1` の幅は CSS の `!important` で決めている（DD-DIAG-030、033）。SVG の `style` に幅を直接書いても CSS の `!important` に負けるため、同じ詳細度の `.is-zoomed` のルールで `--zoom-width` を使う。
+- **背景（DD-DIAG-072、縦のスクロール）**: 図の表示枠は縦にスクロールせず、図の高さに合わせて伸びる。拡大で図が縦に伸びると、プレビューの中で図より下の内容が押し下げられるため、縦の位置はプレビューのスクロールで保つ。スクロールの範囲の端では、それ以上動かせない。
