@@ -2263,6 +2263,14 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
   z-index: 80;
 }
 
+/* HTML で直に書いた画像（段落に入らない <img>）は、段落と同じく上下に余白を取る（DD-MD-043） */
+:is(.prose-doc, .exhibition-slab) > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.75rem 0;
+}
+
 /* ==========================================================================
    読み込めない画像（FR-042, DD-MD-041）
    ========================================================================== */
