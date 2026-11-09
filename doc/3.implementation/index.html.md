@@ -40,7 +40,8 @@ flowchart TD
 - **要素の id**: `app.js` と `tests/e2e.cjs` が id で参照している（`#shortcut-modal`、`#zoom-modal` など）。id を変えるときは、両方を検索して直す。
 - **head に書かないライブラリ**: Mermaid と KaTeX は、`app.js` の `LIBRARIES` が必要になったときに読み込む（版もそこで固定している）。
 - **同梱のライブラリの版**: SVG の後処理の多くが Mermaid の出力の構造（class 名、id、要素の並び）に依存している。版を上げるときは、テストを全件実行し、図の画像を目視で確認する。
-- **ファイルメニューの項目**: 項目の並び（「Markdown を開く…」、同梱サンプル 3 件、「印刷 / PDF として保存…」）は `TC-FILE-002` が文字で照合している。項目を増やすときはテストも直す。
+- **開く・保存のメニューの項目**: 項目の並び（開く: 「ファイルを開く…」「フォルダを開く…」、同梱サンプル 3 件。保存: 「Markdown を保存（ファイル名）」「印刷 / PDF として保存…」）は `TC-FILE-002`・`TC-FILE-021` が文字で照合している。項目を増やすときはテストも直す。「前回のフォルダ「名前」を開く」（`#menu-open-recent-folder`）は、覚えたフォルダがあるときだけ `hidden` を外すため、テストは表示中の項目だけを数える。
+- **Tailwind のクラス**: フォルダの一覧と保存メニューは、`css/tailwind.css` に既にあるクラスと、`css/style.css` の専用のクラス（`.folder-pane` など）だけで組んでいる。新しい Tailwind のクラスを使うときは、`tools/build-tailwind-css.cjs` で作り直す。
 - **印刷で隠れる場所**: `body` の直下（`main` 以外）と、`#pane-preview` の中の `#preview-scroll` 以外は、印刷で刷らない（`DD-VTPL-131`）。文書の一部として刷る要素は `#preview-scroll` の中に置く。
 - **初期値で隠す要素**: スタイルバー（`#style-bar`）は `.is-hidden`、エディタの「閲覧 / 編集」の切り替え（`#editor-lock`）は `.hidden` を初期値に持ち、`app.js` が表示する（`DD-DIAG-063`、`DD-FILE-041`）。どちらも Tailwind の `flex` などと同じ要素に付くため、`style.css` の詳細度の高い規則で隠している。初期値のクラスを外すと、起動直後に表示される。
 - **HTML エクスポート**: `document.documentElement.outerHTML` を書き出すため、`<head>` の読み込み（KaTeX の CSS など）は書き出した HTML にもそのまま入る。0.2.0 では、ヘッダーの `HTML` ボタン（`#btn-export-html`）を置いていない（`DD-OFF-005`、`CR-001`）。作り直すときにボタンを戻す。
