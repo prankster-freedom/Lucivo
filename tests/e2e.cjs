@@ -1989,6 +1989,77 @@ async function testCoverAndTables(browser) {
     && vtpl20After.copyLabelAfter === 'Copied' && vtpl20After.isCopied && /コードをクリップボードにコピー/.test(vtpl20After.toast);
   record('TC-VTPL-020', vtpl20Ok, JSON.stringify({ vtpl20Before, vtpl20After }));
 
+  // TC-VTPL-025 関数のグラフ（FR-048, DD-VTPL-140〜144）
+  const PLOT_TEST_MD = [
+    '## 1. 関数のグラフ',
+    '',
+    '```plot',
+    'title: 正弦波と指数減衰',
+    'x: 0, 2*pi',
+    'y: -1.5, 1.5',
+    'y = sin(x)',
+    'y = exp(-0.5*x)',
+    '```',
+    '',
+    '## 2. 構文エラーのグラフ',
+    '',
+    '```plot',
+    'y = sin(',
+    '```',
+    ''
+  ].join('\n');
+
+  await setDocument(page, PLOT_TEST_MD);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(300);
+  const plotVisual = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    const plot = root.querySelector('.vs-plot');
+    const title = plot ? (plot.querySelector('.vs-plot-title') || {}).textContent : null;
+    const curves = plot ? Array.from(plot.querySelectorAll('.vs-plot-curve')).map(p => ({
+      d: p.getAttribute('d'),
+      c1: p.classList.contains('is-c1'),
+      c2: p.classList.contains('is-c2')
+    })) : [];
+    const legend = plot ? Array.from(plot.querySelectorAll('.vs-plot-legend li')).map(li => li.textContent.trim()) : [];
+    const errorEl = root.querySelector('.vs-plot-error');
+    const errorMsg = errorEl ? (errorEl.querySelector('.vs-plot-error-msg') || {}).textContent : null;
+    return {
+      hasPlot: !!plot,
+      title,
+      curveCount: curves.length,
+      curves,
+      legend,
+      hasError: !!errorEl,
+      errorMsg
+    };
+  });
+
+  await page.click('#btn-mode-fast');
+  await page.waitForTimeout(300);
+  const plotStandard = await page.evaluate(() => {
+    const root = document.getElementById('standard-doc-container');
+    return {
+      hasPlot: !!root.querySelector('.vs-plot'),
+      hasCode: !!root.querySelector('pre > code.language-plot')
+    };
+  });
+
+  await page.click('#btn-visual-mode');
+  await page.waitForTimeout(300);
+  const plotSlab = page.locator('#visual-stage-container .exhibition-slab').first();
+  await plotSlab.screenshot({ path: path.join(SHOT_DIR, 'vtpl-function-plot.png') });
+
+  const vtpl25Ok = plotVisual.hasPlot
+    && plotVisual.title === '正弦波と指数減衰'
+    && plotVisual.curveCount === 2
+    && plotVisual.curves[0].c1 && plotVisual.curves[1].c2
+    && plotVisual.legend.length === 2
+    && plotVisual.hasError
+    && /グラフを描けません/.test(plotVisual.errorMsg || '')
+    && !plotStandard.hasPlot && plotStandard.hasCode;
+  record('TC-VTPL-025', vtpl25Ok, JSON.stringify({ plotVisual, plotStandard }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
@@ -3628,7 +3699,7 @@ const SUITES = [
   { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },
   { name: 'testVisualStageQuality', tcPrefix: ['TC-STAGE-'], fn: testVisualStageQuality },
   { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates, timeoutMs: 150000 },
-  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024'], fn: testCoverAndTables },
+  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024', 'TC-VTPL-025'], fn: testCoverAndTables },
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007'], fn: testStageShow, timeoutMs: 180000 },
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014'], fn: testStageOverviewPointer },
