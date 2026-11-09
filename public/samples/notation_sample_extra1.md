@@ -232,3 +232,39 @@ HTML で、幅を指定して書いた画像:
 - [記法サンプルの「6. 表」](notation_sample.md#6-表)
 - [Visualモードサンプル（visual-sample.md）](visual-sample.md)
 - [この文書の「2. リンクと参照リンク」](#2-リンクと参照リンクreference-links)
+
+## 12. フォルダ構成のツリー
+
+罫線（`├` `└` `│`）で書いたフォルダ構成は、線を引き直したツリーとして表示します。`tree` コマンドの出力をそのまま貼れます。行末の `#`・`←` の後ろは注釈として、右の列にそろえます。
+
+```
+lucivo/
+├── index.html
+├── css/
+│   └── style.css      # 見た目
+├── js/
+│   ├── app.js         # 本体
+│   └── stage.js       ← 発表の演出
+└── samples/
+    ├── notation_sample.md
+    └── images/
+        └── lucivo-flow.svg
+```
+
+コードブロックで囲まずに、段落として書いても表示します。
+
+資料
+├企画書.md
+├画像フォルダ
+│└全体図.png
+└議事録.md
+
+字下げだけで書くときは、言語名に `tree` を付けます。書いたまま見せたいときは、言語名に `text` を付けます。
+
+```tree
+docs/
+  guide/
+    intro.md
+  images/
+    flow.png
+```
