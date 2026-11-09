@@ -2200,6 +2200,16 @@ function setupLocalImages() {
       }
       return;
     }
+    // 同梱サンプルの相対パスは、samples フォルダからの相対パスにする（index.html から見たパス。DD-FILE-081）
+    if (currentSampleFile && isRelativeSrc(data.attrValue)) {
+      const samplePath = resolveFolderPath('', data.attrValue);
+      if (samplePath === null) return;
+      const sampleUrl = `${SAMPLES_DIR}/${samplePath.split('/').map(encodeURIComponent).join('/')}`;
+      node.setAttribute('src', sampleUrl);
+      data.attrValue = sampleUrl;
+      data.forceKeepAttr = true;
+      return;
+    }
     const url = toLocalImageUrl(data.attrValue);
     if (!url) return;
     // forceKeepAttr を立てると、DOMPurify は attrValue を書き戻さずに次の属性へ進むため、ここで書き換える
@@ -3035,12 +3045,14 @@ function confirmDiscardEdits(fileName) {
 }
 
 // folderPath: フォルダから開いたときの、フォルダの中のパス（例: docs/a.md）。相対パスの画像の基準にする（DD-FILE-075）
-function applyLoadedMarkdown(rawText, fileName, folderPath = null) {
+// isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
+function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false) {
   const text = String(rawText).replace(/^\uFEFF/, '');
   document.getElementById('markdown-editor').value = text;
   lastLoadedMarkdown = text;
   currentFileName = fileName;
   currentFolderPath = folderPath;
+  currentSampleFile = isSample ? fileName : null;
   document.getElementById('save-file-name').textContent = fileName;
   renderFolderList();
   // 印刷の「PDF として保存」は、ウィンドウのタイトルを既定のファイル名に使う（FR-040, DD-FILE-050）
@@ -3069,7 +3081,7 @@ function loadMarkdownFile(file) {
 
 // 開くメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
 async function loadBundledSample(fileName) {
-  if (!confirmDiscardEdits(fileName)) return;
+  if (!confirmDiscardEdits(fileName)) return false;
   let text = null;
   if (window.location.protocol !== 'file:') {
     try {
@@ -3086,9 +3098,10 @@ async function loadBundledSample(fileName) {
   }
   if (text === null) {
     showToast(`「${fileName}」を読み込めませんでした`);
-    return;
+    return false;
   }
-  applyLoadedMarkdown(text, fileName);
+  applyLoadedMarkdown(text, fileName, null, true);
+  return true;
 }
 
 // 読み込み直後の閲覧中に誤って編集しないよう、エディタと、内容を変えるボタンをまとめて切り替える（DD-FILE-040）。
@@ -3236,6 +3249,11 @@ const RECENT_FOLDER_KEY = 'recentFolder';
 let openedFolder = null;
 // フォルダから開いた文書の、フォルダの中のパス（フォルダから開いていなければ null）
 let currentFolderPath = null;
+// 同梱サンプルとして開いた文書のファイル名（同梱サンプルでなければ null）（DD-FILE-081）
+let currentSampleFile = null;
+// 同梱サンプルのフォルダ（index.html からの相対パス）と、サンプルのファイル名
+const SAMPLES_DIR = 'samples';
+const BUNDLED_SAMPLES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md'];
 // フォルダの画像のパス → blob URL（読み込み中は Promise）（DD-FILE-076）
 const folderImageUrls = new Map();
 // File System Access API が使えなかったとき、次からはフォルダの選択の入力欄を使う（DD-FILE-071）
@@ -3487,6 +3505,19 @@ function setupDocumentLinks() {
     const anchor = rest.join('#');
     if (!DROPPABLE_FILE_PATTERN.test(pathPart.split('?')[0])) return;
     event.preventDefault();
+    // 同梱サンプルの間のリンクは、同梱サンプルとして開く（DD-FILE-081）
+    if (currentSampleFile && !(openedFolder && currentFolderPath !== null)) {
+      const samplePath = resolveFolderPath('', pathPart);
+      if (!BUNDLED_SAMPLES.includes(samplePath)) {
+        showToast(`「${samplePath || pathPart}」は同梱サンプルにありません`);
+        return;
+      }
+      const opened = samplePath === currentSampleFile ? Promise.resolve(true) : loadBundledSample(samplePath);
+      opened.then(ok => {
+        if (ok && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+      });
+      return;
+    }
     if (!openedFolder || currentFolderPath === null) {
       showToast('Markdown へのリンクは、「開く」→「フォルダを開く…」で開いた文書で使えます');
       return;
