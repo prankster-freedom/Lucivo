@@ -48,3 +48,15 @@ tags: ["Lucivo", "詳細設計", "Markdown", "CSS"]
 | ID        | 項目      | 設計 | 対応する要求 |
 | :-------- | :-------- | :--- | :----------- |
 | DD-MD-030 | HTML の例 | 7 章の HTML の例は、`class` 属性を使わず、`details` / `summary`、`kbd`、`mark`、`sub` / `sup` の標準の要素で書く。いずれも DOMPurify の既定の許可対象 | `FR-009` |
+
+## 4. ローカルの画像（`FR-042`）
+
+| ID        | 項目                                   | 設計 |
+| :-------- | :------------------------------------- | :--- |
+| DD-MD-040 | 無害化で画像の `src` の `file:` を残す | `setupLocalImages()` で、DOMPurify の `uponSanitizeAttribute` フックを足す。`img` の `src` だけを対象に、`toLocalImageUrl()` が直せた値（`file://` の URL）を `setAttribute()` で書き戻し、`forceKeepAttr` を立てて残す。直せない値（相対パス、`https:`、`data:`、`javascript:` など）は何もせず、DOMPurify の既定の判定に任せる |
+| DD-MD-041 | 読み込めない画像の表示                 | `document` の `error` をキャプチャの段階で受け取り（`error` は泡立たない）、`#preview-scroll` の中の `img` を、枠（`.img-missing`）に置き換える。枠には「画像を読み込めません」、`src`（等幅）、相対パスのときは案内（`.img-missing-hint`）を入れ、`role="img"` と `aria-label`（alt または src）を付ける。描き直しで元の `img` に戻り、再び読み込みを試す |
+| DD-MD-042 | パスの直し方（`toLocalImageUrl()`）    | `\` と、Marked が URL の `\` を変えた `%5C` を `/` にそろえてから判定する。ドライブ名で始まる（`^[a-z]:/`）→ `file:///` を前に付ける。`//` で始まり、元の値に `\` か `%5C` がある（ネットワーク上のパス）→ `file:` を前に付ける。`file://` で始まる → そのまま。それ以外 → `null`（直さない）。`/` で始まる絶対パスは、DOMPurify が既定で許し、`file://` の `index.html` から見た絶対パスとして読み込まれるため、直さない |
+
+- **背景（DD-MD-040、forceKeepAttr と setAttribute）**: DOMPurify（3.4）は、フックで `forceKeepAttr` を立てると、`attrValue` を属性に書き戻さずに次の属性へ進む。そのため、直した URL はフックの中で `setAttribute()` で書き込む。
+- **背景（DD-MD-040、画像だけに許す理由）**: リンクの `file:` を許すと、クリックでローカルのファイルを開かせる誘導ができる。画像は表示するだけのため、`src` に限る。
+- **背景（DD-MD-041）**: 読み込めない画像は、ブラウザが代わりの文字を細い 1 行で出すだけで、壊れた画像の印も出ない。どの画像が、どのパスで読み込めなかったかを、利用者が文書を直せるように示す。
