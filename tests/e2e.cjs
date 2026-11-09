@@ -1989,6 +1989,111 @@ async function testCoverAndTables(browser) {
     && vtpl20After.copyLabelAfter === 'Copied' && vtpl20After.isCopied && /コードをクリップボードにコピー/.test(vtpl20After.toast);
   record('TC-VTPL-020', vtpl20Ok, JSON.stringify({ vtpl20Before, vtpl20After }));
 
+  // TC-VTPL-025 数式の補足グラフとラスター画像変換（FR-048, DD-VTPL-140〜144）
+  const MATH_PLOT_TEST_MD = [
+    '## 1. 数式の補足グラフ（インラインとブロック）',
+    '',
+    'インライン数式の正弦波 $y = \\sin(x)$ と二次関数 $f(x) = x^2 - 4x + 3$ には補足グラフが併記され、定数式 $E = mc^2$ は数式のみのまま表示されます。',
+    '',
+    '$$',
+    '\\begin{aligned}',
+    'y &= e^{-0.3x}\\sin(2x) \\\\',
+    'y &= e^{-0.3x} \\\\',
+    'y &= -e^{-0.3x}',
+    '\\end{aligned}',
+    '$$',
+    '',
+    '$$',
+    'f(x) = \\frac{\\sin(x)}{x} \\quad (-4\\pi \\le x \\le 4\\pi)',
+    '$$',
+    '',
+    '$$',
+    '\\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}',
+    '$$',
+    ''
+  ].join('\n');
+
+  await selectVisualStyle(page, 'shapes');
+  await setDocument(page, MATH_PLOT_TEST_MD);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForFunction(() => document.querySelectorAll('#visual-stage-container img.vs-math-plot-img').length === 4);
+  await page.waitForTimeout(200);
+
+  const mathPlotVisual = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    const allMath = Array.from(root.querySelectorAll('.lucivo-math'));
+    const inlinePlots = Array.from(root.querySelectorAll('.lucivo-math.is-inline-plot'));
+    const blockPlots = Array.from(root.querySelectorAll('.lucivo-math.is-block-plot'));
+    const plainMath = allMath.filter(el => !el.classList.contains('has-math-plot'));
+    const checkImg = el => {
+      const img = el.querySelector('img.vs-math-plot-img');
+      const formula = el.querySelector('.vs-math-formula .katex');
+      if (!img || !formula) return null;
+      const fr = formula.getBoundingClientRect();
+      const ir = img.getBoundingClientRect();
+      return {
+        isPng: /^data:image\/png;base64,/.test(img.getAttribute('src') || ''),
+        srcLen: (img.getAttribute('src') || '').length,
+        complete: img.complete,
+        naturalW: img.naturalWidth,
+        naturalH: img.naturalHeight,
+        sideBySide: ir.left >= fr.right - 2,
+        srcHead: (img.getAttribute('src') || '').slice(0, 120)
+      };
+    };
+    return {
+      totalMath: allMath.length,
+      inlineCount: inlinePlots.length,
+      blockCount: blockPlots.length,
+      plainCount: plainMath.length,
+      plainNoImg: plainMath.every(el => !el.querySelector('img') && !!el.querySelector('.katex')),
+      inlines: inlinePlots.map(checkImg),
+      blocks: blockPlots.map(checkImg)
+    };
+  });
+
+  // 高速モードに切り替えると、ラスター画像は出ず通常の数式のみになる
+  await page.click('#btn-mode-fast');
+  await page.waitForTimeout(200);
+  const mathPlotStandard = await page.evaluate(() => {
+    const root = document.getElementById('standard-doc-container');
+    return {
+      totalMath: root.querySelectorAll('.lucivo-math .katex').length,
+      plotImgs: root.querySelectorAll('img.vs-math-plot-img, .has-math-plot').length
+    };
+  });
+
+  // 再度 Visualモードに切り替えて別スタイル（circles）を選ぶと、ラスター画像の配色（Data URL）が切り替わる
+  await page.click('#btn-visual-mode');
+  await page.waitForTimeout(200);
+  const firstSrcShapes = await page.evaluate(() => {
+    const img = document.querySelector('#visual-stage-container .lucivo-math.is-block-plot img.vs-math-plot-img');
+    return img ? img.getAttribute('src') : '';
+  });
+  const plotSlab = page.locator('#visual-stage-container .exhibition-slab').first();
+  await plotSlab.screenshot({ path: path.join(SHOT_DIR, 'vtpl-math-raster-plot.png') });
+
+  await selectVisualStyle(page, 'circles');
+  await page.waitForTimeout(200);
+  const firstSrcCircles = await page.evaluate(() => {
+    const img = document.querySelector('#visual-stage-container .lucivo-math.is-block-plot img.vs-math-plot-img');
+    return img ? img.getAttribute('src') : '';
+  });
+
+  const vtpl25Ok = mathPlotVisual.totalMath === 6
+    && mathPlotVisual.inlineCount === 2
+    && mathPlotVisual.blockCount === 2
+    && mathPlotVisual.plainCount === 2
+    && mathPlotVisual.plainNoImg
+    && mathPlotVisual.inlines.every(r => r && r.isPng && r.complete && r.naturalW === 312 && r.naturalH === 168 && r.sideBySide)
+    && mathPlotVisual.blocks.every(r => r && r.isPng && r.complete && r.naturalW === 680 && r.naturalH === 400 && r.sideBySide)
+    && mathPlotStandard.totalMath === 6
+    && mathPlotStandard.plotImgs === 0
+    && firstSrcShapes.length > 500
+    && firstSrcCircles.length > 500
+    && firstSrcShapes !== firstSrcCircles;
+  record('TC-VTPL-025', vtpl25Ok, JSON.stringify({ mathPlotVisual, mathPlotStandard, styleChanged: firstSrcShapes !== firstSrcCircles }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
