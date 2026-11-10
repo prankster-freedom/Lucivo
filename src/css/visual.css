@@ -17,7 +17,7 @@ body[data-appearance="dark"] #visual-stage-container {
    --vs-tone: アクセント色を文字に使うときに混ぜる色（Light は濃紺、Dark は白）。--vs-slab-bg: スラブの背景（手順の丸の輪）
    --motif-*: assets/motifs/*.svg（AST-005〜009）と同一のベクター定義。Chromium の file://（origin null）では mask-image の外部 SVG 読み込みが CORS で拒否されるため、data URI として保持する（NFR-001, FR-007, DD-VTPL-024） */
 .exhibition-wrap {
-  max-width: 62rem;
+  max-width: var(--visual-page-width, 62rem);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -991,7 +991,8 @@ html.is-stage-show body:not([data-appearance="dark"]) #visual-stage-container {
 }
 html.is-stage-show .exhibition-wrap {
   width: 100%;
-  max-width: 76rem;
+  max-width: min(var(--stage-max-width, 76rem), calc((100dvh - 15vh) * (var(--stage-aspect-ratio, 16 / 9))));
+  aspect-ratio: var(--stage-aspect-ratio, 16 / 9);
   margin: auto;
   gap: 0;
   --vs-slab-bg: #0A0F1B;
@@ -1216,7 +1217,9 @@ html.is-stage-show.is-stage-overview .exhibition-wrap {
   gap: var(--ov-gap, 1.6vw);
   justify-content: center;
   align-content: safe center;
+  width: auto;
   max-width: none;
+  aspect-ratio: auto;
   margin: auto;
 }
 html.is-stage-show.is-stage-overview .exhibition-wrap > * {

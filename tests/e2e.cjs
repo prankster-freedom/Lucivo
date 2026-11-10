@@ -2341,11 +2341,14 @@ async function testSignalLight(browser) {
 function inspectShow() {
   const root = document.getElementById('visual-stage-container');
   const rect = root.getBoundingClientRect();
+  const wrap = root.querySelector('.exhibition-wrap');
+  const wrapRect = wrap ? wrap.getBoundingClientRect() : null;
   const shown = Array.from(root.querySelectorAll('.exhibition-wrap > *')).filter(el => getComputedStyle(el).display !== 'none');
   return {
     ...LucivoStage.showState(),
     htmlClass: document.documentElement.classList.contains('is-stage-show'),
     covers: rect.left === 0 && rect.top === 0 && rect.width === innerWidth && rect.height === innerHeight,
+    wrapRatio: wrapRect && wrapRect.height > 0 ? +(wrapRect.width / wrapRect.height).toFixed(3) : 0,
     topElement: document.elementFromPoint(20, 20).closest('#visual-stage-container, #stage-hud') !== null,
     shown: shown.length,
     tpl: shown[0] ? shown[0].className : '',
@@ -2379,7 +2382,7 @@ async function testStageShow(browser) {
   await page.waitForTimeout(900);
   const entered = await page.evaluate(inspectShow);
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-00-hero.png') });
-  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.topElement && entered.scenes === SHOWCASE_SCENES && entered.shown === 1
+  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.wrapRatio >= 1.76 && entered.wrapRatio <= 1.80 && entered.topElement && entered.scenes === SHOWCASE_SCENES && entered.shown === 1
     && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === sceneCount(1), JSON.stringify(entered));
 
   // TC-SHOW-002 ページ送り（→ / Space / ← / End / Home）

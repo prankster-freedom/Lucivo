@@ -29,6 +29,11 @@ body[data-appearance="light"] {
   --diag-node-stroke: #2563EB;
   --diag-node-text: #0F172A;
   --diag-edge: #475569;
+
+  /* Visual モードの誌面幅（将来の A4 / レター切り替え用） */
+  --visual-page-width: 62rem;
+  /* 発表モードのアスペクト比（将来の 16:9 / 16:10 / 4:3 切り替え用） */
+  --stage-aspect-ratio: 16 / 9;
 }
 
 body[data-appearance="dark"] {
@@ -59,6 +64,14 @@ body[data-appearance="dark"] {
   --diag-node-text: #F8FAFC;
   --diag-edge: #94A3B8;
 }
+
+/* 将来のアスペクト比・誌面サイズ設定切り替えフック */
+html[data-stage-ratio="16:9"] { --stage-aspect-ratio: 16 / 9; }
+html[data-stage-ratio="16:10"] { --stage-aspect-ratio: 16 / 10; }
+html[data-stage-ratio="4:3"] { --stage-aspect-ratio: 4 / 3; }
+html[data-visual-size="standard"] { --visual-page-width: 62rem; }
+html[data-visual-size="wide"] { --visual-page-width: 76rem; }
+html[data-visual-size="a4"] { --visual-page-width: 59.5rem; }
 
 * {
   box-sizing: border-box;
