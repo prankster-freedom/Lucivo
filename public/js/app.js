@@ -318,7 +318,7 @@ const EMPTY_GUIDE_HTML = `
     </a>
   </div>
   <h3 class="empty-guide-title">Markdown を開いてください</h3>
-  <p class="empty-guide-desc">ヘッダーの「ファイル」メニューから「Markdown を開く…」でローカルファイルを読み込むか、同梱の <code>Visualモードサンプル (visual-sample.md)</code> / <code>記法サンプル (notation_sample.md)</code> をワンクリックで開けます。左のエディタに直接入力することもできます。</p>
+  <p class="empty-guide-desc">ヘッダーの「開く」メニューから「ファイルを開く…」でローカルファイルを、「フォルダを開く…」でフォルダの Markdown を一覧から読み込むか、同梱の <code>Visualモードサンプル (visual-sample.md)</code> / <code>記法サンプル (notation_sample.md)</code> をワンクリックで開けます。左のエディタに直接入力することもできます。</p>
   
   <div class="empty-guide-modes">
     <div class="empty-guide-card">
@@ -2144,11 +2144,72 @@ function toLocalImageUrl(value) {
   return null;
 }
 
+// 相対パスか（URL の形式も、/ で始まる絶対パスもない）
+function isRelativeSrc(src) {
+  return Boolean(src) && !/^[a-z][a-z0-9+.-]*:|^[/#]/i.test(src);
+}
+
+// 読み込めない画像の代わりに置く枠（DD-MD-041）。hint は添える案内（なければ省く）
+function makeMissingImageBox(src, alt, hint) {
+  const box = document.createElement('span');
+  box.className = 'img-missing';
+  box.setAttribute('role', 'img');
+  box.setAttribute('aria-label', `画像を読み込めません: ${alt || src}`);
+  const title = document.createElement('span');
+  title.className = 'img-missing-title';
+  title.textContent = '画像を読み込めません';
+  const path = document.createElement('span');
+  path.className = 'img-missing-path';
+  path.textContent = src || '（パスがありません）';
+  box.append(title, path);
+  if (hint) {
+    const note = document.createElement('span');
+    note.className = 'img-missing-hint';
+    note.textContent = hint;
+    box.append(note);
+  }
+  return box;
+}
+
 // DOMPurify の既定は file: の URL を許さず、src ごと消す（DD-MD-040）。画像の src に限って、
-// ローカルのパスを file:// の URL に直して残す。リンク（a の href）の file: は、今までどおり消す
+// ローカルのパスを file:// の URL に直して残す。リンク（a の href）の file: は、今までどおり消す。
+// フォルダから開いた文書の相対パスは、フォルダの中のパスを data-folder-src に移し、描画の後に読み込む（DD-FILE-076）
 function setupLocalImages() {
   DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
     if (node.nodeName !== 'IMG' || data.attrName !== 'src') return;
+    const inFolder = openedFolder && currentFolderPath !== null && isRelativeSrc(data.attrValue);
+    const folderPath = inFolder ? resolveFolderPath(folderDirOf(currentFolderPath), data.attrValue) : null;
+    if (inFolder && folderPath === null) {
+      // フォルダの外を指す相対パス（../ が多すぎる）は、フォルダからは読めない
+      node.setAttribute('data-folder-src', data.attrValue);
+      node.setAttribute('data-folder-outside', '');
+      data.keepAttr = false;
+      return;
+    }
+    if (folderPath !== null) {
+      node.setAttribute('data-folder-src', folderPath);
+      const cached = folderImageUrls.get(folderPath);
+      if (typeof cached === 'string') {
+        // 読み込み済みの画像は、描き直しのたびに読み直さず、ちらつかないよう、すぐに表示する
+        node.setAttribute('src', cached);
+        data.attrValue = cached;
+        data.forceKeepAttr = true;
+      } else {
+        // src を残すと index.html のフォルダを基準に読みに行き、読み込めない表示が一瞬出る
+        data.keepAttr = false;
+      }
+      return;
+    }
+    // 同梱サンプルの相対パスは、samples フォルダからの相対パスにする（index.html から見たパス。DD-FILE-081）
+    if (currentSampleFile && isRelativeSrc(data.attrValue)) {
+      const samplePath = resolveFolderPath('', data.attrValue);
+      if (samplePath === null) return;
+      const sampleUrl = `${SAMPLES_DIR}/${samplePath.split('/').map(encodeURIComponent).join('/')}`;
+      node.setAttribute('src', sampleUrl);
+      data.attrValue = sampleUrl;
+      data.forceKeepAttr = true;
+      return;
+    }
     const url = toLocalImageUrl(data.attrValue);
     if (!url) return;
     // forceKeepAttr を立てると、DOMPurify は attrValue を書き戻さずに次の属性へ進むため、ここで書き換える
@@ -2162,27 +2223,31 @@ function setupLocalImages() {
   document.addEventListener('error', event => {
     const img = event.target;
     if (!(img instanceof HTMLImageElement) || !img.closest('#preview-scroll')) return;
-    const src = img.getAttribute('src') || '';
-    const box = document.createElement('span');
-    box.className = 'img-missing';
-    box.setAttribute('role', 'img');
-    box.setAttribute('aria-label', `画像を読み込めません: ${img.getAttribute('alt') || src}`);
-    const title = document.createElement('span');
-    title.className = 'img-missing-title';
-    title.textContent = '画像を読み込めません';
-    const path = document.createElement('span');
-    path.className = 'img-missing-path';
-    path.textContent = src || '（パスがありません）';
-    box.append(title, path);
+    const src = img.getAttribute('data-folder-src') || img.getAttribute('src') || '';
     // 相対パスは、ファイルを開いた場合、ブラウザの制約で Markdown ファイルの場所を基準にできない（DD-MD-042）
-    if (src && !/^[a-z][a-z0-9+.-]*:|^\//i.test(src)) {
-      const hint = document.createElement('span');
-      hint.className = 'img-missing-hint';
-      hint.textContent = '相対パスは、開いた Markdown ファイルの場所を基準にできません。絶対パス（C:\\… など）で指定してください';
-      box.append(hint);
-    }
-    img.replaceWith(box);
+    const hint = isRelativeSrc(src) && !img.hasAttribute('data-folder-src')
+      ? '相対パスの画像は、「開く」→「フォルダを開く…」で開いた文書で表示できます。または絶対パス（C:\\… など）で指定してください'
+      : '';
+    img.replaceWith(makeMissingImageBox(src, img.getAttribute('alt'), hint));
   }, true);
+}
+
+// フォルダから開いた文書の相対パスの画像を、フォルダから読んで表示する（DD-FILE-076）
+function resolveFolderImages(container) {
+  if (!openedFolder || !container) return;
+  const folder = openedFolder;
+  container.querySelectorAll('img[data-folder-src]:not([src])').forEach(async img => {
+    const path = img.getAttribute('data-folder-src');
+    if (img.hasAttribute('data-folder-outside')) {
+      img.replaceWith(makeMissingImageBox(path, img.getAttribute('alt'), '開いたフォルダの外の画像は表示できません。上の階層のフォルダを開いてください'));
+      return;
+    }
+    const url = await getFolderImageUrl(folder, path);
+    // 待っている間にフォルダを閉じた・描き直した場合は何もしない
+    if (!img.isConnected || folder !== openedFolder) return;
+    if (url) img.setAttribute('src', url);
+    else img.replaceWith(makeMissingImageBox(path, img.getAttribute('alt'), 'フォルダの中に見つかりません'));
+  });
 }
 
 // 表（table）が親コンテナやスラブの枠をはみ出さないよう、横スクロール可能な .table-container で包む（DD-MD-020）
@@ -2264,6 +2329,7 @@ function renderApp() {
 
   const activeContainer = isVisual ? visContainer : stdContainer;
   wrapTables(activeContainer);
+  resolveFolderImages(activeContainer);
   renderMath(activeContainer);
   const slots = activeContainer.querySelectorAll('.lucivo-slot');
   const modeTag = isVisual ? `vis-${state.infographicStyle}` : 'std';
@@ -2957,12 +3023,19 @@ function setupEventListeners() {
 }
 
 /* ==========================================================================
-   ファイルメニュー（Markdown ファイルの読み込み）
+   開く・保存のメニュー（Markdown ファイルの読み込みと保存）
    ========================================================================== */
-function closeFileMenu() {
-  document.getElementById('file-menu').classList.add('hidden');
-  document.getElementById('btn-file-menu').setAttribute('aria-expanded', 'false');
+// ヘッダーのメニュー（開く・保存）。ボタンの id とメニューの id の組（DD-FILE-002, DD-FILE-009）
+const HEADER_MENUS = [['btn-file-menu', 'file-menu'], ['btn-save-menu', 'save-menu']];
+
+function closeHeaderMenus() {
+  HEADER_MENUS.forEach(([btnId, menuId]) => {
+    document.getElementById(menuId).classList.add('hidden');
+    document.getElementById(btnId).setAttribute('aria-expanded', 'false');
+  });
 }
+// 既存の呼び出し（テストを含む）のための別名
+const closeFileMenu = closeHeaderMenus;
 
 // 最後に読み込んだ（または保存した）時点から編集していれば、置き換える前に確認する
 function confirmDiscardEdits(fileName) {
@@ -2971,11 +3044,17 @@ function confirmDiscardEdits(fileName) {
   return window.confirm(`編集中の内容は失われます。「${fileName}」を読み込みますか？`);
 }
 
-function applyLoadedMarkdown(rawText, fileName) {
+// folderPath: フォルダから開いたときの、フォルダの中のパス（例: docs/a.md）。相対パスの画像の基準にする（DD-FILE-075）
+// isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
+function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false) {
   const text = String(rawText).replace(/^\uFEFF/, '');
   document.getElementById('markdown-editor').value = text;
   lastLoadedMarkdown = text;
   currentFileName = fileName;
+  currentFolderPath = folderPath;
+  currentSampleFile = isSample ? fileName : null;
+  document.getElementById('save-file-name').textContent = fileName;
+  renderFolderList();
   // 印刷の「PDF として保存」は、ウィンドウのタイトルを既定のファイル名に使う（FR-040, DD-FILE-050）
   document.title = `${fileName}${APP_TITLE_SUFFIX}`;
   state.curveByIndex.clear();
@@ -3000,9 +3079,9 @@ function loadMarkdownFile(file) {
   reader.readAsText(file, 'UTF-8');
 }
 
-// ファイルメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
+// 開くメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
 async function loadBundledSample(fileName) {
-  if (!confirmDiscardEdits(fileName)) return;
+  if (!confirmDiscardEdits(fileName)) return false;
   let text = null;
   if (window.location.protocol !== 'file:') {
     try {
@@ -3019,9 +3098,10 @@ async function loadBundledSample(fileName) {
   }
   if (text === null) {
     showToast(`「${fileName}」を読み込めませんでした`);
-    return;
+    return false;
   }
-  applyLoadedMarkdown(text, fileName);
+  applyLoadedMarkdown(text, fileName, null, true);
+  return true;
 }
 
 // 読み込み直後の閲覧中に誤って編集しないよう、エディタと、内容を変えるボタンをまとめて切り替える（DD-FILE-040）。
@@ -3046,33 +3126,49 @@ function saveMarkdownFile() {
 }
 
 function setupFileMenu() {
-  const btnMenu = document.getElementById('btn-file-menu');
-  const menu = document.getElementById('file-menu');
   const input = document.getElementById('file-input');
 
-  btnMenu.onclick = event => {
-    event.stopPropagation();
-    const willOpen = menu.classList.contains('hidden');
-    menu.classList.toggle('hidden', !willOpen);
-    btnMenu.setAttribute('aria-expanded', String(willOpen));
-  };
+  // 1 つのメニューを開くときは、もう一方を閉じる
+  HEADER_MENUS.forEach(([btnId, menuId]) => {
+    const btn = document.getElementById(btnId);
+    const menu = document.getElementById(menuId);
+    btn.onclick = event => {
+      event.stopPropagation();
+      const willOpen = menu.classList.contains('hidden');
+      closeHeaderMenus();
+      menu.classList.toggle('hidden', !willOpen);
+      btn.setAttribute('aria-expanded', String(willOpen));
+    };
+  });
+  const fileMenu = document.getElementById('file-menu');
   document.getElementById('menu-open-markdown').onclick = () => {
-    closeFileMenu();
+    closeHeaderMenus();
     input.click();
   };
-  menu.querySelectorAll('[data-sample-file]').forEach(btn => {
+  document.getElementById('menu-open-folder').onclick = () => {
+    closeHeaderMenus();
+    openFolder();
+  };
+  document.getElementById('menu-open-recent-folder').onclick = () => {
+    closeHeaderMenus();
+    reopenRecentFolder();
+  };
+  fileMenu.querySelectorAll('[data-sample-file]').forEach(btn => {
     btn.onclick = () => {
       const fileName = btn.getAttribute('data-sample-file');
-      closeFileMenu();
+      closeHeaderMenus();
       if (fileName) loadBundledSample(fileName);
     };
   });
   // 印刷・PDF の配布資料（FR-036）。刷る内容は @media print（DD-VTPL-130〜132）で決める
   document.getElementById('menu-print').onclick = () => {
-    closeFileMenu();
+    closeHeaderMenus();
     window.print();
   };
-  document.getElementById('btn-save-markdown').onclick = saveMarkdownFile;
+  document.getElementById('btn-save-markdown').onclick = () => {
+    closeHeaderMenus();
+    saveMarkdownFile();
+  };
   document.getElementById('btn-edit-unlock').onclick = () => {
     setEditorReadOnly(false);
     document.getElementById('markdown-editor').focus();
@@ -3085,10 +3181,10 @@ function setupFileMenu() {
     if (file) loadMarkdownFile(file);
   };
   document.addEventListener('click', event => {
-    if (!menu.contains(event.target)) closeFileMenu();
+    if (!HEADER_MENUS.some(([, menuId]) => document.getElementById(menuId).contains(event.target))) closeHeaderMenus();
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeFileMenu();
+    if (event.key === 'Escape') closeHeaderMenus();
   });
 }
 
@@ -3136,6 +3232,456 @@ function setupFileDrop() {
   });
 }
 
+/* ==========================================================================
+   フォルダを開く（FR-043〜045, DD-FILE-070〜078）
+   ========================================================================== */
+// 一覧に載せるファイルの数と、たどるフォルダの深さの上限。大きなフォルダを選んでも固まらないようにする（DD-FILE-072）
+const FOLDER_FILE_LIMIT = 2000;
+const FOLDER_DEPTH_LIMIT = 12;
+// 一覧を隠したかどうか（利用者ごとの見た目の好み）を覚えておくキー（DD-FILE-074）
+const FOLDER_COLLAPSED_KEY = 'lucivo.folderPaneCollapsed';
+// 前回のフォルダのハンドルを保存する IndexedDB（DD-FILE-073）
+const RECENT_FOLDER_DB = 'lucivo';
+const RECENT_FOLDER_STORE = 'handles';
+const RECENT_FOLDER_KEY = 'recentFolder';
+
+// 開いているフォルダ: { name, files: [{ path, name, dir }], getFile(path) → Promise<File|null> }
+let openedFolder = null;
+// フォルダから開いた文書の、フォルダの中のパス（フォルダから開いていなければ null）
+let currentFolderPath = null;
+// 同梱サンプルとして開いた文書のファイル名（同梱サンプルでなければ null）（DD-FILE-081）
+let currentSampleFile = null;
+// 同梱サンプルのフォルダ（index.html からの相対パス）と、サンプルのファイル名
+const SAMPLES_DIR = 'samples';
+const BUNDLED_SAMPLES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md'];
+// フォルダの画像のパス → blob URL（読み込み中は Promise）（DD-FILE-076）
+const folderImageUrls = new Map();
+// File System Access API が使えなかったとき、次からはフォルダの選択の入力欄を使う（DD-FILE-071）
+let preferFolderInput = false;
+let recentFolderHandle = null;
+
+// 隠しフォルダ（. で始まる）と、依存パッケージの置き場は、たどらない
+function isSkippedFolderName(name) {
+  return name.startsWith('.') || name === 'node_modules';
+}
+
+function folderDirOf(path) {
+  const i = path.lastIndexOf('/');
+  return i < 0 ? '' : path.slice(0, i);
+}
+
+// base（フォルダの中のフォルダのパス）から見た相対パスを、フォルダの中のパスにする。フォルダの外へ出るときは null（DD-FILE-076）
+function resolveFolderPath(base, src) {
+  let rel = String(src).split(/[?#]/)[0].replace(/\\/g, '/');
+  try {
+    rel = decodeURIComponent(rel);
+  } catch (_) {
+    // % の並びが壊れているときは、書いたままのパスで探す
+  }
+  const parts = base ? base.split('/') : [];
+  for (const seg of rel.split('/')) {
+    if (seg === '' || seg === '.') continue;
+    if (seg === '..') {
+      if (!parts.length) return null;
+      parts.pop();
+    } else {
+      parts.push(seg);
+    }
+  }
+  return parts.length ? parts.join('/') : null;
+}
+
+function sortFolderFiles(files) {
+  const collator = new Intl.Collator('ja', { numeric: true, sensitivity: 'base' });
+  // フォルダの直下のファイルを先に、その後はサブフォルダのパスの順、同じフォルダの中は名前の順
+  return files.sort((a, b) => (a.dir === '' ? 0 : 1) - (b.dir === '' ? 0 : 1)
+    || collator.compare(a.dir, b.dir) || collator.compare(a.name, b.name));
+}
+
+// File System Access API のハンドルから、Markdown ファイルを集める（DD-FILE-072）
+async function scanDirectoryHandle(root) {
+  const files = [];
+  let truncated = false;
+  const walk = async (dir, prefix, depth) => {
+    for await (const [name, handle] of dir.entries()) {
+      if (files.length >= FOLDER_FILE_LIMIT) {
+        truncated = true;
+        return;
+      }
+      const path = prefix ? `${prefix}/${name}` : name;
+      if (handle.kind === 'directory') {
+        if (!isSkippedFolderName(name) && depth < FOLDER_DEPTH_LIMIT) await walk(handle, path, depth + 1);
+      } else if (DROPPABLE_FILE_PATTERN.test(name)) {
+        files.push({ path, name, dir: prefix });
+      }
+    }
+  };
+  await walk(root, '', 0);
+  return { files: sortFolderFiles(files), truncated };
+}
+
+function makeHandleFolder(root, scan) {
+  return {
+    name: root.name,
+    files: scan.files,
+    truncated: scan.truncated,
+    async getFile(path) {
+      try {
+        const segs = path.split('/');
+        let dir = root;
+        for (const seg of segs.slice(0, -1)) dir = await dir.getDirectoryHandle(seg);
+        return await (await dir.getFileHandle(segs[segs.length - 1])).getFile();
+      } catch (_) {
+        return null;
+      }
+    }
+  };
+}
+
+// <input webkitdirectory> で選んだファイルの一覧から作る。webkitRelativePath の先頭はフォルダの名前（DD-FILE-071）
+function makeInputFolder(fileList) {
+  const all = new Map();
+  let name = '';
+  for (const file of fileList) {
+    const segs = (file.webkitRelativePath || file.name).split('/');
+    if (!name) name = segs.length > 1 ? segs[0] : '';
+    const inner = segs.length > 1 ? segs.slice(1) : segs;
+    if (inner.slice(0, -1).some(isSkippedFolderName)) continue;
+    all.set(inner.join('/'), file);
+  }
+  const files = [];
+  for (const [path, file] of all) {
+    if (DROPPABLE_FILE_PATTERN.test(file.name)) files.push({ path, name: file.name, dir: folderDirOf(path) });
+  }
+  const truncated = files.length > FOLDER_FILE_LIMIT;
+  return {
+    name: name || 'フォルダ',
+    files: sortFolderFiles(files).slice(0, FOLDER_FILE_LIMIT),
+    truncated,
+    async getFile(path) {
+      return all.get(path) || null;
+    }
+  };
+}
+
+function getFolderImageUrl(folder, path) {
+  if (!folderImageUrls.has(path)) {
+    folderImageUrls.set(path, folder.getFile(path).then(file => {
+      const url = file ? URL.createObjectURL(file) : null;
+      // 読み込み中に別のフォルダに替わったら、作った URL を捨てる
+      if (folder !== openedFolder) {
+        if (url) URL.revokeObjectURL(url);
+        return null;
+      }
+      folderImageUrls.set(path, url);
+      return url;
+    }));
+  }
+  return Promise.resolve(folderImageUrls.get(path));
+}
+
+function clearFolderImageUrls() {
+  folderImageUrls.forEach(url => {
+    if (typeof url === 'string') URL.revokeObjectURL(url);
+  });
+  folderImageUrls.clear();
+}
+
+function setOpenedFolder(folder) {
+  clearFolderImageUrls();
+  openedFolder = folder;
+  // 前に開いていた文書は、新しいフォルダの文書ではない
+  currentFolderPath = null;
+  setFolderPaneCollapsed(false);
+  renderFolderList();
+  renderApp();
+  const note = folder.truncated ? `（先頭の ${FOLDER_FILE_LIMIT} 件）` : '';
+  showToast(`「${folder.name}」を開きました。Markdown ${folder.files.length} 件${note}`);
+}
+
+function closeFolder() {
+  clearFolderImageUrls();
+  openedFolder = null;
+  currentFolderPath = null;
+  renderFolderList();
+  renderApp();
+}
+
+// 「フォルダを開く…」。Chrome / Edge は File System Access API、それ以外はフォルダの選択の入力欄（DD-FILE-070, 071）
+async function openFolder() {
+  if (!window.showDirectoryPicker || preferFolderInput) {
+    document.getElementById('folder-input').click();
+    return;
+  }
+  let handle;
+  try {
+    handle = await window.showDirectoryPicker({ id: 'lucivo-folder', mode: 'read' });
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    // file:// で使えないなど。次からは入力欄を使い、今回も試す（クリックの直後でなければ、ブラウザが止めることがある）
+    console.warn('showDirectoryPicker failed:', err);
+    preferFolderInput = true;
+    document.getElementById('folder-input').click();
+    return;
+  }
+  await openFolderFromHandle(handle);
+  saveRecentFolderHandle(handle);
+}
+
+async function openFolderFromHandle(handle) {
+  try {
+    setOpenedFolder(makeHandleFolder(handle, await scanDirectoryHandle(handle)));
+  } catch (err) {
+    console.error('Failed to read folder:', err);
+    showToast(`「${handle.name}」を読み込めませんでした`);
+  }
+}
+
+// フォルダの中のファイルを開く（一覧と、文書の中のリンクから。DD-FILE-075, DD-FILE-079）。
+// 一覧に載らないファイル（件数の上限を超えたものなど）も、フォルダの中にあれば開く。開けたら true
+async function openFolderFile(path) {
+  const folder = openedFolder;
+  if (!folder) return false;
+  const name = path.slice(path.lastIndexOf('/') + 1);
+  const file = await folder.getFile(path);
+  if (folder !== openedFolder) return false;
+  if (!file) {
+    showToast(`「${path}」はフォルダの中に見つかりません`);
+    return false;
+  }
+  if (!confirmDiscardEdits(name)) return false;
+  try {
+    applyLoadedMarkdown(await file.text(), name, path);
+  } catch (err) {
+    console.error('Failed to read file:', err);
+    showToast(`「${name}」を読み込めませんでした`);
+    return false;
+  }
+  // 狭い画面では一覧が文書に重なるため、選んだら隠す
+  if (window.matchMedia('(max-width: 1023.98px)').matches) setFolderPaneCollapsed(true);
+  return true;
+}
+
+// 見出しの文字から、GitHub と同じ形のアンカー（小文字、記号を除く、空白は -）を作る（DD-FILE-080）
+function headingSlug(text) {
+  return String(text).trim().toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+    .replace(/\s/g, '-');
+}
+
+// プレビューの中で、アンカー（#以降）に当たる見出しへ送る。見つからなければ false
+function scrollToHeadingAnchor(anchor) {
+  let target = anchor;
+  try {
+    target = decodeURIComponent(anchor);
+  } catch (_) {
+    // % の並びが壊れているときは、書いたままで探す
+  }
+  const slug = headingSlug(target);
+  const scroller = document.getElementById('preview-scroll');
+  const heading = Array.from(scroller.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+    .find(h => headingSlug(h.textContent) === slug);
+  if (!heading) return false;
+  // Visualモードの章の見出しは、章（スラブ）の上端へ送る
+  const el = heading.closest('.exhibition-slab') || heading;
+  scroller.scrollTo({ top: previewScrollTopOf(el, scroller), behavior: scrollBehavior() });
+  return true;
+}
+
+// 文書の中のリンク（DD-FILE-079, 080）。相対パスの Markdown へのリンクと、見出しへのリンク（#…）は、
+// ブラウザの既定の動作（Lucivo の画面から、Markdown のファイルそのものへ移ってしまう）を止めて、Lucivo の中で開く
+function setupDocumentLinks() {
+  document.getElementById('preview-scroll').addEventListener('click', event => {
+    const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+    if (!link || event.defaultPrevented || event.button !== 0) return;
+    const href = link.getAttribute('href');
+    if (href.startsWith('#')) {
+      event.preventDefault();
+      if (!scrollToHeadingAnchor(href.slice(1))) showToast('リンク先の見出しが見つかりません');
+      return;
+    }
+    if (!isRelativeSrc(href)) return;
+    const [pathPart, ...rest] = href.split('#');
+    const anchor = rest.join('#');
+    if (!DROPPABLE_FILE_PATTERN.test(pathPart.split('?')[0])) return;
+    event.preventDefault();
+    // 同梱サンプルの間のリンクは、同梱サンプルとして開く（DD-FILE-081）
+    if (currentSampleFile && !(openedFolder && currentFolderPath !== null)) {
+      const samplePath = resolveFolderPath('', pathPart);
+      if (!BUNDLED_SAMPLES.includes(samplePath)) {
+        showToast(`「${samplePath || pathPart}」は同梱サンプルにありません`);
+        return;
+      }
+      const opened = samplePath === currentSampleFile ? Promise.resolve(true) : loadBundledSample(samplePath);
+      opened.then(ok => {
+        if (ok && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+      });
+      return;
+    }
+    if (!openedFolder || currentFolderPath === null) {
+      showToast('Markdown へのリンクは、「開く」→「フォルダを開く…」で開いた文書で使えます');
+      return;
+    }
+    const path = resolveFolderPath(folderDirOf(currentFolderPath), pathPart);
+    if (path === null) {
+      showToast('開いたフォルダの外のファイルは開けません');
+      return;
+    }
+    const open = path === currentFolderPath ? Promise.resolve(true) : openFolderFile(path);
+    open.then(opened => {
+      if (opened && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+    });
+  });
+}
+
+// 一覧を描き直す。フォルダを開いていなければ、一覧も帯も出さない（DD-FILE-074）
+function renderFolderList() {
+  const pane = document.getElementById('folder-pane');
+  const rail = document.getElementById('btn-folder-show');
+  if (!openedFolder) {
+    pane.classList.add('hidden');
+    rail.classList.add('hidden');
+    return;
+  }
+  const collapsed = isFolderPaneCollapsed();
+  pane.classList.toggle('hidden', collapsed);
+  rail.classList.toggle('hidden', !collapsed);
+  document.getElementById('folder-pane-name').textContent = openedFolder.name;
+  document.getElementById('folder-pane-name').title = openedFolder.name;
+  const list = document.getElementById('folder-list');
+  list.replaceChildren();
+  if (!openedFolder.files.length) {
+    const empty = document.createElement('p');
+    empty.className = 'folder-list-empty';
+    empty.textContent = 'Markdown ファイル（.md / .markdown / .txt）がありません';
+    list.append(empty);
+    return;
+  }
+  let lastDir = null;
+  for (const file of openedFolder.files) {
+    if (file.dir !== lastDir && file.dir !== '') {
+      const dir = document.createElement('div');
+      dir.className = 'folder-list-dir';
+      dir.textContent = `${file.dir}/`;
+      dir.title = file.dir;
+      list.append(dir);
+    }
+    lastDir = file.dir;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'folder-list-item';
+    btn.dataset.path = file.path;
+    btn.title = file.path;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z M14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+    const label = document.createElement('span');
+    label.textContent = file.name;
+    btn.append(label);
+    if (file.path === currentFolderPath) {
+      btn.classList.add('is-current');
+      btn.setAttribute('aria-current', 'page');
+    }
+    btn.onclick = () => openFolderFile(file.path);
+    list.append(btn);
+  }
+}
+
+function isFolderPaneCollapsed() {
+  try {
+    return localStorage.getItem(FOLDER_COLLAPSED_KEY) === '1';
+  } catch (_) {
+    return document.getElementById('folder-pane').dataset.collapsed === '1';
+  }
+}
+
+function setFolderPaneCollapsed(collapsed) {
+  try {
+    localStorage.setItem(FOLDER_COLLAPSED_KEY, collapsed ? '1' : '0');
+  } catch (_) {
+    // 保存できない環境（プライベートウィンドウなど）では、その場の表示だけを切り替える
+    document.getElementById('folder-pane').dataset.collapsed = collapsed ? '1' : '0';
+  }
+  renderFolderList();
+}
+
+// 前回のフォルダのハンドル（DD-FILE-073）。IndexedDB を使えない環境では、何もしない
+function openRecentFolderDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(RECENT_FOLDER_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(RECENT_FOLDER_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveRecentFolderHandle(handle) {
+  recentFolderHandle = handle;
+  updateRecentFolderMenu();
+  try {
+    const db = await openRecentFolderDb();
+    db.transaction(RECENT_FOLDER_STORE, 'readwrite').objectStore(RECENT_FOLDER_STORE).put(handle, RECENT_FOLDER_KEY);
+  } catch (err) {
+    console.warn('Failed to remember the folder:', err);
+  }
+}
+
+async function loadRecentFolderHandle() {
+  if (!window.showDirectoryPicker || !window.indexedDB) return;
+  try {
+    const db = await openRecentFolderDb();
+    const handle = await new Promise((resolve, reject) => {
+      const req = db.transaction(RECENT_FOLDER_STORE, 'readonly').objectStore(RECENT_FOLDER_STORE).get(RECENT_FOLDER_KEY);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+    if (handle && handle.kind === 'directory') {
+      recentFolderHandle = handle;
+      updateRecentFolderMenu();
+    }
+  } catch (err) {
+    console.warn('Failed to read the remembered folder:', err);
+  }
+}
+
+function updateRecentFolderMenu() {
+  const item = document.getElementById('menu-open-recent-folder');
+  item.classList.toggle('hidden', !recentFolderHandle);
+  if (recentFolderHandle) item.textContent = `前回のフォルダ「${recentFolderHandle.name}」を開く`;
+}
+
+// 前回のフォルダを開く。読む許可は開くたびにブラウザが確かめる（クリックの直後に求める必要がある）
+async function reopenRecentFolder() {
+  const handle = recentFolderHandle;
+  if (!handle) return;
+  try {
+    let permission = await handle.queryPermission({ mode: 'read' });
+    if (permission !== 'granted') permission = await handle.requestPermission({ mode: 'read' });
+    if (permission !== 'granted') {
+      showToast(`「${handle.name}」を読む許可がありません`);
+      return;
+    }
+  } catch (err) {
+    console.warn('Failed to reopen the folder:', err);
+    showToast(`「${handle.name}」を開けませんでした。「フォルダを開く…」から選び直してください`);
+    return;
+  }
+  await openFolderFromHandle(handle);
+}
+
+function setupFolder() {
+  const input = document.getElementById('folder-input');
+  input.onchange = () => {
+    const files = Array.from(input.files || []);
+    // 同じフォルダを続けて選んでも change が発生するよう、選択を解除する
+    input.value = '';
+    if (files.length) setOpenedFolder(makeInputFolder(files));
+  };
+  document.getElementById('btn-folder-hide').onclick = () => setFolderPaneCollapsed(true);
+  document.getElementById('btn-folder-show').onclick = () => setFolderPaneCollapsed(false);
+  document.getElementById('btn-folder-close').onclick = closeFolder;
+  setupDocumentLinks();
+  loadRecentFolderHandle();
+}
+
 // フロントマターの表示 ON / OFF。モードにかかわらず効き、モードを切り替えても状態を保つ（DD-FM-011）
 function setupFrontMatterToggle() {
   const btn = document.getElementById('btn-front-matter');
@@ -3154,6 +3700,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupKeyboardShortcuts();
   setupFileMenu();
   setupFileDrop();
+  setupFolder();
   setupDiagramPanZoom();
   setupLocalImages();
   setupFrontMatterToggle();

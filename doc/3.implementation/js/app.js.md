@@ -64,4 +64,7 @@ flowchart TD
 - **モードの切替の画面の状態**: 高速モード / Visualモードのボタンの選択状態とスタイルバーの表示は、`syncStageModeUi()` だけで切り替える（`DD-DIAG-063`）。`state.isVisualMode` を変える処理を足すときは、あわせてこの関数を呼ぶ。
 - **図のドラッグと Ctrl + ホイール**: `setupDiagramPanZoom()` は、図のカードではなく `document` にイベントを 1 回だけ付ける（`DD-DIAG-070`）。カードは描画のたびに作り直されるため。`wheel` は `passive: false` で付けないと `preventDefault()` が効かず、ブラウザのページ全体のズームが起きる。拡大の幅は CSS 変数 `--zoom-width` で渡す（`DD-DIAG-071`）。SVG の `style` の幅は、`Fit` / `1:1` の CSS の `!important` に負ける。
 - **ウィンドウのタイトル**: `document.title` は `applyLoadedMarkdown()` だけで変える（`DD-FILE-050`）。読み込みの経路を増やすときは、`applyLoadedMarkdown()` を通すと、タイトル・読み取り専用・破棄の確認が揃う。
+- **フォルダの形**: フォルダは、File System Access API と `<input webkitdirectory>` のどちらで開いても、`openedFolder = { name, files, truncated, getFile(path) }` にそろえる（`DD-FILE-070`）。一覧・画像・ファイルを開く処理は、この形だけを使い、方式を区別しない。方式を足すときも、この形を作る関数を足す。
+- **相対パスの画像の 2 段階**: DOMPurify のフックは同期で、ファイルを待てない。フックでは `data-folder-src` を付けて `src` を消し、描画の後の `resolveFolderImages()` で blob URL を入れる。読み込み済みの URL は次の描画からフックの中で使う（`DD-FILE-076`）。フォルダを替えるときは `clearFolderImageUrls()` で URL を捨てる。
+- **ヘッダーのメニュー**: 開く・保存のメニューは `HEADER_MENUS` の組で開閉する。メニューを足すときは、この組に足すと、外側のクリックと Esc キーで閉じる処理と、片方を開くともう片方を閉じる処理が効く。`closeFileMenu` は、テストからも呼ぶ `closeHeaderMenus` の別名。
 

@@ -29,33 +29,41 @@
         </a>
       </div>
 
-      <!-- ファイルメニュー -->
+      <!-- 開くメニュー（FR-006, FR-043） -->
       <div class="relative ml-1 sm:ml-2">
         <button id="btn-file-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="file-menu" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
           </svg>
-          <span>ファイル</span>
+          <span>開く</span>
         </button>
         <div id="file-menu" role="menu" class="file-menu hidden">
-          <button id="menu-open-markdown" type="button" role="menuitem" class="file-menu-item">Markdown を開く…</button>
+          <button id="menu-open-markdown" type="button" role="menuitem" class="file-menu-item">ファイルを開く…</button>
+          <button id="menu-open-folder" type="button" role="menuitem" class="file-menu-item">フォルダを開く…</button>
+          <button id="menu-open-recent-folder" type="button" role="menuitem" class="file-menu-item hidden"></button>
           <div class="file-menu-divider" role="separator"></div>
           <div class="file-menu-section-label">同梱サンプル</div>
           <button id="menu-sample-visual" type="button" role="menuitem" data-sample-file="visual-sample.md" class="file-menu-item">Visualモードサンプル (visual-sample.md)</button>
           <button id="menu-sample-notation" type="button" role="menuitem" data-sample-file="notation_sample.md" class="file-menu-item">記法サンプル (notation_sample.md)</button>
           <button id="menu-sample-notation-extra" type="button" role="menuitem" data-sample-file="notation_sample_extra1.md" class="file-menu-item">記法サンプル追補版 (notation_sample_extra1.md)</button>
-          <div class="file-menu-divider" role="separator"></div>
-          <div class="file-menu-section-label">書き出し</div>
-          <button id="menu-print" type="button" role="menuitem" class="file-menu-item">印刷 / PDF として保存…</button>
         </div>
         <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" class="hidden" />
+        <!-- File System Access API がないブラウザで、フォルダを選ぶ（DD-FILE-078） -->
+        <input id="folder-input" type="file" webkitdirectory multiple class="hidden" />
       </div>
-      <button id="btn-save-markdown" type="button" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="エディタの内容を Markdown ファイルとしてダウンロード">
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"></path>
-        </svg>
-        <span>保存</span>
-      </button>
+      <!-- 保存メニュー（FR-013, FR-036） -->
+      <div class="relative">
+        <button id="btn-save-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="save-menu" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"></path>
+          </svg>
+          <span>保存</span>
+        </button>
+        <div id="save-menu" role="menu" class="file-menu hidden">
+          <button id="btn-save-markdown" type="button" role="menuitem" class="file-menu-item" title="エディタの内容を Markdown ファイルとしてダウンロード">Markdown を保存（<span id="save-file-name">untitled.md</span>）</button>
+          <button id="menu-print" type="button" role="menuitem" class="file-menu-item">印刷 / PDF として保存…</button>
+        </div>
+      </div>
     </div>
 
     <!-- モード切り替え -->
@@ -124,6 +132,26 @@
 
   <!-- ==================== メインワークスペース ==================== -->
   <main id="workspace-main" class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative">
+
+    <!-- フォルダの一覧（FR-044, DTP-008）。フォルダを開いたときだけ表示する -->
+    <aside id="folder-pane" class="folder-pane hidden" aria-label="フォルダのファイル一覧">
+      <div class="folder-pane-header">
+        <svg class="folder-pane-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span id="folder-pane-name" class="folder-pane-name"></span>
+        <button id="btn-folder-close" type="button" class="folder-pane-btn" title="フォルダを閉じる" aria-label="フォルダを閉じる">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button id="btn-folder-hide" type="button" class="folder-pane-btn" title="一覧を隠す" aria-label="一覧を隠す" aria-controls="folder-pane">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <nav id="folder-list" class="folder-list" aria-label="Markdown ファイル"></nav>
+    </aside>
+    <!-- 一覧を隠したときに残す細い帯。押すと一覧を戻す -->
+    <button id="btn-folder-show" type="button" class="folder-rail hidden" title="一覧を表示" aria-label="一覧を表示" aria-controls="folder-pane">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6l6 6-6 6M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
 
     <!-- 左ペイン：Markdown エディタ -->
     <section id="pane-editor" class="w-full lg:w-[40%] h-[42%] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r shrink-0 z-10" style="border-color: var(--border-subtle); background: var(--panel-bg);">
