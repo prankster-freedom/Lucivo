@@ -35,6 +35,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 - バックスラッシュ・バッククォート・`$` を含む内容（正規表現、TeX、テンプレートリテラルなど）は、シェルのヒアドキュメントや `node -e` の引数で書かない。ファイルの作成・編集は、エディタ系のツール（AI エージェントのファイル編集機能など）で行う。ヒアドキュメント経由で `\\` が `\` に変わり、スクリプトや数式が壊れたことがある
   - Python や sed などの文字列に置換の内容を埋め込んで回避しない。Python の通常の文字列では `\b` がバックスペース（0x08）に変わり、警告も出ない。一括の置換が必要なときは、置換の内容をエディタ系のツールで書いたファイルから読む
   - ツールの警告（Python の `SyntaxWarning` など）は誤りとして扱い、原因を直してから進める
+  - この規則に反した場合は、いつ気付いたか（書いた直後か、後か）と、内容が壊れていないかをユーザーに報告する。書いた直後に気付いて内容を確かめられた場合は、それで足りる。直後に気付けなかった失敗（コミット後やレビューで見つかったもの、内容が壊れていたもの）は、報告だけで済ませず、再発を防ぐワークフローの改善（検査の追加など）を提案する
   - `npm run lint` で、制御文字、正規表現の中の制御文字、見えない空白を検出する（CI の `lint` ジョブ）。見えない文字が必要なときは `﻿` のようにエスケープで書く
 - ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`public/index.html` を `file://` で開き、Playwright（Chromium）で確認する
   - 特定の機能やテストケースだけを確認・再テストするときは、`node tests/e2e.cjs <関数名またはTC ID>`（例: `node tests/e2e.cjs TC-SHOW-011`、`node tests/e2e.cjs testCoverAndTables`）で対象スイートだけを部分実行する（`work/test/results.json` は該当 TC の結果だけが差分更新される）。`node -e` のワンライナーでテストコードを実行しない
@@ -87,7 +88,7 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
    ```
 
 2. **ZIP の確認**: ZIP を `work/release/` に展開し、`lucivo-v<版>/index.html` を `file://` で開いて、起動と同梱サンプルの表示を確かめる。
-3. **【承認】GitHub Release の作成**: タグの push と GitHub Release の作成は外部に公開する操作のため、ユーザーの指示を受けてから行う。リリースノートは、README の「リリースノート」の該当する版の節を使う。
+3. **【承認】GitHub Release の作成**: タグの push と GitHub Release の作成は外部に公開する操作のため、ユーザーの指示を受けてから行う。リリースノートは、README の「リリースノート」の該当する版の節を使う。リリースノートの冒頭には、ZIP の開き方と、「Source code (zip / tar.gz) ではなく `lucivo-v<版>.zip` を選ぶこと（Source code は仕様書やテストを含むリポジトリ全体で、開発者向け）」を書く。GitHub は Release に Source code を自動で添付し、消す設定がないため、利用者が配布物を選べるよう案内する。
 
    ```sh
    gh release create lucivo-v<版> work/release/lucivo-v<版>.zip --title "Lucivo v<版>" --notes-file <リリースノートのファイル>
