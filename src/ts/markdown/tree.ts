@@ -7,7 +7,7 @@ export const TREE_LANGS = ['tree', 'filetree', 'dirtree'];
 export const TREE_BRANCH_CHARS = '├┣└┗+`\\';
 export const TREE_PIPE_CHARS = '│┃|';
 export const TREE_LINE_CHARS = '─━-';
-export const TREE_FULLWIDTH_SPACE = String.fromCharCode(0x3000);
+export const isFullWidthSpace = (ch: string) => ch.charCodeAt(0) === 0x3000;
 export const TREE_NOTE_RE = /\s+(?:#|\/\/|←|<-{1,2})\s*(.*)$/;
 export const TREE_KIND_RES: [string, RegExp][] = [
   ['doc', /\.(?:md|markdown|mdx|txt|rst|adoc|pdf|docx?|xlsx?|pptx?|csv)$/i],
@@ -42,7 +42,7 @@ export function splitTreeLine(line: string): TreeLineEntry | null {
     const next = line[i + 1] || '';
     if (ch === ' ') {
       col += 1;
-    } else if (ch === TREE_FULLWIDTH_SPACE) {
+    } else if (isFullWidthSpace(ch)) {
       col += 2;
     } else if (branchCol < 0 && TREE_BRANCH_CHARS.includes(ch) && (ch !== '\\' || TREE_LINE_CHARS.includes(next))) {
       branchCol = col;

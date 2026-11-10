@@ -1,63 +1,18 @@
 import { escapeHtml } from './utils/escape';
 import { hexToRgba } from './utils/color';
+import { fnv1aHash } from './utils/hash';
+import { downloadBlob } from './utils/download';
+import { showToast, updateStatus } from './ui/toast';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
+import { ALERT_LABELS, decorateAlerts } from './markdown/callouts';
+import { splitFrontMatter, highlightYamlLine, buildFrontMatterHtml } from './markdown/front-matter';
+import { scopeSvgIds } from './diagram/scope';
+import { setupDiagramPanZoom, findScrollParent, clearDiagramZoom, updatePannable, zoomDiagram } from './diagram/pan-zoom';
 
 /* ==========================================================================
    アプリケーション・コアエンジン
    ========================================================================== */
-function fnv1aHash(str) {
-  let hash = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16);
-}
-
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  const label = document.getElementById('toast-message');
-  if (!toast || !label) return;
-  label.textContent = msg;
-  toast.classList.remove('opacity-0', 'translate-y-2');
-  toast.classList.add('opacity-100', 'translate-y-0');
-  setTimeout(() => {
-    toast.classList.remove('opacity-100', 'translate-y-0');
-    toast.classList.add('opacity-0', 'translate-y-2');
-  }, 2000);
-}
-
-function updateStatus(text, type = 'info') {
-  const pill = document.getElementById('telemetry-pill');
-  const dot = document.getElementById('telemetry-dot');
-  const status = document.getElementById('telemetry-status');
-  if (!pill || !dot || !status) return;
-  status.textContent = text;
-  pill.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-mono shadow-md backdrop-blur-md transition-all';
-  if (type === 'success') {
-    pill.classList.add('bg-emerald-500/10', 'text-emerald-600', 'border-emerald-500/25');
-    dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
-  } else if (type === 'warning') {
-    pill.classList.add('bg-amber-500/10', 'text-amber-600', 'border-amber-500/25');
-    dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500';
-  } else {
-    pill.classList.add('bg-blue-500/10', 'text-blue-600', 'border-blue-500/25');
-    dot.className = 'w-1.5 h-1.5 rounded-full bg-blue-500';
-  }
-}
-
-function downloadBlob(content, filename, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 // モーダル要素（#settings-modal, #zoom-modal, #shortcut-modal）の開閉状態を統一的に扱う共通ヘルパー
 function resolveModal(idOrEl) {
@@ -689,39 +644,6 @@ function setupMarkedHeadings() {
   });
 }
 
-/* ==========================================================================
-   コールアウト（GitHub アラート記法, FR-034）: サニタイズ後の DOM で、最初の行がマーカーだけの引用を注意書きのパネルにする
-   ========================================================================== */
-const ALERT_LABELS = { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' };
-// マーカーの後ろに同じ行で文字が続くもの（[!NOTE] 本文）は、GitHub と同じく通常の引用のままにする
-const ALERT_MARKER_RE = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*(?:\n|$)/i;
-
-// 引用の最初の段落の先頭の文字だけを調べ、要素の大きさは計測しない（NFR-006, DD-MD-021）
-function decorateAlerts(container) {
-  container.querySelectorAll('blockquote').forEach(quote => {
-    const first = quote.firstElementChild;
-    const head = first && first.tagName === 'P' ? first.firstChild : null;
-    const match = head && head.nodeType === Node.TEXT_NODE ? ALERT_MARKER_RE.exec(head.textContent) : null;
-    if (!match) return;
-    const type = match[1].toLowerCase();
-    head.textContent = head.textContent.slice(match[0].length);
-    if (!head.textContent && head.nextSibling && head.nextSibling.nodeName === 'BR') head.nextSibling.remove();
-    if (!first.textContent.trim() && !first.querySelector('img, .lucivo-math')) first.remove();
-
-    const alert = document.createElement('div');
-    alert.className = `md-alert md-alert-${type}`;
-    alert.setAttribute('role', 'note');
-    const title = document.createElement('p');
-    title.className = 'md-alert-title';
-    const icon = document.createElement('span');
-    icon.className = 'md-alert-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    title.append(icon, ALERT_LABELS[type]);
-    alert.append(title, ...quote.childNodes);
-    quote.replaceWith(alert);
-  });
-}
-
 // サニタイズ後の HTML に入れた置き場所へ描画する。trust: false で、リンクや任意の属性を作るコマンドは描画しない
 // KaTeX は、数式が初めて現れたときに読み込む。読み込めなければ置き場所の原文のまま（DD-MATH-022）。
 // Visualモードでは x の関数の数式を検出し、PNG ラスター画像の補足グラフを数式と併記する（FR-048, DD-VTPL-144）
@@ -763,69 +685,8 @@ function renderMath(container) {
 }
 
 /* ==========================================================================
-   YAML フロントマター（FR-011）: 先頭を切り出し、表示するときは行単位で色分けする
-   ========================================================================== */
-// 文書の先頭だけを調べる。閉じの行がない場合は、先頭の水平線を隠さないよう一致させない（DD-FM-001）
-function splitFrontMatter(text) {
-  const m = /^---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(text);
-  if (!m) return { yaml: null, body: text };
-  return { yaml: m[1] || '', body: text.slice(m[0].length) };
-}
-
-// YAML は解析せず、コメント・キー・値を行ごとに色分けする（DD-FM-021）。各部分はエスケープしてから囲む
-function highlightYamlLine(line) {
-  if (/^\s*#/.test(line)) return `<span class="fm-comment">${escapeHtml(line)}</span>`;
-  const m = /^(\s*(?:-\s+)?)([^\s#:][^:]*?)(:)(\s.*|$)/.exec(line);
-  if (m) {
-    return `${escapeHtml(m[1])}<span class="fm-key">${escapeHtml(m[2])}</span>${escapeHtml(m[3])}<span class="fm-value">${escapeHtml(m[4])}</span>`;
-  }
-  return `<span class="fm-value">${escapeHtml(line)}</span>`;
-}
-
-function buildFrontMatterHtml(yaml) {
-  const body = yaml.split(/\r?\n/).map(highlightYamlLine).join('\n');
-  return `<section class="front-matter"><div class="front-matter-label">Front Matter</div><pre class="front-matter-body"><code>${body}</code></pre></section>\n`;
-}
-
-/* ==========================================================================
    SVG ポストプロセッサ (通常モード vs リファレンス4大インフォグラフィック)
    ========================================================================== */
-
-// SVG 内の id を SVG ごとに一意にし、url(#…)・href・aria 参照を書き換える。
-// Mermaid はシーケンス図の矢じり（#arrowhead）などを図をまたいで同じ id で出力するため、
-// 同じページに複数の図があると、別の図（非表示のものを含む）のマーカーやグラデーションを参照してしまう
-function scopeSvgIds(svg) {
-  const prefix = svg.id || `lucivo-${Math.random().toString(36).slice(2, 9)}`;
-  const idMap = new Map();
-  const used = new Set();
-  svg.querySelectorAll('[id]').forEach(el => {
-    // Mermaid が 1 つの図の中で同じ id を出すこと（タイムラインの node-undefined など）があるため、
-    // 2 つ目以降には連番を付ける。参照は最初の要素に向けたままにする。
-    // Mermaid は図の id を接頭辞に付けた id も出すので、それには接頭辞を重ねない
-    const base = el.id.startsWith(prefix) ? el.id : `${prefix}-${el.id}`;
-    let scoped = base;
-    for (let n = 2; used.has(scoped); n++) scoped = `${base}-${n}`;
-    used.add(scoped);
-    if (!idMap.has(el.id)) idMap.set(el.id, scoped);
-    el.id = scoped;
-  });
-  if (idMap.size === 0) return;
-
-  const ariaRefs = ['aria-labelledby', 'aria-describedby'];
-  svg.querySelectorAll('*').forEach(el => {
-    Array.from(el.attributes).forEach(attr => {
-      const value = attr.value;
-      if (value.includes('url(')) {
-        // style 属性は url("#id") のように引用符付きで書き出されるため、引用符の有無を問わない
-        el.setAttribute(attr.name, value.replace(/url\(\s*(['"]?)#([^)'"\s]+)\1\s*\)/g, (m, q, id) => (idMap.has(id) ? `url(#${idMap.get(id)})` : m)));
-      } else if ((attr.name === 'href' || attr.name === 'xlink:href') && value.startsWith('#') && idMap.has(value.slice(1))) {
-        el.setAttribute(attr.name, `#${idMap.get(value.slice(1))}`);
-      } else if (ariaRefs.includes(attr.name)) {
-        el.setAttribute(attr.name, value.split(/\s+/).map(id => idMap.get(id) || id).join(' '));
-      }
-    });
-  });
-}
 
 // シーケンス図のライフライン・活性区間・メッセージ線・矢じりを、背景と見分けられる配色にする（NFR-004）
 function styleSequenceDiagram(svg, colors) {
@@ -2552,132 +2413,6 @@ function bindViewportInteractions(container) {
 }
 
 /* ==========================================================================
-   図のドラッグ移動と Ctrl + ホイールの拡大・縮小（FR-038, FR-039）
-   ========================================================================== */
-const DIAGRAM_VIEWPORT_SELECTOR = '.diagram-viewport, .exhibition-viewport';
-// 倍率は原寸（viewBox の幅）に対する比。下限は全体を見渡せる大きさ、上限は細部の確認に足りる大きさ（DD-DIAG-071）
-const DIAGRAM_ZOOM_MIN = 0.25;
-const DIAGRAM_ZOOM_MAX = 4;
-// ホイールの 1 ノッチ（deltaY = 100 px）で約 16% 拡大・縮小する
-const DIAGRAM_ZOOM_SENSITIVITY = 0.0015;
-// これ以上動いたらドラッグとみなし、離したときのクリックを図に渡さない（DD-DIAG-070）
-const PAN_CLICK_TOLERANCE_PX = 4;
-
-// ステージ発表中は、図の大きさと位置を発表の処理が決めるため、ドラッグと拡大・縮小を受け付けない
-function findDiagramViewport(target) {
-  if (document.documentElement.classList.contains('is-stage-show')) return null;
-  const vp = target instanceof Element ? target.closest(DIAGRAM_VIEWPORT_SELECTOR) : null;
-  return vp && vp.querySelector(':scope > svg') ? vp : null;
-}
-
-function isScrollable(vp) {
-  return vp.scrollWidth > vp.clientWidth + 1 || vp.scrollHeight > vp.clientHeight + 1;
-}
-
-// スクロール表示の図だけ、つかめることをカーソル（grab）で示す（DD-DIAG-070）
-function updatePannable(vp) {
-  if (vp) vp.classList.toggle('is-pannable', isScrollable(vp));
-}
-
-function clearDiagramZoom(vp) {
-  if (!vp.classList.contains('is-zoomed')) return;
-  vp.classList.remove('is-zoomed');
-  delete vp.dataset.zoom;
-  const svg = vp.querySelector(':scope > svg');
-  if (svg) svg.style.removeProperty('--zoom-width');
-}
-
-// 縦方向は図の表示枠ではなくプレビューがスクロールするため、拡大・縮小の基準点を保つときに使う
-function findScrollParent(el) {
-  for (let node = el.parentElement; node; node = node.parentElement) {
-    const overflowY = getComputedStyle(node).overflowY;
-    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) return node;
-  }
-  return document.scrollingElement;
-}
-
-// Ctrl + ホイールで、その図だけを、カーソルの位置を中心に拡大・縮小する（FR-039, DD-DIAG-071）
-function zoomDiagram(vp, event) {
-  const svg = vp.querySelector(':scope > svg');
-  const viewBox = svg.viewBox && svg.viewBox.baseVal;
-  if (!viewBox || !viewBox.width) return;
-  const before = svg.getBoundingClientRect();
-  if (!before.width) return;
-  const current = vp.classList.contains('is-zoomed') ? parseFloat(vp.dataset.zoom) : before.width / viewBox.width;
-  const deltaPx = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
-  const next = Math.min(DIAGRAM_ZOOM_MAX, Math.max(DIAGRAM_ZOOM_MIN, current * Math.exp(-deltaPx * DIAGRAM_ZOOM_SENSITIVITY)));
-  if (Math.abs(next - current) < 0.001) return;
-  // カーソルの下にある図の点（図の幅・高さに対する比）
-  const fx = (event.clientX - before.left) / before.width;
-  const fy = (event.clientY - before.top) / before.height;
-
-  vp.classList.remove('is-actual-size');
-  vp.classList.add('is-zoomed');
-  vp.dataset.zoom = String(next);
-  svg.style.setProperty('--zoom-width', `${(viewBox.width * next).toFixed(1)}px`);
-  const frame = vp.closest('[id^="diagram-frame-"]');
-  if (frame) frame.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('is-active'));
-  updateSlabSplit(vp.closest('.exhibition-slab-split'));
-
-  // 拡大・縮小の後も、同じ図の点がカーソルの下に来るようにスクロールする
-  const after = svg.getBoundingClientRect();
-  vp.scrollLeft += after.left + fx * after.width - event.clientX;
-  const scroller = findScrollParent(vp);
-  if (scroller) scroller.scrollTop += after.top + fy * after.height - event.clientY;
-  updatePannable(vp);
-}
-
-function setupDiagramPanZoom() {
-  const pan = { vp: null, pointerId: null, x: 0, y: 0, left: 0, top: 0, moved: false };
-
-  document.addEventListener('mouseover', event => updatePannable(findDiagramViewport(event.target)));
-
-  // 図の上の Ctrl + ホイールは、ブラウザのページ全体のズームではなく、図の拡大・縮小にする（DD-DIAG-071）
-  document.addEventListener('wheel', event => {
-    if (!event.ctrlKey || !event.deltaY) return;
-    const vp = findDiagramViewport(event.target);
-    if (!vp) return;
-    event.preventDefault();
-    zoomDiagram(vp, event);
-  }, { passive: false });
-
-  // スクロール表示の図をマウスでつかんで動かす（FR-038, DD-DIAG-070）
-  document.addEventListener('pointerdown', event => {
-    if (event.pointerType !== 'mouse' || event.button !== 0) return;
-    const vp = findDiagramViewport(event.target);
-    if (!vp || event.target.closest('a, button') || !isScrollable(vp)) return;
-    event.preventDefault();
-    Object.assign(pan, { vp, pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: vp.scrollLeft, top: vp.scrollTop, moved: false });
-    vp.setPointerCapture(event.pointerId);
-    vp.classList.add('is-panning');
-  });
-  document.addEventListener('pointermove', event => {
-    if (!pan.vp || event.pointerId !== pan.pointerId) return;
-    const dx = event.clientX - pan.x;
-    const dy = event.clientY - pan.y;
-    if (Math.hypot(dx, dy) > PAN_CLICK_TOLERANCE_PX) pan.moved = true;
-    pan.vp.scrollLeft = pan.left - dx;
-    pan.vp.scrollTop = pan.top - dy;
-  });
-  const endPan = event => {
-    if (!pan.vp || event.pointerId !== pan.pointerId) return;
-    pan.vp.classList.remove('is-panning');
-    if (pan.vp.hasPointerCapture(event.pointerId)) pan.vp.releasePointerCapture(event.pointerId);
-    // ドラッグの後のクリックで、図の中のリンク（Mermaid の click）などが動かないようにする
-    // クリックが発生しなかったときに、次の本物のクリックを止めないよう、直後のタスクで外す
-    if (pan.moved) {
-      const swallow = e => { e.stopPropagation(); e.preventDefault(); };
-      window.addEventListener('click', swallow, { capture: true, once: true });
-      setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
-    }
-    pan.vp = null;
-    pan.pointerId = null;
-  };
-  document.addEventListener('pointerup', endPan);
-  document.addEventListener('pointercancel', endPan);
-}
-
-/* ==========================================================================
    モード切替とスタイル切替（共通関数）
    ========================================================================== */
 // モードの切替ボタンの選択状態と、スタイルバーの表示を揃える。
@@ -3766,6 +3501,7 @@ Object.defineProperty(window, 'preferFolderInput', {
 (window as any).mathCache = mathCache;
 (window as any).svgCache = svgCache;
 (window as any).EMPTY_GUIDE_HTML = EMPTY_GUIDE_HTML;
+(window as any).updatePannable = updatePannable;
 
 
 

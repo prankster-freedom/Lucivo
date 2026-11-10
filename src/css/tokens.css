@@ -1,0 +1,86 @@
+/* ==========================================================================
+   1. デザイントークン（Light / Dark 連動）
+   ========================================================================== */
+:root,
+body[data-appearance="light"] {
+  --app-bg: #F8FAFC;
+  --nav-bg: rgba(255, 255, 255, 0.95);
+  --nav-border: #E2E8F0;
+  --panel-bg: #FFFFFF;
+  --panel-sub: #F1F5F9;
+  --border-subtle: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --card-bg: #FFFFFF;
+  --card-border: #E2E8F0;
+  --control-bg: #F1F5F9;
+  --control-active: #FFFFFF;
+  --control-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+
+  --accent: #2563EB;
+  --accent-soft: rgba(37, 99, 235, 0.1);
+
+  --diag-canvas: #FFFFFF;
+  --diag-cluster-bg: #F8FAFC;
+  --diag-cluster-border: #94A3B8;
+  --diag-node-bg: #FFFFFF;
+  --diag-node-stroke: #2563EB;
+  --diag-node-text: #0F172A;
+  --diag-edge: #475569;
+}
+
+body[data-appearance="dark"] {
+  --app-bg: #0B0F19;
+  --nav-bg: rgba(15, 23, 42, 0.95);
+  --nav-border: #1E293B;
+  --panel-bg: #0F172A;
+  --panel-sub: #162032;
+  --border-subtle: #1E293B;
+  --border-strong: #334155;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  --card-bg: #111827;
+  --card-border: #1E293B;
+  --control-bg: #162032;
+  --control-active: #222F46;
+  --control-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+
+  --accent: #38BDF8;
+  --accent-soft: rgba(56, 189, 248, 0.14);
+
+  --diag-canvas: #0F172A;
+  --diag-cluster-bg: #0B1120;
+  --diag-cluster-border: #334155;
+  --diag-node-bg: #1E293B;
+  --diag-node-stroke: #38BDF8;
+  --diag-node-text: #F8FAFC;
+  --diag-edge: #94A3B8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-feature-settings: "palt" 1, "kern" 1;
+  -webkit-font-smoothing: antialiased;
+  line-break: strict;
+  background-color: var(--app-bg);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.glass-nav {
+  background: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--nav-border);
+}

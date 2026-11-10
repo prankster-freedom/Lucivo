@@ -1,0 +1,61 @@
+/* ==========================================================================
+   2. Mermaid オフスクリーン計測 ＆ ボックス余白保証ルール
+   ========================================================================== */
+svg foreignObject {
+  overflow: visible !important;
+}
+svg .nodeLabel,
+svg .stateLabel,
+svg .label > div {
+  display: inline-block !important;
+  padding: 6px 14px !important;
+  line-height: 1.45 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  font-family: 'Inter', 'Noto Sans JP', sans-serif !important;
+  font-weight: 600 !important;
+}
+svg .edgeLabel,
+svg .edgeLabel span {
+  padding: 2px 8px !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+  white-space: nowrap !important;
+}
+/* Mermaid 12 はラベルを .labelBkg と p で包む。背景が重なって十字形に見えないよう、span の 1 枚だけにする */
+svg span.edgeLabel {
+  display: inline-block !important;
+}
+svg .labelBkg,
+svg .edgeLabel p {
+  background: transparent !important;
+}
+/* ラベルのない矢印の空ラベル（図の原点に置かれる）に余白が付くと、小さな図形として見えてしまう */
+svg .edgeLabel:empty,
+svg .edgeLabel span:empty {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* ==========================================================================
+   図のドラッグ移動と Ctrl + ホイールの拡大・縮小（FR-038, FR-039, DTP-007）
+   ========================================================================== */
+/* --zoom-width: Ctrl + ホイールで決めた図の幅（app.js の zoomDiagram が設定。DD-DIAG-071） */
+:is(.diagram-viewport, .exhibition-viewport).is-zoomed svg {
+  width: var(--zoom-width) !important;
+  min-width: var(--zoom-width) !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
+/* スクロール表示の図だけ、つかめることを示す。図の中のリンクとボタンは通常のカーソルのまま（DD-DIAG-070） */
+:is(.diagram-viewport, .exhibition-viewport).is-pannable {
+  cursor: grab;
+}
+:is(.diagram-viewport, .exhibition-viewport).is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+:is(.diagram-viewport, .exhibition-viewport).is-pannable a {
+  cursor: pointer;
+}

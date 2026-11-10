@@ -1,0 +1,97 @@
+/* ==================== 印刷・PDF の配布資料（FR-036, DTP-VTPL-120, DD-VTPL-130〜132） ==================== */
+/* 高速モードは既定のページ（A4 縦）で流し、Visualモードの表紙とスラブは名前付きページ（A4 横）に 1 枚ずつ置く */
+@page {
+  size: A4 portrait;
+  margin: 14mm;
+}
+@page lucivo-visual {
+  size: A4 landscape;
+  margin: 10mm;
+}
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* 画面の高さに固定したアプリの枠を外し、文書の高さのまま流す（DD-VTPL-130） */
+  html,
+  body,
+  #workspace-main,
+  #pane-preview,
+  #preview-scroll {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  /* 刷らないもの: ヘッダー・スタイルバー・モーダル・トースト・発表の操作部（body 直下）、エディタ、操作ボタン、光の層（DD-VTPL-131） */
+  body > :not(main),
+  #folder-pane,
+  #btn-folder-show,
+  #pane-editor,
+  #pane-preview > :not(#preview-scroll),
+  .slab-actions,
+  .vs-code-copy-btn,
+  .signal-light-canvas,
+  :is(.diagram-frame-header, .exhibition-diagram-header) :is(button, .pill-container) {
+    display: none !important;
+  }
+  #standard-doc-wrapper {
+    padding: 0 !important;
+  }
+  #standard-doc-container {
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .prose-doc :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid;
+  }
+  .prose-doc :is(pre, table, .md-alert, .diagram-frame, .front-matter) {
+    break-inside: avoid;
+  }
+  /* Visualモード: 表紙と各スラブを 1 ページずつ。項目・図・表の行の途中では切らない（DD-VTPL-132） */
+  .exhibition-wrap {
+    max-width: none;
+    gap: 0;
+  }
+  .exhibition-wrap > * {
+    page: lucivo-visual;
+    break-before: page;
+    box-shadow: none !important;
+    border: 1px solid var(--vs-card-border);
+  }
+  .exhibition-wrap > :first-child {
+    break-before: auto;
+  }
+  .exhibition-slab :is(h2, h3, h4) {
+    break-after: avoid;
+  }
+  .exhibition-slab :is(.vs-points > li, .vs-steps > li, .vs-gloss-row, tr, .exhibition-diagram-card, .md-alert, pre, .lucivo-math.has-math-plot) {
+    break-inside: avoid;
+  }
+  /* 図は版面の幅に収め、縦長の図が何ページも占めないよう高さにも上限を置く（縦横比は保ち、左右は余白にする） */
+  [data-stage-index] {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  [data-stage-index] > svg {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  .prose-doc [data-stage-index] > svg {
+    max-height: 200mm !important;
+  }
+  /* A4 横の版面の高さ 190mm から、章の見出しと図のカードの枠を引いた高さ */
+  .exhibition-wrap [data-stage-index] > svg {
+    max-height: 120mm !important;
+  }
+}
+

@@ -1,0 +1,545 @@
+/* ==========================================================================
+   3. 通常モード（Split / Canvas / Code）組版
+   ========================================================================== */
+.prose-doc {
+  max-width: 54rem;
+  margin: 0 auto;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+.prose-doc h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  line-height: 1.3;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.75rem;
+}
+.prose-doc h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.prose-doc h2::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 1.1rem;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   Markdown 要素（FR-009）: 通常モードと Visual Stage の本文で共有する。
+   Tailwind の Preflight と全要素リセットで標準のスタイルが消えるため、ここで定義する。
+   線は --border-strong を使う（Dark の Visual Stage では --border-subtle がスラブの背景と同色）
+   -------------------------------------------------------------------------- */
+:is(.prose-doc, .exhibition-slab) p {
+  margin-bottom: 0.875rem;
+}
+:is(.prose-doc, .exhibition-slab) :is(h3, h4, h5, h6) {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+:is(.prose-doc, .exhibition-slab) h3 {
+  font-size: 1.05rem;
+}
+:is(.prose-doc, .exhibition-slab) h4 {
+  font-size: 0.95rem;
+  margin-top: 1.25rem;
+}
+:is(.prose-doc, .exhibition-slab) :is(h5, h6) {
+  font-size: 0.875rem;
+  margin-top: 1.25rem;
+  color: var(--text-muted);
+}
+
+:is(.prose-doc, .exhibition-slab) :is(ul, ol) {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0 0.875rem;
+}
+:is(.prose-doc, .exhibition-slab) ul {
+  list-style-type: disc;
+}
+:is(.prose-doc, .exhibition-slab) ul ul {
+  list-style-type: circle;
+}
+:is(.prose-doc, .exhibition-slab) ul ul ul {
+  list-style-type: square;
+}
+:is(.prose-doc, .exhibition-slab) ol {
+  list-style-type: decimal;
+}
+:is(.prose-doc, .exhibition-slab) li :is(ul, ol) {
+  margin: 0.25rem 0;
+}
+:is(.prose-doc, .exhibition-slab) li {
+  margin: 0.2rem 0;
+}
+:is(.prose-doc, .exhibition-slab) li::marker {
+  color: var(--text-muted);
+}
+:is(.prose-doc, .exhibition-slab) li:has(> input[type="checkbox"]) {
+  list-style-type: none;
+  margin-left: -1.25rem;
+}
+:is(.prose-doc, .exhibition-slab) li > input[type="checkbox"] {
+  margin-right: 0.45rem;
+  vertical-align: -0.1em;
+}
+
+:is(.prose-doc, .exhibition-slab) a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+:is(.prose-doc, .exhibition-slab) a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:is(.prose-doc, .exhibition-slab) code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  background: var(--panel-sub);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+:is(.prose-doc, .exhibition-slab) pre {
+  margin: 0.875rem 0;
+  padding: 0.9rem 1.1rem;
+  border-radius: 10px;
+  background: var(--panel-sub);
+  border: 1px solid var(--border-strong);
+  overflow-x: auto;
+  line-height: 1.6;
+}
+:is(.prose-doc, .exhibition-slab) pre code {
+  font-size: 0.8125rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 引用は背景を付けず灰色の左線にして、意味の色の左線と背景を持つコールアウト（.md-alert, DD-MD-022）と見分ける */
+:is(.prose-doc, .exhibition-slab) blockquote {
+  margin: 0.875rem 0;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 4px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+:is(.prose-doc, .exhibition-slab) blockquote blockquote {
+  margin: 0.5rem 0;
+}
+:is(.prose-doc, .exhibition-slab) blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* 既存の th, td { text-align: left } より詳細度が高い属性セレクタで、Marked が出力する align 属性に従う */
+:is(th, td)[align="left"] {
+  text-align: left;
+}
+:is(th, td)[align="center"] {
+  text-align: center;
+}
+:is(th, td)[align="right"] {
+  text-align: right;
+}
+
+:is(.prose-doc, .exhibition-slab) hr {
+  border: 0;
+  border-top: 1px solid var(--border-strong);
+  margin: 1.5rem 0;
+}
+
+:is(.prose-doc, .exhibition-slab) details {
+  margin: 0.875rem 0;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+}
+:is(.prose-doc, .exhibition-slab) summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+:is(.prose-doc, .exhibition-slab) details[open] > summary {
+  margin-bottom: 0.5rem;
+}
+:is(.prose-doc, .exhibition-slab) kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--panel-sub);
+  color: var(--text-primary);
+}
+:is(.prose-doc, .exhibition-slab) mark {
+  padding: 0 0.15em;
+  border-radius: 3px;
+  background: #FDE68A;
+  color: var(--text-primary);
+}
+body[data-appearance="dark"] :is(.prose-doc, .exhibition-slab) mark {
+  background: rgba(250, 204, 21, 0.35);
+}
+
+/* 数式（FR-010, DD-MATH-023）: 文字色は本文を継承し、横に長いブロック数式は横スクロールする */
+.lucivo-math[data-display="true"] {
+  display: block;
+  margin: 1rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+  color: var(--text-primary);
+}
+.lucivo-math .katex-display {
+  margin: 0;
+}
+
+/* YAML フロントマター（FR-011, DD-FM-030）: 本文の前の枠。YAML は書いたとおりに等幅で表示し、キー・値・コメントを色分けする */
+.front-matter {
+  margin: 0 0 1.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel-sub);
+  overflow: hidden;
+}
+.front-matter-label {
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--border-strong);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.front-matter .front-matter-body {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.front-matter .fm-key {
+  color: var(--accent);
+  font-weight: 600;
+}
+.front-matter .fm-value {
+  color: var(--text-primary);
+}
+.front-matter .fm-comment {
+  color: var(--text-muted);
+}
+
+/* エディタの「閲覧 | 編集」の切り替え（FR-014, DD-FILE-006）。
+   今の状態のほうを選択中の形で示す。高速モード / Visualモードの切り替えと同じ形にする（DTP-006） */
+.editor-lock.hidden {
+  display: none;
+}
+.editor-lock-btn {
+  font-size: 10px;
+  padding: 1px 9px;
+}
+
+/* スタイルバーは Visualモードのときだけ表示する（FR-003, DD-DIAG-063） */
+.style-bar.is-hidden {
+  display: none;
+}
+#markdown-editor[readonly] {
+  cursor: default;
+}
+#btn-test-err:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ヘッダーの YAML フロントマター表示の切替ボタン（DD-FM-011） */
+.front-matter-toggle {
+  height: 2rem;
+  padding: 0 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.front-matter-toggle.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.25rem 0;
+}
+table {
+  min-width: 560px !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 0.875rem;
+}
+thead {
+  background: var(--panel-sub) !important;
+  border-bottom: 1.5px solid var(--border-strong) !important;
+}
+th, td {
+  border: 1px solid var(--border-subtle) !important;
+  padding: 0.65rem 0.75rem !important;
+  text-align: left;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+:is(th, td) code {
+  white-space: nowrap;
+}
+th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-primary) !important;
+}
+
+.diagram-frame {
+  margin: 1.5rem 0;
+  background: var(--diag-canvas);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+.diagram-frame-header {
+  height: 40px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+}
+.diagram-viewport {
+  padding: clamp(1rem, 2.5vw, 2rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: auto;
+  min-height: 140px;
+  background: var(--diag-canvas);
+}
+/* 表示枠の中身は左右の auto margin で中央に置き、表示枠より広い図（Fit の縮小の下限、1:1）は左端から表示する。
+   justify-content: center は、はみ出すときに左右へ均等にはみ出させ、左側がスクロールでも見えなくなる（DD-DIAG-032） */
+:is(.diagram-viewport, .exhibition-viewport) > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+.diagram-viewport svg {
+  /* --fit-max-width: 小さな図の拡大の上限（app.js の applyReadableFit が設定） */
+  max-width: min(100%, var(--fit-max-width, 100%)) !important;
+  height: auto !important;
+  display: block;
+}
+.diagram-viewport.is-actual-size svg {
+  width: var(--natural-width, auto) !important;
+  min-width: var(--natural-width, 0px) !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ==========================================================================
+   フォルダ構成のツリー（FR-047, DTP-009, DD-MD-053）
+   ========================================================================== */
+/* 罫線の文字は使わず、行ごとの小さな枠（.md-tree-g）に CSS で線を引き直す。
+   名前の列と注釈の列を grid でそろえる。行の間は詰め、縦線を途切れさせない */
+.md-tree {
+  --tree-accent: var(--accent);
+  --tree-line: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  --tree-row: 1.75rem;
+  --tree-step: 1.35rem;
+  display: grid;
+  grid-template-columns: max-content;
+  align-items: center;
+  column-gap: 2.5rem;
+  max-width: 100%;
+  margin: 1rem 0;
+  padding: 0.85rem 1.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel-sub);
+  font-size: 0.8125rem;
+}
+.md-tree.has-notes {
+  grid-template-columns: max-content minmax(10rem, 1fr);
+}
+.md-tree-row {
+  display: flex;
+  align-items: center;
+  height: var(--tree-row);
+  white-space: nowrap;
+}
+.md-tree-g {
+  position: relative;
+  align-self: stretch;
+  width: var(--tree-step);
+  flex-shrink: 0;
+}
+/* 縦線: 祖先にまだ兄弟がいる（is-pipe）、自分の後に兄弟がいる（is-tee）は行の高さいっぱい、最後の子（is-end）は上半分 */
+.md-tree-g.is-pipe::before,
+.md-tree-g.is-tee::before,
+.md-tree-g.is-end::before {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px solid var(--tree-line);
+}
+.md-tree-g.is-end::before {
+  bottom: 50%;
+  border-bottom-left-radius: 5px;
+  border-bottom: 1.5px solid var(--tree-line);
+  width: 0.6rem;
+}
+/* 横線: 自分の枝 */
+.md-tree-g.is-tee::after {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  right: 0.15rem;
+  top: 50%;
+  border-top: 1.5px solid var(--tree-line);
+}
+.md-tree-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.45rem;
+  flex-shrink: 0;
+  background: var(--text-muted);
+  -webkit-mask: var(--tree-icon) no-repeat center / contain;
+  mask: var(--tree-icon) no-repeat center / contain;
+}
+.md-tree-icon.is-folder {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2h8.4A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z' fill='black'/%3E%3C/svg%3E");
+  background: var(--tree-accent);
+}
+.md-tree-icon.is-file {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M6 3h8l4 4v14H6z'/%3E%3Cpath d='M14 3v4h4'/%3E%3C/svg%3E");
+}
+.md-tree-icon.is-doc {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M6 3h8l4 4v14H6z'/%3E%3Cpath d='M14 3v4h4'/%3E%3Cpath d='M9 12h6M9 15.5h6'/%3E%3C/svg%3E");
+}
+.md-tree-icon.is-image {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round'%3E%3Crect x='4' y='5' width='16' height='14' rx='2'/%3E%3Ccircle cx='9' cy='10' r='1.6'/%3E%3Cpath d='M4 16.5l4.5-4 4 3.5 2.5-2 5 4'/%3E%3C/svg%3E");
+}
+.md-tree-icon.is-code {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M6 3h8l4 4v14H6z'/%3E%3Cpath d='M14 3v4h4'/%3E%3Cpath d='M10.5 11.5l-2 2 2 2M13.5 11.5l2 2-2 2'/%3E%3C/svg%3E");
+}
+.md-tree-name {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+.md-tree-row.is-root .md-tree-name {
+  font-weight: 700;
+}
+.md-tree-row.is-ellipsis .md-tree-icon {
+  visibility: hidden;
+}
+.md-tree-row.is-ellipsis .md-tree-name {
+  color: var(--text-muted);
+}
+.md-tree-note {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+/* Visualモードでは、フォルダの色をスタイルの 1 色目に合わせ、カードの面に置く（DTP-009） */
+.exhibition-slab .md-tree {
+  --tree-accent: color-mix(in srgb, var(--vs-c1, var(--accent)) 80%, var(--text-primary));
+  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--card-bg, var(--panel-bg)) 70%, var(--panel-sub));
+  box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.45);
+}
+@media print {
+  .md-tree {
+    overflow: visible;
+    break-inside: avoid;
+  }
+}
+
+/* HTML で直に書いた画像（段落に入らない <img>）は、段落と同じく上下に余白を取る（DD-MD-043） */
+:is(.prose-doc, .exhibition-slab) > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.75rem 0;
+}
+
+/* ==========================================================================
+   読み込めない画像（FR-042, DD-MD-041）
+   ========================================================================== */
+/* 画像の代わりに置く枠。破線の枠で「ここに画像があるはず」と示し、src を等幅で添える */
+.img-missing {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 100%;
+  margin: 0.25rem 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+.img-missing-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.img-missing-path {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.img-missing-hint {
+  font-size: 0.75rem;
+}
+

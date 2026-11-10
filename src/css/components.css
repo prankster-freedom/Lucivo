@@ -1,0 +1,266 @@
+/* ==========================================================================
+   ファイルのドロップの受け付け（FR-041, DTP-007）
+   ========================================================================== */
+/* ドラッグ中だけ画面全体に重ねる。文書の中身ではなく Lucivo 自身の表現のため、
+   ブランドのアクセントライト（ペールシアン）を使う（DTP-003） */
+#drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s;
+}
+#drop-overlay.is-shown {
+  opacity: 1;
+  visibility: visible;
+}
+.drop-overlay-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(100%, 26rem);
+  padding: 2.75rem 2rem;
+  border: 2px dashed rgba(165, 243, 252, 0.75);
+  border-radius: 1.5rem;
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px rgba(2, 6, 23, 0.5), 0 0 48px rgba(103, 232, 249, 0.18);
+  color: #F8FAFC;
+  text-align: center;
+  transform: scale(0.97);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#drop-overlay.is-shown .drop-overlay-panel {
+  transform: none;
+}
+.drop-overlay-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #A5F3FC;
+}
+.drop-overlay-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.drop-overlay-note {
+  margin: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  color: rgba(226, 232, 240, 0.72);
+}
+@media (prefers-reduced-motion: reduce) {
+  #drop-overlay,
+  .drop-overlay-panel {
+    transition: none;
+  }
+}
+@media print {
+  #drop-overlay {
+    display: none !important;
+  }
+}
+
+@keyframes stage-rise {
+  from { opacity: 0; transform: translateY(1.25rem); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes stage-sweep {
+  from { opacity: 1; transform: translateX(-30vw); }
+  to { opacity: 1; transform: translateX(100vw); }
+}
+@keyframes stage-hint {
+  0%, 70% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.is-stage-show .is-scene-in > *,
+  html.is-stage-show .is-scene-in > .exhibition-slab-body > *,
+  .stage-hud.is-sweeping .stage-sweep,
+  html.is-stage-show.is-stage-overview .is-ov-entering > :not(.is-ov-zooming) {
+    animation: none;
+  }
+}
+
+.badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#markdown-editor {
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.65;
+  tab-size: 2;
+  resize: none;
+  outline: none;
+  background: var(--panel-bg);
+  color: var(--text-primary);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+/* ==================== キーボードバッジ ==================== */
+.kbd-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.35rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  background: var(--panel-bg);
+  border: 1px solid var(--border-subtle);
+  border-bottom-width: 2px;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+
+/* ==================== ステージ発表の幕間・質疑（Q&A）スタンバイカーテン（FR-028, DTP-SHOW-090） ==================== */
+.stage-curtain {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: auto;
+  align-items: center;
+  justify-content: center;
+  padding: 6vh 6vw 10vh;
+  color: #F8FAFC;
+  background:
+    radial-gradient(circle at 82% -6%, rgba(0, 240, 255, 0.34), rgba(56, 189, 248, 0.12) 38%, transparent 70%),
+    radial-gradient(circle at 12% 108%, rgba(2, 132, 199, 0.28), transparent 65%),
+    linear-gradient(135deg, #080A0F 0%, #111827 100%);
+}
+html.is-stage-show.is-stage-curtain .stage-curtain {
+  display: flex;
+  animation: stage-ov-fade 0.32s ease both;
+}
+.stage-curtain-inner {
+  max-width: 54rem;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stage-curtain-orbit {
+  width: 4.2rem;
+  height: 4.2rem;
+  display: inline-block;
+  margin-bottom: 1.1rem;
+  background-color: #7DE3FF;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg id='luminous-orbit.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cellipse cx='32' cy='32' rx='26' ry='11' transform='rotate(-24 32 32)' stroke='black' stroke-width='1.25' stroke-opacity='0.45'/%3E%3Ccircle cx='9.4' cy='44.2' r='4' fill='black' fill-opacity='0.55'/%3E%3Ccircle cx='19.7' cy='26.2' r='3' fill='black' fill-opacity='0.8'/%3E%3Cpath d='M38 18.4Q42.7 17.4 46 17.4' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-opacity='0.6'/%3E%3Ccircle cx='47.3' cy='17.4' r='2.4' fill='black'/%3E%3Ccircle cx='32' cy='32' r='1.8' fill='black' fill-opacity='0.75'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg id='luminous-orbit.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cellipse cx='32' cy='32' rx='26' ry='11' transform='rotate(-24 32 32)' stroke='black' stroke-width='1.25' stroke-opacity='0.45'/%3E%3Ccircle cx='9.4' cy='44.2' r='4' fill='black' fill-opacity='0.55'/%3E%3Ccircle cx='19.7' cy='26.2' r='3' fill='black' fill-opacity='0.8'/%3E%3Cpath d='M38 18.4Q42.7 17.4 46 17.4' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-opacity='0.6'/%3E%3Ccircle cx='47.3' cy='17.4' r='2.4' fill='black'/%3E%3Ccircle cx='32' cy='32' r='1.8' fill='black' fill-opacity='0.75'/%3E%3C/svg%3E") no-repeat center / contain;
+  animation: lucivo-orbit-spin 14s linear infinite;
+}
+.stage-curtain-eyebrow {
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: #7DE3FF;
+}
+.stage-curtain-title {
+  margin: 0.65rem 0 0;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  font-size: clamp(1.6rem, 2.8vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.3;
+  color: #F8FAFC;
+  text-wrap: balance;
+  animation: lucivo-ambient-breathe 6s ease-in-out infinite;
+}
+.stage-curtain-sub {
+  margin: 0.6rem 0 1.6rem;
+  font-size: 0.75rem;
+  color: #94A3B8;
+}
+.stage-curtain-chapters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 48rem;
+}
+.stage-curtain-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(15, 23, 42, 0.65);
+  color: #E2E8F0;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+.stage-curtain-pill:hover,
+.stage-curtain-pill.is-current {
+  border-color: #7DE3FF;
+  background: rgba(14, 116, 144, 0.35);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+.stage-curtain-pill-no {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #7DE3FF;
+}
+.stage-curtain-pill-label {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==================== 自動進行ループ待機時の Vivo アンビエント・パルス（FR-033, DTP-SHOW-095） ==================== */
+html.is-stage-show.is-stage-ambient .is-scene .vs-cover-title {
+  animation: lucivo-ambient-breathe 6s ease-in-out infinite;
+}
+@keyframes lucivo-orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes lucivo-ambient-breathe {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.86; filter: brightness(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-curtain-orbit,
+  .stage-curtain-title,
+  html.is-stage-show.is-stage-ambient .is-scene .vs-cover-title {
+    animation: none !important;
+  }
+}
+
