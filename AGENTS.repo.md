@@ -73,6 +73,10 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 `main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
 
+### 6.1 feature ブランチの履歴整理
+
+当面はリポジトリの関係者がユーザー本人のみであるため、ユーザーとの整合が取れていれば feature ブランチの履歴を書き換えてよい。Pull Request の発行時には、main に取り込まれる履歴として第三者から見て見通しが良くなるよう、細かな修正や試行錯誤のコミットを整理・集約してから PR を発行する。
+
 ## 7. Dependabot security updates（branch-strategy スキルの例外）
 
 Dependabot security updates はオフにする。自動の PR は `package.json` と `package-lock.json` しか更新せず、配布物の `public/vendor/` と `public/js/app.js` の `EXPORT_URLS` が古いまま残るため。修正済みに見えて、利用者に配布される中身は直っていない状態になる。ライブラリの更新は、3 か所を揃えて手動で行う。
