@@ -3042,10 +3042,235 @@ async function testStyleBar(browser) {
   await page.context().close();
 }
 
+// ウィンドウのタイトル（TC-FILE-017）とファイルのドロップ（TC-FILE-018、TC-FILE-019）
+async function testTitleAndDrop(browser) {
+  const page = await openStagePage(browser);
+  const initialTitle = await page.title();
+  await loadSample(page);
+  const loadedTitle = await page.title();
+  // loadSample はメニューを開いたままにするため、閉じてから開き直す
+  await page.evaluate(() => closeFileMenu());
+  await page.click('#btn-file-menu');
+  await page.click('#menu-sample-visual');
+  await page.waitForFunction(() => document.title.startsWith('visual-sample.md'));
+  const sampleTitle = await page.title();
+  record('TC-FILE-017', /^Lucivo Markdown Presenter/.test(initialTitle) && loadedTitle === 'notation_sample.md - Lucivo' && sampleTitle === 'visual-sample.md - Lucivo',
+    JSON.stringify({ initialTitle, loadedTitle, sampleTitle }));
+
+  // ファイルを持った DataTransfer を作り、ドラッグの出入りとドロップを起こす
+  const makeTransfer = files => page.evaluateHandle(list => {
+    const dt = new DataTransfer();
+    list.forEach(f => dt.items.add(new File([f.text], f.name, { type: f.type })));
+    return dt;
+  }, files);
+  const overlayShown = () => page.evaluate(() => {
+    const o = document.getElementById('drop-overlay');
+    return o.classList.contains('is-shown') && o.getAttribute('aria-hidden') === 'false';
+  });
+  const dropped = '# ドロップした文書\n\n本文\n';
+  const dt = await makeTransfer([{ name: 'dropped.md', type: 'text/markdown', text: dropped }, { name: 'second.md', type: 'text/markdown', text: '# 2 つ目\n' }]);
+  await page.dispatchEvent('#preview-scroll', 'dragenter', { dataTransfer: dt });
+  // 子要素へ移ったとき（dragenter → dragleave の順に起きる）も、表示を消さない
+  await page.dispatchEvent('#markdown-editor', 'dragenter', { dataTransfer: dt });
+  await page.dispatchEvent('#preview-scroll', 'dragleave', { dataTransfer: dt });
+  const shownWhileDragging = await overlayShown();
+  await page.dispatchEvent('#markdown-editor', 'dragleave', { dataTransfer: dt });
+  const hiddenAfterLeave = !(await overlayShown());
+  await page.dispatchEvent('#preview-scroll', 'dragenter', { dataTransfer: dt });
+  await page.dispatchEvent('#preview-scroll', 'drop', { dataTransfer: dt });
+  await page.waitForFunction(text => document.getElementById('markdown-editor').value === text, dropped);
+  await waitRendered(page);
+  const afterDrop = await page.evaluate(() => ({
+    overlayHidden: !document.getElementById('drop-overlay').classList.contains('is-shown'),
+    title: document.title,
+    h1: (document.querySelector('#preview-scroll h1') || {}).textContent,
+    readOnly: document.getElementById('markdown-editor').readOnly,
+    toast: document.getElementById('toast-message').textContent
+  }));
+  // 編集した後のドロップは、ファイル選択と同じく確認する
+  await page.click('#btn-edit-unlock');
+  await page.fill('#markdown-editor', '# 編集中');
+  let dialogMessage = null;
+  page.once('dialog', d => { dialogMessage = d.message(); d.dismiss(); });
+  const dt2 = await makeTransfer([{ name: 'other.md', type: 'text/markdown', text: '# 別の文書\n' }]);
+  await page.dispatchEvent('#preview-scroll', 'drop', { dataTransfer: dt2 });
+  await page.waitForTimeout(300);
+  const keptAfterCancel = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  record('TC-FILE-018', shownWhileDragging && hiddenAfterLeave && afterDrop.overlayHidden && afterDrop.title === 'dropped.md - Lucivo'
+    && afterDrop.h1 === 'ドロップした文書' && afterDrop.readOnly && /読み込みました/.test(afterDrop.toast)
+    && /other\.md/.test(dialogMessage || '') && keptAfterCancel === '# 編集中',
+  JSON.stringify({ shownWhileDragging, hiddenAfterLeave, ...afterDrop, dialogMessage, keptAfterCancel }));
+
+  // 開けないファイルは読み込まず、知らせる。ファイルでないもの（文字列）のドラッグでは受け付けの表示を出さない
+  await setDocument(page, '# そのまま\n');
+  const dt3 = await makeTransfer([{ name: 'image.png', type: 'image/png', text: 'x' }]);
+  await page.dispatchEvent('#preview-scroll', 'drop', { dataTransfer: dt3 });
+  await page.waitForTimeout(200);
+  const rejected = await page.evaluate(() => ({ editor: document.getElementById('markdown-editor').value, toast: document.getElementById('toast-message').textContent }));
+  const textTransfer = await page.evaluateHandle(() => { const t = new DataTransfer(); t.setData('text/plain', 'abc'); return t; });
+  await page.dispatchEvent('#preview-scroll', 'dragenter', { dataTransfer: textTransfer });
+  const shownForText = await overlayShown();
+  record('TC-FILE-019', rejected.editor === '# そのまま\n' && /\.md/.test(rejected.toast) && !shownForText && page.consoleErrors.length === 0,
+    JSON.stringify({ ...rejected, shownForText, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
+// 図のドラッグ移動（TC-DIAG-026）と Ctrl + ホイールの拡大・縮小（TC-DIAG-027、TC-DIAG-028）
+async function testDiagramPanZoom(browser) {
+  const page = await openStagePage(browser);
+  // 0: 横に長く、Fit でもスクロール表示になる図。1: 小さな図
+  const chain = Array.from({ length: 28 }, (_, i) => `  N${i}[工程 ${i}] --> N${i + 1}[工程 ${i + 1}]`).join('\n');
+  const md = `# 図\n\n\`\`\`mermaid\nflowchart LR\n${chain}\n\`\`\`\n\n## 小さな図\n\n\`\`\`mermaid\nflowchart TD\n  A --> B\n\`\`\`\n`;
+  await setDocument(page, md);
+  const vpSel = i => `#preview-scroll [data-stage-index="${i}"]`;
+  const vpState = i => page.evaluate(sel => {
+    const vp = document.querySelector(sel);
+    const svg = vp.querySelector(':scope > svg');
+    const frame = vp.closest('[id^="diagram-frame-"]');
+    return {
+      scrollLeft: Math.round(vp.scrollLeft),
+      scrollable: vp.scrollWidth > vp.clientWidth + 1,
+      pannable: vp.classList.contains('is-pannable'),
+      panning: vp.classList.contains('is-panning'),
+      cursor: getComputedStyle(vp).cursor,
+      zoomed: vp.classList.contains('is-zoomed'),
+      width: Math.round(svg.getBoundingClientRect().width),
+      vbWidth: Math.round(svg.viewBox.baseVal.width),
+      activeScale: Array.from(frame.querySelectorAll('.scale-btn.is-active')).map(b => b.dataset.action)
+    };
+  }, vpSel(i));
+  const center = async i => {
+    const box = await page.locator(vpSel(i)).boundingBox();
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+
+  const rows = [];
+  for (const mode of ['fast', 'visual']) {
+    if (mode === 'visual') {
+      await page.click('#btn-visual-mode');
+      await waitRendered(page);
+      await page.locator(vpSel(0)).scrollIntoViewIfNeeded();
+    }
+    // TC-DIAG-026: スクロール表示の図をつかんで左へ 300px 動かすと、図の右側が見える
+    const c = await center(0);
+    await page.mouse.move(c.x, c.y);
+    const before = await vpState(0);
+    await page.mouse.down();
+    await page.mouse.move(c.x - 150, c.y, { steps: 5 });
+    await page.mouse.move(c.x - 300, c.y, { steps: 5 });
+    const during = await vpState(0);
+    await page.mouse.up();
+    const after = await vpState(0);
+    // スクロール表示にならない小さな図は、つかめない
+    const small = await center(1);
+    await page.mouse.move(small.x, small.y);
+    const smallState = await vpState(1);
+    rows.push({ mode, before, during, after, smallState, pass: before.scrollable && before.pannable && before.cursor === 'grab'
+      && during.panning && during.cursor === 'grabbing' && Math.abs(after.scrollLeft - before.scrollLeft - 300) <= 3
+      && !after.panning && !smallState.scrollable && !smallState.pannable && smallState.cursor !== 'grab' });
+  }
+  record('TC-DIAG-026', rows.every(r => r.pass), JSON.stringify(rows));
+
+  // 図の上にカーソルを置いてから Ctrl + ホイールを回す（拡大・縮小でスクロールすると、カーソルの下の要素が変わるため）
+  const ctrlWheelOn = async (i, deltaY, times = 1) => {
+    for (let k = 0; k < times; k++) {
+      await page.locator(vpSel(i)).scrollIntoViewIfNeeded();
+      const s = await page.locator(`${vpSel(i)} > svg`).boundingBox();
+      await page.mouse.move(s.x + Math.min(s.width / 2, 20), s.y + s.height / 2);
+      await page.keyboard.down('Control');
+      await page.mouse.wheel(0, deltaY);
+      await page.keyboard.up('Control');
+    }
+    await page.waitForTimeout(100);
+  };
+  // TC-DIAG-027: Ctrl + ホイールで、その図だけが拡大・縮小し、上限と下限で止まる。スクロール表示の図では、カーソルの下の点が保たれる
+  const zoomRows = [];
+  for (const mode of ['visual', 'fast']) {
+    if (mode === 'fast') {
+      await page.click('#btn-mode-fast');
+      await waitRendered(page);
+    }
+    const start = await vpState(1);
+    const other = await vpState(0);
+    await ctrlWheelOn(1, -300);
+    const zoomedIn = await vpState(1);
+    await ctrlWheelOn(1, -500, 12);
+    const maxed = await vpState(1);
+    await ctrlWheelOn(1, 500, 20);
+    const minned = await vpState(1);
+    const otherAfter = await vpState(0);
+    // 0 の図（スクロール表示）の、表示枠の中央の点で拡大する
+    await page.locator(vpSel(0)).scrollIntoViewIfNeeded();
+    const vbox = await page.locator(vpSel(0)).boundingBox();
+    const box = await page.locator(`${vpSel(0)} > svg`).boundingBox();
+    const px = vbox.x + vbox.width / 2;
+    const py = box.y + box.height / 2;
+    const fx = (px - box.x) / box.width;
+    await page.mouse.move(px, py);
+    await page.keyboard.down('Control');
+    await page.mouse.wheel(0, -300);
+    await page.keyboard.up('Control');
+    await page.waitForTimeout(100);
+    const box2 = await page.locator(`${vpSel(0)} > svg`).boundingBox();
+    const anchorDx = Math.round(Math.abs(box2.x + box2.width * fx - px));
+    const anchorDy = Math.round(Math.abs(box2.y + box2.height / 2 - py));
+    const anchorGrew = box2.width > box.width * 1.3;
+    // プレビューのスクロールが端に達したときは、縦方向の点を保てない（スクロールできる範囲までしか動かせない）
+    const atScrollEdge = await page.evaluate(sel => {
+      const sc = findScrollParent(document.querySelector(sel));
+      return sc.scrollTop <= 0 || sc.scrollTop >= sc.scrollHeight - sc.clientHeight - 1;
+    }, vpSel(0));
+    const pageZoom = await page.evaluate(() => window.visualViewport.scale);
+    zoomRows.push({ mode, start, zoomedIn, maxed, minned, anchorDx, anchorDy, anchorGrew, atScrollEdge, pageZoom,
+      pass: zoomedIn.zoomed && zoomedIn.width > start.width * 1.4 && zoomedIn.activeScale.length === 0
+        && Math.abs(maxed.width - maxed.vbWidth * 4) <= 3 && Math.abs(minned.width - minned.vbWidth * 0.25) <= 2
+        && otherAfter.width === other.width && !otherAfter.zoomed
+        && anchorGrew && anchorDx <= 3 && (anchorDy <= 3 || atScrollEdge) && pageZoom === 1 });
+    // 次のモードの確認のため、倍率を戻す
+    await page.click(`#preview-scroll [data-action="scale-fit"][data-index="0"]`);
+    await page.click(`#preview-scroll [data-action="scale-fit"][data-index="1"]`);
+  }
+  record('TC-DIAG-027', zoomRows.every(r => r.pass), JSON.stringify(zoomRows));
+
+  // TC-DIAG-028: Fit / 1:1 を選ぶと Ctrl + ホイールの倍率を解除する。ホイールだけ（Ctrl なし）では倍率を変えない。発表中は受け付けない
+  const fitState = await vpState(1);
+  await ctrlWheelOn(1, -300);
+  const zoomedForFit = await vpState(1);
+  await page.click(`#preview-scroll [data-action="scale-fit"][data-index="1"]`);
+  const backToFit = await vpState(1);
+  await ctrlWheelOn(1, -300);
+  await page.click(`#preview-scroll [data-action="scale-actual"][data-index="1"]`);
+  const backToActual = await vpState(1);
+  await page.click(`#preview-scroll [data-action="scale-fit"][data-index="1"]`);
+  const plainBefore = await vpState(1);
+  const b = await center(1);
+  await page.mouse.move(b.x, b.y);
+  await page.mouse.wheel(0, -300);
+  await page.waitForTimeout(100);
+  const plainAfter = await vpState(1);
+  await page.evaluate(() => document.documentElement.classList.add('is-stage-show'));
+  const showBefore = await vpState(1);
+  await page.locator(vpSel(1)).scrollIntoViewIfNeeded();
+  const b2 = await center(1);
+  await page.mouse.move(b2.x, b2.y);
+  await page.keyboard.down('Control');
+  await page.mouse.wheel(0, -300);
+  await page.keyboard.up('Control');
+  const showAfter = await vpState(1);
+  await page.evaluate(() => document.documentElement.classList.remove('is-stage-show'));
+  record('TC-DIAG-028', zoomedForFit.zoomed && !backToFit.zoomed && backToFit.width === fitState.width && backToFit.activeScale.join() === 'scale-fit'
+    && !backToActual.zoomed && Math.abs(backToActual.width - backToActual.vbWidth) <= 2 && backToActual.activeScale.join() === 'scale-actual'
+    && !plainAfter.zoomed && plainAfter.width === plainBefore.width && !showAfter.zoomed && showAfter.width === showBefore.width
+    && page.consoleErrors.length === 0,
+  JSON.stringify({ fitState, zoomedForFit, backToFit, backToActual, plainBefore, plainAfter, showBefore, showAfter, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
-  { name: 'testFileLoading', tcPrefix: ['TC-FILE-'], fn: testFileLoading },
+  { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
+  { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019'], fn: testTitleAndDrop },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
   { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-'], fn: testMarkdownTypography },
@@ -3062,6 +3287,7 @@ const SUITES = [
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
   { name: 'testSyntaxErrorCleanup', tcPrefix: ['TC-DIAG-025'], fn: testSyntaxErrorCleanup },
+  { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
 ];

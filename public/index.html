@@ -239,6 +239,10 @@
               <div class="flex gap-1"><kbd class="kbd-key">J</kbd><kbd class="kbd-key">K</kbd><kbd class="kbd-key">]</kbd><kbd class="kbd-key">[</kbd></div>
             </div>
             <div class="flex items-center justify-between p-2 rounded-lg border" style="background: var(--panel-sub); border-color: var(--border-subtle);">
+              <span>図の拡大・縮小（図の上で）</span>
+              <div class="flex gap-1"><kbd class="kbd-key">Ctrl</kbd><kbd class="kbd-key">ホイール</kbd></div>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg border" style="background: var(--panel-sub); border-color: var(--border-subtle);">
               <span>ステージ発表を開始</span>
               <div class="flex gap-1"><kbd class="kbd-key">P</kbd></div>
             </div>
@@ -304,6 +308,15 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== ファイルのドロップの受け付け（DTP-007, DD-FILE-008） ==================== -->
+  <div id="drop-overlay" aria-hidden="true">
+    <div class="drop-overlay-panel">
+      <svg class="drop-overlay-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4.5 15.5v2A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p class="drop-overlay-title">ドロップして開く</p>
+      <p class="drop-overlay-note">.md / .markdown / .txt</p>
     </div>
   </div>
 

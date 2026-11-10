@@ -62,3 +62,6 @@ flowchart TD
 - **Tailwind のクラス**: 生成する HTML で新しい Tailwind のクラスを使ったら、`tools/build-tailwind-css.cjs` で `css/tailwind.css` を作り直す。
 - **Mermaid の設定は描画ごと**: `mermaid.initialize()` はグローバルな設定のため、図ごとに異なる設定（モード、矢印の形状）は、各図の `mermaid.render()` の直前に `setupMermaid()` で設定し直している。レイアウトも図ごとで、`getMermaidLayout(code, curve)` が決める（直角のクラス図とマインドマップは Mermaid の既定のレイアウト、他は `dagre`。`DD-EDGE-005`）。既定のレイアウトでは `curve` の設定が効かないため、直角以外の形状やフローチャートをこの分岐に入れない。
 - **モードの切替の画面の状態**: 高速モード / Visualモードのボタンの選択状態とスタイルバーの表示は、`syncStageModeUi()` だけで切り替える（`DD-DIAG-063`）。`state.isVisualMode` を変える処理を足すときは、あわせてこの関数を呼ぶ。
+- **図のドラッグと Ctrl + ホイール**: `setupDiagramPanZoom()` は、図のカードではなく `document` にイベントを 1 回だけ付ける（`DD-DIAG-070`）。カードは描画のたびに作り直されるため。`wheel` は `passive: false` で付けないと `preventDefault()` が効かず、ブラウザのページ全体のズームが起きる。拡大の幅は CSS 変数 `--zoom-width` で渡す（`DD-DIAG-071`）。SVG の `style` の幅は、`Fit` / `1:1` の CSS の `!important` に負ける。
+- **ウィンドウのタイトル**: `document.title` は `applyLoadedMarkdown()` だけで変える（`DD-FILE-050`）。読み込みの経路を増やすときは、`applyLoadedMarkdown()` を通すと、タイトル・読み取り専用・破棄の確認が揃う。
+
