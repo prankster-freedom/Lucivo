@@ -3133,7 +3133,7 @@ body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
   .exhibition-slab :is(h2, h3, h4) {
     break-after: avoid;
   }
-  .exhibition-slab :is(.vs-points > li, .vs-steps > li, .vs-gloss-row, tr, .exhibition-diagram-card, .md-alert, pre) {
+  .exhibition-slab :is(.vs-points > li, .vs-steps > li, .vs-gloss-row, tr, .exhibition-diagram-card, .md-alert, pre, .lucivo-math.has-math-plot) {
     break-inside: avoid;
   }
   /* 図は版面の幅に収め、縦長の図が何ページも占めないよう高さにも上限を置く（縦横比は保ち、左右は余白にする） */
@@ -3156,6 +3156,63 @@ body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
     max-height: 120mm !important;
   }
 }
+
+/* ==================== 数式の補足グラフ（FR-048, DTP-VTPL-065, DD-VTPL-143〜144） ==================== */
+.exhibition-slab .lucivo-math.is-block-plot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem 1.75rem;
+  margin: 1.15rem 0;
+  padding: 1rem 1.35rem;
+  border: 1px solid var(--vs-card-border);
+  border-left: 3px solid var(--vs-c1);
+  border-radius: 14px;
+  background: var(--vs-card-bg);
+  box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.25);
+  text-align: left;
+}
+.exhibition-slab .lucivo-math.is-block-plot .vs-math-formula {
+  flex: 1 1 13rem;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+.exhibition-slab .lucivo-math.is-block-plot .vs-math-plot-img {
+  flex: 0 0 auto;
+  width: 340px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.exhibition-slab .lucivo-math.is-inline-plot {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0.25rem;
+  padding: 0.24rem 0.45rem 0.24rem 0.65rem;
+  border: 1px solid var(--vs-card-border);
+  border-left: 2.5px solid var(--vs-c1);
+  border-radius: 10px;
+  background: var(--vs-card-bg);
+  vertical-align: middle;
+  max-width: 100%;
+}
+.exhibition-slab .lucivo-math.is-inline-plot .vs-math-formula {
+  display: inline-block;
+  line-height: 1.4;
+}
+.exhibition-slab .lucivo-math.is-inline-plot .vs-math-plot-img.is-inline {
+  width: 156px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 
 
 
