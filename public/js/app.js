@@ -411,6 +411,8 @@ let renderGeneration = 0;
 let lastLoadedMarkdown = '';
 // 保存するときのファイル名。読み込んだファイルの名前（DD-FILE-030）
 let currentFileName = 'untitled.md';
+// ファイルを読み込んだ後のウィンドウのタイトルは「ファイル名 - Lucivo」（DD-FILE-050）
+const APP_TITLE_SUFFIX = ' - Lucivo';
 
 function getThemeSpec() {
   const mode = THEMES[state.appearance] || THEMES.light;
@@ -2787,6 +2789,8 @@ function applyLoadedMarkdown(rawText, fileName) {
   document.getElementById('markdown-editor').value = text;
   lastLoadedMarkdown = text;
   currentFileName = fileName;
+  // 印刷の「PDF として保存」は、ウィンドウのタイトルを既定のファイル名に使う（FR-040, DD-FILE-050）
+  document.title = `${fileName}${APP_TITLE_SUFFIX}`;
   state.curveByIndex.clear();
   setEditorReadOnly(true);
   clearTimeout(renderDebounceTimer);
