@@ -2263,6 +2263,128 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
   z-index: 80;
 }
 
+/* ==========================================================================
+   フォルダ構成のツリー（FR-047, DTP-009, DD-MD-053）
+   ========================================================================== */
+/* 罫線の文字は使わず、行ごとの小さな枠（.md-tree-g）に CSS で線を引き直す。
+   名前の列と注釈の列を grid でそろえる。行の間は詰め、縦線を途切れさせない */
+.md-tree {
+  --tree-accent: var(--accent);
+  --tree-line: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  --tree-row: 1.75rem;
+  --tree-step: 1.35rem;
+  display: grid;
+  grid-template-columns: max-content;
+  align-items: center;
+  column-gap: 2.5rem;
+  max-width: 100%;
+  margin: 1rem 0;
+  padding: 0.85rem 1.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel-sub);
+  font-size: 0.8125rem;
+}
+.md-tree.has-notes {
+  grid-template-columns: max-content minmax(10rem, 1fr);
+}
+.md-tree-row {
+  display: flex;
+  align-items: center;
+  height: var(--tree-row);
+  white-space: nowrap;
+}
+.md-tree-g {
+  position: relative;
+  align-self: stretch;
+  width: var(--tree-step);
+  flex-shrink: 0;
+}
+/* 縦線: 祖先にまだ兄弟がいる（is-pipe）、自分の後に兄弟がいる（is-tee）は行の高さいっぱい、最後の子（is-end）は上半分 */
+.md-tree-g.is-pipe::before,
+.md-tree-g.is-tee::before,
+.md-tree-g.is-end::before {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px solid var(--tree-line);
+}
+.md-tree-g.is-end::before {
+  bottom: 50%;
+  border-bottom-left-radius: 5px;
+  border-bottom: 1.5px solid var(--tree-line);
+  width: 0.6rem;
+}
+/* 横線: 自分の枝 */
+.md-tree-g.is-tee::after {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  right: 0.15rem;
+  top: 50%;
+  border-top: 1.5px solid var(--tree-line);
+}
+.md-tree-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.45rem;
+  flex-shrink: 0;
+  background: var(--text-muted);
+  -webkit-mask: var(--tree-icon) no-repeat center / contain;
+  mask: var(--tree-icon) no-repeat center / contain;
+}
+.md-tree-icon.is-folder {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2h8.4A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z' fill='black'/%3E%3C/svg%3E");
+  background: var(--tree-accent);
+}
+.md-tree-icon.is-file {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M6 3h8l4 4v14H6z'/%3E%3Cpath d='M14 3v4h4'/%3E%3C/svg%3E");
+}
+.md-tree-icon.is-doc {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M6 3h8l4 4v14H6z'/%3E%3Cpath d='M14 3v4h4'/%3E%3Cpath d='M9 12h6M9 15.5h6'/%3E%3C/svg%3E");
+}
+.md-tree-icon.is-image {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round'%3E%3Crect x='4' y='5' width='16' height='14' rx='2'/%3E%3Ccircle cx='9' cy='10' r='1.6'/%3E%3Cpath d='M4 16.5l4.5-4 4 3.5 2.5-2 5 4'/%3E%3C/svg%3E");
+}
+.md-tree-icon.is-code {
+  --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M6 3h8l4 4v14H6z'/%3E%3Cpath d='M14 3v4h4'/%3E%3Cpath d='M10.5 11.5l-2 2 2 2M13.5 11.5l2 2-2 2'/%3E%3C/svg%3E");
+}
+.md-tree-name {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+.md-tree-row.is-root .md-tree-name {
+  font-weight: 700;
+}
+.md-tree-row.is-ellipsis .md-tree-icon {
+  visibility: hidden;
+}
+.md-tree-row.is-ellipsis .md-tree-name {
+  color: var(--text-muted);
+}
+.md-tree-note {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+/* Visualモードでは、フォルダの色をスタイルの 1 色目に合わせ、カードの面に置く（DTP-009） */
+.exhibition-slab .md-tree {
+  --tree-accent: color-mix(in srgb, var(--vs-c1, var(--accent)) 80%, var(--text-primary));
+  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--card-bg, var(--panel-bg)) 70%, var(--panel-sub));
+  box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.45);
+}
+@media print {
+  .md-tree {
+    overflow: visible;
+    break-inside: avoid;
+  }
+}
+
 /* HTML で直に書いた画像（段落に入らない <img>）は、段落と同じく上下に余白を取る（DD-MD-043） */
 :is(.prose-doc, .exhibition-slab) > img {
   display: block;
