@@ -3266,6 +3266,61 @@ async function testDiagramPanZoom(browser) {
   await page.context().close();
 }
 
+// ローカルの画像（TC-MD-013〜015）
+async function testLocalImages(browser) {
+  const page = await openStagePage(browser);
+  const logo = path.join(APP_DIR, 'assets', 'logos', 'light', 'favicon.svg').replace(/\\/g, '/');
+  const fileUrl = 'file://' + (logo.startsWith('/') ? '' : '/') + logo;
+  const md = [
+    '# 画像',
+    `![file-url](${fileUrl})`,
+    `<img alt="html-file-url" src="${fileUrl}" width="48">`,
+    `![abs](${logo})`,
+    '![win-slash](C:/work/a.png)',
+    '![win-backslash](C:\\work\\docs\\a.png)',
+    '<img alt="html-win" src="C:\\work\\a.png">',
+    '<img alt="unc" src="\\\\server\\share\\a.png">',
+    '![rel](images/missing.png)',
+    '<img alt="js" src="javascript:alert(1)">',
+    '[link](file:///etc/hosts) <a href="file:///etc/hosts">a</a>'
+  ].join('\n\n');
+  const rows = [];
+  for (const mode of ['fast', 'visual']) {
+    if (mode === 'visual') await page.click('#btn-visual-mode');
+    await setDocument(page, md);
+    await page.waitForTimeout(800);
+    rows.push(await page.evaluate(() => {
+      const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+      const img = alt => root.querySelector(`img[alt="${alt}"]`);
+      const missing = Array.from(root.querySelectorAll('.img-missing')).map(m => ({
+        label: m.getAttribute('aria-label'), path: m.querySelector('.img-missing-path').textContent, hint: Boolean(m.querySelector('.img-missing-hint'))
+      }));
+      const loaded = alt => { const i = img(alt); return Boolean(i && i.complete && i.naturalWidth > 0); };
+      return {
+        visual: state.isVisualMode,
+        fileUrl: loaded('file-url'), htmlFileUrl: loaded('html-file-url'), htmlWidth: img('html-file-url') && img('html-file-url').getBoundingClientRect().width, abs: loaded('abs'),
+        missing,
+        jsSrc: img('js') ? img('js').getAttribute('src') : 'removed',
+        fileLinks: Array.from(root.querySelectorAll('a')).filter(a => /^file:/i.test(a.getAttribute('href') || '')).length
+      };
+    }));
+  }
+  const byLabel = (r, alt) => r.missing.find(m => m.label === `画像を読み込めません: ${alt}`);
+  // TC-MD-013: file:// の URL と絶対パスは表示され、Windows のパスは file:/// の URL に直る
+  record('TC-MD-013', rows.every(r => r.fileUrl && r.htmlFileUrl && Math.round(r.htmlWidth) === 48 && r.abs
+    && (byLabel(r, 'win-slash') || {}).path === 'file:///C:/work/a.png'
+    && (byLabel(r, 'win-backslash') || {}).path === 'file:///C:/work/docs/a.png'
+    && (byLabel(r, 'html-win') || {}).path === 'file:///C:/work/a.png'
+    && (byLabel(r, 'unc') || {}).path === 'file://server/share/a.png'), JSON.stringify(rows));
+  // TC-MD-014: 読み込めない画像は、読み込めないことと src を示す。相対パスには、相対パスを使えない理由を添える
+  record('TC-MD-014', rows.every(r => (byLabel(r, 'rel') || {}).path === 'images/missing.png' && byLabel(r, 'rel').hint
+    && !byLabel(r, 'win-slash').hint), JSON.stringify(rows.map(r => r.missing)));
+  // TC-MD-015: 画像の src の javascript: と、リンクの file: は、今までどおり消す
+  record('TC-MD-015', rows.every(r => r.jsSrc === null && r.fileLinks === 0) && page.consoleErrors.filter(e => !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(e)).length === 0,
+    JSON.stringify({ rows: rows.map(r => ({ jsSrc: r.jsSrc, fileLinks: r.fileLinks })), errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
@@ -3273,7 +3328,8 @@ const SUITES = [
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019'], fn: testTitleAndDrop },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
-  { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-'], fn: testMarkdownTypography },
+  { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011'], fn: testMarkdownTypography },
+  { name: 'testLocalImages', tcPrefix: ['TC-MD-013', 'TC-MD-014', 'TC-MD-015'], fn: testLocalImages },
   { name: 'testMathRendering', tcPrefix: ['TC-MATH-'], fn: testMathRendering },
   { name: 'testFrontMatter', tcPrefix: ['TC-FM-'], fn: testFrontMatter },
   { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },

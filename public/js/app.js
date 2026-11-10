@@ -2129,6 +2129,62 @@ function buildVisualStageHtml(cleanHtml, yaml) {
   `;
 }
 
+/* ==========================================================================
+   ローカルの画像（FR-042, DD-MD-040〜042）
+   ========================================================================== */
+// 画像の src に書いたローカルのパスを file:// の URL に直す。直せないもの（相対パス、http など）は null を返す。
+// Marked は URL の \ を %5C に変えるため、%5C も区切りとして扱う
+function toLocalImageUrl(value) {
+  const src = String(value || '').trim().replace(/%5C/gi, '/').replace(/\\/g, '/');
+  // C:/… または C:\…（Windows のドライブ名で始まる絶対パス）
+  if (/^[a-z]:\//i.test(src)) return `file:///${src}`;
+  // \\server\share\…（Windows のネットワーク上のパス）
+  if (/^\/\/[^/]/.test(src) && /%5C|\\/i.test(String(value))) return `file:${src}`;
+  if (/^file:\/\//i.test(src)) return src;
+  return null;
+}
+
+// DOMPurify の既定は file: の URL を許さず、src ごと消す（DD-MD-040）。画像の src に限って、
+// ローカルのパスを file:// の URL に直して残す。リンク（a の href）の file: は、今までどおり消す
+function setupLocalImages() {
+  DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
+    if (node.nodeName !== 'IMG' || data.attrName !== 'src') return;
+    const url = toLocalImageUrl(data.attrValue);
+    if (!url) return;
+    // forceKeepAttr を立てると、DOMPurify は attrValue を書き戻さずに次の属性へ進むため、ここで書き換える
+    node.setAttribute('src', url);
+    data.attrValue = url;
+    data.forceKeepAttr = true;
+  });
+
+  // 読み込めない画像は、代わりの文字（alt）だけが細く出て気づきにくいため、読み込めないことと src を示す（DD-MD-041）。
+  // error は泡立たないため、キャプチャの段階で受け取る
+  document.addEventListener('error', event => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement) || !img.closest('#preview-scroll')) return;
+    const src = img.getAttribute('src') || '';
+    const box = document.createElement('span');
+    box.className = 'img-missing';
+    box.setAttribute('role', 'img');
+    box.setAttribute('aria-label', `画像を読み込めません: ${img.getAttribute('alt') || src}`);
+    const title = document.createElement('span');
+    title.className = 'img-missing-title';
+    title.textContent = '画像を読み込めません';
+    const path = document.createElement('span');
+    path.className = 'img-missing-path';
+    path.textContent = src || '（パスがありません）';
+    box.append(title, path);
+    // 相対パスは、ファイルを開いた場合、ブラウザの制約で Markdown ファイルの場所を基準にできない（DD-MD-042）
+    if (src && !/^[a-z][a-z0-9+.-]*:|^\//i.test(src)) {
+      const hint = document.createElement('span');
+      hint.className = 'img-missing-hint';
+      hint.textContent = '相対パスは、開いた Markdown ファイルの場所を基準にできません。絶対パス（C:\\… など）で指定してください';
+      box.append(hint);
+    }
+    img.replaceWith(box);
+  }, true);
+}
+
 // 表（table）が親コンテナやスラブの枠をはみ出さないよう、横スクロール可能な .table-container で包む（DD-MD-020）
 function wrapTables(container) {
   if (!container) return;
@@ -3099,6 +3155,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupFileMenu();
   setupFileDrop();
   setupDiagramPanZoom();
+  setupLocalImages();
   setupFrontMatterToggle();
   setupMarkedMath();
   setupMarkedHeadings();
