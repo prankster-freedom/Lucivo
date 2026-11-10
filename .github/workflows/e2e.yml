@@ -17,7 +17,7 @@ jobs:
       run: npm ci
     - name: Lint
       run: npm run lint
-  # ワークフローごとスキップすると必須チェック test が待機のままになるため、ジョブの単位でスキップする
+  # ワークフローやジョブをスキップすると必須チェック test が待機のままになるため、ステップ単位でスキップする
   changes:
     timeout-minutes: 5
     runs-on: ubuntu-latest
@@ -43,23 +43,31 @@ jobs:
         fi
   test:
     needs: changes
-    # changes が失敗したときは出力が空になり、E2E を実行する
-    if: ${{ !cancelled() && needs.changes.outputs.e2e != 'false' }}
+    # changes の成否にかかわらず test ジョブを実行して必須チェックを満たす
+    if: ${{ !cancelled() }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
+    - name: Skip E2E if only docs changed
+      if: ${{ needs.changes.outputs.e2e == 'false' }}
+      run: echo "Skipping E2E tests because only documentation was changed."
     - uses: actions/checkout@v4
+      if: ${{ needs.changes.outputs.e2e != 'false' }}
     - uses: actions/setup-node@v4
+      if: ${{ needs.changes.outputs.e2e != 'false' }}
       with:
         node-version: lts/*
     - name: Install dependencies
+      if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm ci
     - name: Install Chromium
+      if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npx playwright install --with-deps chromium
     - name: Run E2E tests
+      if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm test
     - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
+      if: ${{ !cancelled() && needs.changes.outputs.e2e != 'false' }}
       with:
         name: e2e-results
         path: work/test/
