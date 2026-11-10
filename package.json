@@ -6,6 +6,8 @@
   "license": "MIT",
   "scripts": {
     "test": "node tests/e2e.cjs",
+    "build": "node tools/build-app.cjs",
+    "build:prod": "node tools/build-app.cjs --prod",
     "build:css": "node tools/build-tailwind-css.cjs",
     "build:vendor": "node tools/build-vendor.cjs",
     "build:samples": "node tools/build-samples-data.cjs",
@@ -17,6 +19,7 @@
     "@fontsource-variable/noto-sans-jp": "5.3.1",
     "@fontsource-variable/plus-jakarta-sans": "5.3.0",
     "dompurify": "3.4.17",
+    "esbuild": "^0.28.2",
     "eslint": "10.14.0",
     "katex": "0.19.1",
     "marked": "18.1.3",

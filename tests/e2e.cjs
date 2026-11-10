@@ -3400,7 +3400,12 @@ async function testLocalImages(browser) {
   for (const mode of ['fast', 'visual']) {
     if (mode === 'visual') await page.click('#btn-visual-mode');
     await setDocument(page, md);
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => {
+      const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+      const imgs = Array.from(root.querySelectorAll('img')).filter(i => i.getAttribute('alt') !== 'js');
+      return imgs.every(i => i.complete);
+    }, null, { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(300);
     rows.push(await page.evaluate(() => {
       const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
       const img = alt => root.querySelector(`img[alt="${alt}"]`);
