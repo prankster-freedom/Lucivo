@@ -43,7 +43,7 @@ sequenceDiagram
     User-->>App: キャンセル
     App-->>User: 何もしない
   else 編集していない、または OK
-    App->>App: FileReader で UTF-8 として読む（先頭の BOM は除く）
+    App->>App: バイト列を読み、文字コードを判定して文字列にし、改行を LF にそろえる（DD-FILE-082）
     App->>App: エディタに設定し、lastLoadedMarkdown を更新
     App->>App: renderApp()、プレビューを先頭へスクロール
     App-->>User: トースト「読み込みました」
@@ -53,7 +53,7 @@ sequenceDiagram
 - **編集中の判定**: エディタの内容が `lastLoadedMarkdown`（最後に読み込んだ内容。起動直後は空文字列）と異なれば、編集中とみなす。起動直後の空の状態から入力した場合も編集中になる（`FR-006`）。
 - **確認のタイミング**: ファイルを選んだ後に確認する。ファイル選択をキャンセルしたときに確認ダイアログを出さないため。
 - **同じファイルの再選択**: `change` の処理の最初に `input.value` を空にする。空にしないと、同じファイルを続けて選んだときに `change` が発生しない。
-- **文字コード**: UTF-8 として読む。UTF-8 以外のファイルは文字化けするが、今回の増分では対応しない（未対応と明記する）。
+- **文字コード**: `file.arrayBuffer()` でバイト列を読み、`decodeMarkdown()`（DD-FILE-082）で文字コードを判定してから開く（`FR-048`）。
 - **読み込みの失敗**: `FileReader` の `error` で、エラーをコンソールに出力し、トーストで知らせる。エディタの内容は変えない。
 
 ### DD-FILE-015 同梱サンプルのワンクリック読み込み
@@ -185,7 +185,7 @@ sequenceDiagram
 
 ### DD-FILE-075 一覧からファイルを開く（`FR-044`）
 
-- `openFolderFile(path)` は、`getFile(path)` でファイルを探し、見つからなければ「「パス」はフォルダの中に見つかりません」と知らせる。見つかったら `confirmDiscardEdits(name)`（DD-FILE-010）で確かめてから、`file.text()`（UTF-8）で読み、`applyLoadedMarkdown(text, name, path)` を呼ぶ。開けたら `true` を返す。一覧に載らないファイル（件数の上限を超えたもの）も、フォルダの中にあれば開く（DD-FILE-079 のリンクから開くため）。
+- `openFolderFile(path)` は、`getFile(path)` でファイルを探し、見つからなければ「「パス」はフォルダの中に見つかりません」と知らせる。見つかったら `confirmDiscardEdits(name)`（DD-FILE-010）で確かめてから、`file.arrayBuffer()` を `decodeMarkdown()`（DD-FILE-082）で文字列にし、`applyLoadedMarkdown(text, name, path, false, 文字コード)` を呼ぶ。開けたら `true` を返す。一覧に載らないファイル（件数の上限を超えたもの）も、フォルダの中にあれば開く（DD-FILE-079 のリンクから開くため）。
 - `applyLoadedMarkdown()` の第 3 引数 `folderPath` を `currentFolderPath` に入れる。ファイル選択・ドロップ・同梱サンプルは `null`（相対パスの基準がない）。
 - 読んでいる間に別のフォルダを開いた場合は、読んだ内容を使わない。
 
@@ -221,3 +221,20 @@ sequenceDiagram
 - 画像: DOMPurify のフック（`DD-MD-040`）で、フォルダの文書（DD-FILE-076）でなく、`currentSampleFile` があり、`src` が相対パスのときは、`resolveFolderPath('', src)` で `samples` フォルダの中のパスにし、`samples/` を前に付けて（パスの区切りごとに `encodeURIComponent()`）`src` にする。`index.html` から見た相対パスのため、`file://` でもそのまま読める。`samples` の外を指すときは何もしない（読み込めない表示になる）。
 - リンク: DD-FILE-079 の処理で、フォルダの文書でなく、`currentSampleFile` があるときは、`resolveFolderPath('', パス)` が `BUNDLED_SAMPLES`（`tools/build-samples-data.cjs` の `FILES` と同じ 3 件）にあれば `loadBundledSample()` で開き、`#` 以降があれば DD-FILE-080 で見出しへ送る。今の文書と同じなら開き直さない。なければ「「パス」は同梱サンプルにありません」と知らせる。
 - `loadBundledSample()` は、開けたら `true`、取り消し・読み込みの失敗は `false` を返す（リンクから開いた後に見出しへ送るかを決めるため）。
+
+### DD-FILE-082 文字コードの判定と改行コード（`FR-048`）
+
+`ts/utils/text-decode.ts` の `decodeMarkdown(buffer)` が、`{ text, encoding, newline }` を返す。ファイル選択・ドロップ（`loadMarkdownFile()`）とフォルダ（`openFolderFile()`）の両方が使う。
+
+1. **BOM**: `EF BB BF` → UTF-8（BOM）、`FF FE` → UTF-16LE、`FE FF` → UTF-16BE。BOM の後を `TextDecoder` で読む。
+2. **UTF-8**: `new TextDecoder('utf-8', { fatal: true })` で読めれば UTF-8。ただし、ESC（`0x1B`）で始まる文字集合の切り替え（`ESC $ B` など）があれば ISO-2022-JP として読み直す（ISO-2022-JP は 7 ビットの文字だけで書くため、UTF-8 としても正しく読めてしまう）。
+3. **Shift_JIS と EUC-JP**: UTF-8 として正しくなければ、`shift_jis`（WHATWG では CP932 を含む）と `euc-jp` の両方で読み、「置き換え文字（`U+FFFD`）の数 × 1000 + 半角カタカナの数」が小さいほうを選ぶ。取り違えると、読めない文字か、半角カタカナの並びが多く出るため。
+4. **改行コード**: `normalizeText()` で、先頭の BOM の文字を除き、`\r\n` と `\r` を `\n` にする。元の改行コードは `detectNewline()` で `LF` / `CRLF` / `CR` / `mixed` / `none` として返す（今は表示に使わない）。
+
+- 見えない文字・紛らわしい文字（`U+FEFF`、`U+FFFD`、半角カタカナの範囲、ESC）は、ソースに直接書かず `String.fromCharCode()` で作る（`npm run lint`）。
+
+### DD-FILE-083 読み込みと保存の知らせ（`FR-048`）
+
+- `applyLoadedMarkdown()` の第 5 引数 `encoding`（既定は `UTF-8`）を `currentFileEncoding` に入れる。改行コードは、ここでも `normalizeText()` で LF にそろえる（同梱サンプルを含め、エディタに入れる内容と `lastLoadedMarkdown` を一致させるため。DD-FILE-010 の編集中の判定）。
+- 読み込みのトースト: UTF-8 系（`isUtf8Family()`: `UTF-8`・`UTF-8 (BOM)`）なら「「名前」を読み込みました」、それ以外は「「名前」を 文字コード として読み込みました（保存は UTF-8 になります）」。
+- 保存のトースト: `currentFileEncoding` が UTF-8 系でなければ「「名前」を UTF-8 で保存しました（元は 文字コード）」。

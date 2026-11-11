@@ -34,7 +34,7 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
 ## はじめかた
 
 1. [GitHub Releases の最新版](https://github.com/prankster-freedom/Lucivo/releases/latest)から `lucivo-v<版>.zip` をダウンロードして展開し、`lucivo-v<版>` フォルダの中の `index.html` をブラウザで開きます。
-2. ヘッダーの「開く」→「ファイルを開く…」で、Markdown ファイル（`.md` / `.markdown` / `.txt`、UTF-8）を読み込みます。ファイルをウィンドウにドラッグ&ドロップしても開けます。
+2. ヘッダーの「開く」→「ファイルを開く…」で、Markdown ファイル（`.md` / `.markdown` / `.txt`）を読み込みます。文字コード（UTF-8・Shift_JIS・EUC-JP など）と改行コードは自動で判定します。保存は UTF-8 になります。ファイルをウィンドウにドラッグ&ドロップしても開けます。
    - 「開く」→「フォルダを開く…」でフォルダを選ぶと、中の Markdown ファイルを左の一覧から開けます。この方法で開いた文書は、相対パス（`images/a.png`）の画像も表示でき、文書の中の別の Markdown へのリンク（`[概要](overview.md)`）も Lucivo の中で開けます。一覧は `«` で隠せます。
 3. ヘッダー中央の「高速モード」「Visualモード」で見せ方を切り替えます。
 

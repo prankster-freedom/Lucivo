@@ -1,6 +1,6 @@
 ---
 title: Lucivo テスト仕様 ファイルの読み込みと初期表示
-description: FR-006・FR-007・FR-013・FR-014・FR-040・FR-041・FR-043〜046 のテストケース（同梱サンプルの画像とリンクを含む）。
+description: FR-006・FR-007・FR-013・FR-014・FR-040・FR-041・FR-043〜046・FR-048 のテストケース（同梱サンプルの画像とリンク、文字コードを含む）。
 tags: ["Lucivo", "テスト仕様", "ファイル読み込み"]
 ---
 
@@ -37,7 +37,11 @@ tags: ["Lucivo", "テスト仕様", "ファイル読み込み"]
 | TC-FILE-026 | 実機でのフォルダを開く                                     | Windows の Chrome / Edge で、`index.html` を `file://` で開き、日本語の名前のフォルダを「フォルダを開く…」で開く。一覧から開いた文書の相対パスの画像を確かめる。ブラウザを開き直し、「前回のフォルダ「…」を開く」を押す。Firefox でも同じフォルダを開く | Chrome / Edge では、フォルダの選択のダイアログが出て、一覧と画像が表示される。開き直した後は、許可の確認の後に同じフォルダが開く。Firefox では、ブラウザ標準のフォルダの選択（アップロードの確認が出る）で開ける | 手動 |  |
 | TC-FILE-027 | 文書の中の Markdown へのリンク（`FR-046`）                 | TC-FILE-022 の `docs/spec.md` で、フォルダにない `none.md` へのリンクを押す → `sub/2_overview.md#details` へのリンクを押す                                             | `none.md` は開かず、「「docs/none.md」はフォルダの中に見つかりません」と知らせる。`2_overview.md` が Lucivo の中で開き（画面の URL は変わらない）、一覧で選択中になり、見出し「Details」がプレビューの上端近くに来る | 自動     |                                          |
 | TC-FILE-028 | 同梱サンプルの画像とリンク（`FR-046`）                     | 「開く」メニューから「記法サンプル追補版」を開き、11 章の画像を調べる → 「この文書の「2. リンクと参照リンク」」を押す → 「記法サンプルの「6. 表」」を押す              | 2 つの画像が `samples/images/lucivo-flow.svg` で表示され、HTML の画像は幅 320px。同じ文書の見出しへ送られる。`notation_sample.md` が同梱サンプルとして開き、「6. 表」がプレビューの上端近くに来る。画面の URL は変わらない | 自動 |                                        |
+| TC-FILE-029 | 文字コードと改行コード（`FR-048`）                         | `tests/fixtures/encoding/` の 10 件（UTF-8 の LF・CRLF・CR・混在、UTF-8 の BOM と CRLF、UTF-16LE の BOM と CRLF、Shift_JIS の CRLF・LF、EUC-JP、ISO-2022-JP）を、ファイル選択で順に開く | どれもエディタの内容が `source.md`（UTF-8・LF）と一致し、見出し・表・図が表示される。UTF-8 以外は、何の文字コードとして読んだかと「保存は UTF-8 になります」がトーストに出る。編集していないので、次のファイルを開くときに確認ダイアログが出ない | 自動 |  |
+| TC-FILE-030 | UTF-8 以外の文書の保存（`FR-048`）                         | `sjis-crlf.md` を開き、「保存」→「Markdown を保存」を押す                                                                                                              | 保存したファイルが UTF-8（BOM なし）・LF で `source.md` と同じ内容になり、「UTF-8 で保存しました（元は Shift_JIS）」と知らせる                                                                                       | 自動     |                                          |
+| TC-FILE-031 | フォルダから開く文書の文字コード（`FR-048`）               | 入力欄の方式で `tests/fixtures/encoding/` を開き、一覧の `sjis-crlf.md` と `eucjp-lf.md` を押す                                                                        | どちらも `source.md` と同じ内容で開き、文字コードがトーストに出る。確認ダイアログとコンソールのエラーが出ない                                                                                                        | 自動     |                                          |
 
 - TC-FILE-004〜006 の自動確認は、Playwright でファイル選択の値を直接設定する。OS のファイル選択ダイアログは自動確認できないため、TC-FILE-009 で手動確認する。
 - TC-FILE-018・TC-FILE-019 の自動確認は、Playwright でファイルを持った `DataTransfer` を作り、`dragenter`・`dragleave`・`drop` を起こす。OS からのドラッグと、印刷のダイアログは自動確認できないため、TC-FILE-020 で手動確認する。
 - TC-FILE-022〜025 は、Playwright が日本語の名前のフォルダ・ファイルを入力欄に渡せない（止まる、または中身を読めない）ため、入力欄の方式は英字の名前の `tests/fixtures/folder` で、日本語の名前は File System Access API を模したハンドルで確かめる。実際のダイアログと、ブラウザの許可の確認は自動確認できないため、TC-FILE-026 で手動確認する。
+- TC-FILE-029〜031 のサンプルは、`tests/fixtures/encoding/source.md`（UTF-8・LF）を各文字コード・改行コードで書き出したもの。Shift_JIS で文字化けしやすい、2 バイト目が `0x5C` の文字（ソ・能・表など）を含む。バイト列を保つため、`.gitattributes` で改行の変換を止め（`-text`）、`npm run lint` の制御文字の検査から外している（UTF-16 の NUL、ISO-2022-JP の ESC を含むため）。
