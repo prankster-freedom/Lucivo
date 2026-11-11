@@ -3724,12 +3724,81 @@ async function testTree(browser) {
   await page.context().close();
 }
 
+// 文字コードと改行コード（TC-FILE-029〜031）。サンプルは tests/fixtures/encoding/source.md を各文字コード・改行コードで書いたもの
+const ENCODING_FIXTURE = path.join(__dirname, 'fixtures', 'encoding');
+const ENCODING_CASES = [
+  ['utf8-lf.md', 'UTF-8'], ['utf8-crlf.md', 'UTF-8'], ['utf8-cr.md', 'UTF-8'], ['utf8-mixed.md', 'UTF-8'],
+  ['utf8-bom-crlf.md', 'UTF-8 (BOM)'], ['utf16le-bom-crlf.md', 'UTF-16LE'],
+  ['sjis-crlf.md', 'Shift_JIS'], ['sjis-lf.md', 'Shift_JIS'], ['eucjp-lf.md', 'EUC-JP'], ['iso2022jp-lf.md', 'ISO-2022-JP']
+];
+
+async function testEncoding(browser) {
+  const page = await openStagePage(browser);
+  const expected = fs.readFileSync(path.join(ENCODING_FIXTURE, 'source.md'), 'utf8');
+  const dialogs = [];
+  page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
+
+  // TC-FILE-029: 文字コードを判定して読み、改行コードを LF にそろえる。編集していなければ、次のファイルを開くときに確認しない
+  const rows = [];
+  for (const [name, encoding] of ENCODING_CASES) {
+    await page.click('#btn-file-menu');
+    await page.setInputFiles('#file-input', path.join(ENCODING_FIXTURE, name));
+    await page.waitForFunction(n => document.title === `${n} - Lucivo`, name);
+    await waitRendered(page);
+    const r = await page.evaluate(() => ({
+      value: document.getElementById('markdown-editor').value,
+      dirty: document.getElementById('markdown-editor').value !== lastLoadedMarkdown,
+      toast: document.getElementById('toast-message').textContent,
+      h1: (document.querySelector('#standard-doc-container h1') || {}).textContent,
+      cell: (document.querySelector('#standard-doc-container td:last-child') || {}).textContent,
+      svg: document.querySelectorAll('#standard-doc-container [data-stage-index] > svg').length
+    }));
+    const utf8 = encoding.startsWith('UTF-8');
+    rows.push({ name, ok: r.value === expected && !r.dirty && r.h1 === '文字コードの確認' && r.cell === '日本語の表' && r.svg === 1
+      && (utf8 ? /を読み込みました$/.test(r.toast) : r.toast.includes(`${encoding} として読み込みました（保存は UTF-8 になります）`)),
+    toast: r.toast, sameText: r.value === expected, dirty: r.dirty });
+  }
+  record('TC-FILE-029', rows.every(r => r.ok) && dialogs.length === 0, JSON.stringify({ failed: rows.filter(r => !r.ok), dialogs }));
+
+  // TC-FILE-030: Shift_JIS で読んだ文書の保存は UTF-8（BOM なし）で、元の文字コードと違うことを知らせる
+  await page.click('#btn-file-menu');
+  await page.setInputFiles('#file-input', path.join(ENCODING_FIXTURE, 'sjis-crlf.md'));
+  await page.waitForFunction(() => document.title === 'sjis-crlf.md - Lucivo');
+  await page.click('#btn-save-menu');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-save-markdown')]);
+  const saved = fs.readFileSync(await download.path());
+  const saveToast = await page.evaluate(() => document.getElementById('toast-message').textContent);
+  record('TC-FILE-030', saved.toString('utf8') === expected && saved[0] !== 0xEF && /UTF-8 で保存しました（元は Shift_JIS）/.test(saveToast),
+    JSON.stringify({ sameText: saved.toString('utf8') === expected, bytes: saved.length, saveToast }));
+
+  // TC-FILE-031: フォルダの一覧から開いた Shift_JIS・EUC-JP の文書も、同じく判定して読む
+  await page.evaluate(() => { preferFolderInput = true; });
+  await page.click('#btn-file-menu');
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#menu-open-folder')]);
+  await chooser.setFiles(ENCODING_FIXTURE);
+  await page.waitForFunction(() => openedFolder);
+  const folderRows = [];
+  for (const [name, encoding] of [['sjis-crlf.md', 'Shift_JIS'], ['eucjp-lf.md', 'EUC-JP']]) {
+    await page.click(`.folder-list-item[data-path="${name}"]`);
+    // 直前に同じファイルを開いていてもタイトルは同じなので、読み込みのトーストを待つ
+    await page.waitForFunction(n => document.getElementById('toast-message').textContent.startsWith(`「${n}」を`), name);
+    folderRows.push(await page.evaluate(([enc, text]) => ({
+      ok: document.getElementById('markdown-editor').value === text && document.getElementById('toast-message').textContent.includes(`${enc} として読み込みました`),
+      toast: document.getElementById('toast-message').textContent
+    }), [encoding, expected]));
+  }
+  record('TC-FILE-031', folderRows.every(r => r.ok) && dialogs.length === 0 && page.consoleErrors.length === 0,
+    JSON.stringify({ folderRows, dialogs, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
+  { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },

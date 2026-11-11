@@ -40,3 +40,7 @@ Makefile text eol=lf
 *.md text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
+
+# Test fixtures for character encodings and line endings (FR-048): keep the bytes exactly as written.
+tests/fixtures/encoding/*.md -text
+tests/fixtures/encoding/source.md text eol=lf

@@ -4,8 +4,9 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 
-// 生成物（public/vendor/）と画像・フォントは対象外。ライブラリの圧縮済みファイルは制御文字を含む
-const SKIP = /^public\/vendor\/|\.(png|jpe?g|gif|ico|webp|woff2?|ttf|otf|pdf)$/i;
+// 生成物（public/vendor/）と画像・フォントは対象外。ライブラリの圧縮済みファイルは制御文字を含む。
+// 文字コードのテスト用のサンプル（tests/fixtures/encoding/）は、UTF-16 の NUL や ISO-2022-JP の ESC を意図して含む
+const SKIP = /^public\/vendor\/|^tests\/fixtures\/encoding\/(?!source\.md$)|\.(png|jpe?g|gif|ico|webp|woff2?|ttf|otf|pdf)$/i;
 // 0x09（タブ）、0x0A（LF）、0x0D（CR）以外の C0 制御文字と DEL
 // eslint-disable-next-line no-control-regex -- 制御文字を検出するための正規表現
 const CONTROL = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/;
