@@ -848,11 +848,27 @@ function postProcessSvg(rawSvg, isVisualMode) {
 }
 
 // 1. 通常モード：端正なエンジニアリング設計図スタイル
+function hasUserStyle(el, prop) {
+  if (!el) return false;
+  if (el.style && el.style.getPropertyValue(prop)) return true;
+  const attr = el.getAttribute('style') || '';
+  return new RegExp(`(?:^|;)\\s*${prop}\\s*:`, 'i').test(attr);
+}
+
+function hasUserTextColor(el) {
+  if (!el) return false;
+  if (hasUserStyle(el, 'color') || hasUserStyle(el, 'fill')) return true;
+  const parentLabel = el.closest('.label, g.label');
+  if (parentLabel && (hasUserStyle(parentLabel, 'color') || hasUserStyle(parentLabel, 'fill'))) return true;
+  return false;
+}
+
 function decorateStandardSvg(svg, diagramType) {
   const isDark = state.appearance === 'dark';
   const spec = getThemeSpec();
   const targetTextColor = isDark ? '#F8FAFC' : '#0F172A';
   svg.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text.actor, text.noteText, .nodeLabel, .stateLabel, .messageText, .loopText, .labelText').forEach(el => {
+    if (hasUserTextColor(el)) return;
     el.style.setProperty('color', targetTextColor, 'important');
     el.style.setProperty('fill', targetTextColor, 'important');
   });
@@ -872,13 +888,23 @@ function decorateStandardSvg(svg, diagramType) {
     if (!rect) return;
     rect.setAttribute('rx', '8');
     rect.setAttribute('ry', '8');
-    rect.style.setProperty('fill', spec.nodeBg, 'important');
-    rect.style.setProperty('stroke', spec.nodeStroke, 'important');
-    rect.style.setProperty('stroke-width', '1.75px', 'important');
+    if (!hasUserStyle(rect, 'fill')) {
+      rect.style.setProperty('fill', spec.nodeBg, 'important');
+    }
+    if (!hasUserStyle(rect, 'stroke')) {
+      rect.style.setProperty('stroke', spec.nodeStroke, 'important');
+    }
+    if (!hasUserStyle(rect, 'stroke-width')) {
+      rect.style.setProperty('stroke-width', '1.75px', 'important');
+    }
   });
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-    p.style.setProperty('stroke', spec.edgeStroke, 'important');
-    p.style.setProperty('stroke-width', '2px', 'important');
+    if (!hasUserStyle(p, 'stroke')) {
+      p.style.setProperty('stroke', spec.edgeStroke, 'important');
+    }
+    if (!hasUserStyle(p, 'stroke-width')) {
+      p.style.setProperty('stroke-width', '2px', 'important');
+    }
   });
 }
 
@@ -987,38 +1013,47 @@ function decorateVisualShapes(svg, uid) {
     const text = (g.textContent || '').toLowerCase();
 
     g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      if (hasUserTextColor(el)) return;
       el.style.setProperty('color', '#1E293B', 'important');
       el.style.setProperty('fill', '#1E293B', 'important');
       el.style.setProperty('font-weight', '700', 'important');
     });
 
     if (rect) {
-      rect.style.setProperty('stroke', 'none', 'important');
+      if (!hasUserStyle(rect, 'stroke')) {
+        rect.style.setProperty('stroke', 'none', 'important');
+      }
       rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
 
-      if (idx === 0 || text.includes('client') || text.includes('start') || text.includes('standby')) {
-        rect.setAttribute('rx', '9999');
-        rect.setAttribute('ry', '9999');
-        rect.style.setProperty('fill', '#FFFFFF', 'important');
-      } else if (text.includes('terminal') || text.includes('landing') || text.includes('end') || text.includes('終了')) {
-        rect.setAttribute('rx', '9999');
-        rect.setAttribute('ry', '9999');
-        rect.style.setProperty('fill', `url(#vis-g-lime-${uid})`, 'important');
-      } else {
-        rect.setAttribute('rx', '10');
-        rect.setAttribute('ry', '10');
-        rect.style.setProperty('fill', `url(#vis-g-amber-${uid})`, 'important');
+      if (!hasUserStyle(rect, 'fill')) {
+        if (idx === 0 || text.includes('client') || text.includes('start') || text.includes('standby')) {
+          rect.setAttribute('rx', '9999');
+          rect.setAttribute('ry', '9999');
+          rect.style.setProperty('fill', '#FFFFFF', 'important');
+        } else if (text.includes('terminal') || text.includes('landing') || text.includes('end') || text.includes('終了')) {
+          rect.setAttribute('rx', '9999');
+          rect.setAttribute('ry', '9999');
+          rect.style.setProperty('fill', `url(#vis-g-lime-${uid})`, 'important');
+        } else {
+          rect.setAttribute('rx', '10');
+          rect.setAttribute('ry', '10');
+          rect.style.setProperty('fill', `url(#vis-g-amber-${uid})`, 'important');
+        }
       }
     }
 
     if (polygon) {
-      polygon.style.setProperty('stroke', 'none', 'important');
+      if (!hasUserStyle(polygon, 'stroke')) {
+        polygon.style.setProperty('stroke', 'none', 'important');
+      }
       polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
-      const points = polygon.getAttribute('points') || '';
-      if (points.split(' ').length <= 5) {
-        polygon.style.setProperty('fill', `url(#vis-g-aqua-${uid})`, 'important');
-      } else {
-        polygon.style.setProperty('fill', `url(#vis-g-coral-${uid})`, 'important');
+      if (!hasUserStyle(polygon, 'fill')) {
+        const points = polygon.getAttribute('points') || '';
+        if (points.split(' ').length <= 5) {
+          polygon.style.setProperty('fill', `url(#vis-g-aqua-${uid})`, 'important');
+        } else {
+          polygon.style.setProperty('fill', `url(#vis-g-coral-${uid})`, 'important');
+        }
       }
     }
   });
@@ -1026,8 +1061,12 @@ function decorateVisualShapes(svg, uid) {
   // 結線の色はカード背景に合わせる（Dark では明るい色）
   const edgeColor = getDiagramSpec(true).edgeStroke;
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-    p.style.setProperty('stroke', edgeColor, 'important');
-    p.style.setProperty('stroke-width', '2px', 'important');
+    if (!hasUserStyle(p, 'stroke')) {
+      p.style.setProperty('stroke', edgeColor, 'important');
+    }
+    if (!hasUserStyle(p, 'stroke-width')) {
+      p.style.setProperty('stroke-width', '2px', 'important');
+    }
     p.style.setProperty('stroke-dasharray', 'none', 'important');
   });
   svg.querySelectorAll('marker path').forEach(m => {
@@ -1060,6 +1099,19 @@ function decorateVisualCards(svg, uid) {
   orderedNodes.forEach(g => {
     const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
     if (!rect) return;
+
+    // ユーザー指定のスタイル（fill / stroke）があるノードは 2-Tier Card 化せず、ユーザー指定の見た目を尊重
+    const isCustom = hasUserStyle(rect, 'fill') || hasUserStyle(rect, 'stroke');
+    if (isCustom) {
+      rect.setAttribute('filter', `url(#vis-card-shadow-${uid})`);
+      g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+        if (hasUserTextColor(el)) return;
+        el.style.setProperty('color', '#0F172A', 'important');
+        el.style.setProperty('fill', '#0F172A', 'important');
+        el.style.setProperty('font-weight', '700', 'important');
+      });
+      return;
+    }
 
     const x = parseFloat(rect.getAttribute('x') || 0);
     const y = parseFloat(rect.getAttribute('y') || 0);
@@ -1102,6 +1154,7 @@ function decorateVisualCards(svg, uid) {
     g.appendChild(stepText);
 
     g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      if (hasUserTextColor(el)) return;
       el.style.setProperty('color', '#0F172A', 'important');
       el.style.setProperty('fill', '#0F172A', 'important');
       el.style.setProperty('font-weight', '700', 'important');
@@ -1110,8 +1163,12 @@ function decorateVisualCards(svg, uid) {
 
   const edgeColor = getDiagramSpec(true).edgeStroke;
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-    p.style.setProperty('stroke', edgeColor, 'important');
-    p.style.setProperty('stroke-width', '2px', 'important');
+    if (!hasUserStyle(p, 'stroke')) {
+      p.style.setProperty('stroke', edgeColor, 'important');
+    }
+    if (!hasUserStyle(p, 'stroke-width')) {
+      p.style.setProperty('stroke-width', '2px', 'important');
+    }
   });
 }
 
@@ -1126,23 +1183,32 @@ function decorateVisualCircles(svg, uid) {
     if (rect) {
       rect.setAttribute('rx', '9999');
       rect.setAttribute('ry', '9999');
-      rect.style.setProperty('fill', color, 'important');
-      rect.style.setProperty('stroke', '#FFFFFF', 'important');
-      rect.style.setProperty('stroke-width', '2.5px', 'important');
+      if (!hasUserStyle(rect, 'fill')) {
+        rect.style.setProperty('fill', color, 'important');
+      }
+      if (!hasUserStyle(rect, 'stroke')) {
+        rect.style.setProperty('stroke', '#FFFFFF', 'important');
+        rect.style.setProperty('stroke-width', '2.5px', 'important');
+      }
       rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
     }
     // ひし形・平行四辺形も塗り分ける（白文字を淡い塗りの上に載せないため）
     const polygon = g.querySelector('polygon');
     if (polygon) {
-      polygon.style.setProperty('fill', color, 'important');
-      polygon.style.setProperty('stroke', '#FFFFFF', 'important');
-      polygon.style.setProperty('stroke-width', '2.5px', 'important');
+      if (!hasUserStyle(polygon, 'fill')) {
+        polygon.style.setProperty('fill', color, 'important');
+      }
+      if (!hasUserStyle(polygon, 'stroke')) {
+        polygon.style.setProperty('stroke', '#FFFFFF', 'important');
+        polygon.style.setProperty('stroke-width', '2.5px', 'important');
+      }
       polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
     }
 
     // 明るいキャメル色の上の白文字はコントラストが足りないため、その色だけ濃い文字にする
     const textColor = CIRCLE_DARK_TEXT_FILLS.includes(color) ? '#3B2A0E' : '#FFFFFF';
     g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      if (hasUserTextColor(el)) return;
       el.style.setProperty('color', textColor, 'important');
       el.style.setProperty('fill', textColor, 'important');
       el.style.setProperty('font-weight', '700', 'important');
@@ -1150,11 +1216,13 @@ function decorateVisualCircles(svg, uid) {
   });
 
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach((p, idx) => {
-    const color = circlePalette[idx % circlePalette.length];
-    p.style.setProperty('stroke', color, 'important');
-    p.style.setProperty('stroke-width', '4px', 'important');
-    p.style.setProperty('stroke-linecap', 'round', 'important');
-    p.style.setProperty('stroke-dasharray', '0 9', 'important');
+    if (!hasUserStyle(p, 'stroke')) {
+      const color = circlePalette[idx % circlePalette.length];
+      p.style.setProperty('stroke', color, 'important');
+      p.style.setProperty('stroke-width', '4px', 'important');
+      p.style.setProperty('stroke-linecap', 'round', 'important');
+      p.style.setProperty('stroke-dasharray', '0 9', 'important');
+    }
   });
   svg.querySelectorAll('marker path').forEach(m => {
     m.style.setProperty('fill', '#7EA6BF', 'important');
@@ -1170,32 +1238,44 @@ function decorateVisualEditorial(svg, uid) {
     if (rect && parseFloat(rect.getAttribute('height') || 0) <= 10) return;
 
     if (rect) {
-      if (idx === 0 || text.includes('start') || text.includes('client')) {
-        rect.setAttribute('rx', '9999');
-        rect.setAttribute('ry', '9999');
-        rect.style.setProperty('fill', '#FFFFFF', 'important');
-        rect.style.setProperty('stroke', '#E29578', 'important');
-        rect.style.setProperty('stroke-width', '3px', 'important');
-      } else if (text.includes('type') || text.includes('terminat') || text.includes('landing') || text.includes('docking')) {
-        rect.setAttribute('rx', '8');
-        rect.setAttribute('ry', '8');
-        rect.style.setProperty('fill', '#D68C8C', 'important');
-        rect.style.setProperty('stroke', 'none', 'important');
-        g.querySelectorAll('foreignObject div, foreignObject span, text').forEach(el => {
-          el.style.setProperty('color', '#FFFFFF', 'important');
-          el.style.setProperty('fill', '#FFFFFF', 'important');
-        });
-        return;
+      if (!hasUserStyle(rect, 'fill') && !hasUserStyle(rect, 'stroke')) {
+        if (idx === 0 || text.includes('start') || text.includes('client')) {
+          rect.setAttribute('rx', '9999');
+          rect.setAttribute('ry', '9999');
+          rect.style.setProperty('fill', '#FFFFFF', 'important');
+          rect.style.setProperty('stroke', '#E29578', 'important');
+          rect.style.setProperty('stroke-width', '3px', 'important');
+        } else if (text.includes('type') || text.includes('terminat') || text.includes('landing') || text.includes('docking')) {
+          rect.setAttribute('rx', '8');
+          rect.setAttribute('ry', '8');
+          rect.style.setProperty('fill', '#D68C8C', 'important');
+          rect.style.setProperty('stroke', 'none', 'important');
+          g.querySelectorAll('foreignObject div, foreignObject span, text').forEach(el => {
+            if (hasUserTextColor(el)) return;
+            el.style.setProperty('color', '#FFFFFF', 'important');
+            el.style.setProperty('fill', '#FFFFFF', 'important');
+          });
+          return;
+        } else {
+          rect.setAttribute('rx', '9999');
+          rect.setAttribute('ry', '9999');
+          rect.style.setProperty('fill', '#FFFFFF', 'important');
+          rect.style.setProperty('stroke', 'none', 'important');
+          rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+        }
       } else {
-        rect.setAttribute('rx', '9999');
-        rect.setAttribute('ry', '9999');
-        rect.style.setProperty('fill', '#FFFFFF', 'important');
-        rect.style.setProperty('stroke', 'none', 'important');
+        if (!hasUserStyle(rect, 'fill')) {
+          rect.style.setProperty('fill', '#FFFFFF', 'important');
+        }
+        if (!hasUserStyle(rect, 'stroke')) {
+          rect.style.setProperty('stroke', 'none', 'important');
+        }
         rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
       }
     }
 
     g.querySelectorAll('foreignObject div, foreignObject span, foreignObject small, text, .nodeLabel, .stateLabel').forEach(el => {
+      if (hasUserTextColor(el)) return;
       el.style.setProperty('color', '#2B2D42', 'important');
       el.style.setProperty('fill', '#2B2D42', 'important');
       el.style.setProperty('font-weight', '600', 'important');
@@ -1203,9 +1283,11 @@ function decorateVisualEditorial(svg, uid) {
   });
 
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
-    p.style.setProperty('stroke', '#8FA876', 'important');
-    p.style.setProperty('stroke-width', '3.5px', 'important');
-    p.style.setProperty('stroke-dasharray', 'none', 'important');
+    if (!hasUserStyle(p, 'stroke')) {
+      p.style.setProperty('stroke', '#8FA876', 'important');
+      p.style.setProperty('stroke-width', '3.5px', 'important');
+      p.style.setProperty('stroke-dasharray', 'none', 'important');
+    }
   });
   svg.querySelectorAll('marker path').forEach(m => {
     m.style.setProperty('fill', '#8FA876', 'important');

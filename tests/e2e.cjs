@@ -3167,6 +3167,66 @@ flowchart TD
   await page.context().close();
 }
 
+// TC-DIAG-030 ユーザー指定のスタイル（style / classDef / linkStyle）の保持（Issue #55）
+async function testDiagramUserStyles(browser) {
+  const page = await openStagePage(browser);
+  const doc = `# Mermaid ユーザースタイル保持テスト
+
+\`\`\`mermaid
+flowchart TD
+  A[デフォルトノード] --> B[スタイル指定ノード]
+  B --> C[classDefノード]
+  style B fill:#ff9999,stroke:#333333,stroke-width:4px,color:#123456
+  classDef special fill:#bbbbff,stroke:#ff6666,stroke-width:2px,color:#654321
+  class C special
+  linkStyle 0 stroke:#ff1122,stroke-width:5px
+\`\`\`
+`;
+
+  const inspectStyles = () => page.evaluate(() => {
+    const svg = document.querySelector('.diagram-viewport svg, [data-stage-index] svg');
+    if (!svg) return null;
+    const bNode = svg.querySelector('g.node[id*="flowchart-B"]');
+    const cNode = svg.querySelector('g.node[id*="flowchart-C"]');
+    const bRect = bNode ? bNode.querySelector('rect') : null;
+    const cRect = cNode ? cNode.querySelector('rect') : null;
+    const bLabel = bNode ? bNode.querySelector('.nodeLabel, text, p, span') : null;
+    const cLabel = cNode ? cNode.querySelector('.nodeLabel, text, p, span') : null;
+    const links = Array.from(svg.querySelectorAll('.edgePath path.path, path.flowchart-link'));
+    const link0 = links[0];
+
+    const bFill = bRect ? window.getComputedStyle(bRect).fill : null;
+    const bStroke = bRect ? window.getComputedStyle(bRect).stroke : null;
+    const bColor = bLabel ? window.getComputedStyle(bLabel).color : null;
+
+    const cFill = cRect ? window.getComputedStyle(cRect).fill : null;
+    const cStroke = cRect ? window.getComputedStyle(cRect).stroke : null;
+    const cColor = cLabel ? window.getComputedStyle(cLabel).color : null;
+
+    const l0Stroke = link0 ? window.getComputedStyle(link0).stroke : null;
+
+    const bOk = bFill === 'rgb(255, 153, 153)' && bStroke === 'rgb(51, 51, 51)' && bColor === 'rgb(18, 52, 86)';
+    const cOk = cFill === 'rgb(187, 187, 255)' && cStroke === 'rgb(255, 102, 102)' && cColor === 'rgb(101, 67, 33)';
+    const lOk = l0Stroke === 'rgb(255, 17, 34)';
+
+    return {
+      pass: bOk && cOk && lOk,
+      details: { bFill, bStroke, bColor, cFill, cStroke, cColor, l0Stroke }
+    };
+  });
+
+  await setDocument(page, doc);
+  await waitRendered(page);
+  const fastRes = await inspectStyles();
+
+  await page.click('#btn-visual-mode');
+  await waitRendered(page);
+  const visualRes = await inspectStyles();
+
+  record('TC-DIAG-030', fastRes && fastRes.pass && visualRes && visualRes.pass, JSON.stringify({ fast: fastRes, visual: visualRes }));
+  await page.context().close();
+}
+
 async function testStyleBar(browser) {
   const page = await openStagePage(browser);
   await setDocument(page, fs.readFileSync(SAMPLE, 'utf8'));
@@ -3867,6 +3927,7 @@ const SUITES = [
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
   { name: 'testSyntaxErrorCleanup', tcPrefix: ['TC-DIAG-025'], fn: testSyntaxErrorCleanup },
   { name: 'testDiagramLongLabel', tcPrefix: ['TC-DIAG-029'], fn: testDiagramLongLabel },
+  { name: 'testDiagramUserStyles', tcPrefix: ['TC-DIAG-030'], fn: testDiagramUserStyles },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
