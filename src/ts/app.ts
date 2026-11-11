@@ -2,6 +2,7 @@ import { escapeHtml } from './utils/escape';
 import { hexToRgba } from './utils/color';
 import { fnv1aHash } from './utils/hash';
 import { downloadBlob } from './utils/download';
+import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
 import { showToast, updateStatus } from './ui/toast';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
@@ -371,6 +372,8 @@ let renderGeneration = 0;
 let lastLoadedMarkdown = '';
 // 保存するときのファイル名。読み込んだファイルの名前（DD-FILE-030）
 let currentFileName = 'untitled.md';
+// 読み込んだファイルの文字コード。保存は UTF-8 のため、違うときに知らせる（DD-FILE-083）
+let currentFileEncoding = 'UTF-8';
 // ファイルを読み込んだ後のウィンドウのタイトルは「ファイル名 - Lucivo」（DD-FILE-050）
 const APP_TITLE_SUFFIX = ' - Lucivo';
 // ドロップで開けるファイル。ファイル選択（#file-input の accept）と同じ拡張子にする（DD-FILE-060）
@@ -2794,8 +2797,11 @@ function confirmDiscardEdits(fileName) {
 
 // folderPath: フォルダから開いたときの、フォルダの中のパス（例: docs/a.md）。相対パスの画像の基準にする（DD-FILE-075）
 // isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
-function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false) {
-  const text = String(rawText).replace(/^\uFEFF/, '');
+// encoding: ファイルから読んだときの文字コード（decodeMarkdown() の結果。同梱サンプルは UTF-8）（FR-048, DD-FILE-083）
+function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8') {
+  // 改行コードを LF にそろえる。そろえないと、textarea が LF に変えた内容と食い違い、編集していないのに破棄の確認が出る
+  const text = normalizeText(String(rawText));
+  currentFileEncoding = encoding;
   document.getElementById('markdown-editor').value = text;
   lastLoadedMarkdown = text;
   currentFileName = fileName;
@@ -2811,20 +2817,24 @@ function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = fa
   renderApp();
   document.getElementById('preview-scroll').scrollTop = 0;
   followedKey = null;
-  showToast(`「${fileName}」を読み込みました`);
+  // UTF-8 以外で読んだときは、何として読んだかと、保存すると UTF-8 になることを知らせる（DD-FILE-083）
+  showToast(isUtf8Family(encoding)
+    ? `「${fileName}」を読み込みました`
+    : `「${fileName}」を ${encoding} として読み込みました（保存は UTF-8 になります）`);
 }
 
-function loadMarkdownFile(file) {
+// ファイルのバイト列を読み、文字コードを判定してから開く（FR-048, DD-FILE-082）
+async function loadMarkdownFile(file) {
   if (!confirmDiscardEdits(file.name)) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    applyLoadedMarkdown(reader.result, file.name);
-  };
-  reader.onerror = () => {
-    console.error('Failed to read file:', reader.error);
+  let decoded;
+  try {
+    decoded = decodeMarkdown(await file.arrayBuffer());
+  } catch (err) {
+    console.error('Failed to read file:', err);
     showToast(`「${file.name}」を読み込めませんでした`);
-  };
-  reader.readAsText(file, 'UTF-8');
+    return;
+  }
+  applyLoadedMarkdown(decoded.text, file.name, null, false, decoded.encoding);
 }
 
 // 開くメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
@@ -2870,7 +2880,10 @@ function saveMarkdownFile() {
   const text = document.getElementById('markdown-editor').value;
   downloadBlob(text, currentFileName, 'text/markdown;charset=utf-8');
   lastLoadedMarkdown = text;
-  showToast(`「${currentFileName}」を保存しました`);
+  // ブラウザは UTF-8 でしか書き出せないため、元の文字コードと違うときは知らせる（DD-FILE-083）
+  showToast(isUtf8Family(currentFileEncoding)
+    ? `「${currentFileName}」を保存しました`
+    : `「${currentFileName}」を UTF-8 で保存しました（元は ${currentFileEncoding}）`);
 }
 
 function setupFileMenu() {
@@ -3199,7 +3212,8 @@ async function openFolderFile(path) {
   }
   if (!confirmDiscardEdits(name)) return false;
   try {
-    applyLoadedMarkdown(await file.text(), name, path);
+    const decoded = decodeMarkdown(await file.arrayBuffer());
+    applyLoadedMarkdown(decoded.text, name, path, false, decoded.encoding);
   } catch (err) {
     console.error('Failed to read file:', err);
     showToast(`「${name}」を読み込めませんでした`);
