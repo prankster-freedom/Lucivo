@@ -7,11 +7,7 @@ svg foreignObject {
 svg .nodeLabel,
 svg .stateLabel,
 svg .label > div {
-  display: inline-block !important;
-  padding: 6px 14px !important;
   line-height: 1.45 !important;
-  white-space: nowrap !important;
-  word-break: keep-all !important;
   font-family: 'Inter', 'Noto Sans JP', sans-serif !important;
   font-weight: 600 !important;
 }
