@@ -83,21 +83,21 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 
 ## 8. GitHub Release（release スキルの追加手順）
 
-利用者には GitHub Release で配布する（README の「はじめかた」）。release スキルの手順 7（タグ）の後に、次の手順を行う。単位名は `lucivo` とし、タグは `lucivo-v<版>` になる。
+利用者には GitHub Release で配布する（README の「はじめかた」）。release スキルの手順 7（タグ）の後に、次の手順を行う。単位名は `lucivo` とし、タグは `lucivo-v<版>` になる。配布用の ZIP ファイル名および ZIP 内の展開フォルダ名は先頭を大文字にした `Lucivo-v<版>` とし、Release のタイトルは `v` を付けずに `Lucivo <版>`（例: `Lucivo 0.6.0`）とする。
 
-1. **配布用の ZIP の作成**: タグの時点の `public/` だけを、`lucivo-v<版>/` のフォルダに入れた ZIP にする。
+1. **配布用の ZIP の作成**: タグの時点の `public/` だけを、`Lucivo-v<版>/` のフォルダに入れた ZIP にする。
 
    ```sh
-   git archive --format=zip --prefix=lucivo-v<版>/ -o work/release/lucivo-v<版>.zip lucivo-v<版>:public
+   git archive --format=zip --prefix=Lucivo-v<版>/ -o work/release/Lucivo-v<版>.zip lucivo-v<版>:public
    ```
 
-2. **ZIP の確認**: ZIP を `work/release/` に展開し、`lucivo-v<版>/index.html` を `file://` で開いて、起動と同梱サンプルの表示を確かめる。
-3. **【承認】GitHub Release の作成**: タグの push と GitHub Release の作成は外部に公開する操作のため、ユーザーの指示を受けてから行う。リリースノートは、README の「リリースノート」の該当する版の節を使う。リリースノートの冒頭には、ZIP の開き方と、「Source code (zip / tar.gz) ではなく `lucivo-v<版>.zip` を選ぶこと（Source code は仕様書やテストを含むリポジトリ全体で、開発者向け）」を書く。GitHub は Release に Source code を自動で添付し、消す設定がないため、利用者が配布物を選べるよう案内する。
+2. **ZIP の確認**: ZIP を `work/release/` に展開し、`Lucivo-v<版>/index.html` を `file://` で開いて、起動と同梱サンプルの表示を確かめる。
+3. **【承認】GitHub Release の作成**: タグの push と GitHub Release の作成は外部に公開する操作のため、ユーザーの指示を受けてから行う。リリースノートは、README の「リリースノート」の該当する版の節を使う。Release の title は `v` を付けずに `Lucivo <版>`（例: `Lucivo 0.6.0`）とする。リリースノートの冒頭には、ZIP の開き方と、「Source code (zip / tar.gz) ではなく `Lucivo-v<版>.zip` を選ぶこと（Source code は仕様書やテストを含むリポジトリ全体で、開発者向け）」を書く。GitHub は Release に Source code を自動で添付し、消す設定がないため、利用者が配布物を選べるよう案内する。
 
    ```sh
-   gh release create lucivo-v<版> work/release/lucivo-v<版>.zip --title "Lucivo v<版>" --notes-file <リリースノートのファイル>
+   gh release create lucivo-v<版> work/release/Lucivo-v<版>.zip --title "Lucivo <版>" --notes-file <リリースノートのファイル>
    ```
 
 4. **公開後の確認**: Release のページから ZIP をダウンロードして展開し、`index.html` を開けることを確かめる。
 
-- 背景: 利用者に要るのは配布物の `public/` だけで、`doc/`・`tests/`・`tools/` は要らない（1 章）。GitHub が自動で添付するソースコードの ZIP はリポジトリ全体を含むため、別に配布用の ZIP を添付する。`git archive` でタグから作るのは、作業ツリーの未コミットの変更や `work/` などの不要なファイルが混ざらず、同じタグから同じ中身を作り直せるため。ZIP の中を `lucivo-v<版>/` のフォルダに入れるのは、展開したときにファイルが散らばらず、版の違うものを並べて置けるため
+- 背景: 利用者に要るのは配布物の `public/` だけで、`doc/`・`tests/`・`tools/` は要らない（1 章）。GitHub が自動で添付するソースコードの ZIP はリポジトリ全体を含むため、別に配布用の ZIP を添付する。`git archive` でタグから作るのは、作業ツリーの未コミットの変更や `work/` などの不要なファイルが混ざらず、同じタグから同じ中身を作り直せるため。ZIP の中を `Lucivo-v<版>/` のフォルダに入れるのは、展開したときにファイルが散らばらず、版の違うものを並べて置けるため

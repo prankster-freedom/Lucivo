@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.5.1`
+- **Version**: `0.6.0`
 
 Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラムを表示する、ブラウザだけで動く Markdown ビューアーです。いつもの Markdown をそのまま開くだけで、2 つの見せ方を切り替えられます。
 
@@ -33,7 +33,7 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
 
 ## はじめかた
 
-1. [GitHub Releases の最新版](https://github.com/prankster-freedom/Lucivo/releases/latest)から `lucivo-v<版>.zip` をダウンロードして展開し、`lucivo-v<版>` フォルダの中の `index.html` をブラウザで開きます。
+1. [GitHub Releases の最新版](https://github.com/prankster-freedom/Lucivo/releases/latest)から `Lucivo-v<版>.zip` をダウンロードして展開し、`Lucivo-v<版>` フォルダの中の `index.html` をブラウザで開きます。
 2. ヘッダーの「開く」→「ファイルを開く…」で、Markdown ファイル（`.md` / `.markdown` / `.txt`）を読み込みます。文字コード（UTF-8・Shift_JIS・EUC-JP など）と改行コードは自動で判定します。保存は UTF-8 になります。ファイルをウィンドウにドラッグ&ドロップしても開けます。
    - 「開く」→「フォルダを開く…」でフォルダを選ぶか、フォルダをウィンドウにドラッグ&ドロップすると、中の Markdown ファイルを左の一覧から開けます。この方法で開いた文書は、相対パス（`images/a.png`）の画像も表示でき、文書の中の別の Markdown へのリンク（`[概要](overview.md)`）も Lucivo の中で開けます。一覧は `«` で隠せます。
 3. ヘッダー中央の「高速モード」「Visualモード」で見せ方を切り替えます。
@@ -169,6 +169,12 @@ Visualモードに切り替えると、上部にスタイルバーが現れ、4 
 [MIT License](LICENSE)。同梱のライブラリとフォントのライセンスは [public/THIRD_PARTY_LICENSES.txt](public/THIRD_PARTY_LICENSES.txt) にあります。
 
 ## リリースノート
+
+### 0.6.0（2026-11-12）
+
+- feat(file): フォルダのドラッグ&ドロップでの読み込みに対応する
+- fix(diagram): Mermaidノードの長いラベルにおける文字切れを防ぐ
+- fix(diagram): Mermaidの図に書いたstyle/classDef/linkStyle指定の上書きを防ぐ
 
 ### 0.5.1（2026-11-11）
 
