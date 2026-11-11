@@ -102,25 +102,38 @@ sequenceDiagram
   participant Win as window
   participant Overlay as drop-overlay
   participant App as app.js
-  User->>Win: ファイルをウィンドウの上へドラッグ（dragenter）
+  participant FSA as File System Access API
+  User->>Win: ファイルまたはフォルダをウィンドウの上へドラッグ（dragenter）
   Win->>Overlay: is-shown を付ける（入った回数 + 1）
   User->>Win: ウィンドウの外へ出る（dragleave）
   Win->>Overlay: 入った回数が 0 になったら is-shown を外す
-  User->>Win: ファイルを落とす（drop）
+  User->>Win: ファイルまたはフォルダを落とす（drop）
   Win->>Overlay: is-shown を外す（入った回数を 0 に戻す）
-  alt 開ける拡張子のファイルがある
+  alt フォルダがドロップされた場合（Chromium: getAsFileSystemHandle）
+    Win->>FSA: getAsFileSystemHandle()
+    FSA-->>App: ディレクトリハンドル
+    App->>App: openFolderFromHandle()（DD-FILE-070 と同じ）
+    App->>App: saveRecentFolderHandle()
+  else フォルダがドロップされた場合（WebKit / Firefox: webkitGetAsEntry）
+    Win->>App: webkitGetAsEntry()
+    App->>App: scanEntryDirectory()（再帰的にファイルを収集）
+    App->>App: setOpenedFolder(makeInputFolder(files))
+  else 開ける拡張子のファイルがある
     Win->>App: loadMarkdownFile（開ける 1 つ目）
     App-->>User: DD-FILE-010 と同じ（確認ダイアログ、読み込み、読み取り専用）
-  else ない
-    Win-->>User: トースト「開けるのは .md / .markdown / .txt のファイルです」
+  else 開けるものがない
+    Win-->>User: トースト「開けるのは .md / .markdown / .txt のファイルまたはフォルダです」
   end
 ```
 
 - **受け付ける場所**: `setupFileDrop()` で、`window` の `dragenter`・`dragover`・`dragleave`・`drop` を受け取る。どの要素の上に落としても開くよう、要素ごとには受け付けない。
-- **ファイルのドラッグだけ扱う**: `dataTransfer.types` に `Files` を含むときだけ処理する。エディタの中での文字のドラッグなど、ファイルでないドラッグは、ブラウザ標準の動作のままにする。
-- **既定の動作を止める**: `dragover` と `drop` で `preventDefault()` を呼ぶ。`dragover` で止めないと `drop` が起きず、`drop` で止めないとブラウザがファイルをそのまま開いて Lucivo の画面から移る。`dragover` では `dropEffect` を `copy` にする。
-- **表示の出し入れ**: 子要素の間を動くと、新しい要素の `dragenter` の後に、前の要素の `dragleave` が起きる。`dragenter` で 1 増やし、`dragleave` で 1 減らして、0 になったとき（ウィンドウの外へ出たとき）だけ表示を消す。
-- **開けるファイル**: ファイル名が `DROPPABLE_FILE_PATTERN`（`.md` / `.markdown` / `.txt`。大文字・小文字を区別しない）に合うもののうち、1 つ目を `loadMarkdownFile()` に渡す。ファイル選択（DD-FILE-003）の `accept` と同じ拡張子にする。拡張子で判定するのは、`.md` の MIME タイプ（`File.type`）が OS とブラウザによって空になるため。
+- **ファイルやフォルダのドラッグだけ扱う**: `dataTransfer.types` に `Files` を含むときだけ処理する。エディタの中での文字のドラッグなど、ファイルでないドラッグは、ブラウザ標準の動作のままにする。
+- **既定の動作を止める**: `dragover` と `drop` で `preventDefault()` を呼ぶ。`dragover` で止めないと `drop` が起きず、`drop` で止めないとブラウザがファイルやフォルダをそのまま開いて Lucivo の画面から移る。`dragover` では `dropEffect` を `copy` にする。
+- **表示の出し入れ**: 子要素の間を動くと、新しい要素の `dragenter` の後に、前の要素の `dragleave` が起きる。`dragenter` で 1 増やし、`dragleave` で 1 減らして、0 になったとき（ウィンドウの外へ出たとき）だけ表示を消す。表示パネルの文言は「ファイルまたはフォルダをドロップして開く」。
+- **フォルダの判定と優先**: `dataTransfer.items` を走査し、Chromium では `item.getAsFileSystemHandle()`（`handle.kind === 'directory'`）、WebKit / Firefox 等では `item.webkitGetAsEntry()`（`entry.isDirectory`）でフォルダを検出する。ファイルとフォルダが一緒に落とされたときは、フォルダを優先して開く（フォルダ内に関連ファイルが含まれている可能性が高いため）。
+  - Chromium の場合はハンドルから直接 `openFolderFromHandle()` を実行し、前回のフォルダ（IndexedDB）にも記憶する。
+  - WebKit / Firefox の場合は `scanEntryDirectory()` でディレクトリ内を再帰走査（`isSkippedFolderName` で隠しフォルダ等を除外）し、`makeInputFolder()` 経由で開く。
+- **開けるファイル**: フォルダがない場合、ファイル名が `DROPPABLE_FILE_PATTERN`（`.md` / `.markdown` / `.txt`。大文字・小文字を区別しない）に合うもののうち、1 つ目を `loadMarkdownFile()` に渡す。ファイル選択（DD-FILE-003）の `accept` と同じ拡張子にする。拡張子で判定するのは、`.md` の MIME タイプ（`File.type`）が OS とブラウザによって空になるため。
 
 ### DD-FILE-070 フォルダを開く（`FR-044`）
 
