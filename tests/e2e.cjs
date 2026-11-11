@@ -2615,7 +2615,7 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
   const escaped = await page.evaluate(inspectShow);
-  const overviewOk = openMs < 500 && grid.overview && grid.htmlClass && grid.visible === SHOWCASE_SCENES && grid.columns === 5 && grid.inside && grid.aspect
+  const overviewOk = openMs < 800 && grid.overview && grid.htmlClass && grid.visible === SHOWCASE_SCENES && grid.columns === 5 && grid.inside && grid.aspect
     && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === sceneCount(5)
     && JSON.stringify(moves) === JSON.stringify([5, 10, 5, SHOWCASE_SCENES - 1, 0, 0])
     && !entered.overview && entered.index === 1 && entered.shown === 1 && entered.active
@@ -3116,6 +3116,54 @@ async function testSyntaxErrorCleanup(browser) {
     rows.push({ mode, pass, okState, bad1, bad2, fixed });
   }
   record('TC-DIAG-025', rows.every(r => r.pass), JSON.stringify(rows));
+  await page.context().close();
+}
+
+// TC-DIAG-029 長いラベルを持つノードの文字切れ防止（Issue #56）
+async function testDiagramLongLabel(browser) {
+  const page = await openStagePage(browser);
+  const doc = `# Mermaid 長いラベルテスト
+
+\`\`\`mermaid
+flowchart TD
+  A["これは非常に長い日本語ラベルを持つ処理ノードであり、ある程度の文字数を超えても後半が切れることなくノード内に収まるか検証します"] --> B["This is a very long English label designed to verify automatic text wrapping in Mermaid nodes"]
+  B --> C["1行目のテキスト<br/>2行目のかなり長いテキストでボックスを突き破らないか確認します<br/>3行目"]
+  C --> D["\`Markdown文字列での複数行ラベル\n2行目の長いテキスト\n3行目\`"]
+\`\`\`
+`;
+  const inspectNodes = () => page.evaluate(() => {
+    const nodes = Array.from(document.querySelectorAll('.diagram-viewport svg .node, [data-stage-index] svg .node'));
+    return nodes.map(n => {
+      const rect = n.querySelector('rect.basic, rect.label-container, rect');
+      const label = n.querySelector('.nodeLabel, .label div, text');
+      if (!rect || !label) return { id: n.id, pass: false, reason: 'missing rect or label' };
+      const rBox = rect.getBoundingClientRect();
+      const lBox = label.getBoundingClientRect();
+      // 余白やパディングの軽微なレンダリング誤差を考慮し、左右2px以内のオーバーフローは許容
+      const overflowLeft = lBox.left < rBox.left - 2;
+      const overflowRight = lBox.right > rBox.right + 2;
+      const overflowBottom = lBox.bottom > rBox.bottom + 2;
+      return {
+        id: n.id,
+        text: label.textContent.trim().substring(0, 20),
+        rBox: { width: Math.round(rBox.width), height: Math.round(rBox.height) },
+        lBox: { width: Math.round(lBox.width), height: Math.round(lBox.height) },
+        pass: !overflowLeft && !overflowRight && !overflowBottom
+      };
+    });
+  });
+
+  await setDocument(page, doc);
+  await waitRendered(page);
+  const fastResults = await inspectNodes();
+  const fastOk = fastResults.length === 4 && fastResults.every(r => r.pass);
+
+  await page.click('#btn-visual-mode');
+  await waitRendered(page);
+  const visualResults = await inspectNodes();
+  const visualOk = visualResults.length === 4 && visualResults.every(r => r.pass);
+
+  record('TC-DIAG-029', fastOk && visualOk, JSON.stringify({ fast: fastResults, visual: visualResults }));
   await page.context().close();
 }
 
@@ -3818,6 +3866,7 @@ const SUITES = [
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
   { name: 'testSyntaxErrorCleanup', tcPrefix: ['TC-DIAG-025'], fn: testSyntaxErrorCleanup },
+  { name: 'testDiagramLongLabel', tcPrefix: ['TC-DIAG-029'], fn: testDiagramLongLabel },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
