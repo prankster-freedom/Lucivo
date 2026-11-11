@@ -21,26 +21,26 @@ jobs:
   changes:
     timeout-minutes: 5
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
     outputs:
       e2e: ${{ steps.filter.outputs.e2e }}
     steps:
     - uses: actions/checkout@v7
       with:
         fetch-depth: 0
+    - uses: actions/setup-node@v7
+      with:
+        node-version: lts/*
     - id: filter
       env:
         BASE: ${{ github.event.pull_request.base.sha }}
-      run: |
-        if ! files=$(git diff --name-only "$BASE" "$GITHUB_SHA"); then
-          echo "e2e=true" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
-        rest=$(printf '%s\n' "$files" | grep -Pv '^(doc/|\.claude/|\.agent/|\.github/(?!workflows/)|[^/]+\.md$)' || true)
-        if [ -n "$rest" ]; then
-          echo "e2e=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "e2e=false" >> "$GITHUB_OUTPUT"
-        fi
+        HEAD: ${{ github.sha }}
+        BEFORE: ${{ github.event.before }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: node tools/check-ci-changes.cjs
   test:
     needs: changes
     # changes の成否にかかわらず test ジョブを実行して必須チェックを満たす
