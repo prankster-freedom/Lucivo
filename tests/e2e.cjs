@@ -3335,6 +3335,139 @@ async function testTitleAndDrop(browser) {
   const shownForText = await overlayShown();
   record('TC-FILE-019', rejected.editor === '# そのまま\n' && /\.md/.test(rejected.toast) && !shownForText && page.consoleErrors.length === 0,
     JSON.stringify({ ...rejected, shownForText, errors: page.consoleErrors }));
+
+  // TC-FILE-032 フォルダのドラッグ&ドロップ（Chromium: File System Access API / WebKit: webkitGetAsEntry フォールバック / 同時ドロップ優先）
+  await page.evaluate(() => {
+    const file = (name, text, type) => ({ kind: 'file', name, getFile: async () => new File([text], name, { type }) });
+    const dir = (name, children) => ({
+      kind: 'directory', name,
+      async *entries() { for (const c of children) yield [c.name, c]; },
+      async getDirectoryHandle(n) { const c = children.find(x => x.name === n && x.kind === 'directory'); if (!c) throw new DOMException('', 'NotFoundError'); return c; },
+      async getFileHandle(n) { const c = children.find(x => x.name === n && x.kind === 'file'); if (!c) throw new DOMException('', 'NotFoundError'); return c; }
+    });
+    window.__fakeHandleDir = dir('ドロップ資料', [
+      file('README.md', '# ドロップフォルダのREADME\n', 'text/markdown'),
+      file('note.txt', 'テキストメモ', 'text/plain')
+    ]);
+    window.__origGetAsFileSystemHandle = DataTransferItem.prototype.getAsFileSystemHandle;
+    window.__origWebkitGetAsEntry = DataTransferItem.prototype.webkitGetAsEntry;
+    DataTransferItem.prototype.getAsFileSystemHandle = async function() {
+      return window.__mockHandle !== undefined ? window.__mockHandle : (window.__origGetAsFileSystemHandle ? window.__origGetAsFileSystemHandle.call(this) : null);
+    };
+    DataTransferItem.prototype.webkitGetAsEntry = function() {
+      return window.__mockEntry !== undefined ? window.__mockEntry : (window.__origWebkitGetAsEntry ? window.__origWebkitGetAsEntry.call(this) : null);
+    };
+    window.__mockHandle = window.__fakeHandleDir;
+    window.__mockEntry = null;
+  });
+
+  const dtFolderHandle = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([''], 'placeholder.txt'));
+    return dt;
+  });
+
+  await page.dispatchEvent('#preview-scroll', 'drop', { dataTransfer: dtFolderHandle });
+  await page.waitForFunction(() => openedFolder && openedFolder.name === 'ドロップ資料');
+  const handleDropState = await page.evaluate(() => ({
+    opened: !!openedFolder,
+    name: openedFolder ? openedFolder.name : null,
+    files: openedFolder ? openedFolder.files.map(f => f.name) : [],
+    paneShown: !document.getElementById('folder-pane').classList.contains('hidden'),
+    toast: document.getElementById('toast-message').textContent
+  }));
+
+  // 一旦フォルダを閉じる
+  await page.click('#btn-folder-close');
+  await page.waitForTimeout(200);
+
+  // WebKit 方式（webkitGetAsEntry）のフォルダドロップ
+  await page.evaluate(() => {
+    window.__mockHandle = null; // getAsFileSystemHandle を null にしてフォールバックさせる
+    window.__mockEntry = {
+      isFile: false,
+      isDirectory: true,
+      name: 'エントリフォルダ',
+      createReader() {
+        let read = false;
+        return {
+          readEntries(resolve) {
+            if (read) return resolve([]);
+            read = true;
+            resolve([
+              {
+                isFile: true,
+                isDirectory: false,
+                name: 'index.md',
+                file(cb) { cb(new File(['# Entry Index'], 'index.md', { type: 'text/markdown' })); }
+              }
+            ]);
+          }
+        };
+      }
+    };
+  });
+
+  const dtFolderEntry = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([''], 'placeholder.txt'));
+    return dt;
+  });
+
+  await page.dispatchEvent('#preview-scroll', 'drop', { dataTransfer: dtFolderEntry });
+  await page.waitForFunction(() => openedFolder && openedFolder.name === 'エントリフォルダ');
+  const entryDropState = await page.evaluate(() => ({
+    opened: !!openedFolder,
+    name: openedFolder ? openedFolder.name : null,
+    files: openedFolder ? openedFolder.files.map(f => f.name) : [],
+    paneShown: !document.getElementById('folder-pane').classList.contains('hidden'),
+    toast: document.getElementById('toast-message').textContent
+  }));
+
+  // フォルダとファイルが同時にドロップされたときはフォルダが優先される
+  await page.click('#btn-folder-close');
+  await page.waitForTimeout(200);
+
+  await page.evaluate(() => {
+    const file = (name, text, type) => ({ kind: 'file', name, getFile: async () => new File([text], name, { type }) });
+    const dir = (name, children) => ({
+      kind: 'directory', name,
+      async *entries() { for (const c of children) yield [c.name, c]; },
+      async getDirectoryHandle(n) { const c = children.find(x => x.name === n && x.kind === 'directory'); if (!c) throw new DOMException('', 'NotFoundError'); return c; },
+      async getFileHandle(n) { const c = children.find(x => x.name === n && x.kind === 'file'); if (!c) throw new DOMException('', 'NotFoundError'); return c; }
+    });
+    window.__mockHandle = dir('同時ドロップフォルダ', [file('doc.md', '# Doc', 'text/markdown')]);
+    window.__mockEntry = null;
+  });
+
+  const dtMixed = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.items.add(new File(['# Single'], 'single-file.md', { type: 'text/markdown' }));
+    return dt;
+  });
+
+  await page.dispatchEvent('#preview-scroll', 'drop', { dataTransfer: dtMixed });
+  await page.waitForFunction(() => openedFolder && openedFolder.name === '同時ドロップフォルダ');
+  const mixedDropState = await page.evaluate(() => ({
+    opened: !!openedFolder,
+    name: openedFolder ? openedFolder.name : null
+  }));
+
+  // プロトタイプを元に戻す
+  await page.evaluate(() => {
+    DataTransferItem.prototype.getAsFileSystemHandle = window.__origGetAsFileSystemHandle;
+    DataTransferItem.prototype.webkitGetAsEntry = window.__origWebkitGetAsEntry;
+    delete window.__mockHandle;
+    delete window.__mockEntry;
+  });
+
+  const folderDropOk = handleDropState.opened && handleDropState.name === 'ドロップ資料'
+    && handleDropState.files.includes('README.md') && handleDropState.paneShown
+    && entryDropState.opened && entryDropState.name === 'エントリフォルダ'
+    && entryDropState.files.includes('index.md') && entryDropState.paneShown
+    && mixedDropState.opened && mixedDropState.name === '同時ドロップフォルダ';
+
+  record('TC-FILE-032', folderDropOk, JSON.stringify({ handleDropState, entryDropState, mixedDropState }));
   await page.context().close();
 }
 
@@ -3904,7 +4037,7 @@ async function testEncoding(browser) {
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
-  { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019'], fn: testTitleAndDrop },
+  { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },

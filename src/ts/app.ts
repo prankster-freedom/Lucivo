@@ -279,7 +279,7 @@ const EMPTY_GUIDE_HTML = `
     </a>
   </div>
   <h3 class="empty-guide-title">Markdown を開いてください</h3>
-  <p class="empty-guide-desc">ヘッダーの「開く」メニューから「ファイルを開く…」でローカルファイルを、「フォルダを開く…」でフォルダの Markdown を一覧から読み込むか、同梱の <code>Visualモードサンプル (visual-sample.md)</code> / <code>記法サンプル (notation_sample.md)</code> をワンクリックで開けます。左のエディタに直接入力することもできます。</p>
+  <p class="empty-guide-desc">Markdown ファイルは、ウィンドウにドラッグ&ドロップするだけで簡単に開けます。別の文書へのリンクや画像を含む文書は、フォルダごとドラッグ&ドロップすれば、左の一覧から開けて、リンクと画像も表示できます。ヘッダーの「開く」メニューから「ファイルを開く…」や「フォルダを開く…」、同梱の <code>Visualモードサンプル (visual-sample.md)</code> / <code>記法サンプル (notation_sample.md)</code> をワンクリックで開くことも、左のエディタに直接入力することもできます。</p>
   
   <div class="empty-guide-modes">
     <div class="empty-guide-card">
@@ -3031,7 +3031,7 @@ function setupFileMenu() {
   });
 }
 
-// ウィンドウのどこにファイルを落としても開く（FR-041, DD-FILE-060）。ドラッグ中だけ、受け付けの表示（#drop-overlay）を重ねる
+// ウィンドウのどこにファイルやフォルダを落としても開く（FR-041, DD-FILE-060）。ドラッグ中だけ、受け付けの表示（#drop-overlay）を重ねる
 function setupFileDrop() {
   const overlay = document.getElementById('drop-overlay');
   // 子要素への出入りでも dragenter / dragleave が起きるため、入った回数を数えて、ウィンドウの外へ出たときだけ消す
@@ -3059,18 +3059,70 @@ function setupFileDrop() {
     depth = Math.max(0, depth - 1);
     if (depth === 0) setShown(false);
   });
-  window.addEventListener('drop', event => {
+  window.addEventListener('drop', async event => {
     if (!hasFiles(event)) return;
     event.preventDefault();
     depth = 0;
     setShown(false);
-    const files = Array.from(event.dataTransfer.files || []);
-    const file = files.find(f => DROPPABLE_FILE_PATTERN.test(f.name));
-    if (!file) {
-      showToast('開けるのは .md / .markdown / .txt のファイルです');
+
+    const dt = event.dataTransfer;
+    if (!dt) return;
+
+    // 1. フォルダの検出（Chromium: getAsFileSystemHandle / その他: webkitGetAsEntry）
+    // ファイルとフォルダが一緒に落とされたときは、フォルダを優先して開く（関連ファイルを含む可能性が高いため）
+    const items = Array.from(dt.items || []);
+    let dirHandle = null;
+    let fallbackDirEntry = null;
+
+    for (const item of items) {
+      if (typeof item.getAsFileSystemHandle === 'function') {
+        try {
+          const handle = await item.getAsFileSystemHandle();
+          if (handle && handle.kind === 'directory') {
+            dirHandle = handle;
+            break;
+          }
+        } catch (_) {
+          // getAsFileSystemHandle が使えない/失敗した場合は webkitGetAsEntry に委ねる
+        }
+      }
+      if (!dirHandle && typeof item.webkitGetAsEntry === 'function') {
+        try {
+          const entry = item.webkitGetAsEntry();
+          if (entry && entry.isDirectory) {
+            fallbackDirEntry = entry;
+            break;
+          }
+        } catch (_) {
+          // 無視
+        }
+      }
+    }
+
+    if (dirHandle) {
+      await openFolderFromHandle(dirHandle);
+      saveRecentFolderHandle(dirHandle);
       return;
     }
-    // 複数のファイルを落としたときは、開ける 1 つ目だけを開く
+
+    if (fallbackDirEntry) {
+      try {
+        const files = await scanEntryDirectory(fallbackDirEntry);
+        setOpenedFolder(makeInputFolder(files));
+      } catch (err) {
+        console.error('Failed to read dropped folder entry:', err);
+        showToast(`「${fallbackDirEntry.name}」を読み込めませんでした`);
+      }
+      return;
+    }
+
+    // 2. フォルダでなければファイルを開く（複数落としたときは開ける 1 つ目）
+    const files = Array.from(dt.files || []);
+    const file = files.find(f => DROPPABLE_FILE_PATTERN.test(f.name));
+    if (!file) {
+      showToast('開けるのは .md / .markdown / .txt のファイルまたはフォルダです');
+      return;
+    }
     loadMarkdownFile(file);
   });
 }
@@ -3205,6 +3257,42 @@ function makeInputFolder(fileList) {
       return all.get(path) || null;
     }
   };
+}
+
+// webkitGetAsEntry() のエントリ（フォルダ）からファイルを再帰的に集める（DD-FILE-060）
+async function scanEntryDirectory(rootEntry) {
+  const files = [];
+  const walk = async (dirEntry, prefix, depth) => {
+    const reader = dirEntry.createReader();
+    const readBatch = () => new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+    while (true) {
+      if (files.length >= FOLDER_FILE_LIMIT) break;
+      const entries = await readBatch();
+      if (!entries || !entries.length) break;
+      for (const ent of entries) {
+        if (files.length >= FOLDER_FILE_LIMIT) break;
+        const path = prefix ? `${prefix}/${ent.name}` : ent.name;
+        if (ent.isDirectory) {
+          if (!isSkippedFolderName(ent.name) && depth < FOLDER_DEPTH_LIMIT) {
+            await walk(ent, path, depth + 1);
+          }
+        } else if (ent.isFile) {
+          const file = await new Promise((resolve, reject) => ent.file(resolve, reject));
+          try {
+            Object.defineProperty(file, 'webkitRelativePath', {
+              value: `${rootEntry.name}/${path}`,
+              configurable: true
+            });
+          } catch (_) {
+            file.webkitRelativePath = `${rootEntry.name}/${path}`;
+          }
+          files.push(file);
+        }
+      }
+    }
+  };
+  await walk(rootEntry, '', 0);
+  return files;
 }
 
 function getFolderImageUrl(folder, path) {
