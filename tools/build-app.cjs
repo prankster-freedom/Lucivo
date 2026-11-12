@@ -1,5 +1,7 @@
 const path = require('path');
 const esbuild = require('esbuild');
+// 起動時の案内に表示し、更新の確認で比べる版（FR-049）。package.json の version を正とする
+const { version } = require('../package.json');
 
 const isProd = process.argv.includes('--prod');
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -18,7 +20,8 @@ async function build() {
     sourcemap: !isProd ? 'inline' : false,
     minify: isProd,
     charset: 'utf8',
-    legalComments: 'inline'
+    legalComments: 'inline',
+    define: { __LUCIVO_VERSION__: JSON.stringify(version) }
   });
 
   // Build CSS

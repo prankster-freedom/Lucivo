@@ -4,6 +4,7 @@ import { fnv1aHash } from './utils/hash';
 import { downloadBlob } from './utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
 import { showToast, updateStatus } from './ui/toast';
+import { setupUpdateCheck, applyUpdateCheckState } from './ui/update-check';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
 import { ALERT_LABELS, decorateAlerts } from './markdown/callouts';
@@ -298,6 +299,7 @@ const EMPTY_GUIDE_HTML = `
 
   <p class="empty-guide-footer">💡 画面上部の <strong>[ 高速モード | Visualモード ]</strong> や <strong>[ 発表 ]</strong> ボタンからいつでもワンクリックで体験できます。キーボードの <kbd class="kbd-key">?</kbd> キーでショートカット一覧を表示できます。</p>
   <p class="empty-guide-latest">最新版はこちら: <a ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
+  <p class="empty-guide-update">Lucivo <span class="update-check-version"></span> <button type="button" class="btn-check-update">更新を確認</button> <span class="update-check-result" role="status" aria-live="polite"></span></p>
 </div>`;
 
 const state = {
@@ -2287,6 +2289,7 @@ function renderApp() {
   }
 
   const activeContainer = isVisual ? visContainer : stdContainer;
+  if (isEmpty) applyUpdateCheckState(activeContainer);
   wrapTables(activeContainer);
   resolveFolderImages(activeContainer);
   renderMath(activeContainer);
@@ -3641,6 +3644,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupFileMenu();
   setupFileDrop();
   setupFolder();
+  setupUpdateCheck();
   setupDiagramPanZoom();
   setupLocalImages();
   setupFrontMatterToggle();
