@@ -186,17 +186,98 @@ async function testFileLoading(browser) {
     await page.evaluate(() => renderApp());
     await waitRendered(page);
     const afterRender = await guideState();
+
+    // ヘッダー常設のヘルプリンクと「最新版確認」メニューおよび右側ボタンの配置順（#74）
+    const helpAttr = await page.evaluate(() => {
+      const a = document.getElementById('btn-header-help');
+      const u = document.getElementById('btn-header-update');
+      const m = document.getElementById('update-menu');
+      const mi = document.getElementById('menu-check-update');
+      const tools = [
+        document.getElementById('btn-open-settings'),
+        document.getElementById('btn-toggle-animation'),
+        document.getElementById('btn-front-matter'),
+        document.getElementById('btn-theme-toggle'),
+        u,
+        a
+      ].filter(Boolean);
+      const rightToLeftIds = tools
+        .slice()
+        .sort((x, y) => y.getBoundingClientRect().right - x.getBoundingClientRect().right)
+        .map(el => el.id);
+      const uRect = u ? u.getBoundingClientRect() : null;
+      const uSpan = document.getElementById('header-update-label');
+      const uSvg = u ? u.querySelector('svg') : null;
+      return {
+        helpHref: a ? a.getAttribute('href') : null,
+        helpTarget: a ? a.getAttribute('target') : null,
+        helpRel: a ? a.getAttribute('rel') : null,
+        updateText: uSpan ? uSpan.textContent.trim() : '',
+        updateMenuHiddenInitially: m ? m.classList.contains('hidden') : null,
+        menuItemText: mi ? mi.textContent.trim() : '',
+        updateIconAfterText: !!(uSpan && uSvg && uSpan.getBoundingClientRect().right <= uSvg.getBoundingClientRect().left + 1),
+        updateSingleLine: !!(uRect && uRect.height <= 36),
+        rightToLeftIds
+      };
+    });
+    // 親ボタン「最新版確認」クリックだけではメニューが開くのみで通信は発生しない
+    await page.click('#btn-header-update');
+    const menuOpenedNoNet = await page.evaluate(() => ({
+      opened: !document.getElementById('update-menu').classList.contains('hidden'),
+      expanded: document.getElementById('btn-header-update').getAttribute('aria-expanded'),
+      itemVisible: document.getElementById('menu-check-update').offsetParent !== null
+    }));
+    const reqsAfterMenuOpen = apiRequests.length;
+
+    // メニューの「通信が発生します」をクリック → 更新あり（99.0.0）なら「更新あり」に変わる
+    reply = route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tag_name: 'lucivo-v99.0.0', html_url: 'https://github.com/prankster-freedom/Lucivo/releases/tag/lucivo-v99.0.0' }) });
+    await page.click('#menu-check-update');
+    await page.waitForFunction(() => {
+      const l = document.getElementById('header-update-label');
+      return l && l.textContent.trim() === '更新あり';
+    }, null, { timeout: 5000 }).catch(() => {});
+    const afterNewerHeader = await page.evaluate(() => ({
+      label: (document.getElementById('header-update-label') || {}).textContent?.trim() || '',
+      menuClosed: document.getElementById('update-menu').classList.contains('hidden'),
+      active: document.getElementById('btn-header-update').classList.contains('is-active')
+    }));
+
+    // 再度メニューを開き「通信が発生します」クリック → 更新なし（現行版）なら「更新なし」に変わる
+    await page.click('#btn-header-update');
+    reply = route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tag_name: `lucivo-v${appVersion}`, html_url: 'https://github.com/prankster-freedom/Lucivo/releases' }) });
+    await page.click('#menu-check-update');
+    await page.waitForFunction(() => {
+      const l = document.getElementById('header-update-label');
+      return l && l.textContent.trim() === '更新なし';
+    }, null, { timeout: 5000 }).catch(() => {});
+    const afterLatestHeader = await page.evaluate(() => ({
+      label: (document.getElementById('header-update-label') || {}).textContent?.trim() || '',
+      toast: (document.getElementById('toast-message') || {}).textContent || '',
+      active: document.getElementById('btn-header-update').classList.contains('is-active')
+    }));
+
     await page.unroute(api);
     page.off('request', onRequest);
     // 失敗の場合を模した応答（500）は、ブラウザ自身が読み込みの失敗をコンソールに出すため、TC-FILE-007 の対象から除く
     page.consoleErrors = page.consoleErrors.filter(e => !e.includes('status of 500'));
+    const expectedRightOrder = 'btn-header-help,btn-header-update,btn-theme-toggle,btn-front-matter,btn-toggle-animation,btn-open-settings';
     record('TC-FILE-034',
       before.version === appVersion && before.hasButton && !before.state && requestsBefore === 0
       && newer.state === 'newer' && newer.text.includes('99.0.0') && newer.href === 'https://github.com/prankster-freedom/Lucivo/releases/tag/lucivo-v99.0.0' && newer.target === '_blank'
       && latest.state === 'latest' && latest.text.includes('最新版です') && latest.text.includes(appVersion)
       && failed.state === 'error' && failed.text.includes('確認できませんでした')
-      && afterRender.state === 'error' && apiRequests.length === 3,
-      JSON.stringify({ appVersion, before, requestsBefore, newer, latest, failed, afterRender, requests: apiRequests.length }));
+      && afterRender.state === 'error'
+      && helpAttr.helpHref === 'https://github.com/prankster-freedom/Lucivo/blob/main/README.md'
+      && helpAttr.helpTarget === '_blank' && helpAttr.helpRel === 'noopener noreferrer'
+      && helpAttr.updateText === '最新版確認' && helpAttr.updateMenuHiddenInitially === true
+      && helpAttr.menuItemText === '通信が発生します' && helpAttr.updateIconAfterText && helpAttr.updateSingleLine
+      && helpAttr.rightToLeftIds.join(',') === expectedRightOrder
+      && menuOpenedNoNet.opened && menuOpenedNoNet.expanded === 'true' && menuOpenedNoNet.itemVisible
+      && reqsAfterMenuOpen === 3
+      && afterNewerHeader.label === '更新あり' && afterNewerHeader.menuClosed && afterNewerHeader.active
+      && afterLatestHeader.label === '更新なし' && afterLatestHeader.toast.includes('最新版です') && !afterLatestHeader.active
+      && apiRequests.length === 5,
+      JSON.stringify({ appVersion, before, requestsBefore, newer, latest, failed, afterRender, helpAttr, menuOpenedNoNet, reqsAfterMenuOpen, afterNewerHeader, afterLatestHeader, requests: apiRequests.length }));
   }
 
   // TC-FILE-013 起動直後は編集でき、読み込む前の保存名は untitled.md
@@ -334,6 +415,97 @@ async function testFileLoading(browser) {
 
   record('TC-FILE-007', page.url().startsWith('file://') && page.consoleErrors.length === 0, `url=${page.url().slice(0, 40)}... consoleErrors=${JSON.stringify(page.consoleErrors)}`);
   await page.close();
+}
+
+// TC-FILE-035: 公開 URL パラメータ（?url=... / #url=...）からの Markdown 読み込み（FR-050, DD-FILE-087）
+async function testUrlLoading(browser) {
+  const sjisBuf = fs.readFileSync(path.join(__dirname, 'fixtures', 'encoding', 'sjis-lf.md'));
+  const sjisExpected = fs.readFileSync(path.join(__dirname, 'fixtures', 'encoding', 'source.md'), 'utf8').replace(/\r\n?/g, '\n');
+
+  const routeHandler = route => {
+    const u = route.request().url();
+    if (u === 'https://example.com/docs/guide.md') {
+      return route.fulfill({
+        status: 200,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' },
+        body: '# Remote Guide\n\nLoaded via URL parameter.\n'
+      });
+    }
+    if (u === 'https://example.com/docs/sjis_note.md') {
+      return route.fulfill({
+        status: 200,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown' },
+        body: sjisBuf
+      });
+    }
+    return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Not Found' });
+  };
+
+  // 1) ?url=... での UTF-8 読み込み
+  const ctx1 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const p1 = await ctx1.newPage();
+  p1.consoleErrors = [];
+  p1.on('console', m => { if (m.type() === 'error') p1.consoleErrors.push(m.text().slice(0, 200)); });
+  p1.on('pageerror', e => p1.consoleErrors.push('pageerror: ' + e.message));
+  await p1.route('https://example.com/**', routeHandler);
+  await p1.goto(`${APP_URL}?url=${encodeURIComponent('https://example.com/docs/guide.md')}`);
+  await p1.waitForFunction(() => document.getElementById('markdown-editor') && document.getElementById('markdown-editor').value.includes('# Remote Guide'), null, { timeout: 10000 });
+  await waitRendered(p1);
+  const queryRes = await p1.evaluate(() => ({
+    val: document.getElementById('markdown-editor').value,
+    readOnly: document.getElementById('markdown-editor').readOnly,
+    title: document.title,
+    h1: (document.querySelector('#standard-doc-container h1') || {}).textContent || ''
+  }));
+  await ctx1.close();
+
+  // 2) #url=... での Shift_JIS 読み込み（decodeMarkdown 経由）
+  const ctx2 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const p2 = await ctx2.newPage();
+  await p2.route('https://example.com/**', routeHandler);
+  await p2.goto(`${APP_URL}#url=${encodeURIComponent('https://example.com/docs/sjis_note.md')}`);
+  await p2.waitForFunction(() => document.getElementById('markdown-editor') && document.getElementById('markdown-editor').value.length > 0, null, { timeout: 10000 });
+  await waitRendered(p2);
+  const hashRes = await p2.evaluate(() => ({
+    val: document.getElementById('markdown-editor').value,
+    readOnly: document.getElementById('markdown-editor').readOnly,
+    title: document.title
+  }));
+  await ctx2.close();
+
+  // 3) 不正スキーム（javascript:）では通信せず警告トーストを出す
+  const ctx3 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const p3 = await ctx3.newPage();
+  const blockedReqs = [];
+  p3.on('request', r => { if (!r.url().startsWith('file:')) blockedReqs.push(r.url()); });
+  await p3.goto(`${APP_URL}?url=${encodeURIComponent('javascript:alert(1)')}`);
+  await p3.waitForFunction(() => (document.getElementById('toast-message') || {}).textContent.includes('http://'), null, { timeout: 5000 }).catch(() => {});
+  const badScheme = await p3.evaluate(() => ({
+    toast: (document.getElementById('toast-message') || {}).textContent || '',
+    val: document.getElementById('markdown-editor').value
+  }));
+  await ctx3.close();
+
+  // 4) 404 エラー時は失敗トーストを出してクラッシュしない
+  const ctx4 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const p4 = await ctx4.newPage();
+  await p4.route('https://example.com/**', routeHandler);
+  await p4.goto(`${APP_URL}?url=${encodeURIComponent('https://example.com/missing.md')}`);
+  await p4.waitForFunction(() => (document.getElementById('toast-message') || {}).textContent.includes('読み込めませんでした'), null, { timeout: 5000 }).catch(() => {});
+  const errRes = await p4.evaluate(() => ({
+    toast: (document.getElementById('toast-message') || {}).textContent || '',
+    val: document.getElementById('markdown-editor').value
+  }));
+  await ctx4.close();
+
+  record('TC-FILE-035',
+    queryRes.val === '# Remote Guide\n\nLoaded via URL parameter.\n'
+    && queryRes.readOnly === true && queryRes.title === 'guide.md - Lucivo' && queryRes.h1 === 'Remote Guide'
+    && p1.consoleErrors.length === 0
+    && hashRes.val === sjisExpected && hashRes.readOnly === true && hashRes.title === 'sjis_note.md - Lucivo'
+    && blockedReqs.length === 0 && badScheme.val === '' && badScheme.toast.includes('http / https')
+    && errRes.val === '' && errRes.toast.includes('読み込めませんでした'),
+    JSON.stringify({ queryRes, hashTitle: hashRes.title, hashMatch: hashRes.val === sjisExpected, blockedReqs, badScheme, errRes, consoleErrors: p1.consoleErrors }));
 }
 
 async function testDiagramRendering(browser) {
@@ -2372,6 +2544,49 @@ async function testSignalLight(browser) {
       await page.locator('#visual-stage-container .exhibition-slab').nth(6).screenshot({ path: path.join(SHOT_DIR, `light-${style}-${appearance}-steps.png`) });
     }
   }
+  // TC-LIGHT-012 トグルボタンで全フローアニメーション（Canvas と手順リスト）を ON/OFF でき、モード切替でも保つ
+  await scrollToSlab(page, 1);
+  await page.waitForTimeout(300);
+  const toggleInspect = () => page.evaluate(() => {
+    const btn = document.getElementById('btn-toggle-animation');
+    const steps = document.querySelector('#visual-stage-container .vs-steps');
+    const stepLi = steps ? steps.querySelector('li') : null;
+    const chev = steps ? steps.querySelector('.vs-step-chevron') : null;
+    const canvases = Array.from(document.querySelectorAll('.signal-light-canvas'));
+    return {
+      pressed: btn ? btn.getAttribute('aria-pressed') : null,
+      offClass: document.documentElement.classList.contains('is-animation-off'),
+      enabled: LucivoStage.isLightsEnabled(),
+      canvases: canvases.length,
+      visibleCanvases: canvases.filter(c => getComputedStyle(c).display !== 'none').length,
+      cometDisplay: steps ? getComputedStyle(steps, '::after').display : null,
+      liDisplay: stepLi ? getComputedStyle(stepLi, '::after').display : null,
+      chevronAnim: chev ? getComputedStyle(chev).animationName : null
+    };
+  });
+  const animBefore = await toggleInspect();
+  await page.click('#btn-toggle-animation');
+  await page.waitForTimeout(250);
+  const animOff = await toggleInspect();
+  // Stage Show へ入っても OFF 状態を維持する
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
+  await page.waitForTimeout(250);
+  const animOffShow = await toggleInspect();
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(250);
+  // 再びクリックで ON に復帰する
+  await page.click('#btn-toggle-animation');
+  await page.waitForTimeout(350);
+  const animRestored = await toggleInspect();
+  record('TC-LIGHT-012',
+    animBefore.pressed === 'true' && !animBefore.offClass && animBefore.enabled && animBefore.visibleCanvases > 0 && animBefore.chevronAnim !== 'none'
+    && animOff.pressed === 'false' && animOff.offClass && !animOff.enabled && animOff.visibleCanvases === 0
+    && animOff.cometDisplay === 'none' && animOff.liDisplay === 'none' && animOff.chevronAnim === 'none'
+    && animOffShow.pressed === 'false' && animOffShow.offClass && !animOffShow.enabled && animOffShow.visibleCanvases === 0
+    && animRestored.pressed === 'true' && !animRestored.offClass && animRestored.enabled && animRestored.visibleCanvases > 0 && animRestored.chevronAnim !== 'none',
+    JSON.stringify({ animBefore, animOff, animOffShow, animRestored }));
+
   if (page.consoleErrors.length) record('TC-LIGHT-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 
@@ -2501,7 +2716,36 @@ async function testStageShow(browser) {
   const flowHead = await page.evaluate(inspectLightHead, { flowIndex: 0, edgeIndex: 2, t: 1.0 });
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-split.png') });
   await page.evaluate(() => LucivoStage.seekLights(null));
-  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100, JSON.stringify({ diagram, flowHead }));
+
+  // 横長最大化ブラウザ相当（1920x945）でも、意図的な長尺スライド（13〜15枚目 = index 12〜14）以外（11枚目の split 等）が 1 画面に収まる（#76）
+  const widePage = await openStagePage(browser, { viewport: { width: 1920, height: 945 } });
+  await setDocument(widePage, showcaseMd);
+  await widePage.click('#btn-stage-show');
+  await widePage.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
+  await waitRendered(widePage);
+  const wideOverflows = [];
+  for (let i = 0; i < SHOWCASE_SCENES; i++) {
+    if (i > 0) {
+      await widePage.keyboard.press('b');
+      await widePage.waitForFunction(() => document.documentElement.classList.contains('is-stage-curtain'), null, { timeout: 5000 });
+      await widePage.click(`[data-curtain-scene="${i}"]`);
+      await widePage.waitForFunction(target => !document.documentElement.classList.contains('is-stage-curtain') && LucivoStage.showState().index === target, i, { timeout: 5000 });
+    }
+    await widePage.waitForTimeout(180);
+    const st = await widePage.evaluate(() => {
+      const root = document.getElementById('visual-stage-container');
+      const cur = document.querySelector('#visual-stage-container .exhibition-wrap > .is-scene');
+      const h = cur ? ((cur.querySelector('h1, h2') || {}).textContent || '').trim().slice(0, 24) : '';
+      return { overflow: root.scrollHeight - root.clientHeight, h };
+    });
+    if (st.overflow > 0 && ![12, 13, 14].includes(i)) {
+      wideOverflows.push({ slide: i + 1, ...st });
+    }
+  }
+  await widePage.context().close();
+
+  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100 && wideOverflows.length === 0,
+    JSON.stringify({ diagram, flowHead, wideOverflows }));
 
   // TC-SHOW-004 画面に収まらない章は、次の章へ進む前に残りをスクロールする
   await pressUntil(page, () => document.getElementById('visual-stage-container').scrollHeight - innerHeight > 200);
@@ -4150,6 +4394,7 @@ async function testEncoding(browser) {
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015', 'TC-FILE-034'], fn: testFileLoading },
+  { name: 'testUrlLoading', tcPrefix: ['TC-FILE-035'], fn: testUrlLoading },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
