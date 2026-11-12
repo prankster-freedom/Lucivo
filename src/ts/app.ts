@@ -3068,34 +3068,43 @@ function setupFileDrop() {
     const dt = event.dataTransfer;
     if (!dt) return;
 
+    // ブラウザは、drop の処理の中で最初に await した後、dataTransfer の中身（items・files）を読めなくする。
+    // そのため、待つ前に、必要なものをすべて同期で取り出しておく（#69）。
+    // getAsFileSystemHandle() も、呼び出し（Promise の取得）だけは待つ前に済ませる
+    const items = Array.from(dt.items || []).filter(item => item.kind === 'file');
+    const droppedFiles = Array.from(dt.files || []);
+    const handlePromises = items.map(item => {
+      if (typeof item.getAsFileSystemHandle !== 'function') return Promise.resolve(null);
+      try {
+        return item.getAsFileSystemHandle().catch(() => null);
+      } catch (_) {
+        return Promise.resolve(null);
+      }
+    });
+    const entries = items.map(item => {
+      if (typeof item.webkitGetAsEntry !== 'function') return null;
+      try {
+        return item.webkitGetAsEntry();
+      } catch (_) {
+        return null;
+      }
+    });
+
     // 1. フォルダの検出（Chromium: getAsFileSystemHandle / その他: webkitGetAsEntry）
     // ファイルとフォルダが一緒に落とされたときは、フォルダを優先して開く（関連ファイルを含む可能性が高いため）
-    const items = Array.from(dt.items || []);
     let dirHandle = null;
     let fallbackDirEntry = null;
-
-    for (const item of items) {
-      if (typeof item.getAsFileSystemHandle === 'function') {
-        try {
-          const handle = await item.getAsFileSystemHandle();
-          if (handle && handle.kind === 'directory') {
-            dirHandle = handle;
-            break;
-          }
-        } catch (_) {
-          // getAsFileSystemHandle が使えない/失敗した場合は webkitGetAsEntry に委ねる
-        }
+    const handles = await Promise.all(handlePromises);
+    for (let i = 0; i < items.length; i++) {
+      const handle = handles[i];
+      if (handle && handle.kind === 'directory') {
+        dirHandle = handle;
+        break;
       }
-      if (!dirHandle && typeof item.webkitGetAsEntry === 'function') {
-        try {
-          const entry = item.webkitGetAsEntry();
-          if (entry && entry.isDirectory) {
-            fallbackDirEntry = entry;
-            break;
-          }
-        } catch (_) {
-          // 無視
-        }
+      const entry = entries[i];
+      if (!handle && entry && entry.isDirectory) {
+        fallbackDirEntry = entry;
+        break;
       }
     }
 
@@ -3116,9 +3125,8 @@ function setupFileDrop() {
       return;
     }
 
-    // 2. フォルダでなければファイルを開く（複数落としたときは開ける 1 つ目）
-    const files = Array.from(dt.files || []);
-    const file = files.find(f => DROPPABLE_FILE_PATTERN.test(f.name));
+    // 2. フォルダでなければファイルを開く（複数落としたときは開ける 1 つ目）。一覧は、待つ前に取り出したものを使う
+    const file = droppedFiles.find(f => DROPPABLE_FILE_PATTERN.test(f.name));
     if (!file) {
       showToast('開けるのは .md / .markdown / .txt のファイルまたはフォルダです');
       return;
