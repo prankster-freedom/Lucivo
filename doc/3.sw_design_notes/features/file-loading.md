@@ -260,9 +260,9 @@ sequenceDiagram
 
 ### DD-FILE-085 更新の確認の表示（`FR-049`）
 
-- 案内（`EMPTY_GUIDE_HTML`）の `.empty-guide-update` に、版の `.update-check-version`、ボタン `.btn-check-update`、結果の `.update-check-result`（`role="status"`、`aria-live="polite"`）を置く。
-- 案内は描画のたびに `innerHTML` で作り直すため、ボタンの押下は `document` の `click` で受け（`setupUpdateCheck()`）、結果はモジュールの変数に覚える。`renderApp()` は案内を描いた後に `applyUpdateCheckState(container)` で版と結果を書き戻す。
-- 結果の状態は `data-state` に入れる（`checking` / `newer` / `latest` / `error`）。確認中はボタンを押せなくする。
+- 案内（`EMPTY_GUIDE_HTML`）の `.empty-guide-update` に、版の `.update-check-version`、ボタン `.btn-check-update`、結果の `.update-check-result`（`role="status"`、`aria-live="polite"`）を置く。ヘッダー右側ツール群（`#header-right-tools`）には右端から、README へのヘルプリンク（`#btn-header-help`、`https://github.com/prankster-freedom/Lucivo/blob/main/README.md`）、「最新版確認」メニューボタン（`#btn-header-update`、更新アイコン付き）とメニュー内「通信が発生します」ボタン（`#menu-check-update`）＋結果表示欄（`#header-update-menu-result`）、Light / Dark 切替、YAML 切替、アニメーション切替の順で配置する。
+- 案内は描画のたびに `innerHTML` で作り直すため、確認ボタン（`.btn-check-update, #menu-check-update`）の押下は `document` の `click` で受け（`setupUpdateCheck()`）、結果はモジュールの変数に覚える。`#btn-header-update` は `HEADER_MENUS` のドロップダウンメニューとして開閉のみを行い（開いただけでは通信しない）、`renderApp()` は案内を描いた後に `applyUpdateCheckState(container)` で版・結果および `#header-update-label`（確認中:「確認中…」、更新あり:「更新あり」、最新版:「更新なし」、失敗・未確認:「最新版確認」）と `#btn-header-update` の状態を同期する。
+- 結果の状態は `data-state` に入れる（`checking` / `newer` / `latest` / `error`）。確認中はボタンを押せなくし、開始時・完了時にトーストでも結果を知らせる（ヘッダーから起動した場合も状態を把握できるようにするため）。
 
 ### DD-FILE-086 最新リリースの問い合わせ（`FR-049`）
 
@@ -270,3 +270,9 @@ sequenceDiagram
 - 応答の `tag_name`（`lucivo-v0.7.0` など）から `数字.数字.数字` を取り出し（`parseReleaseVersion()`）、`APP_VERSION` と数値で比べる（`compareVersions()`）。新しければ `html_url`（`https://github.com/` で始まるときだけ。それ以外はリリースの一覧）へのリンクを出す。
 - 応答が 200 以外、JSON を読めない、版を取り出せない、通信の失敗・打ち切りは、すべて `error` として扱う。
 - `Accept` だけを付けた GET は CORS の単純なリクエストで、事前の確認（preflight）は起きない。
+
+### DD-FILE-087 公開 URL パラメータからの読み込み（`FR-050`）
+
+- `ts/ui/url-loader.ts` が、`window.location.search` および `window.location.hash` から `url` パラメータを取り出す（`extractMarkdownUrlFromLocation()`）。指定がなければ一切通信せずに終了する（`NFR-008`）。
+- `validatePublicMarkdownUrl()` で `http:` / `https:` スキームのみ許可し、不正なスキーム（`javascript:`, `file:` 等）や URL 解析失敗時は外部通信を行わずトーストで警告を出す。
+- 取得時は 10 秒の `AbortController` 付き `fetch(url, { cache: 'no-store' })` で `ArrayBuffer` を取得し、`decodeMarkdown()`（`DD-FILE-082`）で文字コード・改行を正規化して `applyLoadedMarkdown()` で読み取り専用・タイトル設定（`ファイル名 - Lucivo`、`FR-040`）として開く。HTTP エラーや CORS・通信エラー時は読み込みに失敗した旨と CORS / ネットワーク確認を促すトーストを表示する。
