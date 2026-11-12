@@ -130,6 +130,7 @@ sequenceDiagram
 - **ファイルやフォルダのドラッグだけ扱う**: `dataTransfer.types` に `Files` を含むときだけ処理する。エディタの中での文字のドラッグなど、ファイルでないドラッグは、ブラウザ標準の動作のままにする。
 - **既定の動作を止める**: `dragover` と `drop` で `preventDefault()` を呼ぶ。`dragover` で止めないと `drop` が起きず、`drop` で止めないとブラウザがファイルやフォルダをそのまま開いて Lucivo の画面から移る。`dragover` では `dropEffect` を `copy` にする。
 - **表示の出し入れ**: 子要素の間を動くと、新しい要素の `dragenter` の後に、前の要素の `dragleave` が起きる。`dragenter` で 1 増やし、`dragleave` で 1 減らして、0 になったとき（ウィンドウの外へ出たとき）だけ表示を消す。表示パネルの文言は「ファイルまたはフォルダをドロップして開く」。
+- **待つ前に取り出す**: ブラウザは、`drop` の処理の中で最初に `await` した後、`dataTransfer` の中身（`items`・`files`）を読めなくする（空になる）。そのため、処理の最初で、待つ前に、ファイルの一覧（`files`）、各項目の `webkitGetAsEntry()` の結果、`getAsFileSystemHandle()` の呼び出し（Promise）をすべて取り出し、その後でまとめて待つ。待った後に `dataTransfer` を読むと、ファイルを落としても一覧が空になり、開けない（0.6.0 の不具合。#69）。
 - **フォルダの判定と優先**: `dataTransfer.items` を走査し、Chromium では `item.getAsFileSystemHandle()`（`handle.kind === 'directory'`）、WebKit / Firefox 等では `item.webkitGetAsEntry()`（`entry.isDirectory`）でフォルダを検出する。ファイルとフォルダが一緒に落とされたときは、フォルダを優先して開く（フォルダ内に関連ファイルが含まれている可能性が高いため）。
   - Chromium の場合はハンドルから直接 `openFolderFromHandle()` を実行し、前回のフォルダ（IndexedDB）にも記憶する。
   - WebKit / Firefox の場合は `scanEntryDirectory()` でディレクトリ内を再帰走査（`isSkippedFolderName` で隠しフォルダ等を除外）し、`makeInputFolder()` 経由で開く。
