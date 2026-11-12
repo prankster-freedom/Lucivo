@@ -5,6 +5,7 @@ import { downloadBlob } from './utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
 import { showToast, updateStatus } from './ui/toast';
 import { setupUpdateCheck, applyUpdateCheckState } from './ui/update-check';
+import { extractMarkdownUrlFromLocation, validatePublicMarkdownUrl, fetchMarkdownFromUrl } from './ui/url-loader';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
 import { ALERT_LABELS, decorateAlerts } from './markdown/callouts';
@@ -3676,6 +3677,26 @@ function setupAnimationToggle() {
   });
 }
 
+// 起動時の URL パラメータ（?url=... / #url=...）から公開 Markdown を読み込む（FR-050, #78）
+async function loadMarkdownFromUrlParam() {
+  const rawUrl = extractMarkdownUrlFromLocation(window.location.search, window.location.hash);
+  if (!rawUrl) return;
+  const validUrl = validatePublicMarkdownUrl(rawUrl);
+  if (!validUrl) {
+    showToast('URL から Markdown を読み込めませんでした（http / https の有効な URL を指定してください）', 4000);
+    return;
+  }
+  showToast('URL から Markdown を読み込んでいます…');
+  try {
+    const { buffer, fileName } = await fetchMarkdownFromUrl(validUrl);
+    const decoded = decodeMarkdown(buffer);
+    applyLoadedMarkdown(decoded.text, fileName, null, false, decoded.encoding);
+  } catch (err) {
+    console.error('Failed to fetch markdown from URL:', err);
+    showToast('URL から Markdown を読み込めませんでした。CORS 制限やネットワークをご確認ください', 4500);
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   document.querySelector('[data-view-mode="split"]').classList.add('is-active');
   setupEventListeners();
@@ -3693,6 +3714,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupMarkedHeadings();
   setupMermaid();
   renderApp();
+  loadMarkdownFromUrlParam();
 });
 
 // E2E テストおよび外部連携用グローバル公開
