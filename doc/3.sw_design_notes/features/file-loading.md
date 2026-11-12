@@ -252,3 +252,21 @@ sequenceDiagram
 - `applyLoadedMarkdown()` の第 5 引数 `encoding`（既定は `UTF-8`）を `currentFileEncoding` に入れる。改行コードは、ここでも `normalizeText()` で LF にそろえる（同梱サンプルを含め、エディタに入れる内容と `lastLoadedMarkdown` を一致させるため。DD-FILE-010 の編集中の判定）。
 - 読み込みのトースト: UTF-8 系（`isUtf8Family()`: `UTF-8`・`UTF-8 (BOM)`）なら「「名前」を読み込みました」、それ以外は「「名前」を 文字コード として読み込みました（保存は UTF-8 になります）」。
 - 保存のトースト: `currentFileEncoding` が UTF-8 系でなければ「「名前」を UTF-8 で保存しました（元は 文字コード）」。
+
+### DD-FILE-084 版の埋め込み（`FR-049`）
+
+- `tools/build-app.cjs` が、esbuild の `define` で `__LUCIVO_VERSION__` を `package.json` の `version` に置き換える。`ts/ui/update-check.ts` の `APP_VERSION` がこれを読む。
+- 版を変えたら `npm run build:prod` で `js/app.js` を作り直す。作り直し忘れは TC-FILE-034（表示の版と `package.json` の版の一致）で見つかる。
+
+### DD-FILE-085 更新の確認の表示（`FR-049`）
+
+- 案内（`EMPTY_GUIDE_HTML`）の `.empty-guide-update` に、版の `.update-check-version`、ボタン `.btn-check-update`、結果の `.update-check-result`（`role="status"`、`aria-live="polite"`）を置く。
+- 案内は描画のたびに `innerHTML` で作り直すため、ボタンの押下は `document` の `click` で受け（`setupUpdateCheck()`）、結果はモジュールの変数に覚える。`renderApp()` は案内を描いた後に `applyUpdateCheckState(container)` で版と結果を書き戻す。
+- 結果の状態は `data-state` に入れる（`checking` / `newer` / `latest` / `error`）。確認中はボタンを押せなくする。
+
+### DD-FILE-086 最新リリースの問い合わせ（`FR-049`）
+
+- `fetch(LATEST_RELEASE_API)` で最新リリースを取る。`Accept: application/vnd.github+json`、`cache: 'no-store'`。10 秒で `AbortController` により打ち切る。
+- 応答の `tag_name`（`lucivo-v0.7.0` など）から `数字.数字.数字` を取り出し（`parseReleaseVersion()`）、`APP_VERSION` と数値で比べる（`compareVersions()`）。新しければ `html_url`（`https://github.com/` で始まるときだけ。それ以外はリリースの一覧）へのリンクを出す。
+- 応答が 200 以外、JSON を読めない、版を取り出せない、通信の失敗・打ち切りは、すべて `error` として扱う。
+- `Accept` だけを付けた GET は CORS の単純なリクエストで、事前の確認（preflight）は起きない。
