@@ -3468,6 +3468,64 @@ async function testTitleAndDrop(browser) {
     && mixedDropState.opened && mixedDropState.name === '同時ドロップフォルダ';
 
   record('TC-FILE-032', folderDropOk, JSON.stringify({ handleDropState, entryDropState, mixedDropState }));
+
+  // TC-FILE-033 本物のドロップと同じく、drop の処理で最初に待った後に dataTransfer の中身が空になるときも、
+  // ファイルとフォルダを開ける（#69）。ページの中で作った DataTransfer は待った後も読めるため、読めなくなる形を模す
+  await page.evaluate(() => {
+    window.__protectedDrop = (files, mockHandle) => {
+      const dt = new DataTransfer();
+      files.forEach(f => dt.items.add(new File([f.text], f.name, { type: f.type })));
+      const realItems = Array.from(dt.items);
+      const realFiles = Array.from(dt.files);
+      let protectedMode = false;
+      const fake = {
+        types: ['Files'],
+        dropEffect: 'copy',
+        get items() { return protectedMode ? [] : realItems; },
+        get files() { return protectedMode ? [] : realFiles; }
+      };
+      const ev = new Event('drop', { bubbles: true, cancelable: true });
+      Object.defineProperty(ev, 'dataTransfer', { value: fake });
+      window.__mockHandle = mockHandle;
+      window.__mockEntry = null;
+      // drop の処理が最初に await した直後（同期の部分が終わった後）に、中身を読めなくする
+      queueMicrotask(() => { protectedMode = true; });
+      document.getElementById('preview-scroll').dispatchEvent(ev);
+    };
+    DataTransferItem.prototype.getAsFileSystemHandle = async function() {
+      return window.__mockHandle !== undefined ? window.__mockHandle : null;
+    };
+    DataTransferItem.prototype.webkitGetAsEntry = function() {
+      return window.__mockEntry !== undefined ? window.__mockEntry : null;
+    };
+  });
+  await page.evaluate(() => { document.getElementById('markdown-editor').value = ''; lastLoadedMarkdown = ''; });
+  await page.evaluate(() => window.__protectedDrop([{ name: 'protected.md', type: 'text/markdown', text: '# 保護されたドロップ\n' }], null));
+  const protectedFile = await page.waitForFunction(() => document.title === 'protected.md - Lucivo', null, { timeout: 3000 }).then(() => true, () => false);
+  const protectedFileState = await page.evaluate(() => ({
+    title: document.title,
+    editor: document.getElementById('markdown-editor').value,
+    toast: document.getElementById('toast-message').textContent
+  }));
+  await page.evaluate(() => {
+    const file = (name, text, type) => ({ kind: 'file', name, getFile: async () => new File([text], name, { type }) });
+    const dir = (name, children) => ({
+      kind: 'directory', name,
+      async *entries() { for (const c of children) yield [c.name, c]; },
+      async getDirectoryHandle(n) { const c = children.find(x => x.name === n && x.kind === 'directory'); if (!c) throw new DOMException('', 'NotFoundError'); return c; },
+      async getFileHandle(n) { const c = children.find(x => x.name === n && x.kind === 'file'); if (!c) throw new DOMException('', 'NotFoundError'); return c; }
+    });
+    window.__protectedDrop([{ name: 'placeholder.txt', type: 'text/plain', text: '' }], dir('保護フォルダ', [file('a.md', '# A', 'text/markdown')]));
+  });
+  const protectedFolder = await page.waitForFunction(() => openedFolder && openedFolder.name === '保護フォルダ', null, { timeout: 3000 }).then(() => true, () => false);
+  await page.evaluate(() => {
+    DataTransferItem.prototype.getAsFileSystemHandle = window.__origGetAsFileSystemHandle;
+    DataTransferItem.prototype.webkitGetAsEntry = window.__origWebkitGetAsEntry;
+    delete window.__mockHandle;
+    delete window.__mockEntry;
+  });
+  record('TC-FILE-033', protectedFile && protectedFileState.editor === '# 保護されたドロップ\n' && protectedFolder && page.consoleErrors.length === 0,
+    JSON.stringify({ protectedFile, protectedFileState, protectedFolder, errors: page.consoleErrors }));
   await page.context().close();
 }
 
@@ -4037,7 +4095,7 @@ async function testEncoding(browser) {
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
-  { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032'], fn: testTitleAndDrop },
+  { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
