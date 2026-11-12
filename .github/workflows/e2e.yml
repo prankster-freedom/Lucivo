@@ -1,8 +1,9 @@
 name: E2E Tests
-# main へは検証済みのコミットだけが入るため、push では実行しない
+# main へは検証済みのコミットだけが入るため、push では実行しない。
+# feature/pre-test は、リリース前に複数の変更をまとめて試すための統合ブランチ。main の履歴を書き換えずに済むよう、そこへの PR でも実行する
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, feature/pre-test ]
 jobs:
   # 壊れた文字列（制御文字、正規表現の中の制御文字、見えない空白）を検出する。ドキュメントも対象なので常に実行する
   lint:

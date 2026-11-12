@@ -74,7 +74,13 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 `main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
 
-### 6.1 feature ブランチの履歴整理
+### 6.1 リリース前の統合ブランチ（`feature/pre-test`）
+
+- リリース前に複数の変更をまとめて試すときは、各 feature ブランチの PR を `feature/pre-test` に向けて出す。E2E テスト（`.github/workflows/e2e.yml`）は、`main` と `feature/pre-test` への PR で実行する
+- 試し終えたら、`feature/pre-test` から `main` への PR を出して反映する
+- 背景: 不具合の見つかった変更を `main` に入れてしまうと、直すために `main` の履歴を書き換えるか、修正のコミットを重ねることになる。`main` の手前で受け止め、`main` には確かめ終えた変更だけを入れる
+
+### 6.2 feature ブランチの履歴整理
 
 当面はリポジトリの関係者がユーザー本人のみであるため、ユーザーとの整合が取れていれば feature ブランチの履歴を書き換えてよい。Pull Request の発行時には、main に取り込まれる履歴として第三者から見て見通しが良くなるよう、細かな修正や試行錯誤のコミットを整理・集約してから PR を発行する。
 
