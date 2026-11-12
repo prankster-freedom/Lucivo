@@ -144,6 +144,61 @@ async function testFileLoading(browser) {
   record('TC-FILE-014', !!(repoLinks.header && repoLinks.header.ok && repoLinks.guideLogo && repoLinks.guideLogo.ok && repoLinks.latest && repoLinks.latest.ok
     && /^最新版はこちら/.test(repoLinks.latestText || '')), JSON.stringify(repoLinks));
 
+  // TC-FILE-034 案内に現在の版を表示し、「更新を確認」を押したときだけ最新リリースを問い合わせる
+  {
+    const appVersion = require('../package.json').version;
+    const api = 'https://api.github.com/repos/prankster-freedom/Lucivo/releases/latest';
+    const apiRequests = [];
+    const onRequest = req => { if (req.url().startsWith('https://api.github.com/')) apiRequests.push(req.url()); };
+    page.on('request', onRequest);
+    let reply = null;
+    await page.route(api, route => reply(route));
+    const guideState = () => page.evaluate(() => {
+      const p = document.querySelector('#standard-doc-container .empty-guide-update');
+      const result = p && p.querySelector('.update-check-result');
+      const link = result && result.querySelector('a');
+      return {
+        version: p ? (p.querySelector('.update-check-version') || {}).textContent : null,
+        hasButton: !!(p && p.querySelector('button.btn-check-update')),
+        state: result ? result.dataset.state : null,
+        text: result ? result.textContent.trim() : null,
+        href: link ? link.getAttribute('href') : null,
+        target: link ? link.getAttribute('target') : null
+      };
+    });
+    const clickAndWait = async state => {
+      await page.click('#standard-doc-container .btn-check-update');
+      await page.waitForFunction(s => {
+        const r = document.querySelector('#standard-doc-container .update-check-result');
+        return r && r.dataset.state === s;
+      }, state, { timeout: 5000 }).catch(() => {});
+      return guideState();
+    };
+    const before = await guideState();
+    const requestsBefore = apiRequests.length;
+    reply = route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tag_name: 'lucivo-v99.0.0', html_url: 'https://github.com/prankster-freedom/Lucivo/releases/tag/lucivo-v99.0.0' }) });
+    const newer = await clickAndWait('newer');
+    reply = route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tag_name: `lucivo-v${appVersion}`, html_url: 'https://github.com/prankster-freedom/Lucivo/releases' }) });
+    const latest = await clickAndWait('latest');
+    reply = route => route.fulfill({ status: 500, body: '' });
+    const failed = await clickAndWait('error');
+    // 版を描画し直しても、確認の結果を保つ（Visualモードの案内を含む）
+    await page.evaluate(() => renderApp());
+    await waitRendered(page);
+    const afterRender = await guideState();
+    await page.unroute(api);
+    page.off('request', onRequest);
+    // 失敗の場合を模した応答（500）は、ブラウザ自身が読み込みの失敗をコンソールに出すため、TC-FILE-007 の対象から除く
+    page.consoleErrors = page.consoleErrors.filter(e => !e.includes('status of 500'));
+    record('TC-FILE-034',
+      before.version === appVersion && before.hasButton && !before.state && requestsBefore === 0
+      && newer.state === 'newer' && newer.text.includes('99.0.0') && newer.href === 'https://github.com/prankster-freedom/Lucivo/releases/tag/lucivo-v99.0.0' && newer.target === '_blank'
+      && latest.state === 'latest' && latest.text.includes('最新版です') && latest.text.includes(appVersion)
+      && failed.state === 'error' && failed.text.includes('確認できませんでした')
+      && afterRender.state === 'error' && apiRequests.length === 3,
+      JSON.stringify({ appVersion, before, requestsBefore, newer, latest, failed, afterRender, requests: apiRequests.length }));
+  }
+
   // TC-FILE-013 起動直後は編集でき、読み込む前の保存名は untitled.md
   const startEditable = await page.evaluate(() => !document.getElementById('markdown-editor').readOnly && document.getElementById('editor-lock').classList.contains('hidden'));
   await page.fill('#markdown-editor', '# 新しい文書\n');
@@ -4094,7 +4149,7 @@ async function testEncoding(browser) {
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
-  { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015'], fn: testFileLoading },
+  { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015', 'TC-FILE-034'], fn: testFileLoading },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
