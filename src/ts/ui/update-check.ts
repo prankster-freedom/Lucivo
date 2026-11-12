@@ -1,6 +1,7 @@
 // 起動時の案内の「更新を確認」（FR-049, DD-FILE-084〜086）
 // ボタンを押したときだけ GitHub の最新リリースを問い合わせる。押さなければ通信しない（NFR-008）
 import { escapeHtml } from '../utils/escape';
+import { showToast } from './toast';
 
 // ビルド時に package.json の version を埋め込む（tools/build-app.cjs の define）
 declare const __LUCIVO_VERSION__: string;
@@ -57,9 +58,36 @@ export function applyUpdateCheckState(root: ParentNode = document): void {
     el.innerHTML = lastResult ? resultHtml(lastResult) : '';
     el.dataset.state = lastResult ? lastResult.kind : '';
   });
-  root.querySelectorAll<HTMLButtonElement>('.btn-check-update').forEach(btn => {
+  root.querySelectorAll<HTMLButtonElement>('.btn-check-update, #menu-check-update').forEach(btn => {
     btn.disabled = !!lastResult && lastResult.kind === 'checking';
   });
+  const headerBtn = document.getElementById('btn-header-update') as HTMLButtonElement | null;
+  const headerLabel = document.getElementById('header-update-label');
+  const headerMenuResult = document.getElementById('header-update-menu-result');
+  if (headerMenuResult) {
+    headerMenuResult.classList.toggle('hidden', !lastResult);
+  }
+  if (headerLabel) {
+    if (lastResult?.kind === 'checking') {
+      headerLabel.textContent = '確認中…';
+    } else if (lastResult?.kind === 'newer') {
+      headerLabel.textContent = '更新あり';
+    } else if (lastResult?.kind === 'latest') {
+      headerLabel.textContent = '更新なし';
+    } else {
+      headerLabel.textContent = '最新版確認';
+    }
+  }
+  if (headerBtn) {
+    headerBtn.classList.toggle('is-active', lastResult?.kind === 'newer');
+    if (lastResult?.kind === 'latest') {
+      headerBtn.title = `最新版です（v${lastResult.version}）`;
+    } else if (lastResult?.kind === 'newer') {
+      headerBtn.title = `新しい版 v${lastResult.version} があります（現在 v${APP_VERSION}）`;
+    } else {
+      headerBtn.title = `最新版を確認（現在 v${APP_VERSION}）`;
+    }
+  }
 }
 
 async function fetchLatest(): Promise<CheckResult> {
@@ -91,15 +119,23 @@ export async function checkForUpdate(): Promise<void> {
   if (lastResult && lastResult.kind === 'checking') return;
   lastResult = { kind: 'checking' };
   applyUpdateCheckState();
+  showToast('最新リリースを確認しています…（GitHubに接続中）');
   lastResult = await fetchLatest();
   applyUpdateCheckState();
+  if (lastResult.kind === 'latest') {
+    showToast(`最新版です（v${lastResult.version}）`);
+  } else if (lastResult.kind === 'newer') {
+    showToast(`新しい版 v${lastResult.version} があります`);
+  } else if (lastResult.kind === 'error') {
+    showToast('更新を確認できませんでした（接続を確認してください）');
+  }
 }
 
 // 案内は描画のたびに作り直すため、ボタンの押下は document で受ける
 export function setupUpdateCheck(): void {
   document.addEventListener('click', e => {
     const target = e.target as Element | null;
-    if (target && target.closest('.btn-check-update')) {
+    if (target && target.closest('.btn-check-update, #menu-check-update')) {
       e.preventDefault();
       checkForUpdate();
     }

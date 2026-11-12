@@ -299,7 +299,7 @@ const EMPTY_GUIDE_HTML = `
 
   <p class="empty-guide-footer">💡 画面上部の <strong>[ 高速モード | Visualモード ]</strong> や <strong>[ 発表 ]</strong> ボタンからいつでもワンクリックで体験できます。キーボードの <kbd class="kbd-key">?</kbd> キーでショートカット一覧を表示できます。</p>
   <p class="empty-guide-latest">最新版はこちら: <a ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
-  <p class="empty-guide-update">Lucivo <span class="update-check-version"></span> <button type="button" class="btn-check-update">更新を確認</button> <span class="update-check-result" role="status" aria-live="polite"></span></p>
+  <p class="empty-guide-update">Lucivo <span class="update-check-version"></span> <button type="button" class="btn-check-update" title="最新リリースを確認（インターネットに接続します）">更新を確認</button> <span class="update-check-result" role="status" aria-live="polite"></span></p>
 </div>`;
 
 const state = {
@@ -309,6 +309,7 @@ const state = {
   isVisualMode: false,
   infographicStyle: 'shapes',
   showFrontMatter: false,
+  signalLightsEnabled: true,
   // 図の番号 → 矢印の形状（'smooth' / 'step' / 'straight'）。画面の表示の間だけ保持する（DD-EDGE-003）
   curveByIndex: new Map()
 };
@@ -2334,7 +2335,10 @@ function renderApp() {
 function mountStage(container) {
   if (!state.isVisualMode) return;
   loadLibrary('stage').then(ok => {
-    if (ok && state.isVisualMode && container.isConnected) LucivoStage.mount(container);
+    if (ok && state.isVisualMode && container.isConnected) {
+      if (typeof LucivoStage.toggleLights === 'function') LucivoStage.toggleLights(state.signalLightsEnabled);
+      LucivoStage.mount(container);
+    }
   });
 }
 
@@ -2778,7 +2782,10 @@ function setupEventListeners() {
   }
 
   document.getElementById('btn-stage-show').onclick = async () => {
-    if (await loadLibrary('stage')) LucivoStage.enterShow();
+    if (await loadLibrary('stage')) {
+      if (typeof LucivoStage.toggleLights === 'function') LucivoStage.toggleLights(state.signalLightsEnabled);
+      LucivoStage.enterShow();
+    }
   };
 
   document.querySelectorAll('.info-style-btn').forEach(btn => {
@@ -2861,8 +2868,8 @@ function setupEventListeners() {
 /* ==========================================================================
    開く・保存のメニュー（Markdown ファイルの読み込みと保存）
    ========================================================================== */
-// ヘッダーのメニュー（開く・保存）。ボタンの id とメニューの id の組（DD-FILE-002, DD-FILE-009）
-const HEADER_MENUS = [['btn-file-menu', 'file-menu'], ['btn-save-menu', 'save-menu']];
+// ヘッダーのメニュー（開く・保存・最新版確認）。ボタンの id とメニューの id の組（DD-FILE-002, DD-FILE-009, DD-FILE-085）
+const HEADER_MENUS = [['btn-file-menu', 'file-menu'], ['btn-save-menu', 'save-menu'], ['btn-header-update', 'update-menu']];
 
 function closeHeaderMenus() {
   HEADER_MENUS.forEach(([btnId, menuId]) => {
@@ -3015,6 +3022,9 @@ function setupFileMenu() {
     closeHeaderMenus();
     saveMarkdownFile();
   };
+  document.getElementById('menu-check-update')?.addEventListener('click', () => {
+    closeHeaderMenus();
+  });
   document.getElementById('btn-edit-unlock').onclick = () => {
     setEditorReadOnly(false);
     document.getElementById('markdown-editor').focus();
@@ -3628,11 +3638,41 @@ function setupFolder() {
 // フロントマターの表示 ON / OFF。モードにかかわらず効き、モードを切り替えても状態を保つ（DD-FM-011）
 function setupFrontMatterToggle() {
   const btn = document.getElementById('btn-front-matter');
+  if (!btn) return;
   btn.addEventListener('click', () => {
     state.showFrontMatter = !state.showFrontMatter;
     btn.setAttribute('aria-pressed', String(state.showFrontMatter));
     btn.classList.toggle('is-active', state.showFrontMatter);
     renderApp();
+  });
+}
+
+// フローのアニメーション（シグナル・ライト）の表示 ON / OFF（FR-018, DD-STAGE-010〜060, #79）
+function setupAnimationToggle() {
+  const btn = document.getElementById('btn-toggle-animation');
+  if (!btn) return;
+  const syncAnimationToggleUi = () => {
+    const enabled = state.signalLightsEnabled;
+    document.documentElement.classList.toggle('is-animation-off', !enabled);
+    btn.setAttribute('aria-pressed', String(enabled));
+    btn.classList.toggle('is-active', enabled);
+    btn.title = enabled
+      ? 'フローのアニメーション: ON（クリックでOFF）'
+      : 'フローのアニメーション: OFF（クリックでON）';
+    const icon = btn.querySelector('svg');
+    if (icon) {
+      icon.classList.toggle('text-amber-500', enabled);
+      icon.classList.toggle('opacity-40', !enabled);
+    }
+  };
+  syncAnimationToggleUi();
+  btn.addEventListener('click', () => {
+    state.signalLightsEnabled = !state.signalLightsEnabled;
+    syncAnimationToggleUi();
+    if ((window as any).LucivoStage?.toggleLights) {
+      (window as any).LucivoStage.toggleLights(state.signalLightsEnabled);
+    }
+    showToast(state.signalLightsEnabled ? 'フローのアニメーション: ON' : 'フローのアニメーション: OFF');
   });
 }
 
@@ -3648,6 +3688,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupDiagramPanZoom();
   setupLocalImages();
   setupFrontMatterToggle();
+  setupAnimationToggle();
   setupMarkedMath();
   setupMarkedHeadings();
   setupMermaid();

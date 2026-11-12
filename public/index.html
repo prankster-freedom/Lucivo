@@ -94,7 +94,18 @@
     </div>
 
     <!-- 右側ツール -->
-    <div class="flex items-center gap-1.5 shrink-0">
+    <div id="header-right-tools" class="flex items-center gap-1.5 shrink-0">
+      <button id="btn-open-settings" type="button" class="h-8 px-2.5 rounded-lg border flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="矢印スタイル・パレット設定">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+        </svg>
+        <span class="hidden sm:inline" id="active-palette-name">Cobalt</span>
+      </button>
+      <button id="btn-toggle-animation" type="button" class="header-icon-btn is-active" aria-pressed="true" aria-label="フローのアニメーション ON / OFF" title="フローのアニメーション: ON（クリックでOFF）">
+        <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </button>
       <button id="btn-front-matter" type="button" class="front-matter-toggle" aria-pressed="false" title="YAML フロントマターの表示 ON / OFF">YAML</button>
       <button id="btn-theme-toggle" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center border transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="Light / Dark 切替">
         <svg id="icon-sun" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -105,13 +116,24 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
         </svg>
       </button>
-
-      <button id="btn-open-settings" type="button" class="h-8 px-2.5 rounded-lg border flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="矢印スタイル・パレット設定">
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+      <div id="header-update-wrap" class="relative">
+        <button id="btn-header-update" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="update-menu" class="header-icon-btn header-update-btn" title="最新版を確認">
+          <span id="header-update-label">最新版確認</span>
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+        <div id="update-menu" role="menu" class="file-menu file-menu-right hidden">
+          <button id="menu-check-update" type="button" role="menuitem" class="file-menu-item">通信が発生します</button>
+          <div id="header-update-menu-result" class="update-check-menu-result update-check-result hidden" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+      <a id="btn-header-help" href="https://github.com/prankster-freedom/Lucivo/blob/main/README.md" target="_blank" rel="noopener noreferrer" class="header-icon-btn" aria-label="ヘルプ（README）を開く" title="ヘルプ（README）を開く（GitHub に接続します）">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path stroke-linecap="round" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"></path>
         </svg>
-        <span class="hidden sm:inline" id="active-palette-name">Cobalt</span>
-      </button>
+      </a>
 
       <!-- HTML の書き出しのボタンは 0.2.0 では置かない（DD-OFF-005、CR-001） -->
     </div>

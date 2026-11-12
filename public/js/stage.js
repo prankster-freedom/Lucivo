@@ -44,6 +44,7 @@
   let frameId = 0;
   let seekTime = null;
   // 俯瞰（DTP-SHOW-070）の間は、画面に並ぶすべての図の光を止める
+  let lightsEnabled = true;
   let lightsSuspended = false;
 
   const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -337,7 +338,7 @@
   }
 
   function startFlow(flow) {
-    if (lightsSuspended || activeFlows.has(flow)) return;
+    if (!lightsEnabled || lightsSuspended || activeFlows.has(flow)) return;
     if (!flow.svg.getScreenCTM()) return;
     if (!flow.plan) buildPlan(flow);
     if (!flow.plan.edges.length) return;
@@ -372,6 +373,10 @@
       if (flows.has(host) && flows.get(host).svg === svg) return;
       host.classList.add('has-signal-light');
       const flow = { svg, host, back: lightLayer(host, 'is-back'), front: lightLayer(host, 'is-front'), plan: null, matrix: null, blank: true, startedAt: 0 };
+      if (!lightsEnabled) {
+        flow.back.canvas.style.display = 'none';
+        flow.front.canvas.style.display = 'none';
+      }
       flows.set(host, flow);
       flows.set(svg, flow);
       visibilityObserver.observe(host);
@@ -383,6 +388,10 @@
 
   // 再描画で図の DOM が作り直される前に呼ぶ
   function resetLights() {
+    if (frameId) {
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+    }
     activeFlows.clear();
     flows.clear();
     visibilityObserver.disconnect();
@@ -393,7 +402,7 @@
      ステージ発表（DTP-SHOW-010〜060）
      ====================================================================== */
   const AUTO_DWELL = { scene: 7000, build: 2400, afterLight: 800 };
-  const SCENE_FIT = { maxScale: 2.4, bottomMargin: 88, minHeightRatio: 0.6, scrollRatio: 0.8 };
+  const SCENE_FIT = { maxScale: 2.4, bottomMargin: 108, minHeightRatio: 0.6, scrollRatio: 0.8 };
   const HUD_IDLE_MS = 2600;
 
   const show = { active: false, scenes: [], index: 0, build: 0, auto: false, autoLooped: false, timer: 0, idleTimer: 0, restore: null, hud: null };
@@ -462,6 +471,9 @@
   function fitSceneDiagrams(scene) {
     scene.querySelectorAll('.exhibition-slab-split').forEach(updateSlabSplit);
     if (scene.classList.contains('exhibition-slab-split')) updateSlabSplit(scene);
+    const stage = stageContainer();
+    const stageBottomPad = stage ? (parseFloat(getComputedStyle(stage).paddingBottom) || 0) : 0;
+    const effectiveBottomMargin = Math.max(SCENE_FIT.bottomMargin, stageBottomPad + 28);
     scene.querySelectorAll('.exhibition-viewport > svg').forEach(svg => {
       const viewBox = svg.viewBox && svg.viewBox.baseVal;
       if (!viewBox || !viewBox.width) return;
@@ -470,11 +482,12 @@
       const style = getComputedStyle(host);
       const availableWidth = host.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
       const top = host.getBoundingClientRect().top + parseFloat(style.paddingTop);
-      // 本文の下に図がある章は残りの高さが小さいため、画面の高さの一定の割合までは確保し、はみ出す分はスクロールで見せる
-      const availableHeight = Math.max(
-        window.innerHeight - top - parseFloat(style.paddingBottom) - SCENE_FIT.bottomMargin,
-        window.innerHeight * SCENE_FIT.minHeightRatio
-      );
+      const remaining = window.innerHeight - top - parseFloat(style.paddingBottom) - effectiveBottomMargin;
+      const isSplit = Boolean(svg.closest('.exhibition-slab-split'));
+      // 2段組み（split）では本文の横に図が並ぶため、画面の高さの下限（minHeightRatio）で底上げして枠を突き破らないようにする
+      const availableHeight = isSplit
+        ? Math.max(160, remaining)
+        : Math.max(remaining, window.innerHeight * SCENE_FIT.minHeightRatio);
       const readable = (parseFloat(svg.style.minWidth) || 0) / viewBox.width;
       const scale = Math.max(readable, Math.min(availableWidth / viewBox.width, availableHeight / viewBox.height, SCENE_FIT.maxScale));
       svg.style.setProperty('--scene-width', `${Math.round(viewBox.width * scale)}px`);
@@ -775,7 +788,7 @@
 
   function suspendLights(suspend) {
     lightsSuspended = suspend;
-    if (suspend) {
+    if (suspend || !lightsEnabled) {
       Array.from(activeFlows).forEach(stopFlow);
       return;
     }
@@ -785,6 +798,46 @@
       const flow = flows.get(host);
       if (flow) startFlow(flow);
     });
+  }
+
+  function setLightsEnabled(enabled) {
+    lightsEnabled = Boolean(enabled);
+    const uniqueFlows = Array.from(new Set(flows.values()));
+    if (!lightsEnabled) {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+        frameId = 0;
+      }
+      Array.from(activeFlows).forEach(stopFlow);
+      uniqueFlows.forEach(flow => {
+        flow.back.canvas.style.display = 'none';
+        flow.front.canvas.style.display = 'none';
+      });
+      return;
+    }
+    uniqueFlows.forEach(flow => {
+      flow.back.canvas.style.display = '';
+      flow.front.canvas.style.display = '';
+    });
+    if (!lightsSuspended) {
+      if (show.active) {
+        const scene = currentScene();
+        if (scene) scene.querySelectorAll('.exhibition-viewport').forEach(host => {
+          const flow = flows.get(host);
+          if (flow) startFlow(flow);
+        });
+      } else {
+        uniqueFlows.forEach(flow => {
+          const { host } = flow;
+          if (host.isConnected && host.offsetParent !== null) {
+            const rect = host.getBoundingClientRect();
+            if (rect.bottom > 0 && rect.top < window.innerHeight) {
+              startFlow(flow);
+            }
+          }
+        });
+      }
+    }
   }
 
   function openOverview() {
@@ -1046,6 +1099,15 @@
     resetLights,
     enterShow,
     exitShow,
+    toggleLights(enabled) {
+      if (typeof enabled === 'boolean') {
+        setLightsEnabled(enabled);
+      } else {
+        setLightsEnabled(!lightsEnabled);
+      }
+      return lightsEnabled;
+    },
+    isLightsEnabled: () => lightsEnabled,
     // 確認用: t 秒の時点の光で止める（null で再開）。テストとゲラの撮影で使う
     seekLights(t) {
       seekTime = t;

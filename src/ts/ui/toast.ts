@@ -1,14 +1,18 @@
-export function showToast(msg: string): void {
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function showToast(msg: string, durationMs = 2500): void {
   const toast = document.getElementById('toast');
   const label = document.getElementById('toast-message');
   if (!toast || !label) return;
+  if (toastTimer) clearTimeout(toastTimer);
   label.textContent = msg;
   toast.classList.remove('opacity-0', 'translate-y-2');
   toast.classList.add('opacity-100', 'translate-y-0');
-  setTimeout(() => {
+  toastTimer = setTimeout(() => {
     toast.classList.remove('opacity-100', 'translate-y-0');
     toast.classList.add('opacity-0', 'translate-y-2');
-  }, 2000);
+    toastTimer = null;
+  }, durationMs);
 }
 
 export function updateStatus(text: string, type: 'info' | 'success' | 'warning' = 'info'): void {

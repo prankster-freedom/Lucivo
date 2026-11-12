@@ -960,11 +960,18 @@ body[data-appearance="dark"] .signal-light-canvas {
     display: none;
   }
 }
+html.is-animation-off .exhibition-slab .vs-step-chevron {
+  animation: none !important;
+}
+html.is-animation-off .exhibition-slab .vs-steps::after,
+html.is-animation-off .exhibition-slab .vs-steps > li::after {
+  display: none !important;
+}
 
 /* ステージ発表（DTP-SHOW-010〜060, FR-019）: 1 章を 1 シーンとして全画面に出す。
-   rem の基準を画面の幅に合わせ、版面全体を大画面の大きさに拡大する */
+   rem の基準を画面の幅と高さ（16:9 相当）の小さい方に合わせ、横長画面・ウィンドウ表示でも版面全体が収まるようにする */
 html.is-stage-show {
-  font-size: clamp(15px, 1.32vw, 36px);
+  font-size: clamp(13px, min(1.32vw, 2.34dvh), 36px);
 }
 html.is-stage-show body {
   overflow: hidden;
