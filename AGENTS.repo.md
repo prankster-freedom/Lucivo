@@ -99,7 +99,7 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
    ```
 
 2. **ZIP の確認**: ZIP を `work/release/` に展開し、`Lucivo-v<版>/index.html` を `file://` で開いて、起動と同梱サンプルの表示を確かめる。
-3. **【承認】GitHub Release の作成**: タグの push と GitHub Release の作成は外部に公開する操作のため、ユーザーの指示を受けてから行う。リリースノートは、README の「リリースノート」の該当する版の節を使う。Release の title は `v` を付けずに `Lucivo <版>`（例: `Lucivo 0.6.0`）とする。リリースノートの冒頭には、ZIP の開き方と、「Source code (zip / tar.gz) ではなく `Lucivo-v<版>.zip` を選ぶこと（Source code は仕様書やテストを含むリポジトリ全体で、開発者向け）」を書く。GitHub は Release に Source code を自動で添付し、消す設定がないため、利用者が配布物を選べるよう案内する。
+3. **【承認】GitHub Release の作成**: タグの push と GitHub Release の作成は外部に公開する操作のため、ユーザーの指示を受けてから行う。リリースノートは、README の「リリースノート」の該当する版の節を使う。Release の title は `v` を付けずに `Lucivo <版>`（例: `Lucivo 0.6.0`）とする。リリースノートの冒頭には、ZIP の開き方、Assets の ZIP ファイルへの直接リンクを Markdown のリンク形式（`[**Lucivo-v<版>.zip**](https://github.com/prankster-freedom/Lucivo/releases/download/lucivo-v<版>/Lucivo-v<版>.zip)`）で必ず記載すること、および「Source code (zip / tar.gz) ではなく `Lucivo-v<版>.zip` を選ぶこと（Source code は仕様書やテストを含むリポジトリ全体で、開発者向け）」を書く。GitHub は Release に Source code を自動で添付し、消す設定がないため、利用者が配布物を選べるよう案内する。
 
    ```sh
    gh release create lucivo-v<版> work/release/Lucivo-v<版>.zip --title "Lucivo <版>" --notes-file <リリースノートのファイル>
