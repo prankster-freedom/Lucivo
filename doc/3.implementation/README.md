@@ -14,6 +14,7 @@ tags: ["Lucivo", "実装"]
 | [css/style.css](../../public/css/style.css)                        | [css/style.css.md](css/style.css.md)                               | デザイントークン、組版、Markdown 要素、図の表示枠、Visualモード |
 | [js/app.js](../../public/js/app.js)                                | [js/app.js.md](js/app.js.md)                                       | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
 | [js/stage.js](../../public/js/stage.js)                            | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                             |
+| [js/formatter.js](../../public/js/formatter.js)                    | [js/formatter.js.md](js/formatter.js.md)                           | 読み込み時の Markdown の整形（markdownlint を同梱）        |
 | [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成                                 |
 | [tools/build-samples-data.cjs](../../tools/build-samples-data.cjs) | [tools/build-samples-data.cjs.md](tools/build-samples-data.cjs.md) | `file://` 直開き時の同梱サンプル遅延読み込みデータの生成   |
 | [tools/build-vendor.cjs](../../tools/build-vendor.cjs)             | [tools/build-vendor.cjs.md](tools/build-vendor.cjs.md)             | ライブラリとフォントの同梱ファイルの生成                   |

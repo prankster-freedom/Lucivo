@@ -275,4 +275,36 @@ sequenceDiagram
 
 - `ts/ui/url-loader.ts` が、`window.location.search` および `window.location.hash` から `url` パラメータを取り出す（`extractMarkdownUrlFromLocation()`）。指定がなければ一切通信せずに終了する（`NFR-008`）。
 - `validatePublicMarkdownUrl()` で `http:` / `https:` スキームのみ許可し、不正なスキーム（`javascript:`, `file:` 等）や URL 解析失敗時は外部通信を行わずトーストで警告を出す。
-- 取得時は 10 秒の `AbortController` 付き `fetch(url, { cache: 'no-store' })` で `ArrayBuffer` を取得し、`decodeMarkdown()`（`DD-FILE-082`）で文字コード・改行を正規化して `applyLoadedMarkdown()` で読み取り専用・タイトル設定（`ファイル名 - Lucivo`、`FR-040`）として開く。HTTP エラーや CORS・通信エラー時は読み込みに失敗した旨と CORS / ネットワーク確認を促すトーストを表示する。
+- 取得時は 10 秒の `AbortController` 付き `fetch(url, { cache: 'no-store' })` で `ArrayBuffer` を取得し、`decodeMarkdown()`（`DD-FILE-082`）で文字コード・改行を正規化して `applyLoadedMarkdown()` で読み取り専用・タイトル設定（`ファイル名 - Lucivo`、`FR-040`）として開く。HTTP エラーや CORS・通信エラー時は読み込みに失敗した旨と CORS / ネットワーク確認を促すトーストを表示する。読み込む前に、`DD-FILE-091` の整形を通す。
+
+### DD-FILE-088 整形の部品と入口（`FR-053`）
+
+- 整形の部品は `src/ts/formatter/` に置き、`tools/build-app.cjs` が `public/js/formatter.js` として別にビルドする（`LAZY_ENTRIES`）。アプリは `loadLibrary('formatter')` で読み込み、`window.LucivoFormatter.format(markdown)` だけを呼ぶ。起動時には読み込まない（`NFR-006`）。
+- `format()` は、`{ text, changed, fixes, tables }`（整えた文書、変わったか、直した箇所の数、そろえた表の数）を返す。中では、markdownlint の自動修正（`DD-FILE-089`）→ 行末の空白（`DD-FILE-089`）→ 表の列のそろえ（`DD-FILE-090`）の順に通す。エンジンを差し替えるときは、`format()` の中身だけを変える。
+- markdownlint（0.42.0、MIT）と、それが使う micromark などのパッケージを `formatter.js` に同梱する。`tools/build-vendor.cjs` が esbuild の metafile から同梱したパッケージを集め、`public/THIRD_PARTY_LICENSES.txt` にライセンスを載せる（手で一覧を持つと版の更新でずれるため）。
+- 同梱するパッケージ（文字幅の判定など）は、ゼロ幅接合子などの見えない文字をそのまま含む。`formatter.js` は `charset: 'ascii'` でビルドし、ASCII 以外をエスケープで書き出す（`npm run lint` の見えない文字の検査に合わせる）。
+
+### DD-FILE-089 記法の修正と行末の空白（`FR-053`）
+
+- markdownlint の規則のうち、表示を変えず、作者の書き方を不要に変えないものだけを使う（`markdownlint-engine.ts` の `FIX_RULES`。`default: false` とし、使う規則だけを挙げる）: MD018・MD019（見出しの空白）、MD022（見出しの前後の空行）、MD031（コードブロックの前後の空行）、MD032（リストの前後の空行）、MD058（表の前後の空行）、MD004（箇条書きの記号を、文書の最初の記号にそろえる）、MD047（最後の改行）。
+- 1 回の修正で、新しく見出しやリストになった行への指摘が次の回に出ることがある（`#見出し` → `# 見出し` にすると、その後の空行の指摘が出る）。指摘がなくなるまで、最大 4 回繰り返す。何度整えても同じ結果になる（TC-FILE-037）。
+- 行末の空白は、MD009 を使わず `whitespace.ts` で扱う。MD009 は 3 つ以上の空白をすべて消し、改行（ハードブレーク）がなくなって表示が変わるため。段落の中で次の行が続く行の 2 つ以上の空白は 2 つにそろえ、それ以外（空行の前、文書の最後、見出し）の空白は消す。コードブロックの中は触らない。
+
+### DD-FILE-090 表の列のそろえ（`FR-053`）
+
+- `table-align.ts` が、パイプで書いた表（GFM）の列の幅をそろえる。全角の文字は幅 2 として数える（`displayWidth()`）。右揃え（`--:`）の列は左を、それ以外は右を空白で埋める。区切りの行の揃えの指定（`:`）は保つ。
+- セルの区切りは GFM と同じく、`\|` 以外の `|` とする（バッククォートで囲んだコードの中の `|` も区切りになる）。表示と同じ解釈でそろえるため。
+- 次の表はそろえない: コードブロックとフロントマターの中、行頭が字下げ・引用（`>`）の表（入れ子の中では列の位置の意味が変わる）、見出しの行と区切りの行で列の数が違う表（GFM の表として成り立たない）。
+
+### DD-FILE-091 整形する場面（`FR-053`）
+
+- `prepareLoadedText()` が、改行コードをそろえた後に整える。`loadMarkdownFile()`（「ファイルを開く…」とドラッグ&ドロップ）、`openFolderFile()`（フォルダの一覧と文書の中のリンク）、`loadMarkdownFromUrlParam()`（URL パラメータ）から呼ぶ。`applyLoadedMarkdown()` には整えた文書を渡すので、`lastLoadedMarkdown` も整えた文書になり、編集していない状態として扱う。
+- 同梱サンプル（`loadBundledSample()`）は整えない。記法の見本として手で書いてあり、書き方そのもの（表をパイプなしで書く例など）を見せるため。
+- 整形の部品を読み込めないとき・整形が失敗したときは、元の文書のまま開く（読み込みは止めない）。
+- `openFolderFile()` では、整えている間に別のフォルダを開いたときは、古いフォルダのファイルを表示しない。
+
+### DD-FILE-092 整形の設定（`FR-053`）
+
+- 設定の画面（`#settings-modal`）に「Markdown の整形」の欄を置く。`#setting-format-on-load`（読み込み時に整える）は、`localStorage` の `lucivo.formatOnLoad`（`'1'` / `'0'`）に覚える。既定は整える。`localStorage` が使えないとき（プライベートの窓など）は、その窓の間だけ覚える。
+- `#btn-format-now`（今の文書を整える）は、設定の画面を閉じてから、エディタの文書を整える。`lastLoadedMarkdown` は変えないので、保存していない編集として扱う（別の文書を開くときに確認が出る）。閲覧（読み取り専用）のときも整える（ボタンを押す操作が、整える意思を示すため）。
+- `tailwind.css` は事前生成のため、欄の見た目は `src/css/components.css` の専用のクラス（`.settings-toggle`、`.settings-action-btn`）で組む。
