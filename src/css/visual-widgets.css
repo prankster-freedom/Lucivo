@@ -1,0 +1,403 @@
+/* ==================== スラブ画像エクスポート操作部 ==================== */
+.slab-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  opacity: 0.35;
+  transition: opacity 0.18s ease-in-out;
+  z-index: 10;
+}
+.exhibition-slab:hover .slab-actions,
+.slab-actions:focus-within {
+  opacity: 1;
+}
+.slab-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  background: var(--panel-sub);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.slab-action-btn:hover {
+  color: var(--text-primary);
+  background: var(--panel-bg);
+  border-color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.slab-action-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+.btn-copy-slab::after {
+  content: "コピー";
+}
+.btn-export-slab::after {
+  content: "PNG";
+}
+html.is-stage-show .slab-actions {
+  display: none !important;
+}
+
+/* ==================== KPI メトリクス・ショーケース（FR-027, DTP-VTPL-035） ==================== */
+.exhibition-slab .vs-points > li.vs-metric-item {
+  padding-top: 1.35rem;
+}
+.exhibition-slab .vs-points > li.vs-metric-item .vs-point-title.vs-metric-value {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.28rem;
+  font-family: 'Plus Jakarta Sans', 'JetBrains Mono', sans-serif;
+  font-size: clamp(1.65rem, 2.5vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.exhibition-slab .vs-points > li.vs-metric-item .vs-point-title.vs-metric-value::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.25rem;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--vs-c), color-mix(in srgb, var(--vs-c) 30%, transparent));
+}
+
+/* ==================== タイムライン・ロードマップ修飾（FR-029, DTP-VTPL-036） ==================== */
+.exhibition-slab .vs-points.vs-points-timeline > li.vs-timeline-item::before {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  margin-bottom: 0.35rem;
+}
+.exhibition-slab .vs-points.vs-points-timeline > li.vs-timeline-item .vs-point-title.vs-timeline-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.55rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--vs-c) 18%, var(--vs-card-bg));
+  border: 1px solid color-mix(in srgb, var(--vs-c) 55%, var(--vs-card-border));
+  color: var(--text-primary);
+}
+
+/* ==================== Before / After 比較ペアカード修飾（FR-030, DTP-VTPL-037） ==================== */
+.exhibition-slab .vs-points.vs-points-compare > li.vs-compare-before {
+  --vs-c: var(--border-strong);
+  background: color-mix(in srgb, var(--vs-card-bg) 82%, transparent);
+  border-style: dashed;
+}
+.exhibition-slab .vs-points.vs-points-compare > li.vs-compare-after {
+  --vs-c: var(--vs-c1);
+  border-color: color-mix(in srgb, var(--vs-c1) 65%, var(--vs-card-border));
+  box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.22);
+}
+.exhibition-slab .vs-points.vs-points-compare > li.vs-compare-after::after {
+  height: 6px;
+  background: linear-gradient(90deg, var(--vs-c1), var(--vs-c3));
+}
+
+/* ==================== コード・ショーケース（FR-031, DTP-VTPL-038） ==================== */
+.exhibition-slab pre.vs-code-block {
+  position: relative;
+  padding-top: 2.45rem !important;
+}
+.exhibition-slab pre.vs-code-block::before {
+  content: attr(data-code-lang);
+  position: absolute;
+  top: 0.58rem;
+  left: 2.35rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.exhibition-slab pre.vs-code-block > .vs-code-caret {
+  position: absolute;
+  top: 0.62rem;
+  left: 0.85rem;
+  width: 1.2rem;
+  height: 0.65rem;
+  pointer-events: none;
+  background-color: var(--vs-c1);
+  -webkit-mask: var(--motif-rounded-caret) no-repeat center / contain;
+  mask: var(--motif-rounded-caret) no-repeat center / contain;
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.65rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn::after {
+  content: attr(data-copy-label);
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn:hover,
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn.is-copied {
+  color: var(--text-primary);
+  border-color: var(--vs-c1);
+}
+html.is-stage-show .exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
+  display: none;
+}
+.vs-cover-texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: var(--vs-c1);
+  opacity: 0.16;
+  -webkit-mask: var(--motif-dot-matrix) repeat center / 24px 24px;
+  mask: var(--motif-dot-matrix) repeat center / 24px 24px;
+}
+.vs-cover-specs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.15rem auto 0;
+}
+.vs-cover-spec-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--vs-card-border);
+  background: color-mix(in srgb, var(--vs-card-bg) 88%, transparent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.vs-cover-spec-pill::after {
+  content: attr(data-spec-label);
+}
+
+
+/* ==================== コールアウト（GitHub アラート記法, FR-034, DTP-VTPL-039, DD-MD-022, DD-VTPL-033） ====================
+   --icon-alert-*: assets/icons/alert-*.svg（AST-113）と同一のベクター定義。file:// の CORS を避けるため data URI で持つ（DD-VTPL-024 と同じ理由）
+   --alert-c: 種類ごとの意味の色（スタイルの 4 色には置き換えない。RGH-910）。--alert-ink: ラベルの色（Light は濃紺を混ぜてコントラストを確保） */
+:root {
+  --icon-alert-note: url("data:image/svg+xml,%3Csvg id='alert-note.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Ccircle cx='8' cy='8' r='6.25' stroke='black' stroke-width='1.5'/%3E%3Cpath d='M8 7.25V11' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='4.9' r='1' fill='black'/%3E%3C/svg%3E");
+  --icon-alert-tip: url("data:image/svg+xml,%3Csvg id='alert-tip.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M5.6 10.4C4.4 9.5 3.75 8.2 3.75 6.75C3.75 4.4 5.65 2.5 8 2.5C10.35 2.5 12.25 4.4 12.25 6.75C12.25 8.2 11.6 9.5 10.4 10.4V11.25H5.6V10.4Z' stroke='black' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M6.25 13.5H9.75' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M8 5.25V7.75' stroke='black' stroke-width='1.4' stroke-linecap='round' stroke-opacity='0.6'/%3E%3C/svg%3E");
+  --icon-alert-important: url("data:image/svg+xml,%3Csvg id='alert-important.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.75 2.75H12.25C13.07 2.75 13.75 3.43 13.75 4.25V9.75C13.75 10.57 13.07 11.25 12.25 11.25H8.5L5.5 13.5V11.25H3.75C2.93 11.25 2.25 10.57 2.25 9.75V4.25C2.25 3.43 2.93 2.75 3.75 2.75Z' stroke='black' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M8 5V7.5' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='9.4' r='0.95' fill='black'/%3E%3C/svg%3E");
+  --icon-alert-warning: url("data:image/svg+xml,%3Csvg id='alert-warning.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M6.95 2.85C7.42 2.05 8.58 2.05 9.05 2.85L14.1 11.6C14.57 12.4 13.99 13.4 13.06 13.4H2.94C2.01 13.4 1.43 12.4 1.9 11.6L6.95 2.85Z' stroke='black' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M8 6.25V8.75' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='10.9' r='0.95' fill='black'/%3E%3C/svg%3E");
+  --icon-alert-caution: url("data:image/svg+xml,%3Csvg id='alert-caution.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M5.6 2.25H10.4L13.75 5.6V10.4L10.4 13.75H5.6L2.25 10.4V5.6L5.6 2.25Z' stroke='black' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M8 5V8.25' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='10.6' r='0.95' fill='black'/%3E%3C/svg%3E");
+}
+.md-alert {
+  --alert-c: #2563EB;
+  --alert-ink: color-mix(in srgb, var(--alert-c) 72%, #0F172A);
+  --icon-alert: var(--icon-alert-note);
+  margin: 1rem 0;
+  padding: 0.85rem 1.1rem;
+  border-left: 4px solid var(--alert-c);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--alert-c) 7%, transparent);
+  color: var(--text-secondary);
+}
+.md-alert-tip { --alert-c: #059669; --icon-alert: var(--icon-alert-tip); }
+.md-alert-important { --alert-c: #7C3AED; --icon-alert: var(--icon-alert-important); }
+.md-alert-warning { --alert-c: #D97706; --icon-alert: var(--icon-alert-warning); }
+.md-alert-caution { --alert-c: #DC2626; --icon-alert: var(--icon-alert-caution); }
+body[data-appearance="dark"] .md-alert {
+  --alert-c: #60A5FA;
+  --alert-ink: var(--alert-c);
+  background: color-mix(in srgb, var(--alert-c) 10%, transparent);
+}
+body[data-appearance="dark"] .md-alert-tip { --alert-c: #34D399; }
+body[data-appearance="dark"] .md-alert-important { --alert-c: #A78BFA; }
+body[data-appearance="dark"] .md-alert-warning { --alert-c: #FBBF24; }
+body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
+/* 本文の p の余白（:is(.prose-doc, .exhibition-slab) p）より詳細度を上げて、題の行の余白を決める */
+:is(.prose-doc, .exhibition-slab) .md-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0 0 0.4rem;
+  font-family: 'JetBrains Mono', 'Noto Sans JP', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--alert-ink);
+}
+.md-alert-icon {
+  flex: none;
+  width: 1.4em;
+  height: 1.4em;
+  background: var(--alert-c);
+  -webkit-mask: var(--icon-alert) center / contain no-repeat;
+  mask: var(--icon-alert) center / contain no-repeat;
+}
+.md-alert > :last-child {
+  margin-bottom: 0;
+}
+/* Visualモード: 線を細く、角丸と余白を大きくして誌面の調子に合わせる。影は付けない（DTP-VTPL-039） */
+.exhibition-slab .md-alert {
+  margin: 1.1rem 0;
+  padding: 0.95rem 1.2rem;
+  border-left-width: 3px;
+  border-radius: 0 12px 12px 0;
+}
+.exhibition-slab .md-alert-title {
+  margin-bottom: 0.5rem;
+}
+
+/* ==================== 定義リスト型（glossary, FR-035, DTP-VTPL-045, DD-VTPL-032） ==================== */
+.exhibition-slab .vs-glossary {
+  margin-top: 0.5rem;
+  border-top: 2px solid var(--vs-c1);
+}
+.exhibition-slab .vs-gloss-row {
+  --vs-c: var(--vs-c1);
+  display: grid;
+  /* 用語の列は 13rem と行の幅の 34% の小さい方まで。2 段に並べたときに説明の列が細くならないように */
+  grid-template-columns: minmax(7.5rem, min(13rem, 34%)) minmax(0, 1fr);
+  column-gap: 1.5rem;
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid var(--vs-card-border);
+  transition: background-color 0.2s ease;
+}
+.exhibition-slab .vs-gloss-row:nth-child(4n + 2) { --vs-c: var(--vs-c2); }
+.exhibition-slab .vs-gloss-row:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
+.exhibition-slab .vs-gloss-row:nth-child(4n + 4) { --vs-c: var(--vs-c4); }
+.exhibition-slab .vs-gloss-row:hover {
+  background: color-mix(in srgb, var(--vs-c) 6%, transparent);
+}
+.exhibition-slab .vs-glossary dt {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+  font-family: 'JetBrains Mono', 'Noto Sans JP', monospace;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--vs-c) 70%, var(--vs-tone));
+  overflow-wrap: anywhere;
+}
+.exhibition-slab .vs-glossary dt::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--vs-c);
+  transform: translateY(-0.15em);
+}
+.exhibition-slab .vs-glossary dd {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+@container (min-width: 52rem) {
+  .exhibition-slab .vs-glossary.is-two-up {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2.5rem;
+    border-top: 0;
+  }
+  .exhibition-slab .vs-glossary.is-two-up .vs-gloss-row:nth-child(-n + 2) {
+    border-top: 2px solid var(--vs-c1);
+  }
+}
+@container (max-width: 36rem) {
+  .exhibition-slab .vs-gloss-row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.2rem;
+  }
+}
+
+
+/* ==================== 数式の補足グラフ（FR-048, DTP-VTPL-065, DD-VTPL-143〜144） ==================== */
+.exhibition-slab .lucivo-math.is-block-plot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem 1.75rem;
+  margin: 1.15rem 0;
+  padding: 1rem 1.35rem;
+  border: 1px solid var(--vs-card-border);
+  border-left: 3px solid var(--vs-c1);
+  border-radius: 14px;
+  background: var(--vs-card-bg);
+  box-shadow: 0 8px 20px -14px rgba(15, 23, 42, 0.25);
+  text-align: left;
+}
+.exhibition-slab .lucivo-math.is-block-plot .vs-math-formula {
+  flex: 1 1 13rem;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+.exhibition-slab .lucivo-math.is-block-plot .vs-math-plot-img {
+  flex: 0 0 auto;
+  width: 340px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.exhibition-slab .lucivo-math.is-inline-plot {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0.25rem;
+  padding: 0.24rem 0.45rem 0.24rem 0.65rem;
+  border: 1px solid var(--vs-card-border);
+  border-left: 2.5px solid var(--vs-c1);
+  border-radius: 10px;
+  background: var(--vs-card-bg);
+  vertical-align: middle;
+  max-width: 100%;
+}
+.exhibition-slab .lucivo-math.is-inline-plot .vs-math-formula {
+  display: inline-block;
+  line-height: 1.4;
+}
+.exhibition-slab .lucivo-math.is-inline-plot .vs-math-plot-img.is-inline {
+  width: 156px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

@@ -6,7 +6,11 @@
 @import './shell.css';
 @import './diagrams.css';
 @import './typography.css';
-@import './visual.css';
+@import './visual-base.css';
+@import './visual-templates.css';
+@import './visual-themes.css';
+@import './visual-stage.css';
+@import './visual-widgets.css';
 @import './components.css';
 @import './modes.css';
 @import './print.css';

@@ -1,0 +1,101 @@
+/* Style 1: パステルグラデーション＋白グリッド (リファレンス1) */
+.infographic-bg-shapes {
+  background-color: #B8DFD8;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.45) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.45) 1.5px, transparent 1.5px),
+    linear-gradient(125deg, #84D2D6 0%, #C5E3DF 34%, #EDE2D0 68%, #DFD6D8 100%) !important;
+  background-size: 48px 48px, 48px 48px, 100% 100% !important;
+}
+
+/* Style 2: 2段カード (リファレンス4) */
+.infographic-bg-cards {
+  background: linear-gradient(180deg, #FAFAFA 0%, #F0F2F5 100%) !important;
+}
+
+/* Style 3: 5色サークル＆ドット (リファレンス2) */
+.infographic-bg-circles {
+  background: #FFFFFF !important;
+}
+
+/* Style 4: クリーム背景・診断チャート (リファレンス3) */
+.infographic-bg-editorial {
+  background: #F7F4EB !important;
+}
+
+/* Dark の Visual Stage（DD-DIAG-024）: 各スタイルの調子を保った暗いカード背景。
+   ノードの塗り（色付きの図形・白いカード）はそのまま、線と文字の配色は app.js の VISUAL_THEMES_DARK で明るくする */
+body[data-appearance="dark"] .infographic-bg-shapes {
+  background-color: #10262A;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px),
+    linear-gradient(125deg, #0F3B40 0%, #14302F 34%, #2A2620 68%, #2A2227 100%) !important;
+}
+body[data-appearance="dark"] .infographic-bg-cards {
+  background: linear-gradient(180deg, #1A2130 0%, #121826 100%) !important;
+}
+body[data-appearance="dark"] .infographic-bg-circles {
+  background: #14171C !important;
+}
+body[data-appearance="dark"] .infographic-bg-editorial {
+  background: #221E17 !important;
+}
+
+/* 展示用のカードの中の横スクロールバーは、操作するときだけ目立つようにする。
+   文字の判読性（NFR-005）のための横スクロールは残し、ビューアーらしさを抑える */
+.exhibition-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.exhibition-viewport:hover,
+.exhibition-viewport:focus-within {
+  scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+}
+.exhibition-viewport::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+.exhibition-viewport:hover::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+/* Dark の Visual Stage では --border-subtle がスラブの背景と同じ色になるため、表の区切り線を強める */
+body[data-appearance="dark"] .exhibition-slab :is(th, td) {
+  border-color: var(--border-strong) !important;
+}
+
+.exhibition-diagram-header {
+  height: 42px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+/* Dark ではヘッダーの文字が明るい色になるため、ヘッダーの背景を暗くする */
+body[data-appearance="dark"] .exhibition-diagram-header {
+  background: rgba(30, 41, 59, 0.92);
+}
+
+.exhibition-viewport {
+  padding: clamp(1.5rem, 3.5vw, 3rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: auto;
+  min-height: 180px;
+}
+.exhibition-viewport svg {
+  max-width: min(100%, var(--fit-max-width, 100%)) !important;
+  height: auto !important;
+  display: block;
+  background: transparent !important;
+}
+.exhibition-viewport.is-actual-size svg {
+  width: var(--natural-width, auto) !important;
+  min-width: var(--natural-width, 0px) !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
