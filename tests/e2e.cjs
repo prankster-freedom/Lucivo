@@ -4487,8 +4487,160 @@ async function testTree(browser) {
   await page.context().close();
 }
 
+// Web 版（http://）として public/ を配る、テスト用の小さなサーバー。Web 版だけの機能（#61・#62）を確かめる
+async function startWebServer() {
+  const http = require('http');
+  const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.md': 'text/markdown; charset=utf-8', '.png': 'image/png' };
+  const server = http.createServer((req, res) => {
+    const rel = ((req.url || '/').split('?')[0].replace(/^\/+/, '')) || 'index.html';
+    const fp = path.join(APP_DIR, decodeURIComponent(rel));
+    if (!fp.startsWith(APP_DIR) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
+      res.writeHead(404); res.end('Not found'); return;
+    }
+    res.writeHead(200, { 'Content-Type': mime[path.extname(fp)] || 'application/octet-stream' });
+    fs.createReadStream(fp).pipe(res);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  return { url: `http://127.0.0.1:${server.address().port}/`, close: () => new Promise(resolve => server.close(resolve)) };
+}
 
+// Web 版でページを開き、同梱の visual-sample.md を「ファイルを開く…」で読み込む
+async function openWebPageWithSample(browser, server, contextOptions = {}, sampleName = 'visual-sample.md') {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...contextOptions });
+  const page = await context.newPage();
+  page.consoleErrors = [];
+  page.on('console', m => { if (m.type() === 'error') page.consoleErrors.push(m.text().slice(0, 200)); });
+  page.on('pageerror', e => page.consoleErrors.push('pageerror: ' + e.message));
+  await page.goto(server.url);
+  await page.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
+  await page.click('#btn-file-menu');
+  await page.setInputFiles('#file-input', path.join(APP_DIR, 'samples', sampleName));
+  await page.waitForFunction(n => document.title === `${n} - Lucivo`, sampleName);
+  await waitRendered(page);
+  return page;
+}
 
+// ズーミング・マップ（TC-SHOW-015〜019、FR-054、#61）
+async function testZoomMap(browser) {
+  // TC-SHOW-015: スタンドアロン版（file://）では、発表のドロップダウンにズーミング・マップを出さない
+  const filePage = await openStagePage(browser);
+  await filePage.click('#btn-present-menu');
+  const fileItemHidden = await filePage.evaluate(() => {
+    const item = document.getElementById('menu-present-zoom-map');
+    return !!item && item.classList.contains('hidden') && getComputedStyle(item).display === 'none';
+  });
+  const fileScriptLoaded = await filePage.evaluate(() => Array.from(document.scripts).some(s => /zoom-map\.js/.test(s.src)));
+  await filePage.context().close();
+  record('TC-SHOW-015', fileItemHidden && !fileScriptLoaded, JSON.stringify({ fileItemHidden, fileScriptLoaded }));
+
+  const server = await startWebServer();
+  try {
+    const page = await openWebPageWithSample(browser, server);
+    const scriptBefore = await page.evaluate(() => Array.from(document.scripts).some(s => /zoom-map\.js/.test(s.src)));
+    // TC-SHOW-016: Web 版でドロップダウンから選ぶと、Visualモードの章を地図に並べ、全体の地図から始める
+    await page.click('#btn-present-menu');
+    const itemVisible = await page.isVisible('#menu-present-zoom-map');
+    await page.click('#menu-present-zoom-map');
+    await page.waitForFunction(() => window.LucivoZoomMap && window.LucivoZoomMap.info().active, null, { timeout: 15000 });
+    await page.waitForTimeout(300);
+    const opened = await page.evaluate(() => {
+      const info = window.LucivoZoomMap.info();
+      const nodes = Array.from(document.querySelectorAll('.exhibition-wrap > .exhibition-hero, .exhibition-wrap > .exhibition-slab'));
+      const vp = { w: window.innerWidth, h: window.innerHeight };
+      const rects = nodes.map(n => n.getBoundingClientRect());
+      return {
+        cls: document.documentElement.classList.contains('is-zoom-map'),
+        visual: state.isVisualMode,
+        nodes: nodes.length,
+        stepCount: info.steps.length,
+        firstLabel: info.steps[0].label,
+        lastIsOverview: info.steps[info.steps.length - 1].node === -1,
+        // 全体の地図では、すべての章が画面の中に収まる
+        allInView: rects.every(r => r.left >= -1 && r.top >= -1 && r.right <= vp.w + 1 && r.bottom <= vp.h + 1),
+        path: !!document.querySelector('.zoom-map-path polyline'),
+        hud: (document.querySelector('.zoom-map-hud .zoom-map-count') || {}).textContent
+      };
+    });
+    record('TC-SHOW-016', itemVisible && !scriptBefore && opened.cls && opened.visual && opened.nodes >= 15 && opened.firstLabel === '全体の地図'
+      && opened.lastIsOverview && opened.allInView && opened.path && opened.hud === `1 / ${opened.stepCount}` && page.consoleErrors.length === 0,
+    JSON.stringify({ itemVisible, scriptBefore, ...opened, errors: page.consoleErrors }));
+
+    // TC-SHOW-017: → で章へ飛ぶ。隣の章へ移るときは、いったん引いて（見える範囲を広げて）から寄る。止まったら章が画面に収まる
+    const goStep = async key => {
+      const from = await page.evaluate(() => window.LucivoZoomMap.info());
+      await page.keyboard.press(key);
+      // 動いている途中のカメラの見える範囲（w）を、間を空けて何度か調べる
+      const samples = [];
+      for (let k = 0; k < 8; k++) {
+        await page.waitForTimeout(110);
+        samples.push(await page.evaluate(() => window.LucivoZoomMap.info().camera.w));
+      }
+      await page.waitForFunction(() => !document.getElementById('visual-stage-container').classList.contains('is-flying'), null, { timeout: 5000 });
+      const to = await page.evaluate(() => window.LucivoZoomMap.info());
+      return { from, to, maxW: Math.max(...samples) };
+    };
+    const toFirst = await goStep('ArrowRight');
+    // 表紙から、隣の章（前書き）へ
+    const toSecond = await goStep('ArrowRight');
+    const focused = await page.evaluate(() => {
+      const cur = document.querySelector('.exhibition-wrap > .is-zoom-current');
+      const r = cur.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, vw: window.innerWidth, vh: window.innerHeight };
+    });
+    const dipped = toSecond.maxW > Math.max(toSecond.from.camera.w, toSecond.to.camera.w) * 1.05;
+    const fits = focused.left >= 0 && focused.right <= focused.vw && focused.top >= 0 && focused.bottom <= focused.vh;
+    record('TC-SHOW-017', toFirst.to.index === 1 && toSecond.to.index === 2 && dipped && fits,
+      JSON.stringify({ firstIndex: toFirst.to.index, secondIndex: toSecond.to.index, fromW: Math.round(toSecond.from.camera.w), toW: Math.round(toSecond.to.camera.w), maxW: Math.round(toSecond.maxW), focused }));
+
+    // TC-SHOW-018: 小見出し（h3）のある章では小見出しにも寄る。長い区間は区切って寄る。End で全体の地図、Esc で元の表示に戻る
+    const steps = (await page.evaluate(() => window.LucivoZoomMap.info())).steps;
+    const h3Step = steps.findIndex(s => /^11\.1 /.test(s.label));
+    const segmented = steps.some(s => /（\d+ \/ \d+）$/.test(s.label));
+    await page.evaluate(i => window.LucivoZoomMap.goTo(i), h3Step);
+    await page.waitForFunction(() => !document.getElementById('visual-stage-container').classList.contains('is-flying'), null, { timeout: 5000 });
+    const h3Visible = await page.evaluate(() => {
+      const h = Array.from(document.querySelectorAll('.exhibition-wrap h3')).find(e => /^11\.1 /.test(e.textContent.trim()));
+      const r = h.getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth;
+    });
+    await page.keyboard.press('End');
+    await page.waitForFunction(() => !document.getElementById('visual-stage-container').classList.contains('is-flying'), null, { timeout: 5000 });
+    const atEnd = await page.evaluate(() => { const i = window.LucivoZoomMap.info(); return i.index === i.steps.length - 1 && i.steps[i.index].node === -1; });
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    const exited = await page.evaluate(() => ({
+      active: window.LucivoZoomMap.info().active,
+      cls: document.documentElement.classList.contains('is-zoom-map'),
+      hud: !!document.querySelector('.zoom-map-hud'),
+      path: !!document.querySelector('.zoom-map-path'),
+      // 地図に入る前は高速モードだったので、高速モードに戻る
+      visual: state.isVisualMode,
+      inlineStyles: Array.from(document.querySelectorAll('.exhibition-wrap, .exhibition-wrap > *')).filter(e => e.getAttribute('style')).length
+    }));
+    record('TC-SHOW-018', h3Step > 0 && segmented && h3Visible && atEnd && !exited.active && !exited.cls && !exited.hud && !exited.path && !exited.visual && exited.inlineStyles === 0,
+      JSON.stringify({ h3Step, segmented, h3Visible, atEnd, exited }));
+    await page.context().close();
+
+    // TC-SHOW-019: 動きを減らす設定では、カメラを動かさず、すぐに次の場所を映す
+    const reduced = await openWebPageWithSample(browser, server, { reducedMotion: 'reduce' });
+    await reduced.click('#btn-present-menu');
+    await reduced.click('#menu-present-zoom-map');
+    await reduced.waitForFunction(() => window.LucivoZoomMap && window.LucivoZoomMap.info().active, null, { timeout: 15000 });
+    await reduced.keyboard.press('ArrowRight');
+    const instant = await reduced.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve({
+      index: window.LucivoZoomMap.info().index,
+      flying: document.getElementById('visual-stage-container').classList.contains('is-flying'),
+      currentInView: (() => {
+        const r = document.querySelector('.exhibition-wrap > .is-zoom-current').getBoundingClientRect();
+        return r.left >= 0 && r.right <= window.innerWidth;
+      })()
+    }))));
+    await reduced.context().close();
+    record('TC-SHOW-019', instant.index === 1 && !instant.flying && instant.currentInView, JSON.stringify(instant));
+  } finally {
+    await server.close();
+  }
+}
 
 // Markdown の整形（TC-FILE-036〜040、FR-053）。messy.md を開くと messy.expected.md になる
 const FORMAT_FIXTURE = path.join(__dirname, 'fixtures', 'format');
@@ -4652,6 +4804,7 @@ const SUITES = [
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
   { name: 'testFormatter', tcPrefix: ['TC-FILE-036', 'TC-FILE-037', 'TC-FILE-038', 'TC-FILE-039', 'TC-FILE-040'], fn: testFormatter },
+  { name: 'testZoomMap', tcPrefix: ['TC-SHOW-015', 'TC-SHOW-016', 'TC-SHOW-017', 'TC-SHOW-018', 'TC-SHOW-019'], fn: testZoomMap, timeoutMs: 150000 },
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
