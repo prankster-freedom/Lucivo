@@ -20,7 +20,7 @@
 | 詳細設計書       | `doc/DesignNotes/<対象>.md`（必要な場合のみ）   | `doc/3.sw_design_notes/features/`（目次は `README.md`） |
 | 実装ドキュメント | ソースコード（および Design Notes）             | `doc/3.implementation/`                     |
 | テスト仕様書     | `doc/5.test_spec/`                              | `doc/4.test_spec/`                          |
-| 変更要求         | `doc/6.change_request/<サービス>/`              | `doc/6.change_request/`（サービスが 1 つのため階層を省く。ID は `CR-<nnn>`） |
+| 変更要求         | `doc/6.change_request/<サービス>/`              | GitHub Issue で管理する（cr スキルの「管理先」）。既存の CR 票（`doc/6.change_request/CR-*.md`）は履歴として残す |
 | README の画像    | （定めなし）                                    | `doc/images/readme/`（配布物の `public/` に入れない） |
 
 dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は、本リポジトリでは `public/assets/` と読み替える。
