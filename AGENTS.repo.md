@@ -109,5 +109,6 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
    ```
 
 4. **公開後の確認**: Release のページから ZIP をダウンロードして展開し、`index.html` を開けることを確かめる。
+5. **Web 版（GitHub Pages）への反映確認**: `/self-approve` で `main` を更新した場合は `GITHUB_TOKEN` の仕様により `Deploy to GitHub Pages`（`.github/workflows/pages.yml`）が自動起動しないため、`gh workflow run pages.yml --ref main` で手動実行し、公開先（`https://prankster-freedom.github.io/Lucivo/`）が新しい版で開けることを確かめる。
 
 - 背景: 利用者に要るのは配布物の `public/` だけで、`doc/`・`tests/`・`tools/` は要らない（1 章）。GitHub が自動で添付するソースコードの ZIP はリポジトリ全体を含むため、別に配布用の ZIP を添付する。`git archive` でタグから作るのは、作業ツリーの未コミットの変更や `work/` などの不要なファイルが混ざらず、同じタグから同じ中身を作り直せるため。ZIP の中を `Lucivo-v<版>/` のフォルダに入れるのは、展開したときにファイルが散らばらず、版の違うものを並べて置けるため
