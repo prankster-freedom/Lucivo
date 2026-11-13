@@ -3248,21 +3248,35 @@ async function testResponsiveAndWebUi(browser) {
   const webPage = await webCtx.newPage();
   await webPage.goto(`http://127.0.0.1:${port}/`);
   await webPage.waitForFunction(() => typeof renderApp === 'function');
-  const webWide = await webPage.evaluate(() => ({
-    headerUpdateHidden: document.getElementById('header-update-wrap').classList.contains('hidden'),
-    guideUpdateBtnHidden: !!document.querySelector('.btn-check-update.hidden'),
-    guideResultHidden: !!document.querySelector('.update-check-result.hidden'),
-    versionShown: (document.querySelector('.update-check-version')?.textContent || '').trim()
-  }));
+  const webWide = await webPage.evaluate(() => {
+    const headerWrap = document.getElementById('header-update-wrap');
+    const guideBtn = document.querySelector('.btn-check-update');
+    const guideResult = document.querySelector('.update-check-result');
+    const latestP = document.querySelector('.empty-guide-latest');
+    const latestLink = latestP ? latestP.querySelector('a') : null;
+    return {
+      headerUpdateHidden: !!headerWrap && getComputedStyle(headerWrap).display === 'none',
+      guideUpdateBtnHidden: !!guideBtn && getComputedStyle(guideBtn).display === 'none',
+      guideResultHidden: !!guideResult && getComputedStyle(guideResult).display === 'none',
+      versionShown: (document.querySelector('.update-check-version')?.textContent || '').trim(),
+      latestText: (latestP?.textContent || '').trim(),
+      latestHref: latestLink ? latestLink.getAttribute('href') : ''
+    };
+  });
   await webPage.setViewportSize({ width: 390, height: 844 });
-  const webNarrow = await webPage.evaluate(() => ({
-    moreUpdateHidden: document.getElementById('menu-more-update').classList.contains('hidden')
-  }));
+  const webNarrow = await webPage.evaluate(() => {
+    const moreUpdate = document.getElementById('menu-more-update');
+    return {
+      moreUpdateHidden: !!moreUpdate && getComputedStyle(moreUpdate).display === 'none'
+    };
+  });
   await webCtx.close();
   server.close();
   record('TC-UI-002',
     webWide.headerUpdateHidden && webWide.guideUpdateBtnHidden && webWide.guideResultHidden
-    && webWide.versionShown.length > 0 && webNarrow.moreUpdateHidden,
+    && webWide.versionShown.length > 0 && /^スタンドアロン版はこちら/.test(webWide.latestText)
+    && webWide.latestHref === 'https://github.com/prankster-freedom/Lucivo/releases'
+    && webNarrow.moreUpdateHidden,
     JSON.stringify({ webWide, webNarrow })
   );
 

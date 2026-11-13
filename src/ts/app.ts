@@ -299,7 +299,7 @@ const EMPTY_GUIDE_HTML = `
   </div>
 
   <p class="empty-guide-footer">💡 画面上部の <strong>[ 高速モード | Visualモード ]</strong> や <strong>[ 発表 ]</strong> ボタンからいつでもワンクリックで体験できます。キーボードの <kbd class="kbd-key">?</kbd> キーでショートカット一覧を表示できます。</p>
-  <p class="empty-guide-latest">最新版はこちら: <a ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
+  <p class="empty-guide-latest"><span class="empty-guide-latest-label">最新版はこちら</span>: <a class="empty-guide-latest-link" ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
   <p class="empty-guide-update">Lucivo <span class="update-check-version"></span> <button type="button" class="btn-check-update" title="最新リリースを確認（インターネットに接続します）">更新を確認</button> <span class="update-check-result" role="status" aria-live="polite"></span></p>
 </div>`;
 

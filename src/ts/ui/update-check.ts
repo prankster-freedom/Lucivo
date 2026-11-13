@@ -60,13 +60,31 @@ export function isWebVersion(): boolean {
 export function applyUpdateCheckState(root: ParentNode = document): void {
   const web = isWebVersion();
   const headerWrap = document.getElementById('header-update-wrap');
-  if (headerWrap) headerWrap.classList.toggle('hidden', web);
+  if (headerWrap) {
+    headerWrap.classList.toggle('hidden', web);
+    headerWrap.style.display = web ? 'none' : '';
+  }
   const moreUpdateItem = document.getElementById('menu-more-update');
-  if (moreUpdateItem) moreUpdateItem.classList.toggle('hidden', web);
+  if (moreUpdateItem) {
+    moreUpdateItem.classList.toggle('hidden', web);
+    moreUpdateItem.style.display = web ? 'none' : '';
+  }
 
   root.querySelectorAll<HTMLElement>('.update-check-version').forEach(el => { el.textContent = APP_VERSION; });
   root.querySelectorAll<HTMLElement>('.btn-check-update, .update-check-result').forEach(el => {
     el.classList.toggle('hidden', web);
+    el.style.display = web ? 'none' : '';
+  });
+  root.querySelectorAll<HTMLElement>('.empty-guide-latest').forEach(el => {
+    const label = el.querySelector<HTMLElement>('.empty-guide-latest-label');
+    const link = el.querySelector<HTMLAnchorElement>('.empty-guide-latest-link');
+    if (web) {
+      if (label) label.textContent = 'スタンドアロン版はこちら';
+      if (link) {
+        link.href = RELEASES_URL;
+        link.textContent = 'github.com/prankster-freedom/Lucivo/releases';
+      }
+    }
   });
   if (web) return;
 
