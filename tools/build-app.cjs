@@ -8,7 +8,9 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 
 // 発表モード別の独立ビルド対象（#58）。各モード（#61〜#63）は追加時にここへ足す
 const STAGE_MODE_ENTRIES = [
-  { entry: path.join(ROOT_DIR, 'src', 'js', 'stage.js'), outfile: path.join(ROOT_DIR, 'public', 'js', 'stage.js') }
+  { entry: path.join(ROOT_DIR, 'src', 'js', 'stage.js'), outfile: path.join(ROOT_DIR, 'public', 'js', 'stage.js') },
+  // ズーミング・マップ（#61、FR-054）。Web 版だけで使う
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'modes', 'zoom-map.ts'), outfile: path.join(ROOT_DIR, 'public', 'js', 'zoom-map.js') }
 ];
 
 // 必要なときだけ読み込む部品（起動時には読み込まない。NFR-006）
