@@ -10,7 +10,9 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const STAGE_MODE_ENTRIES = [
   { entry: path.join(ROOT_DIR, 'src', 'js', 'stage.js'), outfile: path.join(ROOT_DIR, 'public', 'js', 'stage.js') },
   // ズーミング・マップ（#61、FR-054）。Web 版だけで使う
-  { entry: path.join(ROOT_DIR, 'src', 'ts', 'modes', 'zoom-map.ts'), outfile: path.join(ROOT_DIR, 'public', 'js', 'zoom-map.js') }
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'modes', 'zoom-map.ts'), outfile: path.join(ROOT_DIR, 'public', 'js', 'zoom-map.js') },
+  // プレイアブル・ダイアグラム（#62、FR-055）。Web 版だけで使う
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'modes', 'playable.ts'), outfile: path.join(ROOT_DIR, 'public', 'js', 'playable.js') }
 ];
 
 // 必要なときだけ読み込む部品（起動時には読み込まない。NFR-006）
