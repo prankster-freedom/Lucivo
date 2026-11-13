@@ -11,6 +11,12 @@ const STAGE_MODE_ENTRIES = [
   { entry: path.join(ROOT_DIR, 'src', 'js', 'stage.js'), outfile: path.join(ROOT_DIR, 'public', 'js', 'stage.js') }
 ];
 
+// 必要なときだけ読み込む部品（起動時には読み込まない。NFR-006）
+const LAZY_ENTRIES = [
+  // Markdown の整形（FR-053, DD-FILE-088）。markdownlint を同梱する
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'formatter', 'index.ts'), outfile: path.join(ROOT_DIR, 'public', 'js', 'formatter.js') }
+];
+
 async function build() {
   const start = Date.now();
   console.log(`Building app (${isProd ? 'production' : 'development'})...`);
@@ -36,6 +42,17 @@ async function build() {
     ...STAGE_MODE_ENTRIES.map(({ entry, outfile }) =>
       esbuild.build({
         ...commonJsOptions,
+        entryPoints: [entry],
+        outfile
+      })
+    ),
+    ...LAZY_ENTRIES.map(({ entry, outfile }) =>
+      esbuild.build({
+        ...commonJsOptions,
+        platform: 'browser',
+        // 同梱するライブラリ（markdownlint の文字幅の判定など）は、ゼロ幅接合子などの見えない文字を
+        // そのまま含む。出力では ASCII 以外をエスケープで書き、npm run lint の見えない文字の検査に合わせる
+        charset: 'ascii',
         entryPoints: [entry],
         outfile
       })
