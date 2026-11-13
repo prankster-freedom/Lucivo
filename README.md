@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.8.0`
+- **Version**: `0.9.0`
 
 Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラムを表示する、ブラウザだけで動く Markdown ビューアーです。いつもの Markdown をそのまま開くだけで、「読むための軽快な仕様書」と「見せるための展示・講演品質」の 2 つの見せ方を切り替えられます。
 
@@ -176,6 +176,15 @@ Visualモードに切り替えると、上部にスタイルバーが現れ、4 
 [MIT License](LICENSE)。同梱のライブラリとフォントのライセンスは [public/THIRD_PARTY_LICENSES.txt](public/THIRD_PARTY_LICENSES.txt) にあります。
 
 ## リリースノート
+
+### 0.9.0（2026-11-14）
+
+- feat(ui): 狭い画面のヘッダー最適化・発表メニュー・Web版更新確認非表示・Split比率調整を実装する (#82, #88, #89)
+- feat(file-loading): ファイルを開いたときに Markdown を表示を変えずに整える
+- feat(stage-show): 文書を 1 枚の地図にして章から章へ飛ぶズーミング・マップを追加する
+- feat(stage-show): 図を触って動かせるプレイアブル・ダイアグラムを追加する
+
+注意: この版を SaaS 第 1 版とする。[Web 版](https://prankster-freedom.github.io/Lucivo/)（GitHub Pages）を、スタンドアロン版（ZIP）と並ぶ正式な提供形態とする。ズーミング・マップとプレイアブル・ダイアグラムは Web 版だけで使える。開いた文書は、読み込み時に表示を変えずに整える（設定の画面で止められる）。
 
 ### 0.8.0（2026-11-13）
 
