@@ -4,7 +4,7 @@ import { fnv1aHash } from './utils/hash';
 import { downloadBlob } from './utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
 import { showToast, updateStatus } from './ui/toast';
-import { setupUpdateCheck, applyUpdateCheckState, checkForUpdate } from './ui/update-check';
+import { setupUpdateCheck, applyUpdateCheckState, checkForUpdate, isWebVersion } from './ui/update-check';
 import { extractMarkdownUrlFromLocation, validatePublicMarkdownUrl, fetchMarkdownFromUrl } from './ui/url-loader';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
@@ -335,6 +335,8 @@ const LIBRARIES = {
   samples: { script: './samples/samples-data.js', global: 'LUCIVO_SAMPLES' },
   // Markdown の整形（FR-053, DD-FILE-088）。文書を読み込むときと「今の文書を整える」のときだけ読み込む（NFR-006）
   formatter: { script: './js/formatter.js', global: 'LucivoFormatter' },
+  // 発表の見せ方（Web 版だけ。#58 でモードごとに別のファイル）。発表のドロップダウンで選んだときだけ読み込む
+  zoomMap: { script: './js/zoom-map.js', global: 'LucivoZoomMap' }
 };
 const libraryLoads = new Map();
 // 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを CDN の URL に置き換える（DD-OFF-003）
@@ -3101,6 +3103,32 @@ function setupFormatter() {
     formatCurrentDocument();
   });
 }
+
+/* ==========================================================================
+   Web 版だけの発表の見せ方（#61・#62、FR-054・FR-055）
+   ========================================================================== */
+// 発表のドロップダウンの項目 → 読み込む部品と、そのグローバル
+const PRESENT_MODES = [
+  { menuId: 'menu-present-zoom-map', library: 'zoomMap', global: 'LucivoZoomMap' }
+];
+
+function setupPresentModes() {
+  const web = isWebVersion();
+  PRESENT_MODES.forEach(({ menuId, library, global }) => {
+    const item = document.getElementById(menuId);
+    if (!item) return;
+    // スタンドアロン版（file://）では出さない（Issue #61・#62 の「提供する版」）
+    item.classList.toggle('hidden', !web);
+    if (!web) return;
+    item.addEventListener('click', async () => {
+      closeHeaderMenus();
+      if (!(await loadLibrary(library)) || !window[global]) {
+        showToast('発表の見せ方を読み込めませんでした');
+        return;
+      }
+      window[global].enter();
+    });
+  });
 }
 
 // ファイルのバイト列を読み、文字コードを判定してから開く（FR-048, DD-FILE-082）
@@ -3114,6 +3142,8 @@ async function loadMarkdownFile(file) {
     showToast(`「${file.name}」を読み込めませんでした`);
     return;
   }
+  const prepared = await prepareLoadedText(decoded.text);
+  applyLoadedMarkdown(prepared.text, file.name, null, false, decoded.encoding, prepared.formatted);
 }
 
 // 開くメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
@@ -3218,6 +3248,8 @@ function setupFileMenu() {
     closeHeaderMenus();
     document.getElementById('btn-stage-show')?.click();
   });
+  // Web 版だけの発表の見せ方（#61・#62）。スタンドアロン版（file://）では項目を出さない
+  setupPresentModes();
   // 狭い画面用メニューの委譲（#88）
   document.getElementById('mobile-menu-open-markdown')?.addEventListener('click', () => document.getElementById('menu-open-markdown')?.click());
   document.getElementById('mobile-menu-open-folder')?.addEventListener('click', () => document.getElementById('menu-open-folder')?.click());
@@ -3636,6 +3668,10 @@ async function openFolderFile(path) {
   if (!confirmDiscardEdits(name)) return false;
   try {
     const decoded = decodeMarkdown(await file.arrayBuffer());
+    const prepared = await prepareLoadedText(decoded.text);
+    // 整えている間に別のフォルダを開いたときは、古いフォルダのファイルを表示しない
+    if (folder !== openedFolder) return false;
+    applyLoadedMarkdown(prepared.text, name, path, false, decoded.encoding, prepared.formatted);
   } catch (err) {
     console.error('Failed to read file:', err);
     showToast(`「${name}」を読み込めませんでした`);
@@ -3923,6 +3959,8 @@ async function loadMarkdownFromUrlParam() {
   try {
     const { buffer, fileName } = await fetchMarkdownFromUrl(validUrl);
     const decoded = decodeMarkdown(buffer);
+    const prepared = await prepareLoadedText(decoded.text);
+    applyLoadedMarkdown(prepared.text, fileName, null, false, decoded.encoding, prepared.formatted);
   } catch (err) {
     console.error('Failed to fetch markdown from URL:', err);
     showToast('URL から Markdown を読み込めませんでした。CORS 制限やネットワークをご確認ください', 4500);
@@ -3941,6 +3979,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupLocalImages();
   setupFrontMatterToggle();
   setupAnimationToggle();
+  setupFormatter();
   setupMarkedMath();
   setupMarkedHeadings();
   setupMermaid();
