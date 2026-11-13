@@ -74,6 +74,9 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 `main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
 
+- `main` の `public/` は、GitHub Pages へ公開する（`.github/workflows/pages.yml`）。`/self-approve` で反映したときは、Self Approve のワークフローの成功を受けて公開する（`workflow_run`）。手で公開し直すときは `gh workflow run pages.yml` を使う
+- 背景: `/self-approve` は `GITHUB_TOKEN` で `main` へ push するため、その push では `pages.yml` の push のトリガーが動かない（`GITHUB_TOKEN` の操作で起きたイベントは別のワークフローを起動しない、GitHub の仕様）。PR の画面の「Rebase and merge」で反映すれば push のトリガーは動くが、コミットが作り直されて CI で確かめたコミットと ID が変わる（branch-strategy スキルの「検証したコミットをそのまま反映する」に反する）。共有のひな形の `self-approve.yml` は変えず、Lucivo 固有の `pages.yml` の側で追随する
+
 ### 6.1 リリース前の統合ブランチ（`feature/pre-test`）
 
 - リリース前に複数の変更をまとめて試すときは、各 feature ブランチの PR を `feature/pre-test` に向けて出す。E2E テスト（`.github/workflows/e2e.yml`）は、`main` と `feature/pre-test` への PR で実行する
