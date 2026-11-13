@@ -3148,6 +3148,163 @@ async function testStageOverviewPointer(browser) {
   await page.context().close();
 }
 
+// TC-UI-001〜003: 狭い画面のヘッダー・Web 版の更新確認非表示・Split 境目ドラッグ（#88, #89, #82）
+async function testResponsiveAndWebUi(browser) {
+  // TC-UI-001: 狭い画面（390px / 768px）ではみ出しなし・初期表示 Canvas・メニュー統合
+  const narrowCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const narrowPage = await narrowCtx.newPage();
+  await narrowPage.goto(APP_URL);
+  await narrowPage.waitForFunction(() => typeof renderApp === 'function');
+  const mobileInit = await narrowPage.evaluate(() => {
+    const vis = id => {
+      const el = document.getElementById(id);
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).display !== 'none';
+    };
+    const mark = document.querySelector('.brand-mark-light');
+    const full = document.querySelector('.brand-logo-light');
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      viewMode: state.viewMode,
+      editorHidden: document.getElementById('pane-editor').classList.contains('hidden'),
+      markVisible: !!(mark && getComputedStyle(mark).display !== 'none'),
+      fullHidden: !!(full && getComputedStyle(full).display === 'none'),
+      mobileFile: vis('btn-mobile-file'),
+      mobileView: vis('btn-mobile-view'),
+      stageShow: vis('btn-stage-show'),
+      presentMenu: vis('btn-present-menu'),
+      moreMenu: vis('btn-more-menu'),
+      help: vis('btn-header-help'),
+      desktopFileHidden: !vis('btn-file-menu'),
+      desktopSaveHidden: !vis('btn-save-menu'),
+      desktopSettingsHidden: !vis('btn-open-settings')
+    };
+  });
+  await narrowPage.click('#btn-present-menu');
+  const presentOpened = await narrowPage.evaluate(() => ({
+    menuOpen: !document.getElementById('present-menu').classList.contains('hidden'),
+    hasStage: !!document.getElementById('menu-present-stage')
+  }));
+  await narrowPage.click('#btn-more-menu');
+  const moreHasUpdateOnFile = await narrowPage.evaluate(() => {
+    const item = document.getElementById('menu-more-update');
+    return !document.getElementById('more-menu').classList.contains('hidden') && !item.classList.contains('hidden');
+  });
+  await narrowPage.screenshot({ path: path.join(SHOT_DIR, 'mobile-header-390.png') });
+  await narrowPage.click('#btn-mobile-file');
+  await narrowPage.click('[data-mobile-sample="menu-sample-notation"]');
+  await narrowPage.waitForSelector('#standard-doc-container h1', { timeout: 10000 });
+  await narrowPage.click('#btn-mobile-view');
+  await narrowPage.click('[data-mobile-view-mode="editor"]');
+  const mobileEditorBtns = await narrowPage.evaluate(() => ({
+    viewMode: state.viewMode,
+    lockVisible: !document.getElementById('editor-lock').classList.contains('hidden'),
+    testCacheHidden: getComputedStyle(document.getElementById('btn-test-cache')).display === 'none',
+    testErrHidden: getComputedStyle(document.getElementById('btn-test-err')).display === 'none'
+  }));
+  await narrowPage.setViewportSize({ width: 768, height: 1024 });
+  const tabletOverflow = await narrowPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+  await narrowCtx.close();
+  record('TC-UI-001',
+    mobileInit.scrollWidth <= mobileInit.innerWidth
+    && mobileInit.viewMode === 'canvas' && mobileInit.editorHidden
+    && mobileInit.markVisible && mobileInit.fullHidden
+    && mobileInit.mobileFile && mobileInit.mobileView && mobileInit.stageShow
+    && mobileInit.presentMenu && mobileInit.moreMenu && mobileInit.help
+    && mobileInit.desktopFileHidden && mobileInit.desktopSaveHidden && mobileInit.desktopSettingsHidden
+    && presentOpened.menuOpen && presentOpened.hasStage
+    && moreHasUpdateOnFile
+    && mobileEditorBtns.viewMode === 'editor' && mobileEditorBtns.lockVisible
+    && mobileEditorBtns.testCacheHidden && mobileEditorBtns.testErrHidden
+    && tabletOverflow,
+    JSON.stringify({ mobileInit, presentOpened, moreHasUpdateOnFile, mobileEditorBtns, tabletOverflow })
+  );
+
+  // TC-UI-002: Web 版（http://）では「最新版確認」ボタン・起動時案内の「更新を確認」を出さない
+  const http = require('http');
+  const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
+  const server = http.createServer((req, res) => {
+    const rel = ((req.url || '/').split('?')[0].replace(/^\/+/, '')) || 'index.html';
+    const fp = path.join(APP_DIR, decodeURIComponent(rel));
+    if (!fp.startsWith(APP_DIR) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
+      res.writeHead(404); res.end('Not found'); return;
+    }
+    res.writeHead(200, { 'Content-Type': mime[path.extname(fp)] || 'application/octet-stream' });
+    fs.createReadStream(fp).pipe(res);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+  const webCtx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  const webPage = await webCtx.newPage();
+  await webPage.goto(`http://127.0.0.1:${port}/`);
+  await webPage.waitForFunction(() => typeof renderApp === 'function');
+  const webWide = await webPage.evaluate(() => ({
+    headerUpdateHidden: document.getElementById('header-update-wrap').classList.contains('hidden'),
+    guideUpdateBtnHidden: !!document.querySelector('.btn-check-update.hidden'),
+    guideResultHidden: !!document.querySelector('.update-check-result.hidden'),
+    versionShown: (document.querySelector('.update-check-version')?.textContent || '').trim()
+  }));
+  await webPage.setViewportSize({ width: 390, height: 844 });
+  const webNarrow = await webPage.evaluate(() => ({
+    moreUpdateHidden: document.getElementById('menu-more-update').classList.contains('hidden')
+  }));
+  await webCtx.close();
+  server.close();
+  record('TC-UI-002',
+    webWide.headerUpdateHidden && webWide.guideUpdateBtnHidden && webWide.guideResultHidden
+    && webWide.versionShown.length > 0 && webNarrow.moreUpdateHidden,
+    JSON.stringify({ webWide, webNarrow })
+  );
+
+  // TC-UI-003: Split 表示で境目をドラッグして幅比率を変更・20〜80% クランプ・リロード復元（#82）
+  const splitCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const splitPage = await splitCtx.newPage();
+  await splitPage.goto(APP_URL);
+  await splitPage.waitForFunction(() => typeof renderApp === 'function');
+  const beforeSplit = await splitPage.evaluate(() => ({
+    resizerVisible: !document.getElementById('split-resizer').classList.contains('hidden'),
+    editorWidth: document.getElementById('pane-editor').getBoundingClientRect().width
+  }));
+  const box = await splitPage.locator('#split-resizer').boundingBox();
+  await splitPage.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await splitPage.mouse.down();
+  await splitPage.mouse.move(box.x + 250, box.y + box.height / 2, { steps: 5 });
+  await splitPage.mouse.up();
+  const afterDrag = await splitPage.evaluate(() => ({
+    editorWidth: document.getElementById('pane-editor').getBoundingClientRect().width,
+    pct: localStorage.getItem('lucivo:splitRatio')
+  }));
+  // 20〜80% クランプ確認（右端近くへドラッグしても 80% を超えない）
+  const box2 = await splitPage.locator('#split-resizer').boundingBox();
+  await splitPage.mouse.move(box2.x + box2.width / 2, box2.y + box2.height / 2);
+  await splitPage.mouse.down();
+  await splitPage.mouse.move(1400, box2.y + box2.height / 2, { steps: 4 });
+  await splitPage.mouse.up();
+  const clamped = await splitPage.evaluate(() => localStorage.getItem('lucivo:splitRatio'));
+  // 適度な比率へ戻してからリロードで復元確認
+  await splitPage.evaluate(() => localStorage.setItem('lucivo:splitRatio', '55'));
+  await splitPage.reload();
+  await splitPage.waitForFunction(() => typeof renderApp === 'function');
+  const afterReload = await splitPage.evaluate(() => ({
+    pctVar: document.getElementById('pane-editor').style.getPropertyValue('--split-editor-pct'),
+    editorWidth: document.getElementById('pane-editor').getBoundingClientRect().width
+  }));
+  await splitPage.click('[data-view-mode="canvas"]');
+  const resizerHiddenInCanvas = await splitPage.evaluate(() => document.getElementById('split-resizer').classList.contains('hidden'));
+  await splitCtx.close();
+  record('TC-UI-003',
+    beforeSplit.resizerVisible
+    && afterDrag.editorWidth > beforeSplit.editorWidth + 150
+    && parseFloat(clamped) === 80
+    && afterReload.pctVar === '55%'
+    && afterReload.editorWidth > 700
+    && resizerHiddenInCanvas,
+    JSON.stringify({ beforeSplit, afterDrag, clamped, afterReload, resizerHiddenInCanvas })
+  );
+}
+
 // TC-OFF-001〜003: インターネットに接続していなくても、同梱のファイルだけで動く（NFR-008）
 async function testOffline(browser) {
   const ctx = await browser.newContext({ offline: true, viewport: { width: 1600, height: 1000 } });
@@ -4421,6 +4578,7 @@ const SUITES = [
   { name: 'testDiagramUserStyles', tcPrefix: ['TC-DIAG-030'], fn: testDiagramUserStyles },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
+  { name: 'testResponsiveAndWebUi', tcPrefix: ['TC-UI-'], fn: testResponsiveAndWebUi },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
 ];
 
