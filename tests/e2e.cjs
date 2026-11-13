@@ -45,6 +45,12 @@ async function waitRendered(page) {
   await page.waitForTimeout(300);
 }
 
+// 「ファイルを開く…」で開いた文書は、読み込み時に整える（FR-053）。開いた後の内容と比べるときは、
+// 同じ整形の部品で整えた文書と比べる（整形の部品を読み込んでいないときは、そのままの文書と比べる）
+async function formattedForLoad(page, text) {
+  return page.evaluate(t => (window.LucivoFormatter ? window.LucivoFormatter.format(t).text : t), text);
+}
+
 async function loadSample(page) {
   let dialog = false;
   const onDialog = d => { dialog = true; d.accept(); };
@@ -337,7 +343,7 @@ async function testFileLoading(browser) {
     toast: document.getElementById('toast-message').textContent
   }));
   const editorValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
-  after.sameAsFile = editorValue === fs.readFileSync(SAMPLE, 'utf8').replace(/^\uFEFF/, '');
+  after.sameAsFile = editorValue === await formattedForLoad(page, fs.readFileSync(SAMPLE, 'utf8').replace(/^\uFEFF/, ''));
   record('TC-FILE-003',
     !dialogOnFirstLoad && visualSampleMatched && notationSampleMatched && extraSampleMatched && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast),
     JSON.stringify({ dialogOnFirstLoad, visualSampleMatched, notationSampleMatched, extraSampleMatched, ...after }));
@@ -466,11 +472,13 @@ async function testUrlLoading(browser) {
   await p2.goto(`${APP_URL}#url=${encodeURIComponent('https://example.com/docs/sjis_note.md')}`);
   await p2.waitForFunction(() => document.getElementById('markdown-editor') && document.getElementById('markdown-editor').value.length > 0, null, { timeout: 10000 });
   await waitRendered(p2);
-  const hashRes = await p2.evaluate(() => ({
+  // URL から開いた文書も、読み込み時に整える（FR-053）。期待する文書は source.md を同じ部品で整えたもの
+  const hashRes = await p2.evaluate(src => ({
     val: document.getElementById('markdown-editor').value,
     readOnly: document.getElementById('markdown-editor').readOnly,
-    title: document.title
-  }));
+    title: document.title,
+    expected: window.LucivoFormatter ? window.LucivoFormatter.format(src).text : null
+  }), sjisExpected);
   await ctx2.close();
 
   // 3) 不正スキーム（javascript:）では通信せず警告トーストを出す
@@ -502,10 +510,10 @@ async function testUrlLoading(browser) {
     queryRes.val === '# Remote Guide\n\nLoaded via URL parameter.\n'
     && queryRes.readOnly === true && queryRes.title === 'guide.md - Lucivo' && queryRes.h1 === 'Remote Guide'
     && p1.consoleErrors.length === 0
-    && hashRes.val === sjisExpected && hashRes.readOnly === true && hashRes.title === 'sjis_note.md - Lucivo'
+    && hashRes.expected !== null && hashRes.val === hashRes.expected && hashRes.val !== sjisExpected && hashRes.readOnly === true && hashRes.title === 'sjis_note.md - Lucivo'
     && blockedReqs.length === 0 && badScheme.val === '' && badScheme.toast.includes('http / https')
     && errRes.val === '' && errRes.toast.includes('読み込めませんでした'),
-    JSON.stringify({ queryRes, hashTitle: hashRes.title, hashMatch: hashRes.val === sjisExpected, blockedReqs, badScheme, errRes, consoleErrors: p1.consoleErrors }));
+    JSON.stringify({ queryRes, hashTitle: hashRes.title, hashMatch: hashRes.val === hashRes.expected, formatted: hashRes.val !== sjisExpected, blockedReqs, badScheme, errRes, consoleErrors: p1.consoleErrors }));
 }
 
 async function testDiagramRendering(browser) {
@@ -4479,6 +4487,92 @@ async function testTree(browser) {
   await page.context().close();
 }
 
+
+
+
+// Markdown の整形（TC-FILE-036〜040、FR-053）。messy.md を開くと messy.expected.md になる
+const FORMAT_FIXTURE = path.join(__dirname, 'fixtures', 'format');
+
+async function testFormatter(browser) {
+  const page = await openStagePage(browser);
+  const dialogs = [];
+  page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
+  const expected = fs.readFileSync(path.join(FORMAT_FIXTURE, 'messy.expected.md'), 'utf8');
+  const raw = fs.readFileSync(path.join(FORMAT_FIXTURE, 'messy.md'), 'utf8');
+
+  // TC-FILE-040: 起動しただけでは、整形の部品（js/formatter.js）を読み込まない（NFR-006）
+  const atStartup = await page.evaluate(() => ({
+    script: Array.from(document.scripts).some(s => /formatter\.js/.test(s.src)),
+    global: typeof window.LucivoFormatter !== 'undefined'
+  }));
+
+  // TC-FILE-036: ファイルを開くと整えて表示し、整えた内容を読み込んだ状態（編集していない）として扱う
+  const open = async (file, title) => {
+    await page.click('#btn-file-menu');
+    await page.setInputFiles('#file-input', file);
+    await page.waitForFunction(t => document.title === `${t} - Lucivo`, title);
+    await waitRendered(page);
+    return page.evaluate(() => ({
+      value: document.getElementById('markdown-editor').value,
+      dirty: document.getElementById('markdown-editor').value !== lastLoadedMarkdown,
+      toast: document.getElementById('toast-message').textContent,
+      h1: (document.querySelector('#standard-doc-container h1') || {}).textContent,
+      h2: (document.querySelector('#standard-doc-container h2') || {}).textContent,
+      // 最初の表（引用の外の表）の本体の行の数
+      rows: (document.querySelector('#standard-doc-container > table, #standard-doc-container .table-wrap table, #standard-doc-container table') || { querySelectorAll: () => [] }).querySelectorAll('tbody tr').length,
+      br: document.querySelectorAll('#standard-doc-container p br').length
+    }));
+  };
+  const formatted = await open(path.join(FORMAT_FIXTURE, 'messy.md'), 'messy.md');
+  record('TC-FILE-036', formatted.value === expected && !formatted.dirty && /を読み込みました。.*を整えました$/.test(formatted.toast)
+    && formatted.h1 === '見出しの空白がない' && formatted.h2 === '空白が多い見出し' && formatted.rows === 2 && formatted.br === 2 && !atStartup.script,
+  JSON.stringify({ sameAsExpected: formatted.value === expected, dirty: formatted.dirty, toast: formatted.toast, h1: formatted.h1, h2: formatted.h2, rows: formatted.rows, br: formatted.br }));
+
+  // TC-FILE-037: 整えた文書をもう一度整えても変わらない（何度開いても同じ結果になる）
+  const again = await page.evaluate(text => window.LucivoFormatter.format(text), expected);
+  record('TC-FILE-037', !again.changed && again.text === expected, JSON.stringify({ changed: again.changed, fixes: again.fixes, tables: again.tables }));
+
+  // TC-FILE-038: 設定で読み込み時の整形を止めると、開いた文書をそのまま表示する。止めた設定はブラウザに残る
+  await page.click('#btn-open-settings');
+  const toggleBefore = await page.isChecked('#setting-format-on-load');
+  await page.uncheck('#setting-format-on-load');
+  await page.click('#btn-close-settings');
+  await page.reload();
+  await page.waitForFunction(() => typeof renderApp === 'function');
+  const toggleAfterReload = await page.evaluate(() => document.getElementById('setting-format-on-load').checked);
+  const plain = await open(path.join(FORMAT_FIXTURE, 'messy.md'), 'messy.md');
+  record('TC-FILE-038', toggleBefore && !toggleAfterReload && plain.value === raw && !plain.dirty && /を読み込みました$/.test(plain.toast),
+    JSON.stringify({ toggleBefore, toggleAfterReload, sameAsRaw: plain.value === raw, toast: plain.toast }));
+
+  // TC-FILE-039: 設定の「今の文書を整える」で、エディタの文書を整える。整えた内容は保存していない編集として扱う
+  await page.click('#btn-open-settings');
+  await page.click('#btn-format-now');
+  await page.waitForFunction(t => document.getElementById('markdown-editor').value === t, expected, { timeout: 10000 }).catch(() => {});
+  const manual = await page.evaluate(() => ({
+    value: document.getElementById('markdown-editor').value,
+    dirty: document.getElementById('markdown-editor').value !== lastLoadedMarkdown,
+    toast: document.getElementById('toast-message').textContent,
+    modalClosed: document.getElementById('settings-modal').classList.contains('hidden')
+  }));
+  record('TC-FILE-039', manual.value === expected && manual.dirty && /を整えました（保存すると反映されます）$/.test(manual.toast) && manual.modalClosed,
+    JSON.stringify({ sameAsExpected: manual.value === expected, dirty: manual.dirty, toast: manual.toast, modalClosed: manual.modalClosed }));
+
+  // TC-FILE-040: 同梱サンプルは、読み込み時の整形をオンにしていても整えない（DD-FILE-091）
+  await page.click('#btn-open-settings');
+  await page.check('#setting-format-on-load');
+  await page.click('#btn-close-settings');
+  const sampleFile = 'notation_sample_extra1.md';
+  await page.click('#btn-file-menu');
+  await page.click(`[data-sample-file="${sampleFile}"]`);
+  await page.waitForFunction(t => document.title === `${t} - Lucivo`, sampleFile);
+  await waitRendered(page);
+  const sampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  const sampleRaw = fs.readFileSync(path.join(APP_DIR, 'samples', sampleFile), 'utf8').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  record('TC-FILE-040', sampleValue === sampleRaw && !atStartup.global && dialogs.length === 1,
+    JSON.stringify({ sameAsFile: sampleValue === sampleRaw, startupGlobal: atStartup.global, dialogs }));
+  await page.context().close();
+}
+
 // 文字コードと改行コード（TC-FILE-029〜031）。サンプルは tests/fixtures/encoding/source.md を各文字コード・改行コードで書いたもの
 const ENCODING_FIXTURE = path.join(__dirname, 'fixtures', 'encoding');
 const ENCODING_CASES = [
@@ -4489,6 +4583,8 @@ const ENCODING_CASES = [
 
 async function testEncoding(browser) {
   const page = await openStagePage(browser);
+  // 文字コードの判定だけを確かめるため、読み込み時の整形（FR-053）は止める。整形は testFormatter で確かめる
+  await page.evaluate(() => localStorage.setItem('lucivo.formatOnLoad', '0'));
   const expected = fs.readFileSync(path.join(ENCODING_FIXTURE, 'source.md'), 'utf8');
   const dialogs = [];
   page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
@@ -4555,6 +4651,7 @@ const SUITES = [
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
+  { name: 'testFormatter', tcPrefix: ['TC-FILE-036', 'TC-FILE-037', 'TC-FILE-038', 'TC-FILE-039', 'TC-FILE-040'], fn: testFormatter },
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
