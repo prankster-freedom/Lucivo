@@ -4,7 +4,7 @@ module.exports = [
     ignores: ['public/vendor/**', 'node_modules/**', 'work/**']
   },
   {
-    files: ['public/js/**/*.js'],
+    files: ['public/js/**/*.js', 'src/js/**/*.js'],
     languageOptions: { ecmaVersion: 'latest', sourceType: 'script' },
     rules: {
       // 正規表現に紛れ込んだ制御文字（\b が 0x08 に変わるなど）

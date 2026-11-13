@@ -6,23 +6,41 @@ const { version } = require('../package.json');
 const isProd = process.argv.includes('--prod');
 const ROOT_DIR = path.resolve(__dirname, '..');
 
+// 発表モード別の独立ビルド対象（#58）。各モード（#61〜#63）は追加時にここへ足す
+const STAGE_MODE_ENTRIES = [
+  { entry: path.join(ROOT_DIR, 'src', 'js', 'stage.js'), outfile: path.join(ROOT_DIR, 'public', 'js', 'stage.js') }
+];
+
 async function build() {
   const start = Date.now();
   console.log(`Building app (${isProd ? 'production' : 'development'})...`);
 
-  // Build JavaScript / TypeScript
-  await esbuild.build({
-    entryPoints: [path.join(ROOT_DIR, 'src', 'ts', 'app.ts')],
-    outfile: path.join(ROOT_DIR, 'public', 'js', 'app.js'),
+  const commonJsOptions = {
     bundle: true,
     format: 'iife',
     target: ['es2020'],
     sourcemap: !isProd ? 'inline' : false,
     minify: isProd,
     charset: 'utf8',
-    legalComments: 'inline',
-    define: { __LUCIVO_VERSION__: JSON.stringify(version) }
-  });
+    legalComments: 'inline'
+  };
+
+  // Build main app + mode-specific stage scripts in parallel
+  await Promise.all([
+    esbuild.build({
+      ...commonJsOptions,
+      entryPoints: [path.join(ROOT_DIR, 'src', 'ts', 'app.ts')],
+      outfile: path.join(ROOT_DIR, 'public', 'js', 'app.js'),
+      define: { __LUCIVO_VERSION__: JSON.stringify(version) }
+    }),
+    ...STAGE_MODE_ENTRIES.map(({ entry, outfile }) =>
+      esbuild.build({
+        ...commonJsOptions,
+        entryPoints: [entry],
+        outfile
+      })
+    )
+  ]);
 
   // Build CSS
   await esbuild.build({
