@@ -25,6 +25,25 @@ const FONTS = [
 
 const LICENSED = ['marked', 'dompurify', 'mermaid', 'katex', ...FONTS.map(([pkg]) => `@fontsource-variable/${pkg}`)];
 
+// js/formatter.js（tools/build-app.cjs でビルドする Markdown の整形。FR-053）に同梱するパッケージ。
+// 手で一覧を持つと版の更新でずれるため、esbuild の metafile から、束に入ったパッケージを集める
+function bundledPackages(entry) {
+  const esbuild = require('esbuild');
+  const { metafile } = esbuild.buildSync({
+    entryPoints: [entry], bundle: true, format: 'iife', platform: 'browser', write: false, metafile: true
+  });
+  const pkgs = new Set();
+  for (const input of Object.keys(metafile.inputs)) {
+    const m = /node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)/.exec(input);
+    if (m) pkgs.add(m[1].replace(/\\/g, '/'));
+  }
+  return [...pkgs].sort();
+}
+
+for (const pkg of bundledPackages(path.join(ROOT_DIR, 'src', 'ts', 'formatter', 'index.ts'))) {
+  if (!LICENSED.includes(pkg)) LICENSED.push(pkg);
+}
+
 function copy(from, to) {
   fs.mkdirSync(path.dirname(to), { recursive: true });
   fs.copyFileSync(from, to);

@@ -321,6 +321,16 @@
         </div>
       </div>
 
+      <!-- Markdown の整形（FR-053, DD-FILE-092） -->
+      <div class="flex flex-col gap-2">
+        <label class="text-[11px] font-mono uppercase font-semibold" style="color: var(--text-muted);">Markdown の整形</label>
+        <label class="settings-toggle" for="setting-format-on-load">
+          <input id="setting-format-on-load" type="checkbox" checked />
+          <span>ファイルを開いたときに整える（見出しの空白・前後の空行・行末の空白・リストの記号・表の列）</span>
+        </label>
+        <button id="btn-format-now" type="button" class="settings-action-btn">今の文書を整える</button>
+      </div>
+
     </div>
   </div>
 

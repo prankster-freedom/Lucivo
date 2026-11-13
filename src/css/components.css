@@ -1,4 +1,40 @@
 /* ==========================================================================
+   設定の画面の Markdown の整形（FR-053, DD-FILE-092）
+   ========================================================================== */
+/* tailwind.css は使うクラスだけを事前に生成しているため、専用のクラスで組む */
+.settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.settings-toggle input {
+  margin-top: 0.2rem;
+  accent-color: var(--accent, #2563eb);
+  cursor: pointer;
+}
+
+.settings-action-btn {
+  align-self: flex-start;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.6rem;
+  background: var(--panel-sub);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-action-btn:hover {
+  border-color: var(--accent, #2563eb);
+}
+
+/* ==========================================================================
    ファイルのドロップの受け付け（FR-041, DTP-007）
    ========================================================================== */
 /* ドラッグ中だけ画面全体に重ねる。文書の中身ではなく Lucivo 自身の表現のため、

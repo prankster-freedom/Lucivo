@@ -332,7 +332,9 @@ const LIBRARIES = {
   // Visualモードの舞台演出（FR-018, FR-019）。高速モードの起動には読み込まない（NFR-006）
   stage: { script: './js/stage.js', global: 'LucivoStage' },
   // file:// 直開き時の同梱サンプル読み込みフォールバック（FR-006）。サンプルを選んだときだけ読み込む（NFR-006）
-  samples: { script: './samples/samples-data.js', global: 'LUCIVO_SAMPLES' }
+  samples: { script: './samples/samples-data.js', global: 'LUCIVO_SAMPLES' },
+  // Markdown の整形（FR-053, DD-FILE-088）。文書を読み込むときと「今の文書を整える」のときだけ読み込む（NFR-006）
+  formatter: { script: './js/formatter.js', global: 'LucivoFormatter' },
 };
 const libraryLoads = new Map();
 // 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを CDN の URL に置き換える（DD-OFF-003）
@@ -2993,7 +2995,8 @@ function confirmDiscardEdits(fileName) {
 // folderPath: フォルダから開いたときの、フォルダの中のパス（例: docs/a.md）。相対パスの画像の基準にする（DD-FILE-075）
 // isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
 // encoding: ファイルから読んだときの文字コード（decodeMarkdown() の結果。同梱サンプルは UTF-8）（FR-048, DD-FILE-083）
-function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8') {
+// formatted: 読み込み時の整形の結果（FR-053）。整えたときは、読み込みの知らせに直した箇所の数を添える
+function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null) {
   // 改行コードを LF にそろえる。そろえないと、textarea が LF に変えた内容と食い違い、編集していないのに破棄の確認が出る
   const text = normalizeText(String(rawText));
   currentFileEncoding = encoding;
@@ -3013,9 +3016,91 @@ function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = fa
   document.getElementById('preview-scroll').scrollTop = 0;
   followedKey = null;
   // UTF-8 以外で読んだときは、何として読んだかと、保存すると UTF-8 になることを知らせる（DD-FILE-083）
+  const formatNote = formatted && formatted.changed ? `。${formatSummary(formatted)}を整えました` : '';
   showToast(isUtf8Family(encoding)
-    ? `「${fileName}」を読み込みました`
-    : `「${fileName}」を ${encoding} として読み込みました（保存は UTF-8 になります）`);
+    ? `「${fileName}」を読み込みました${formatNote}`
+    : `「${fileName}」を ${encoding} として読み込みました（保存は UTF-8 になります）${formatNote}`);
+}
+
+/* ==========================================================================
+   Markdown の整形（FR-053, DD-FILE-088〜092）
+   ========================================================================== */
+// 読み込み時に整えるかどうか。既定は整える。ブラウザに覚えられないとき（プライベートの窓など）も既定のまま動く
+const FORMAT_ON_LOAD_KEY = 'lucivo.formatOnLoad';
+let formatOnLoadFallback = true;
+
+function isFormatOnLoadEnabled() {
+  try {
+    const saved = localStorage.getItem(FORMAT_ON_LOAD_KEY);
+    return saved === null ? formatOnLoadFallback : saved === '1';
+  } catch (_) {
+    return formatOnLoadFallback;
+  }
+}
+
+function setFormatOnLoadEnabled(enabled) {
+  formatOnLoadFallback = enabled;
+  try { localStorage.setItem(FORMAT_ON_LOAD_KEY, enabled ? '1' : '0'); } catch (_) {}
+}
+
+function formatSummary(result) {
+  const parts = [];
+  if (result.fixes > 0) parts.push(`記法 ${result.fixes} か所`);
+  if (result.tables > 0) parts.push(`表 ${result.tables} 個`);
+  return parts.length ? parts.join('と') : '空白';
+}
+
+// 文書を整える。整形の部品を読み込めないとき・失敗したときは、元の文書のまま返す（読み込みは止めない）
+async function formatMarkdown(text) {
+  if (!(await loadLibrary('formatter')) || !window.LucivoFormatter) return null;
+  try {
+    return window.LucivoFormatter.format(text);
+  } catch (err) {
+    console.error('Failed to format markdown:', err);
+    return null;
+  }
+}
+
+// 利用者が開いた文書（ファイル・フォルダ・URL）を、読み込む前に整える。同梱サンプルは整えない（DD-FILE-091）
+async function prepareLoadedText(rawText) {
+  const text = normalizeText(String(rawText));
+  if (!isFormatOnLoadEnabled()) return { text, formatted: null };
+  const result = await formatMarkdown(text);
+  return result ? { text: result.text, formatted: result } : { text, formatted: null };
+}
+
+// 設定の「今の文書を整える」。整えた内容は保存していない編集として扱う（DD-FILE-092）
+async function formatCurrentDocument() {
+  const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement;
+  const result = await formatMarkdown(editor.value);
+  if (!result) {
+    showToast('Markdown を整えられませんでした');
+    return;
+  }
+  if (!result.changed) {
+    showToast('整える箇所はありませんでした');
+    return;
+  }
+  editor.value = result.text;
+  clearTimeout(renderDebounceTimer);
+  renderApp();
+  showToast(`${formatSummary(result)}を整えました（保存すると反映されます）`);
+}
+
+function setupFormatter() {
+  const toggle = document.getElementById('setting-format-on-load') as HTMLInputElement | null;
+  if (toggle) {
+    toggle.checked = isFormatOnLoadEnabled();
+    toggle.addEventListener('change', () => {
+      setFormatOnLoadEnabled(toggle.checked);
+      showToast(toggle.checked ? '読み込み時に Markdown を整えます' : '読み込み時に Markdown を整えません');
+    });
+  }
+  document.getElementById('btn-format-now')?.addEventListener('click', () => {
+    setModalOpen('settings-modal', false);
+    formatCurrentDocument();
+  });
+}
 }
 
 // ファイルのバイト列を読み、文字コードを判定してから開く（FR-048, DD-FILE-082）
@@ -3029,7 +3114,6 @@ async function loadMarkdownFile(file) {
     showToast(`「${file.name}」を読み込めませんでした`);
     return;
   }
-  applyLoadedMarkdown(decoded.text, file.name, null, false, decoded.encoding);
 }
 
 // 開くメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
@@ -3552,7 +3636,6 @@ async function openFolderFile(path) {
   if (!confirmDiscardEdits(name)) return false;
   try {
     const decoded = decodeMarkdown(await file.arrayBuffer());
-    applyLoadedMarkdown(decoded.text, name, path, false, decoded.encoding);
   } catch (err) {
     console.error('Failed to read file:', err);
     showToast(`「${name}」を読み込めませんでした`);
@@ -3840,7 +3923,6 @@ async function loadMarkdownFromUrlParam() {
   try {
     const { buffer, fileName } = await fetchMarkdownFromUrl(validUrl);
     const decoded = decodeMarkdown(buffer);
-    applyLoadedMarkdown(decoded.text, fileName, null, false, decoded.encoding);
   } catch (err) {
     console.error('Failed to fetch markdown from URL:', err);
     showToast('URL から Markdown を読み込めませんでした。CORS 制限やネットワークをご確認ください', 4500);
