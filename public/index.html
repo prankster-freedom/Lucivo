@@ -19,18 +19,43 @@
 <body data-appearance="light" class="flex flex-col">
 
   <!-- ==================== メインヘッダー ==================== -->
-  <header class="glass-nav h-12 px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0 z-30">
-    <div class="flex items-center gap-2 shrink-0">
+  <header id="main-header" class="glass-nav h-12 px-2 sm:px-3 lg:px-5 flex items-center justify-between gap-1 lg:gap-2 shrink-0 z-30">
+    <div class="flex items-center gap-1 lg:gap-2 shrink-0">
       <div id="header-brand-logo" class="header-brand-logo shrink-0">
         <!-- 公開リポジトリ（最新版）への導線（FR-024）。URL は app.js の REPOSITORY_URL と同じにする -->
         <a class="brand-link" href="https://github.com/prankster-freedom/Lucivo" target="_blank" rel="noopener noreferrer" title="Lucivo の公開リポジトリ（最新版）を開く">
           <img class="brand-logo-light" src="./assets/logos/light/logo_capsule.svg" alt="Lucivo（公開リポジトリを開く）" width="117" height="32" />
           <img class="brand-logo-dark" src="./assets/logos/dark/logo_capsule.svg" alt="Lucivo（公開リポジトリを開く）" width="117" height="32" />
+          <img class="brand-mark-light" src="./assets/logos/light/favicon.svg" alt="Lucivo（公開リポジトリを開く）" width="28" height="28" />
+          <img class="brand-mark-dark" src="./assets/logos/dark/favicon.svg" alt="Lucivo（公開リポジトリを開く）" width="28" height="28" />
         </a>
       </div>
 
+      <!-- 狭い画面用統合ファイルメニュー（#88: 1024px 未満） -->
+      <div id="mobile-file-wrap" class="relative lg:hidden">
+        <button id="btn-mobile-file" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="mobile-file-menu" class="h-8 px-2 rounded-lg border flex items-center gap-1 text-[11px] font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+          </svg>
+          <span>ファイル</span>
+        </button>
+        <div id="mobile-file-menu" role="menu" class="file-menu hidden">
+          <button id="mobile-menu-open-markdown" type="button" role="menuitem" class="file-menu-item">ファイルを開く…</button>
+          <button id="mobile-menu-open-folder" type="button" role="menuitem" class="file-menu-item">フォルダを開く…</button>
+          <button id="mobile-menu-open-recent-folder" type="button" role="menuitem" class="file-menu-item hidden"></button>
+          <div class="file-menu-divider" role="separator"></div>
+          <div class="file-menu-section-label">同梱サンプル</div>
+          <button type="button" role="menuitem" data-mobile-sample="menu-sample-visual" class="file-menu-item">Visualモードサンプル</button>
+          <button type="button" role="menuitem" data-mobile-sample="menu-sample-notation" class="file-menu-item">記法サンプル</button>
+          <button type="button" role="menuitem" data-mobile-sample="menu-sample-notation-extra" class="file-menu-item">記法サンプル追補版</button>
+          <div class="file-menu-divider" role="separator"></div>
+          <button id="mobile-menu-save-markdown" type="button" role="menuitem" class="file-menu-item">Markdown を保存</button>
+          <button id="mobile-menu-print" type="button" role="menuitem" class="file-menu-item">印刷 / PDF として保存…</button>
+        </div>
+      </div>
+
       <!-- 開くメニュー（FR-006, FR-043） -->
-      <div class="relative ml-1 sm:ml-2">
+      <div id="open-menu-wrap" class="relative ml-1 sm:ml-2 hidden lg:block">
         <button id="btn-file-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="file-menu" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
@@ -52,7 +77,7 @@
         <input id="folder-input" type="file" webkitdirectory multiple class="hidden" />
       </div>
       <!-- 保存メニュー（FR-013, FR-036） -->
-      <div class="relative">
+      <div id="save-menu-wrap" class="relative hidden lg:block">
         <button id="btn-save-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="save-menu" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"></path>
@@ -67,47 +92,72 @@
     </div>
 
     <!-- モード切り替え -->
-    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-      <!-- ビューモード (Split / Canvas / Code) -->
-      <div class="pill-container shrink-0">
+    <div class="flex items-center gap-1 lg:gap-2 shrink-0">
+      <!-- ビューモード (Split / Canvas / Code: 広い画面) -->
+      <div id="desktop-view-pills" class="pill-container shrink-0 hidden lg:inline-flex">
         <button type="button" data-view-mode="split" class="pill-btn view-mode-btn">Split</button>
         <button type="button" data-view-mode="canvas" class="pill-btn view-mode-btn">Canvas</button>
         <button type="button" data-view-mode="editor" class="pill-btn view-mode-btn">Code</button>
       </div>
+      <!-- 狭い画面用表示メニュー（#88: 1024px 未満） -->
+      <div id="mobile-view-wrap" class="relative lg:hidden">
+        <button id="btn-mobile-view" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="mobile-view-menu" class="h-8 px-2 rounded-lg border flex items-center gap-1 text-[11px] font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="表示の切り替え">
+          <span id="mobile-view-label">Canvas</span>
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="mobile-view-menu" role="menu" class="file-menu hidden">
+          <button type="button" role="menuitem" data-mobile-view-mode="split" class="file-menu-item">Split（分割）</button>
+          <button type="button" role="menuitem" data-mobile-view-mode="canvas" class="file-menu-item">Canvas（プレビュー）</button>
+          <button type="button" role="menuitem" data-mobile-view-mode="editor" class="file-menu-item">Code（エディタ）</button>
+        </div>
+      </div>
 
       <!-- 描画モード (高速モード / Visualモード) -->
       <div class="pill-container shrink-0">
-        <button type="button" id="btn-mode-fast" data-stage-mode="fast" class="pill-btn stage-mode-btn is-active">高速モード</button>
+        <button type="button" id="btn-mode-fast" data-stage-mode="fast" class="pill-btn stage-mode-btn is-active"><span class="hidden lg:inline">高速モード</span><span class="lg:hidden">高速</span></button>
         <button type="button" id="btn-visual-mode" data-stage-mode="visual" class="pill-btn stage-mode-btn flex items-center gap-1">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg class="w-3.5 h-3.5 hidden lg:inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
           </svg>
-          <span>Visualモード</span>
+          <span class="hidden lg:inline">Visualモード</span><span class="lg:hidden">Visual</span>
         </button>
       </div>
-      <button id="btn-stage-show" type="button" class="h-8 px-2.5 rounded-lg border flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer shrink-0" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="章ごとに全画面で発表する（ステージ発表）">
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v11H4zM12 16v4M8 20h8M10 8.5v4l3.5-2z"></path>
-        </svg>
-        <span>発表</span>
-      </button>
+      <!-- 発表ボタン（#88: ドロップダウン付きの独立ボタン） -->
+      <div id="present-menu-wrap" class="relative flex items-center shrink-0">
+        <button id="btn-stage-show" type="button" class="h-8 px-2 lg:px-2.5 rounded-l-lg border flex items-center gap-1 text-[11px] lg:text-xs font-semibold transition-all cursor-pointer shrink-0" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="章ごとに全画面で発表する（ステージ発表）">
+          <svg class="w-3.5 h-3.5 hidden lg:inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v11H4zM12 16v4M8 20h8M10 8.5v4l3.5-2z"></path>
+          </svg>
+          <span>発表</span>
+        </button>
+        <button id="btn-present-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="present-menu" class="h-8 px-1.5 rounded-r-lg border border-l-0 flex items-center justify-center transition-all cursor-pointer shrink-0" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" aria-label="発表モードを選ぶ" title="発表モードを選ぶ">
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div id="present-menu" role="menu" class="file-menu file-menu-right hidden">
+          <button id="menu-present-stage" type="button" role="menuitem" class="file-menu-item">ステージ発表</button>
+        </div>
+      </div>
     </div>
 
     <!-- 右側ツール -->
-    <div id="header-right-tools" class="flex items-center gap-1.5 shrink-0">
-      <button id="btn-open-settings" type="button" class="h-8 px-2.5 rounded-lg border flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="矢印スタイル・パレット設定">
+    <div id="header-right-tools" class="flex items-center gap-1 lg:gap-1.5 shrink-0">
+      <button id="btn-open-settings" type="button" class="hidden lg:flex h-8 px-2.5 rounded-lg border items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="矢印スタイル・パレット設定">
         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
         </svg>
-        <span class="hidden sm:inline" id="active-palette-name">Cobalt</span>
+        <span class="hidden lg:inline" id="active-palette-name">Cobalt</span>
       </button>
-      <button id="btn-toggle-animation" type="button" class="header-icon-btn is-active" aria-pressed="true" aria-label="フローのアニメーション ON / OFF" title="フローのアニメーション: ON（クリックでOFF）">
+      <button id="btn-toggle-animation" type="button" class="header-icon-btn is-active hidden lg:inline-flex" aria-pressed="true" aria-label="フローのアニメーション ON / OFF" title="フローのアニメーション: ON（クリックでOFF）">
         <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
         </svg>
       </button>
-      <button id="btn-front-matter" type="button" class="front-matter-toggle" aria-pressed="false" title="YAML フロントマターの表示 ON / OFF">YAML</button>
-      <button id="btn-theme-toggle" type="button" class="w-8 h-8 rounded-lg flex items-center justify-center border transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="Light / Dark 切替">
+      <button id="btn-front-matter" type="button" class="front-matter-toggle hidden lg:inline-flex" aria-pressed="false" title="YAML フロントマターの表示 ON / OFF">YAML</button>
+      <button id="btn-theme-toggle" type="button" class="w-8 h-8 rounded-lg hidden lg:flex items-center justify-center border transition-all cursor-pointer" style="border-color: var(--border-subtle); background: var(--panel-sub); color: var(--text-secondary);" title="Light / Dark 切替">
         <svg id="icon-sun" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="4"></circle>
           <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"></path>
@@ -116,7 +166,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
         </svg>
       </button>
-      <div id="header-update-wrap" class="relative">
+      <div id="header-update-wrap" class="relative hidden lg:block">
         <button id="btn-header-update" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="update-menu" class="header-icon-btn header-update-btn" title="最新版を確認">
           <span id="header-update-label">最新版確認</span>
           <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -126,6 +176,23 @@
         <div id="update-menu" role="menu" class="file-menu file-menu-right hidden">
           <button id="menu-check-update" type="button" role="menuitem" class="file-menu-item">通信が発生します</button>
           <div id="header-update-menu-result" class="update-check-menu-result update-check-result hidden" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+      <!-- 狭い画面用その他メニュー（#88: 1024px 未満） -->
+      <div id="mobile-more-wrap" class="relative lg:hidden">
+        <button id="btn-more-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="more-menu" class="header-icon-btn" aria-label="その他の設定" title="その他の設定">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="5" cy="12" r="1.5" fill="currentColor"></circle>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"></circle>
+            <circle cx="19" cy="12" r="1.5" fill="currentColor"></circle>
+          </svg>
+        </button>
+        <div id="more-menu" role="menu" class="file-menu file-menu-right hidden">
+          <button id="menu-more-settings" type="button" role="menuitem" class="file-menu-item">矢印・パレット設定…</button>
+          <button id="menu-more-animation" type="button" role="menuitem" class="file-menu-item">フローのアニメーション切替</button>
+          <button id="menu-more-yaml" type="button" role="menuitem" class="file-menu-item">YAML フロントマター切替</button>
+          <button id="menu-more-theme" type="button" role="menuitem" class="file-menu-item">Light / Dark 切替</button>
+          <button id="menu-more-update" type="button" role="menuitem" class="file-menu-item">最新版を確認（通信発生）</button>
         </div>
       </div>
       <a id="btn-header-help" href="https://github.com/prankster-freedom/Lucivo/blob/main/README.md" target="_blank" rel="noopener noreferrer" class="header-icon-btn" aria-label="ヘルプ（README）を開く" title="ヘルプ（README）を開く（GitHub に接続します）">
@@ -184,10 +251,10 @@
             <button id="btn-edit-lock" type="button" class="pill-btn editor-lock-btn is-active" aria-pressed="true" title="読み取り専用で閲覧する">閲覧</button>
             <button id="btn-edit-unlock" type="button" class="pill-btn editor-lock-btn" aria-pressed="false" title="エディタで編集する">編集</button>
           </span>
-          <button id="btn-test-cache" type="button" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 cursor-pointer">
+          <button id="btn-test-cache" type="button" class="hidden lg:inline-flex text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 cursor-pointer">
             + 0ms Test
           </button>
-          <button id="btn-test-err" type="button" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/25 cursor-pointer">
+          <button id="btn-test-err" type="button" class="hidden lg:inline-flex text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/25 cursor-pointer">
             + Err Guard
           </button>
         </div>
@@ -196,6 +263,9 @@
         <textarea id="markdown-editor" class="w-full h-full p-4 text-xs sm:text-[13px] overflow-y-auto" spellcheck="false" placeholder="Markdownと ```mermaid を記述..."></textarea>
       </div>
     </section>
+
+    <!-- Split 表示の境目リサイザー（#82） -->
+    <div id="split-resizer" class="split-resizer" role="separator" aria-orientation="vertical" aria-label="エディタとプレビューの幅を調整" tabindex="0"></div>
 
     <!-- 右ペイン：プレビュー領域 -->
     <section id="pane-preview" class="flex-1 h-full flex flex-col min-w-0 min-h-0 relative">

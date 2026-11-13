@@ -33,6 +33,7 @@
   #folder-pane,
   #btn-folder-show,
   #pane-editor,
+  #split-resizer,
   #pane-preview > :not(#preview-scroll),
   .slab-actions,
   .vs-code-copy-btn,

@@ -4,7 +4,7 @@ import { fnv1aHash } from './utils/hash';
 import { downloadBlob } from './utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
 import { showToast, updateStatus } from './ui/toast';
-import { setupUpdateCheck, applyUpdateCheckState } from './ui/update-check';
+import { setupUpdateCheck, applyUpdateCheckState, checkForUpdate } from './ui/update-check';
 import { extractMarkdownUrlFromLocation, validatePublicMarkdownUrl, fetchMarkdownFromUrl } from './ui/url-loader';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
@@ -2736,33 +2736,127 @@ function setupEventListeners() {
   editor.addEventListener('click', scheduleFollow);
   editor.addEventListener('keyup', scheduleFollow);
 
+  const SPLIT_RATIO_KEY = 'lucivo:splitRatio';
+  const clampSplitPct = (pct: number) => Math.min(80, Math.max(20, Math.round(pct * 10) / 10));
+
+  const applySplitRatio = (pct: number, persist = true) => {
+    const clamped = clampSplitPct(pct);
+    const paneEditor = document.getElementById('pane-editor');
+    if (paneEditor) paneEditor.style.setProperty('--split-editor-pct', `${clamped}%`);
+    if (persist) {
+      try { localStorage.setItem(SPLIT_RATIO_KEY, String(clamped)); } catch (_) {}
+    }
+    return clamped;
+  };
+
+  const setViewMode = (mode: string) => {
+    state.viewMode = mode;
+    document.querySelectorAll('.view-mode-btn').forEach(b => {
+      b.classList.toggle('is-active', b.getAttribute('data-view-mode') === mode);
+    });
+    const mobileLabel = document.getElementById('mobile-view-label');
+    if (mobileLabel) {
+      mobileLabel.textContent = mode === 'canvas' ? 'Canvas' : mode === 'editor' ? 'Code' : 'Split';
+    }
+
+    const paneEditor = document.getElementById('pane-editor');
+    const panePreview = document.getElementById('pane-preview');
+    const resizer = document.getElementById('split-resizer');
+
+    if (mode === 'split') {
+      paneEditor.classList.remove('hidden');
+      panePreview.classList.remove('hidden');
+      resizer?.classList.remove('hidden');
+      paneEditor.className = 'is-split w-full lg:w-[40%] h-[42%] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r shrink-0 z-10';
+    } else if (mode === 'canvas') {
+      paneEditor.classList.add('hidden');
+      panePreview.classList.remove('hidden');
+      resizer?.classList.add('hidden');
+    } else if (mode === 'editor') {
+      paneEditor.classList.remove('hidden');
+      panePreview.classList.add('hidden');
+      resizer?.classList.add('hidden');
+      paneEditor.className = 'w-full h-full flex flex-col shrink-0 z-10';
+    }
+    if (state.isVisualMode && mode !== 'editor') {
+      updateAllSlabSplits(document.getElementById('visual-stage-container'));
+    }
+  };
+
+  // 保存された Split 比率を復元（#82）
+  try {
+    const savedRatio = Number(localStorage.getItem(SPLIT_RATIO_KEY));
+    if (Number.isFinite(savedRatio) && savedRatio >= 20 && savedRatio <= 80) {
+      applySplitRatio(savedRatio, false);
+    }
+  } catch (_) {}
+
   document.querySelectorAll('.view-mode-btn').forEach(btn => {
     btn.onclick = () => {
       const mode = btn.getAttribute('data-view-mode');
-      state.viewMode = mode;
-      document.querySelectorAll('.view-mode-btn').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-
-      const paneEditor = document.getElementById('pane-editor');
-      const panePreview = document.getElementById('pane-preview');
-
-      if (mode === 'split') {
-        paneEditor.classList.remove('hidden');
-        panePreview.classList.remove('hidden');
-        paneEditor.className = 'w-full lg:w-[40%] h-[42%] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r shrink-0 z-10';
-      } else if (mode === 'canvas') {
-        paneEditor.classList.add('hidden');
-        panePreview.classList.remove('hidden');
-      } else if (mode === 'editor') {
-        paneEditor.classList.remove('hidden');
-        panePreview.classList.add('hidden');
-        paneEditor.className = 'w-full h-full flex flex-col shrink-0 z-10';
-      }
-      if (state.isVisualMode && mode !== 'editor') {
-        updateAllSlabSplits(document.getElementById('visual-stage-container'));
-      }
+      if (mode) setViewMode(mode);
     };
   });
+
+  // Split 境目のドラッグリサイザー（#82）
+  const resizer = document.getElementById('split-resizer');
+  if (resizer) {
+    let dragging = false;
+    const updateFromClientPos = (clientX: number, clientY: number) => {
+      const paneEditor = document.getElementById('pane-editor');
+      const panePreview = document.getElementById('pane-preview');
+      if (!paneEditor || !panePreview) return;
+      const edRect = paneEditor.getBoundingClientRect();
+      const pvRect = panePreview.getBoundingClientRect();
+      const isHorizontal = window.innerWidth >= 1024;
+      if (isHorizontal) {
+        const total = pvRect.right - edRect.left;
+        if (total > 0) applySplitRatio(((clientX - edRect.left) / total) * 100);
+      } else {
+        const total = pvRect.bottom - edRect.top;
+        if (total > 0) applySplitRatio(((clientY - edRect.top) / total) * 100);
+      }
+    };
+    resizer.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (state.viewMode !== 'split') return;
+      e.preventDefault();
+      dragging = true;
+      resizer.classList.add('is-dragging');
+      document.body.classList.add('is-split-dragging');
+      resizer.setPointerCapture(e.pointerId);
+    });
+    resizer.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!dragging) return;
+      updateFromClientPos(e.clientX, e.clientY);
+    });
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      resizer.classList.remove('is-dragging');
+      document.body.classList.remove('is-split-dragging');
+      if (state.isVisualMode) updateAllSlabSplits(document.getElementById('visual-stage-container'));
+    };
+    resizer.addEventListener('pointerup', endDrag);
+    resizer.addEventListener('pointercancel', endDrag);
+    resizer.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (state.viewMode !== 'split') return;
+      const step = e.shiftKey ? 5 : 2;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const cur = parseFloat(document.getElementById('pane-editor')?.style.getPropertyValue('--split-editor-pct') || '40') || 40;
+        applySplitRatio(cur - step);
+        if (state.isVisualMode) updateAllSlabSplits(document.getElementById('visual-stage-container'));
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const cur = parseFloat(document.getElementById('pane-editor')?.style.getPropertyValue('--split-editor-pct') || '40') || 40;
+        applySplitRatio(cur + step);
+        if (state.isVisualMode) updateAllSlabSplits(document.getElementById('visual-stage-container'));
+      }
+    });
+  }
+
+  // 初期表示（#88: 1024px 未満は Canvas、以上は Split）
+  setViewMode(window.innerWidth < 1024 ? 'canvas' : 'split');
 
   window.addEventListener('resize', () => {
     if (state.isVisualMode) {
@@ -2869,13 +2963,21 @@ function setupEventListeners() {
 /* ==========================================================================
    開く・保存のメニュー（Markdown ファイルの読み込みと保存）
    ========================================================================== */
-// ヘッダーのメニュー（開く・保存・最新版確認）。ボタンの id とメニューの id の組（DD-FILE-002, DD-FILE-009, DD-FILE-085）
-const HEADER_MENUS = [['btn-file-menu', 'file-menu'], ['btn-save-menu', 'save-menu'], ['btn-header-update', 'update-menu']];
+// ヘッダーのメニュー（開く・保存・最新版確認・発表・狭い画面用メニュー）。ボタンの id とメニューの id の組
+const HEADER_MENUS = [
+  ['btn-file-menu', 'file-menu'],
+  ['btn-save-menu', 'save-menu'],
+  ['btn-header-update', 'update-menu'],
+  ['btn-mobile-file', 'mobile-file-menu'],
+  ['btn-mobile-view', 'mobile-view-menu'],
+  ['btn-present-menu', 'present-menu'],
+  ['btn-more-menu', 'more-menu']
+];
 
 function closeHeaderMenus() {
   HEADER_MENUS.forEach(([btnId, menuId]) => {
-    document.getElementById(menuId).classList.add('hidden');
-    document.getElementById(btnId).setAttribute('aria-expanded', 'false');
+    document.getElementById(menuId)?.classList.add('hidden');
+    document.getElementById(btnId)?.setAttribute('aria-expanded', 'false');
   });
 }
 // 既存の呼び出し（テストを含む）のための別名
@@ -2986,6 +3088,7 @@ function setupFileMenu() {
   HEADER_MENUS.forEach(([btnId, menuId]) => {
     const btn = document.getElementById(btnId);
     const menu = document.getElementById(menuId);
+    if (!btn || !menu) return;
     btn.onclick = event => {
       event.stopPropagation();
       const willOpen = menu.classList.contains('hidden');
@@ -3026,6 +3129,50 @@ function setupFileMenu() {
   document.getElementById('menu-check-update')?.addEventListener('click', () => {
     closeHeaderMenus();
   });
+  // 発表ドロップダウン（#88）
+  document.getElementById('menu-present-stage')?.addEventListener('click', () => {
+    closeHeaderMenus();
+    document.getElementById('btn-stage-show')?.click();
+  });
+  // 狭い画面用メニューの委譲（#88）
+  document.getElementById('mobile-menu-open-markdown')?.addEventListener('click', () => document.getElementById('menu-open-markdown')?.click());
+  document.getElementById('mobile-menu-open-folder')?.addEventListener('click', () => document.getElementById('menu-open-folder')?.click());
+  document.getElementById('mobile-menu-open-recent-folder')?.addEventListener('click', () => document.getElementById('menu-open-recent-folder')?.click());
+  document.getElementById('mobile-menu-save-markdown')?.addEventListener('click', () => document.getElementById('btn-save-markdown')?.click());
+  document.getElementById('mobile-menu-print')?.addEventListener('click', () => document.getElementById('menu-print')?.click());
+  document.querySelectorAll('[data-mobile-sample]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-mobile-sample');
+      if (targetId) document.getElementById(targetId)?.click();
+    });
+  });
+  document.querySelectorAll('[data-mobile-view-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.getAttribute('data-mobile-view-mode');
+      closeHeaderMenus();
+      if (mode) (document.querySelector(`.view-mode-btn[data-view-mode="${mode}"]`) as HTMLElement | null)?.click();
+    });
+  });
+  document.getElementById('menu-more-settings')?.addEventListener('click', () => {
+    closeHeaderMenus();
+    document.getElementById('btn-open-settings')?.click();
+  });
+  document.getElementById('menu-more-animation')?.addEventListener('click', () => {
+    closeHeaderMenus();
+    document.getElementById('btn-toggle-animation')?.click();
+  });
+  document.getElementById('menu-more-yaml')?.addEventListener('click', () => {
+    closeHeaderMenus();
+    document.getElementById('btn-front-matter')?.click();
+  });
+  document.getElementById('menu-more-theme')?.addEventListener('click', () => {
+    closeHeaderMenus();
+    document.getElementById('btn-theme-toggle')?.click();
+  });
+  document.getElementById('menu-more-update')?.addEventListener('click', () => {
+    closeHeaderMenus();
+    checkForUpdate();
+  });
   document.getElementById('btn-edit-unlock').onclick = () => {
     setEditorReadOnly(false);
     document.getElementById('markdown-editor').focus();
@@ -3038,7 +3185,7 @@ function setupFileMenu() {
     if (file) loadMarkdownFile(file);
   };
   document.addEventListener('click', event => {
-    if (!HEADER_MENUS.some(([, menuId]) => document.getElementById(menuId).contains(event.target))) closeHeaderMenus();
+    if (!HEADER_MENUS.some(([, menuId]) => document.getElementById(menuId)?.contains(event.target))) closeHeaderMenus();
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeHeaderMenus();
@@ -3597,9 +3744,12 @@ async function loadRecentFolderHandle() {
 }
 
 function updateRecentFolderMenu() {
-  const item = document.getElementById('menu-open-recent-folder');
-  item.classList.toggle('hidden', !recentFolderHandle);
-  if (recentFolderHandle) item.textContent = `前回のフォルダ「${recentFolderHandle.name}」を開く`;
+  ['menu-open-recent-folder', 'mobile-menu-open-recent-folder'].forEach(id => {
+    const item = document.getElementById(id);
+    if (!item) return;
+    item.classList.toggle('hidden', !recentFolderHandle);
+    if (recentFolderHandle) item.textContent = `前回のフォルダ「${recentFolderHandle.name}」を開く`;
+  });
 }
 
 // 前回のフォルダを開く。読む許可は開くたびにブラウザが確かめる（クリックの直後に求める必要がある）
@@ -3698,7 +3848,6 @@ async function loadMarkdownFromUrlParam() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('[data-view-mode="split"]').classList.add('is-active');
   setupEventListeners();
   setupVisualStageInteractions();
   setupKeyboardShortcuts();

@@ -51,9 +51,25 @@ function resultHtml(result: CheckResult): string {
   }
 }
 
+// 実行環境が Web 版（http: / https:）かスタンドアロン版（file:）かを判定する（#89）
+export function isWebVersion(): boolean {
+  return typeof window !== 'undefined' && window.location.protocol !== 'file:';
+}
+
 // 描画済みの案内に、版と確認の結果を書き込む
 export function applyUpdateCheckState(root: ParentNode = document): void {
+  const web = isWebVersion();
+  const headerWrap = document.getElementById('header-update-wrap');
+  if (headerWrap) headerWrap.classList.toggle('hidden', web);
+  const moreUpdateItem = document.getElementById('menu-more-update');
+  if (moreUpdateItem) moreUpdateItem.classList.toggle('hidden', web);
+
   root.querySelectorAll<HTMLElement>('.update-check-version').forEach(el => { el.textContent = APP_VERSION; });
+  root.querySelectorAll<HTMLElement>('.btn-check-update, .update-check-result').forEach(el => {
+    el.classList.toggle('hidden', web);
+  });
+  if (web) return;
+
   root.querySelectorAll<HTMLElement>('.update-check-result').forEach(el => {
     el.innerHTML = lastResult ? resultHtml(lastResult) : '';
     el.dataset.state = lastResult ? lastResult.kind : '';
@@ -116,6 +132,7 @@ async function fetchLatest(): Promise<CheckResult> {
 }
 
 export async function checkForUpdate(): Promise<void> {
+  if (isWebVersion()) return;
   if (lastResult && lastResult.kind === 'checking') return;
   lastResult = { kind: 'checking' };
   applyUpdateCheckState();
