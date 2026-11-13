@@ -336,7 +336,8 @@ const LIBRARIES = {
   // Markdown の整形（FR-053, DD-FILE-088）。文書を読み込むときと「今の文書を整える」のときだけ読み込む（NFR-006）
   formatter: { script: './js/formatter.js', global: 'LucivoFormatter' },
   // 発表の見せ方（Web 版だけ。#58 でモードごとに別のファイル）。発表のドロップダウンで選んだときだけ読み込む
-  zoomMap: { script: './js/zoom-map.js', global: 'LucivoZoomMap' }
+  zoomMap: { script: './js/zoom-map.js', global: 'LucivoZoomMap' },
+  playable: { script: './js/playable.js', global: 'LucivoPlayable' }
 };
 const libraryLoads = new Map();
 // 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを CDN の URL に置き換える（DD-OFF-003）
@@ -2231,6 +2232,9 @@ function wrapTables(container) {
 /* ==========================================================================
    メインレンダリングループ
    ========================================================================== */
+// 直近の描画での、図の番号ごとの Mermaid の原文（getMermaidSource() で渡す。#62）
+let lastMermaidSources: string[] = [];
+
 function renderApp() {
   const rawMarkdown = document.getElementById('markdown-editor').value;
   // フロントマターは Marked に渡さない。渡すと先頭の --- が水平線、YAML が段落になる（DD-FM-001）
@@ -2238,6 +2242,8 @@ function renderApp() {
   const parsed = marked.lexer(body);
 
   const mermaidBlocks = [];
+  // 図の番号（data-stage-index）ごとの Mermaid の原文。プレイアブル・ダイアグラム（#62）が、図の構造を原文から読む
+  lastMermaidSources = [];
   const tokensToKeep = [];
   // 最上位のトークンの raw は本文を先頭から隙間なく覆うため、改行を数えれば各トークンの元の行がわかる（FR-037, DD-DIAG-060）
   let srcLine = countLinesBefore(rawMarkdown, rawMarkdown.length - body.length);
@@ -2251,6 +2257,7 @@ function renderApp() {
       const curve = getBlockCurve(index, code);
       const hash = fnv1aHash(code + state.appearance + state.palette + (curve || '') + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std'));
       mermaidBlocks.push({ index, code, hash, curve });
+      lastMermaidSources[index] = code;
       tokensToKeep.push({
         type: 'html',
         raw: `<div class="lucivo-slot" data-slot="${index}"></div>`,
@@ -3109,7 +3116,8 @@ function setupFormatter() {
    ========================================================================== */
 // 発表のドロップダウンの項目 → 読み込む部品と、そのグローバル
 const PRESENT_MODES = [
-  { menuId: 'menu-present-zoom-map', library: 'zoomMap', global: 'LucivoZoomMap' }
+  { menuId: 'menu-present-zoom-map', library: 'zoomMap', global: 'LucivoZoomMap' },
+  { menuId: 'menu-present-playable', library: 'playable', global: 'LucivoPlayable' }
 ];
 
 function setupPresentModes() {
@@ -3990,6 +3998,8 @@ window.addEventListener('DOMContentLoaded', () => {
 // E2E テストおよび外部連携用グローバル公開
 (window as any).state = state;
 (window as any).renderApp = renderApp;
+// 図の番号（data-stage-index）の Mermaid の原文。プレイアブル・ダイアグラム（#62）が使う
+(window as any).getMermaidSource = (index: number) => lastMermaidSources[index] ?? null;
 (window as any).closeFileMenu = closeFileMenu;
 
 Object.defineProperty(window, 'openedFolder', {

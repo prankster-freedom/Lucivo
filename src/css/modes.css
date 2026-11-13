@@ -113,7 +113,7 @@ html.is-zoom-map #visual-stage-container canvas.signal-light-canvas {
 
 .zoom-map-mode {
   white-space: nowrap;
-  font-family: "JetBrains Mono", monospace;
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -135,7 +135,7 @@ html.is-zoom-map #visual-stage-container canvas.signal-light-canvas {
 
 .zoom-map-count {
   white-space: nowrap;
-  font-family: "JetBrains Mono", monospace;
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
   color: var(--text-muted);
 }
 
@@ -163,6 +163,371 @@ html.is-zoom-map #visual-stage-container canvas.signal-light-canvas {
 @media print {
   .zoom-map-hud,
   .zoom-map-path {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   プレイアブル・ダイアグラム（#62、FR-055, DD-SHOW-120〜124）
+   左に試作品の画面（状態遷移図）または診断のカード（フローチャート）、右に図を置く
+   -------------------------------------------------------------------------- */
+html.is-playable,
+html.is-playable body {
+  overflow: hidden;
+}
+
+.playable {
+  position: fixed;
+  inset: 0;
+  z-index: 72;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse at 20% 30%, var(--accent-soft), transparent 55%),
+    var(--app-bg);
+  color: var(--text-primary);
+}
+
+.playable-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--nav-bg);
+  font-size: 0.8rem;
+}
+
+.playable-mode {
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.playable-kind {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.playable-spacer {
+  flex: 1;
+}
+
+.playable-count {
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.playable-nav,
+.playable-exit {
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.playable-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.playable-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  padding: 1.5rem 2rem;
+}
+
+/* 図の枠。描画済みの図の枠（[data-stage-index]）をここへ移して表示する */
+.playable-figure {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.25rem;
+  background: var(--diag-canvas);
+  padding: 1.5rem;
+}
+
+.playable-figure > [data-stage-index] {
+  width: 100%;
+  max-height: 100%;
+}
+
+.playable-figure > [data-stage-index] > svg {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: calc(100vh - 12rem);
+}
+
+/* 図の上の、今いる場所・通った場所・最後に通った矢印 */
+svg.is-playing g.node {
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+svg.is-playing g.node:not(.is-play-current):not(.is-play-visited) {
+  opacity: 0.55;
+}
+
+svg.is-playing g.is-play-current {
+  filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 14px var(--accent));
+}
+
+svg.is-playing g.is-play-current :is(rect, polygon, circle, ellipse, path) {
+  stroke: var(--accent) !important;
+  stroke-width: 3px !important;
+}
+
+svg.is-playing path.is-play-edge {
+  stroke: var(--accent) !important;
+  stroke-width: 3px !important;
+  stroke-dasharray: 10 8;
+  animation: playable-edge-flow 0.9s linear infinite;
+}
+
+@keyframes playable-edge-flow {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+/* 左の画面。状態遷移図はスマートフォンの枠、フローチャートは診断のカード */
+.playable-device {
+  align-self: center;
+}
+
+.playable-device[data-kind="state"] {
+  border: 10px solid #0f172a;
+  border-radius: 2.25rem;
+  background: var(--panel-bg);
+  box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.45);
+  overflow: hidden;
+}
+
+.playable-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 28rem;
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+.playable-screen.is-end {
+  justify-content: center;
+  text-align: center;
+}
+
+.playable-statusbar {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+}
+
+.playable-statusbar span {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.playable-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.playable-eyebrow {
+  margin: 0;
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+.playable-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+/* 注釈のない状態の、仮の中身（薄い線） */
+.playable-skeleton {
+  display: block;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--panel-sub);
+}
+
+.playable-skeleton.is-short {
+  width: 60%;
+}
+
+.playable-line {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--panel-sub);
+  font-size: 0.85rem;
+}
+
+.playable-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.playable-input-box {
+  height: 2.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--panel-bg);
+}
+
+.playable-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.playable-check-box {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.25rem;
+}
+
+.playable-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.playable-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.8rem;
+  background: var(--panel-sub);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.playable-option.is-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.playable-option:hover {
+  border-color: var(--accent);
+}
+
+.playable-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 0.4rem;
+  background: rgba(15, 23, 42, 0.12);
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
+  font-size: 0.72rem;
+}
+
+.playable-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.75rem 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.25rem;
+  background: var(--panel-bg);
+  box-shadow: 0 24px 50px -24px rgba(15, 23, 42, 0.45);
+}
+
+.playable-card.is-result {
+  border-color: var(--accent);
+}
+
+/* 次のカードは下からスライドして現れる */
+.playable-card.is-entering {
+  animation: playable-card-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes playable-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.playable-hint {
+  margin: 0;
+  padding: 0 2rem 1rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 1023.98px) {
+  .playable-stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+    overflow: auto;
+  }
+
+  .playable-screen {
+    min-height: 0;
+  }
+
+  .playable-kind,
+  .playable-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg.is-playing path.is-play-edge,
+  .playable-card.is-entering {
+    animation: none;
+  }
+}
+
+@media print {
+  .playable {
     display: none !important;
   }
 }
