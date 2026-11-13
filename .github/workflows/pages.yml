@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+# main の public/ を GitHub Pages へ公開する。
+# /self-approve（self-approve.yml）は GITHUB_TOKEN で main へ push するため、その push では
+# push のトリガーが動かない（GITHUB_TOKEN の操作で起きたイベントは、別のワークフローを起動しない）。
+# そこで、Self Approve のワークフローが成功して終わったときにも公開する（workflow_run）。
 on:
   push:
     branches:
@@ -7,6 +11,9 @@ on:
     paths:
       - "public/**"
       - ".github/workflows/pages.yml"
+  workflow_run:
+    workflows: ["Self Approve"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -20,12 +27,18 @@ concurrency:
 
 jobs:
   deploy:
+    # Self Approve は、PR のコメントのたびに起動する。main へ反映したとき（成功）だけ公開し、
+    # 対象外のコメント（スキップ）や反映の拒否（失敗）では公開しない
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      # workflow_run では、反映した後の main の先頭を公開する
       - uses: actions/checkout@v7
+        with:
+          ref: main
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
