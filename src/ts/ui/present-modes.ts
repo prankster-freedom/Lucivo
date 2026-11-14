@@ -20,6 +20,7 @@ export interface ModeHost {
   getMermaidSource(index: number): string | null;
   setLights(on: boolean): void;
   toast(message: string): void;
+  appearance(): 'dark' | 'light';
 }
 
 interface Mode {
@@ -49,6 +50,20 @@ function waitFrames(count: number): Promise<void> {
   });
 }
 
+// 描画中の図（読み込み中の表示が残っている図の枠）がなくなるまで待つ。描画に失敗した図も待ち終える。最長 timeoutMs で打ち切る
+function waitDiagrams(container: HTMLElement | null, timeoutMs: number): Promise<void> {
+  const start = performance.now();
+  const pending = () => !!container && Array.from(container.querySelectorAll('[data-stage-index]'))
+    .some(vp => !vp.querySelector('svg') && !!vp.querySelector('.animate-pulse'));
+  return new Promise(resolve => {
+    const check = () => {
+      if (!pending() || performance.now() - start > timeoutMs) resolve();
+      else setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
 function clickById(id: string): void {
   (document.getElementById(id) as HTMLButtonElement | null)?.click();
 }
@@ -73,7 +88,9 @@ const host: ModeHost = {
     if (state.viewMode !== 'canvas') (document.querySelector('[data-view-mode="canvas"]') as HTMLButtonElement | null)?.click();
     // Visualモードへ切り替えた直後は、図の描画が終わるまで待つ
     await waitFrames(2);
-    return document.getElementById('visual-stage-container');
+    const container = document.getElementById('visual-stage-container');
+    await waitDiagrams(container, 10000);
+    return container;
   },
   restoreView() {
     const r = remembered;
@@ -98,7 +115,10 @@ const host: ModeHost = {
     return runtime.lastMermaidSources[index] ?? null;
   },
   setLights: toggleLights,
-  toast: showToast
+  toast: showToast,
+  appearance() {
+    return state.appearance === 'dark' ? 'dark' : 'light';
+  }
 };
 
 const loads = new Map<string, Promise<boolean>>();
