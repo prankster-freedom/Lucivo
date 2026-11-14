@@ -237,10 +237,11 @@ body:not([data-appearance="dark"]) .stage-hud::before {
   position: absolute;
   left: 2.5vw;
   right: 2.5vw;
-  bottom: 1.4vh;
+  bottom: calc(1.4vh + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
 }
 .stage-hud-title {
   flex: 1;
@@ -266,16 +267,39 @@ html.is-stage-idle .stage-hud-actions {
   pointer-events: none;
 }
 .stage-hud-actions button {
-  padding: 0.2rem 0.6rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 0.25rem 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.5);
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.35);
-  color: inherit;
+  background: rgba(15, 23, 42, 0.72);
+  color: #F1F5F9;
   font: inherit;
   cursor: pointer;
 }
 body:not([data-appearance="dark"]) .stage-hud-actions button {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.85);
+  color: #1E293B;
+}
+@media (max-width: 767.98px) {
+  html.is-stage-show .stage-hud {
+    font-size: 0.8rem;
+  }
+  .stage-hud-bar {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    gap: 0.4rem 0.6rem;
+  }
+  .stage-hud-actions {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .stage-hud-actions button {
+    min-height: 34px;
+    padding: 0.35rem 0.65rem;
+  }
+}
+@media (max-height: 520px) {
+  html.is-stage-show #visual-stage-container {
+    padding: 3dvh 4vw calc(52px + env(safe-area-inset-bottom, 0px));
+  }
 }
 .stage-hud-actions button:hover,
 .stage-hud-actions button.is-active {
