@@ -32,3 +32,4 @@ flowchart TD
 - クラス名の候補は、`class="…"` の属性、`className` への代入、`classList` の引数から集める。それ以外の書き方（文字列を組み立てて作るクラス名など）で Tailwind のクラスを使うと、生成から漏れる。
 - Tailwind の設定（`fontFamily` の拡張）は、このスクリプトの中にある。フォントなどの設定を変えるときは、ここを直して作り直す。
 - 実行には、CDN へのインターネット接続が必要。
+- クラス名は、ビルドした `public/js/app.js` と `index.html` から集める。`app.js` はコミットしない出力のため、先に `npm run build` を実行する（なければ、このスクリプトは止まる）。生成した `css/tailwind.css` は、コミットする（`doc/2.ARCHITECTURE.md` 4.14）。

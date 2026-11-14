@@ -11,12 +11,12 @@ tags: ["Lucivo", "実装"]
 | ソース                                                             | 実装ドキュメント                                                   | 概要                                                       |
 | :----------------------------------------------------------------- | :----------------------------------------------------------------- | :--------------------------------------------------------- |
 | [index.html](../../public/index.html)                              | [index.html.md](index.html.md)                                     | 画面の骨格、同梱のライブラリと CSS・スクリプトの読み込み順 |
-| [css/style.css](../../public/css/style.css)                        | [css/style.css.md](css/style.css.md)                               | デザイントークン、組版、Markdown 要素、図の表示枠、Visualモード |
-| [js/app.js](../../public/js/app.js)                                | [js/app.js.md](js/app.js.md)                                       | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
-| [js/stage.js](../../public/js/stage.js)                            | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                             |
-| [js/formatter.js](../../public/js/formatter.js)                    | [js/formatter.js.md](js/formatter.js.md)                           | 読み込み時の Markdown の整形（markdownlint を同梱）        |
-| [js/zoom-map.js](../../public/js/zoom-map.js)                      | [js/zoom-map.js.md](js/zoom-map.js.md)                             | ズーミング・マップ（Web 版だけの発表の見せ方）             |
-| [js/playable.js](../../public/js/playable.js)                      | [js/playable.js.md](js/playable.js.md)                             | プレイアブル・ダイアグラム（Web 版だけの発表の見せ方）     |
+| [css/style.css](../../src/css/style.css)                           | [css/style.css.md](css/style.css.md)                               | デザイントークン、組版、Markdown 要素、図の表示枠、Visualモード |
+| [js/app.js](../../src/ts/app.ts)                                   | [js/app.js.md](js/app.js.md)                                       | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
+| [js/stage.js](../../src/js/stage.js)                               | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                             |
+| [js/formatter.js](../../src/ts/formatter/index.ts)                 | [js/formatter.js.md](js/formatter.js.md)                           | 読み込み時の Markdown の整形（markdownlint を同梱）        |
+| [js/zoom-map.js](../../src/ts/modes/zoom-map.ts)                   | [js/zoom-map.js.md](js/zoom-map.js.md)                             | ズーミング・マップ（Web 版だけの発表の見せ方）             |
+| [js/playable.js](../../src/ts/modes/playable.ts)                   | [js/playable.js.md](js/playable.js.md)                             | プレイアブル・ダイアグラム（Web 版だけの発表の見せ方）     |
 | [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成                                 |
 | [tools/build-samples-data.cjs](../../tools/build-samples-data.cjs) | [tools/build-samples-data.cjs.md](tools/build-samples-data.cjs.md) | `file://` 直開き時の同梱サンプル遅延読み込みデータの生成   |
 | [tools/build-vendor.cjs](../../tools/build-vendor.cjs)             | [tools/build-vendor.cjs.md](tools/build-vendor.cjs.md)             | ライブラリとフォントの同梱ファイルの生成                   |
@@ -31,7 +31,7 @@ tags: ["Lucivo", "実装"]
 
 - **同じ id の重複**: 高速モードと Visualモードの両方に図を残すと、描画先と SVG 内の参照（矢じり・グラデーション）が非表示側に向きます。表示しない側は空にし、SVG 内の id は図ごとに一意にしています（`DD-DIAG-001`〜`003`, `DD-DIAG-010`）。
 - **Tailwind のリセット**: Tailwind CSS がブラウザ標準のスタイルを消すため、Markdown の要素の見た目はすべて `style.css` で定義しています（`DD-MD-001`〜）。
-- **Tailwind のクラスの追加**: Tailwind は使っているクラスだけを事前に生成した `css/tailwind.css` を読み込んでいます。`index.html` や `app.js` で新しい Tailwind のクラスを使ったら、`node tools/build-tailwind-css.cjs` で作り直してください。作り直さないと、そのクラスは効きません。
+- **Tailwind のクラスの追加**: Tailwind は使っているクラスだけを事前に生成した `css/tailwind.css` を読み込んでいます。`index.html` や `src/ts/` で新しい Tailwind のクラスを使ったら、`npm run build` でビルドしてから `node tools/build-tailwind-css.cjs` で作り直し、`css/tailwind.css` をコミットしてください（クラス名はビルドした `js/app.js` から集めます）。作り直さないと、そのクラスは効きません。
 - **遅延読み込み**: Mermaid と KaTeX は、図・数式が文書に現れるまで読み込みません。`window.mermaid` / `window.katex` がない状態でも動くように書いてください（`loadLibrary()`）。
 - **Visualモードの装飾の範囲**: 図形の装飾は、フローチャート・状態遷移図・シーケンス図だけに適用します。他の図種に適用すると崩れます（`DD-DIAG-011`）。
 - **Dark の Visualモード**: カード背景は外観に合わせて暗くなりますが、装飾したノードの塗り（色付きの図形・白いカード）は明るいままです。背景の上に直接描く線・文字は明るく、ノードの上の文字は暗く、それぞれ色を明示します（ページの文字色を継承させない。`DD-DIAG-024`, `DD-DIAG-031`）。

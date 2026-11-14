@@ -29,5 +29,6 @@ flowchart TD
 
 ## 変更するときの注意
 
-- `samples/visual-sample.md` または `samples/notation_sample.md` の内容を変更したら、このスクリプトを実行して `samples/samples-data.js` を更新する。更新しないと、`file://` で開いたときに古いサンプルが読み込まれ、`TC-FILE-003` の一致検証が失敗する。
+- `samples/samples-data.js` はビルドの出力でコミットしない（`doc/2.ARCHITECTURE.md` 4.14）。`tools/build-app.cjs` が、出力先（`public/` または `dist/`）に毎回作る。このスクリプトは、出力先を受け取る関数 `buildSamplesData(outRoot)` を書き出し、単体でも実行できる。
+- `samples/*.md` は、常に `public/samples/` から読む。ここを変えた後は、ビルドし直さないと `file://` で古いサンプルが読み込まれ、`TC-FILE-003` の一致検証が失敗する。
 - 改行コードは LF（`\n`）に統一し、先頭の UTF-8 BOM（`\uFEFF`）は除いて出力する。

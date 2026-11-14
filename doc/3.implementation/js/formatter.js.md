@@ -39,7 +39,7 @@ flowchart TD
 
 ## 変更するときの注意
 
-- **生成物を直接直さない**: `public/js/formatter.js` は `npm run build:prod` で作る。ソースを直したらビルドし直し、生成物もコミットに含める。
+- **生成物を直接直さない**: `public/js/formatter.js` は `npm run build:prod` で作る。生成物はコミットしない（`doc/2.ARCHITECTURE.md` 4.14）ので、ソースを直したらビルドし直して確かめる。
 - **見えない文字**: 同梱する markdownlint の部品は、ゼロ幅接合子などの見えない文字を含む。`charset: 'ascii'` でビルドしているので、出力ではエスケープになる。設定を外すと `npm run lint` が失敗する。
 - **規則を足すとき**: 表示を変えないか、作者の書き方を不要に変えないかを確かめる。規則を足したら、`tests/fixtures/format/messy.md` に乱れの例を、`messy.expected.md` に整えた結果を足し、TC-FILE-036・037 を合格させる。
 - **ライセンス**: markdownlint の版を変えたら `npm run build:vendor` を実行し、`public/THIRD_PARTY_LICENSES.txt` を作り直す（同梱したパッケージを esbuild の metafile から集める）。
