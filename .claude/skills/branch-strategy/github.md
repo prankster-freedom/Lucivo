@@ -11,7 +11,9 @@ GitHub の PR のマージ操作は、マージコミット、Squash、Rebase �
 | リポジトリの所有者 | PR に `/self-approve` と書く | [self-approve.yml](self-approve.yml) で動く |
 | 他の開発者         | GitHub の Approve            | 未整備。開発者を追加するときに作る          |
 
-- 自分の PR は GitHub の Approve ができないため、所有者の PR ではコメントを承認の操作にする
+- 自分の PR は GitHub の Approve ができないため、`/self-approve` は **リポジトリ関係者が 1 人の場合の PR 承認の代替手段** として用いる（複数人で開発する場合は通常の GitHub Approve を使う）
+- `/self-approve` を利用するかどうか、および通常の開発 PR と正式リリース PR（`release/*`）のどちらで必須とするかは、各リポジトリの `AGENTS.repo.md` に明記する
+- Canary 運用を行うリポジトリでは、通常の開発 PR は必須チェック（`lint`・テスト等）が通れば `/self-approve` を経ずに `main` へマージしてよい（`main` を Canary プレビューの基準とする）。正式リリース時は `release/vX.Y.Z` ブランチから版番号定義と `README.md` のみを更新した PR を作成し、必ず PR 承認（1 人運用の場合は `AGENTS.repo.md` の定めに従い `/self-approve` 等）を経て `main` へ反映する
 - `/self-approve` は、所有者が所有者自身の PR に書いたときだけ、`test` の成功またはスキップと、PR が最新の main の上にあることを確かめて反映する
 - 導入するときは、[self-approve.yml](self-approve.yml) を `.github/workflows/` に置き、必須チェックのジョブ名を合わせる。`issue_comment` は既定のブランチにある定義で動くので、導入の PR だけは Rebase and merge で反映する
 - Rebase and merge のボタンはコミットを作り直すため、導入後は使わない。リポジトリに 1 つはマージ方法を残す必要があるので、設定では無効にできない
@@ -34,6 +36,7 @@ GitHub の PR のマージ操作は、マージコミット、Squash、Rebase �
 - スキップの対象は、テストに関係しないと確かなパスだけを列挙する。`.github/workflows/` は対象にしない。配布物の中の Markdown など、`**/*.md` の一括の除外で巻き込むものに注意する
 - PR の追加 push において、直前 push からの増分差分がテストに関係しないパス（ドキュメントや版番号のみの更新）だけであり、かつ直前コミットでテストが成功している場合はテストをスキップしてよい。直前のテスト結果が確認できない場合や失敗していた場合は必ずテストを実行する
 - テストは `pull_request` で実行し、main への `push` では実行しない。必須チェックとブランチの最新化の要求により、main には検証済みのコミットだけが入るため
+- リリースビルド（ビルド番号注入）・タグ作成・GitHub Release 公開・公開サイト同期は、モバイル環境等からのリリースにも対応できるよう、`main` への反映や `workflow_run` をトリガーに CI で自動化する構成を標準とする
 
 ## リポジトリの設定の方針
 
