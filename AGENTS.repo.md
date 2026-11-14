@@ -4,8 +4,8 @@
 
 ## 1. リポジトリの概要
 
-- Lucivo は、ブラウザ単体で動く Markdown と Mermaid のビューアー（HTML / CSS / JavaScript。ビルド工程なし）
-- 配布物は 2 種類ある。Web 版は `public/`（コミットする）、スタンドアロン版（ZIP を展開して `index.html` を開く使い方）は `dist/`（git 管理外）に置く。`dist/` は `node tools/build-app.cjs --channel standalone`（`npm run build:standalone`）で `public/` から作る。`doc/`・`tests/`・`tools/`・`work/` は配布物に含めない（`doc/2.ARCHITECTURE.md` 4.15）
+- Lucivo は、ブラウザ単体で動く Markdown と Mermaid のビューアー（HTML / CSS と、`src/` の TypeScript・JavaScript を esbuild で束ねたスクリプト。サーバーの処理なしで動く）
+- 配布物は 2 種類ある。Web 版は `public/`、スタンドアロン版（ZIP を展開して `index.html` を開く使い方）は `dist/`（git 管理外）に置く。`public/` のビルドの出力（`js/` の全部、`css/style.css`、`css/modes/`、`samples/samples-data.js`）はコミットしない。クローンした後は `npm ci` と `npm run build` を実行してから `public/index.html` を開く。`dist/` は `node tools/build-app.cjs --channel standalone`（`npm run build:standalone`）で作る。`doc/`・`tests/`・`tools/`・`work/` は配布物に含めない（`doc/2.ARCHITECTURE.md` 4.14・4.15）
 - `tests/`・`tools/` のスクリプトは CommonJS で、拡張子を `.cjs` にする
 
 ## 2. ドキュメントの格納先（doc スキルの例外）
@@ -39,7 +39,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
   - ツールの警告（Python の `SyntaxWarning` など）は誤りとして扱い、原因を直してから進める
   - この規則に反した場合は、いつ気付いたか（書いた直後か、後か）と、内容が壊れていないかをユーザーに報告する。書いた直後に気付いて内容を確かめられた場合は、それで足りる。直後に気付けなかった失敗（コミット後やレビューで見つかったもの、内容が壊れていたもの）は、報告だけで済ませず、再発を防ぐワークフローの改善（検査の追加など）を提案する
   - `npm run lint` で、制御文字と見えない文字（BOM、置き換え文字、幅のない空白など。全角の空白は除く）を、すべてのテキストファイル（`src/ts/` を含み、まだコミットしていない新しいファイルも）について検出し、eslint で正規表現の中の制御文字を検出する（CI の `lint` ジョブ）。見えない文字が必要なときは `\uFEFF` のようにエスケープで書く
-- ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`dist/index.html` を `file://` で開き、Playwright（Chromium）で確認する（`npm test` の前に `pretest` が `dist/` を作る。Web 版のテストは手元のサーバーで `public/` を配る）。`node tests/e2e.cjs` を直接実行するときは、先に `npm run build:standalone` で `dist/` を作る
+- ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`dist/index.html` を `file://` で開き、Playwright（Chromium）で確認する（`npm test` の前に `pretest` が `public/` と `dist/` をビルドする。Web 版のテストは手元のサーバーで `public/` を配る）。`node tests/e2e.cjs` を直接実行するときは、先に `npm run build:prod` と `npm run build:standalone` でビルドする
   - 特定の機能やテストケースだけを確認・再テストするときは、`node tests/e2e.cjs <関数名またはTC ID>`（例: `node tests/e2e.cjs TC-SHOW-011`、`node tests/e2e.cjs testCoverAndTables`）で対象スイートだけを部分実行する（`work/test/results.json` は該当 TC の結果だけが差分更新される）。`node -e` のワンライナーでテストコードを実行しない
 - Markdown ファイル内の表整形には `node agents-support-tools/md-table-align/align-tables.cjs <Markdown ファイル>` を使用する
 
@@ -47,7 +47,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 - 版番号は、README の本文の「**Version**」と `package.json` の `version` の 2 か所に書き、この 2 か所を正とする（release スキルの「README の Front Matter の `version`」の例外）。リリースでは 2 か所を同じ版にそろえる
 - 画面に表示するバージョン表記は、本番・スタンドアロン配布版が `X.Y.Z (build #N)`、Canary 版（`/preview/`）が `X.Y.Z-canary (build #N)`、ローカル開発ビルドが `X.Y.Z` とする（`tools/build-app.cjs` が `LUCIVO_VERSION_OVERRIDE` または `package.json` の `version` を埋め込む）
-- `release/*` ブランチでは `package.json` の `"version"` と `README.md` のみを更新し、`public/js/app.js` は CI（`release.yml` / `deploy.yml`）側でビルド番号を注入して生成する。これにより、`tools/check-ci-changes.cjs` によりリリース PR で E2E テストが再実行されない（手動で `public/js/app.js` を更新した場合は E2E 対象になる）
+- `release/*` ブランチでは `package.json` の `"version"` と `README.md` のみを更新する。版の表記はファイルに書いてコミットせず、CI（`release.yml` / `deploy.yml`）がビルドのときに注入する（`doc/2.ARCHITECTURE.md` 4.14 `ARC-PUB-003`）。リリース PR は版番号と文書しか変えないため、`tools/check-ci-changes.cjs` により E2E テストは再実行されない
 
 ## 5. 「Visualモードの追加訴求ポイントの提案依頼」の定型ワークフロー
 
@@ -65,7 +65,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 本定型依頼では、ユーザーから特別な停止指示がない限り、途中工程の【承認】を省略して次の工程を最後まで一気通貫で実行し、Pull Request の発行まで完了させてから結果をまとめて報告する（マージはユーザーの指示があるときに行う）。
 
 1. **`dtp`（Phase 1: デザイン設計）**: 定型依頼事項および今回の特記事項を踏まえ、ラフ案（`doc/0.DTP/roughs/`）や素材（本番 `public/assets/` および `doc/0.DTP/assets/`）を検討・整理し、デザイン仕様書（`doc/0.DTP/`）を更新する。
-2. **`swe1` → `swe2` → `swe3`**: 要求仕様書（`doc/1.SRS.md`, `doc/1.SRS/features/`）、アーキテクチャ設計書（`doc/2.ARCHITECTURE.md`）、詳細設計ノート（`doc/3.sw_design_notes/`）、実装ドキュメント（`doc/3.implementation/`）、ソースコード（`public/index.html`, `public/css/style.css`, `public/js/app.js` 等）および同梱サンプル（`public/samples/`）を更新する。
+2. **`swe1` → `swe2` → `swe3`**: 要求仕様書（`doc/1.SRS.md`, `doc/1.SRS/features/`）、アーキテクチャ設計書（`doc/2.ARCHITECTURE.md`）、詳細設計ノート（`doc/3.sw_design_notes/`）、実装ドキュメント（`doc/3.implementation/`）、ソースコード（`public/index.html`, `src/css/`, `src/ts/`, `src/js/` 等）および同梱サンプル（`public/samples/`）を更新する。
 3. **`test`（E2E 自動検証）**: テスト仕様書（`doc/4.test_spec/`）と Playwright テスト（`tests/e2e.cjs`）を更新・実行し、全テストケースの合格とスクリーンショット（ゲラ）出力を確認する。特にビューモード切替（Split / Canvas）、図表倍率切替（Fit / 1:1）、多列テーブルの枠内収容など、表示崩れや動作逆転が起きやすい境界値の検証を含める。
 4. **`dtp`（Phase 2: 校正・デザインチェック）**: 出力されたゲラを用いてデザイン仕様および校正チェックリストに照らして検査し、枠はみ出しや文字潰れ、倍率異常がないか目視確認したうえで校正結果（`work/dtp_review/`）を記録して校了とする。
 5. **`commit` → PR 発行**: feature ブランチを作成し、Conventional Commits に従ってコミットを分割・push し、`gh pr create` で Pull Request を発行する。
@@ -89,19 +89,20 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 ## 7. Dependabot security updates（branch-strategy スキルの例外）
 
-Dependabot security updates はオフにする。自動の PR は `package.json` と `package-lock.json` しか更新せず、配布物の `public/vendor/` と `public/js/app.js` の `EXPORT_URLS` が古いまま残るため。修正済みに見えて、利用者に配布される中身は直っていない状態になる。ライブラリの更新は、3 か所を揃えて手動で行う。
+Dependabot security updates はオフにする。自動の PR は `package.json` と `package-lock.json` しか更新せず、配布物の `public/vendor/` と、ソース（`src/ts/`）の `EXPORT_URLS` が古いまま残るため。修正済みに見えて、利用者に配布される中身は直っていない状態になる。ライブラリの更新は、3 か所を揃えて手動で行う。
 
 ## 8. GitHub Release（release スキルの追加手順）
 
-利用者には GitHub Release（スタンドアロン版の ZIP `Lucivo-v<版>.zip`。Web 版の ZIP `Lucivo-v<版>-web.zip` も付くが、公開用 URL の元であり、利用者が選ぶのはスタンドアロン版）および GitHub Pages（公開用 URL `/`）で配布する。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`deploy.yml`）で自動化する。
+利用者には GitHub Release（スタンドアロン版の ZIP `Lucivo-v<版>.zip` の 1 つだけを付ける）および GitHub Pages（公開用 URL `/`）で配布する。流れの設計は `doc/2.ARCHITECTURE.md` 4.14（`ARC-PUB-004`・`005`）による。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`deploy.yml`）で自動化する。
 
-1. **リリース PR の作成（`release/v<版>` ブランチ）**: `package.json` の `"version"` と `README.md`（**Version** とリリースノート）のみを更新して `main` 向け PR を発行する（`public/js/app.js` は変更しないため E2E はスキップされる）。
+1. **リリース PR の作成（`release/v<版>` ブランチ）**: `package.json` の `"version"` と `README.md`（**Version** とリリースノート）のみを更新して `main` 向け PR を発行する（版番号と文書しか変えないため E2E はスキップされる）。
 2. **【承認】`/self-approve` によるマージ**: ユーザーが PR に `/self-approve` コメントをすると、`main` へマージされる。
-3. **自動タグ・ZIP・GitHub Release 公開（`.github/workflows/release.yml`）**: `main` の `package.json` の `version` に対応するタグ `lucivo-v<版>` が未作成の場合、CI が自動で以下を実行する。
-   - `LUCIVO_VERSION_OVERRIDE="<版> (build #<run_number>)"` で Web 版（`public/`）、スタンドアロン版（`dist/`）の順にビルドし（ビルド番号は同じ）、`Lucivo-v<版>/` フォルダ構成の 2 つの ZIP を作成する。`Lucivo-v<版>.zip` は `dist/` から、`Lucivo-v<版>-web.zip` は `public/` から作る
-   - タグ `lucivo-v<版>` を作成・push し、README の該当版の節＋スタンドアロン版の ZIP のダウンロードリンク（利用者が選ぶのはスタンドアロン版であることを冒頭に明記）を本文にして GitHub Release（タイトル `Lucivo <版>`）を公開
-4. **公開用 GitHub Pages の同期（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、GitHub Release の `Lucivo-v<版>-web.zip` を展開して公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を更新する（`-web.zip` がない過去のリリースでは `Lucivo-v<版>.zip`、それもなければタグからのビルド。ZIP 版と同じ `<版> (build #<Release の run_number>)` が維持される）。
-5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `README.md` の該当版の節が欠落なく反映されていること）、2 つの ZIP（`Lucivo-v<版>.zip`、`Lucivo-v<版>-web.zip`）が付いていてどちらも展開して `index.html` が開けること、および公開用 URL が新しい版で開けることを確かめる。
+3. **自動ビルド・タグ・GitHub Release 公開（`.github/workflows/release.yml`）**: `main` の `package.json` の `version` に対応するタグ `lucivo-v<版>` が未作成の場合、CI が自動で以下を順に実行する。
+   - `LUCIVO_VERSION_OVERRIDE="<版> (build #<run_number>)"` でスタンドアロン版（`dist/`）をビルドし、`Lucivo-v<版>/` フォルダ構成の ZIP `Lucivo-v<版>.zip` を作成する
+   - 注釈付きのタグ `lucivo-v<版>` を作成・push する。注釈の本文には、埋め込んだ版の表記（`<版> (build #<run_number>)`）をそのまま書く
+   - README の該当版の節＋ZIP のダウンロードリンクと使い方を本文にして GitHub Release（タイトル `Lucivo <版>`）を公開し、ZIP を付ける
+4. **GitHub Pages の更新（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、最新のタグからビルドし直して公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を更新する。版の表記はタグの注釈から読むため、ZIP と同じ `<版> (build #<Release の run_number>)` になる。あわせて `main` からテスト用 URL（`/preview/`）も更新する。
+5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `README.md` の該当版の節が欠落なく反映されていること）、付いている ZIP が `Lucivo-v<版>.zip` の 1 つだけで、展開して `index.html` が開けること、公開用 URL の版の表記が ZIP と同じであること、テスト用 URL が開けることを確かめる。
 
 ## 9. モデルの区分の対応（`AGENTS.md` 1.11）
 
