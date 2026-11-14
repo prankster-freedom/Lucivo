@@ -27,15 +27,26 @@ export function parseReleaseVersion(tag: string): string | null {
   return m ? `${m[1]}.${m[2]}.${m[3]}` : null;
 }
 
-// a が b より新しければ正、同じなら 0、古ければ負
+function parseSemver(ver: string): { nums: [number, number, number]; pre: string } {
+  const cleaned = (ver || '').trim().replace(/\s*\([^)]*\)\s*$/, '').split('+')[0];
+  const dashIdx = cleaned.indexOf('-');
+  const core = dashIdx >= 0 ? cleaned.slice(0, dashIdx) : cleaned;
+  const pre = dashIdx >= 0 ? cleaned.slice(dashIdx + 1) : '';
+  const [maj = 0, min = 0, pat = 0] = core.split('.').map(n => parseInt(n, 10) || 0);
+  return { nums: [maj, min, pat], pre };
+}
+
+// a が b より新しければ正、同じなら 0、古ければ負（プレリリース版より正式版を新しいとみなす）
 export function compareVersions(a: string, b: string): number {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
   for (let i = 0; i < 3; i++) {
-    const d = (pa[i] || 0) - (pb[i] || 0);
+    const d = pa.nums[i] - pb.nums[i];
     if (d !== 0) return d;
   }
-  return 0;
+  if (!pa.pre && pb.pre) return 1;
+  if (pa.pre && !pb.pre) return -1;
+  return pa.pre.localeCompare(pb.pre);
 }
 
 function resultHtml(result: CheckResult): string {

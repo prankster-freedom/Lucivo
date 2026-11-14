@@ -1,7 +1,8 @@
 const path = require('path');
 const esbuild = require('esbuild');
-// 起動時の案内に表示し、更新の確認で比べる版（FR-049）。package.json の version を正とする
+// 起動時の案内に表示し、更新の確認で比べる版（FR-049）。package.json の version を正とし、CI ビルド時は LUCIVO_VERSION_OVERRIDE で上書き可
 const { version } = require('../package.json');
+const appVersion = (process.env.LUCIVO_VERSION_OVERRIDE || '').trim() || version;
 
 const isProd = process.argv.includes('--prod');
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -41,7 +42,7 @@ async function build() {
       ...commonJsOptions,
       entryPoints: [path.join(ROOT_DIR, 'src', 'ts', 'app.ts')],
       outfile: path.join(ROOT_DIR, 'public', 'js', 'app.js'),
-      define: { __LUCIVO_VERSION__: JSON.stringify(version) }
+      define: { __LUCIVO_VERSION__: JSON.stringify(appVersion) }
     }),
     ...STAGE_MODE_ENTRIES.map(({ entry, outfile }) =>
       esbuild.build({
