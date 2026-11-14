@@ -77,16 +77,24 @@ jobs:
           rm -rf _site /tmp/lucivo-prod /tmp/lucivo-release
           mkdir -p _site _site/preview /tmp/lucivo-release
 
-          # 1. 本番（/）: GitHub Release のスタンドアロン ZIP を展開してビルド番号・成果物を一致させる
-          ZIP_NAME="Lucivo-v${PROD_PKG_VER}.zip"
+          # 1. 本番（/）: GitHub Release の Web 版 ZIP を展開してビルド番号・成果物を一致させる。
+          #    Web 版 ZIP（-web.zip）がない過去のリリースでは、従来のスタンドアロン版 ZIP を使う
           ZIP_DIR="Lucivo-v${PROD_PKG_VER}"
-          if gh release download "$PROD_REF" -p "$ZIP_NAME" -D /tmp/lucivo-release \
-            && unzip -oq "/tmp/lucivo-release/${ZIP_NAME}" -d /tmp/lucivo-release \
-            && [ -f "/tmp/lucivo-release/${ZIP_DIR}/index.html" ]; then
-            echo "Using release artifact ${ZIP_NAME} from ${PROD_REF}"
+          USED_ZIP=""
+          for ZIP_NAME in "Lucivo-v${PROD_PKG_VER}-web.zip" "Lucivo-v${PROD_PKG_VER}.zip"; do
+            rm -rf /tmp/lucivo-release && mkdir -p /tmp/lucivo-release
+            if gh release download "$PROD_REF" -p "$ZIP_NAME" -D /tmp/lucivo-release \
+              && unzip -oq "/tmp/lucivo-release/${ZIP_NAME}" -d /tmp/lucivo-release \
+              && [ -f "/tmp/lucivo-release/${ZIP_DIR}/index.html" ]; then
+              USED_ZIP="$ZIP_NAME"
+              break
+            fi
+          done
+          if [ -n "$USED_ZIP" ]; then
+            echo "Using release artifact ${USED_ZIP} from ${PROD_REF}"
             cp -R "/tmp/lucivo-release/${ZIP_DIR}/." _site/
           else
-            echo "Release artifact ${ZIP_NAME} not found for ${PROD_REF}; falling back to tag build"
+            echo "Release artifact not found for ${PROD_REF}; falling back to tag build"
             git worktree add --detach /tmp/lucivo-prod "$PROD_REF"
             ln -s "$PWD/node_modules" /tmp/lucivo-prod/node_modules
             (cd /tmp/lucivo-prod && LUCIVO_VERSION_OVERRIDE="$PROD_PKG_VER" node tools/build-app.cjs --prod)
