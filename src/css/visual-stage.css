@@ -60,7 +60,7 @@ html.is-animation-off .exhibition-slab .vs-steps > li::after {
 /* ステージ発表（DTP-SHOW-010〜060, FR-019）: 1 章を 1 シーンとして全画面に出す。
    rem の基準を画面の幅と高さ（16:9 相当）の小さい方に合わせ、横長画面・ウィンドウ表示でも版面全体が収まるようにする */
 html.is-stage-show {
-  font-size: clamp(13px, min(1.32vw, 2.34dvh), 36px);
+  font-size: clamp(10px, min(1.22vw, 2.12dvh), 34px);
 }
 html.is-stage-show body {
   overflow: hidden;
