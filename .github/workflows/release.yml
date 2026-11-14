@@ -1,0 +1,99 @@
+name: Release
+
+# main の package.json の version に対応するタグ（lucivo-vX.Y.Z）が未作成の場合に、
+# タグ作成・スタンドアロン版 ZIP ビルド・GitHub Release 公開を自動実行する（Ref #106）。
+on:
+  workflow_run:
+    workflows: ["Self Approve"]
+    types: [completed]
+  push:
+    branches:
+      - main
+    paths:
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Check if tag already exists
+        id: check
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="lucivo-v${VERSION}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already exists. Skipping release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} does not exist. Proceeding with release."
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists == 'false'
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        if: steps.check.outputs.exists == 'false'
+      - name: Build standalone ZIP and create GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+          TAG: ${{ steps.check.outputs.tag }}
+        run: |
+          BUILD_VERSION="${VERSION} (build #${{ github.run_number }})"
+          LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod
+
+          ZIP_DIR="Lucivo-v${VERSION}"
+          ZIP_NAME="Lucivo-v${VERSION}.zip"
+          rm -rf /tmp/release-pkg
+          mkdir -p "/tmp/release-pkg/${ZIP_DIR}"
+          cp -R public/. "/tmp/release-pkg/${ZIP_DIR}/"
+          (cd /tmp/release-pkg && zip -rq "$GITHUB_WORKSPACE/${ZIP_NAME}" "${ZIP_DIR}")
+
+          node -e "
+            const fs = require('fs');
+            const readme = fs.readFileSync('README.md', 'utf8');
+            const ver = process.env.VERSION;
+            const zipName = 'Lucivo-v' + ver + '.zip';
+            const tag = process.env.TAG;
+            const repo = '${{ github.repository }}';
+            const dlUrl = 'https://github.com/' + repo + '/releases/download/' + tag + '/' + zipName;
+            const re = new RegExp('(^###\\s+' + ver.replace(/\./g, '\\\\.') + '(?:[^\\n]*)\\n[\\s\\S]*?)(?=^###\\s+|^##\\s+|\\Z)', 'm');
+            const m = readme.match(re);
+            const section = m ? m[1].trim() : 'Lucivo ' + ver;
+            const header = [
+              '## スタンドアロン版（ZIP）の使い方',
+              '',
+              '- [**' + zipName + '**](' + dlUrl + ') をダウンロードして展開し、\`index.html\` をブラウザで開いてください。',
+              '- ※ 下部の \`Source code (zip / tar.gz)\` は仕様書やテストを含む開発者向けリポジトリ全体です。利用者は必ず **`' + zipName + '`** を選んでください。',
+              '',
+              '---',
+              ''
+            ].join('\n');
+            fs.writeFileSync('/tmp/release-notes.md', header + section + '\n', 'utf8');
+          "
+
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git tag "$TAG" HEAD
+          git push origin "$TAG"
+
+          gh release create "$TAG" "$ZIP_NAME" --title "Lucivo ${VERSION}" --notes-file /tmp/release-notes.md

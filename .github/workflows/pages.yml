@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
-# 公開用 URL（ルート /）とテスト用 URL（/preview/）を分離してデプロイする（Ref #104）。
-# - 公開用（/）: 最新リリースタグ（lucivo-v*）の public/ を配置（タグ push / Release 公開時に同期）
-# - テスト用（/preview/）: main ブランチの最新 public/ を配置（main 反映時 / Self Approve 完了時に更新）
+# 公開用 URL（ルート /）とテスト用 URL（/preview/）を分離してビルド・デプロイする（Ref #104, #106）。
+# - 公開用（/）: 最新リリースタグ（lucivo-v*）を "X.Y.Z (build #N)" でビルドして配置
+# - テスト用（/preview/）: main ブランチを "X.Y.Z-canary (build #N)" でビルドして配置
 on:
   push:
     branches:
@@ -12,7 +12,7 @@ on:
   release:
     types: [published]
   workflow_run:
-    workflows: ["Self Approve"]
+    workflows: ["Self Approve", "Release"]
     types: [completed]
   workflow_dispatch:
 
@@ -27,8 +27,6 @@ concurrency:
 
 jobs:
   deploy:
-    # Self Approve は、PR のコメントのたびに起動する。main へ反映したとき（成功）だけ公開し、
-    # 対象外のコメント（スキップ）や反映の拒否（失敗）では公開しない
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: github-pages
@@ -40,7 +38,12 @@ jobs:
           ref: main
           fetch-depth: 0
           fetch-tags: true
-      - name: Build GitHub Pages site (production + preview)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build GitHub Pages site (production + canary preview)
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             PROD_REF="${{ github.event.release.tag_name }}"
@@ -52,12 +55,37 @@ jobs:
           if [ -z "$PROD_REF" ]; then
             PROD_REF="main"
           fi
-          echo "Production ref: $PROD_REF"
-          echo "Preview ref: main"
-          rm -rf _site
+
+          PROD_PKG_VER="$(git show "${PROD_REF}:package.json" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(d.version)")"
+          MAIN_PKG_VER="$(node -p "require('./package.json').version")"
+
+          CANARY_BASE="$(node -e "
+            const p = process.argv[1].split('.').map(Number);
+            const m = process.argv[2].split('.').map(Number);
+            const cmp = (m[0]-p[0]) || (m[1]-p[1]) || (m[2]-p[2]);
+            if (cmp > 0) console.log(process.argv[2]);
+            else console.log([p[0], p[1], (p[2]||0)+1].join('.'));
+          " "$PROD_PKG_VER" "$MAIN_PKG_VER")"
+
+          PROD_VERSION="${PROD_PKG_VER} (build #${{ github.run_number }})"
+          CANARY_VERSION="${CANARY_BASE}-canary (build #${{ github.run_number }})"
+
+          echo "Production ref: $PROD_REF -> $PROD_VERSION"
+          echo "Preview ref: main -> $CANARY_VERSION"
+
+          rm -rf _site /tmp/lucivo-prod
           mkdir -p _site _site/preview
-          git archive "$PROD_REF" public | tar -x --strip-components=1 -C _site
-          git archive main public | tar -x --strip-components=1 -C _site/preview
+
+          # 1. 本番（/）を PROD_REF からビルド
+          git worktree add --detach /tmp/lucivo-prod "$PROD_REF"
+          ln -s "$PWD/node_modules" /tmp/lucivo-prod/node_modules
+          (cd /tmp/lucivo-prod && LUCIVO_VERSION_OVERRIDE="$PROD_VERSION" node tools/build-app.cjs --prod)
+          cp -R /tmp/lucivo-prod/public/. _site/
+          git worktree remove --force /tmp/lucivo-prod
+
+          # 2. Canary（/preview/）を main からビルド
+          LUCIVO_VERSION_OVERRIDE="$CANARY_VERSION" node tools/build-app.cjs --prod
+          cp -R public/. _site/preview/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
