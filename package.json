@@ -13,7 +13,7 @@
     "build:css": "node tools/build-tailwind-css.cjs",
     "build:vendor": "node tools/build-vendor.cjs",
     "build:samples": "node tools/build-samples-data.cjs",
-    "lint": "node tools/check-control-chars.cjs && eslint"
+    "lint": "node tools/check-control-chars.cjs && node tools/check-modes.cjs && eslint"
   },
   "devDependencies": {
     "@fontsource-variable/inter": "5.3.0",

@@ -51,10 +51,17 @@ const {
 const {
   testStartupAndCache,
   testResponsiveAndWebUi,
-  testOffline,
-  testZoomMap,
-  testPlayable
+  testOffline
 } = require('./e2e/modes-and-ui.cjs');
+
+// 発表モードのテスト（tests/e2e/modes/<id>.cjs）は、フォルダから自動で集める（doc/2.ARCHITECTURE.md 4.16 ARC-MODE-008）。
+// 共通の品質の関門（present-modes.cjs。ARC-MODE-007）は、登録表の全モードを回す
+const MODES_TEST_DIR = path.join(__dirname, 'e2e', 'modes');
+const MODE_SUITES = (fs.existsSync(MODES_TEST_DIR) ? fs.readdirSync(MODES_TEST_DIR) : [])
+  .filter(name => name.endsWith('.cjs'))
+  .sort()
+  .flatMap(name => require(`./e2e/modes/${name}`).suites);
+const { suites: GATE_SUITES } = require('./e2e/present-modes.cjs');
 
 // スイートの既定の上限。止まったスイートを打ち切るためのもので、正常な実行の所要時間より十分に長くする
 const SUITE_TIMEOUT_MS = 90000;
@@ -65,8 +72,8 @@ const SUITES = [
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
   { name: 'testFormatter', tcPrefix: ['TC-FILE-036', 'TC-FILE-037', 'TC-FILE-038', 'TC-FILE-039', 'TC-FILE-040'], fn: testFormatter },
-  { name: 'testZoomMap', tcPrefix: ['TC-SHOW-015', 'TC-SHOW-016', 'TC-SHOW-017', 'TC-SHOW-018', 'TC-SHOW-019'], fn: testZoomMap, timeoutMs: 150000 },
-  { name: 'testPlayable', tcPrefix: ['TC-SHOW-020', 'TC-SHOW-021', 'TC-SHOW-022', 'TC-SHOW-023', 'TC-SHOW-024'], fn: testPlayable },
+  ...MODE_SUITES,
+  ...GATE_SUITES,
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
