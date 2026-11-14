@@ -1,16 +1,16 @@
 name: Deploy to GitHub Pages
 
-# main の public/ を GitHub Pages へ公開する。
-# /self-approve（self-approve.yml）は GITHUB_TOKEN で main へ push するため、その push では
-# push のトリガーが動かない（GITHUB_TOKEN の操作で起きたイベントは、別のワークフローを起動しない）。
-# そこで、Self Approve のワークフローが成功して終わったときにも公開する（workflow_run）。
+# 公開用 URL（ルート /）とテスト用 URL（/preview/）を分離してデプロイする（Ref #104）。
+# - 公開用（/）: 最新リリースタグ（lucivo-v*）の public/ を配置（タグ push / Release 公開時に同期）
+# - テスト用（/preview/）: main ブランチの最新 public/ を配置（main 反映時 / Self Approve 完了時に更新）
 on:
   push:
     branches:
       - main
-    paths:
-      - "public/**"
-      - ".github/workflows/pages.yml"
+    tags:
+      - "lucivo-v*"
+  release:
+    types: [published]
   workflow_run:
     workflows: ["Self Approve"]
     types: [completed]
@@ -35,13 +35,32 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      # workflow_run では、反映した後の main の先頭を公開する
       - uses: actions/checkout@v7
         with:
           ref: main
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Build GitHub Pages site (production + preview)
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            PROD_REF="${{ github.event.release.tag_name }}"
+          elif [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/lucivo-v* ]]; then
+            PROD_REF="${{ github.ref_name }}"
+          else
+            PROD_REF="$(git tag --list 'lucivo-v*' --sort=-v:refname | head -n 1)"
+          fi
+          if [ -z "$PROD_REF" ]; then
+            PROD_REF="main"
+          fi
+          echo "Production ref: $PROD_REF"
+          echo "Preview ref: main"
+          rm -rf _site
+          mkdir -p _site _site/preview
+          git archive "$PROD_REF" public | tar -x --strip-components=1 -C _site
+          git archive main public | tar -x --strip-components=1 -C _site/preview
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
