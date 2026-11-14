@@ -21,7 +21,12 @@ const {
   openStagePage,
   setDocument,
   scrollToSlab,
-  seekLight
+  seekLight,
+  ENCODING_FIXTURE,
+  FORMAT_FIXTURE,
+  MD_MODES,
+  startWebServer,
+  openWebPageWithSample
 } = require('./helpers.cjs');
 
 async function testFileLoading(browser) {
@@ -94,7 +99,7 @@ async function testFileLoading(browser) {
 
   // TC-FILE-034 案内に現在の版を表示し、「更新を確認」を押したときだけ最新リリースを問い合わせる
   {
-    const appVersion = require('../package.json').version;
+    const appVersion = require('../../package.json').version;
     const api = 'https://api.github.com/repos/prankster-freedom/Lucivo/releases/latest';
     const apiRequests = [];
     const onRequest = req => { if (req.url().startsWith('https://api.github.com/')) apiRequests.push(req.url()); };
@@ -1000,6 +1005,12 @@ async function testSampleLinks(browser) {
 }
 
 // フォルダ構成のツリー（TC-MD-017〜019）
+const ENCODING_CASES = [
+  ['utf8-lf.md', 'UTF-8'], ['utf8-crlf.md', 'UTF-8'], ['utf8-cr.md', 'UTF-8'], ['utf8-mixed.md', 'UTF-8'],
+  ['utf8-bom-crlf.md', 'UTF-8 (BOM)'], ['utf16le-bom-crlf.md', 'UTF-16LE'],
+  ['sjis-crlf.md', 'Shift_JIS'], ['sjis-lf.md', 'Shift_JIS'], ['eucjp-lf.md', 'EUC-JP'], ['iso2022jp-lf.md', 'ISO-2022-JP']
+];
+
 async function testEncoding(browser) {
   const page = await openStagePage(browser);
   // 文字コードの判定だけを確かめるため、読み込み時の整形（FR-053）は止める。整形は testFormatter で確かめる

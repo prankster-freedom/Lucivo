@@ -21,7 +21,12 @@ const {
   openStagePage,
   setDocument,
   scrollToSlab,
-  seekLight
+  seekLight,
+  ENCODING_FIXTURE,
+  FORMAT_FIXTURE,
+  MD_MODES,
+  startWebServer,
+  openWebPageWithSample
 } = require('./helpers.cjs');
 
 async function testStartupAndCache(browser) {
@@ -483,7 +488,6 @@ async function testPlayable(browser) {
 }
 
 // Markdown の整形（TC-FILE-036〜040、FR-053）。messy.md を開くと messy.expected.md になる
-const FORMAT_FIXTURE = path.join(ROOT_DIR, 'tests', 'fixtures', 'format');
 
 module.exports = {
   testStartupAndCache,

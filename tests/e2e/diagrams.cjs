@@ -21,7 +21,12 @@ const {
   openStagePage,
   setDocument,
   scrollToSlab,
-  seekLight
+  seekLight,
+  ENCODING_FIXTURE,
+  FORMAT_FIXTURE,
+  MD_MODES,
+  startWebServer,
+  openWebPageWithSample
 } = require('./helpers.cjs');
 
 async function testDiagramRendering(browser) {
@@ -222,10 +227,6 @@ async function testDiagramRendering(browser) {
 }
 
 // Markdown 要素の計算後のスタイルを、本文モード（通常 / Visual Stage × Light / Dark）ごとに調べる
-const MD_MODES = [
-  { style: 'std', appearance: 'light' }, { style: 'std', appearance: 'dark' },
-  { style: 'shapes', appearance: 'light' }, { style: 'shapes', appearance: 'dark' }
-];
 function inspectEdgeStyle(isVisual) {
   const root = document.querySelector(isVisual ? '#visual-stage-container' : '#standard-doc-container');
   return Array.from(root.querySelectorAll('[id^="diagram-frame-"]')).map(card => {

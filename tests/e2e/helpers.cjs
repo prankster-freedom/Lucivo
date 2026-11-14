@@ -114,7 +114,51 @@ async function seekLight(page, t) {
   await page.waitForTimeout(90);
 }
 
+
+const ENCODING_FIXTURE = path.join(ROOT_DIR, 'tests', 'fixtures', 'encoding');
+const FORMAT_FIXTURE = path.join(ROOT_DIR, 'tests', 'fixtures', 'format');
+const MD_MODES = [
+  { style: 'std', appearance: 'light' }, { style: 'std', appearance: 'dark' },
+  { style: 'shapes', appearance: 'light' }, { style: 'shapes', appearance: 'dark' }
+];
+
+async function startWebServer() {
+  const http = require('http');
+  const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.md': 'text/markdown; charset=utf-8', '.png': 'image/png' };
+  const server = http.createServer((req, res) => {
+    const rel = ((req.url || '/').split('?')[0].replace(/^\/+/, '')) || 'index.html';
+    const fp = path.join(APP_DIR, decodeURIComponent(rel));
+    if (!fp.startsWith(APP_DIR) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
+      res.writeHead(404); res.end('Not found'); return;
+    }
+    res.writeHead(200, { 'Content-Type': mime[path.extname(fp)] || 'application/octet-stream' });
+    fs.createReadStream(fp).pipe(res);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  return { url: `http://127.0.0.1:${server.address().port}/`, close: () => new Promise(resolve => server.close(resolve)) };
+}
+
+async function openWebPageWithSample(browser, server, contextOptions = {}, sampleName = 'visual-sample.md') {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...contextOptions });
+  const page = await context.newPage();
+  page.consoleErrors = [];
+  page.on('console', m => { if (m.type() === 'error') page.consoleErrors.push(m.text().slice(0, 200)); });
+  page.on('pageerror', e => page.consoleErrors.push('pageerror: ' + e.message));
+  await page.goto(server.url);
+  await page.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
+  await page.click('#btn-file-menu');
+  await page.setInputFiles('#file-input', path.join(APP_DIR, 'samples', sampleName));
+  await page.waitForFunction(n => document.title === `${n} - Lucivo`, sampleName);
+  await waitRendered(page);
+  return page;
+}
+
 module.exports = {
+  ENCODING_FIXTURE,
+  FORMAT_FIXTURE,
+  MD_MODES,
+  startWebServer,
+  openWebPageWithSample,
   openStagePage,
   setDocument,
   scrollToSlab,
