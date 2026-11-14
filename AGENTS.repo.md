@@ -99,4 +99,4 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
    - `LUCIVO_VERSION_OVERRIDE="<版> (build #<run_number>)"` でビルドし、`Lucivo-v<版>/` フォルダ構成の `Lucivo-v<版>.zip` を作成
    - タグ `lucivo-v<版>` を作成・push し、README の該当版の節＋ZIP ダウンロードリンクを本文にして GitHub Release（タイトル `Lucivo <版>`）を公開
 4. **公開用 GitHub Pages の同期（`.github/workflows/pages.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を `lucivo-v<版>`（`<版> (build #<run_number>)`）へ更新する。
-5. **公開後の確認**: GitHub Release ページから `Lucivo-v<版>.zip` をダウンロードして展開し `index.html` が開けること、および公開用 URL が新しい版で開けることを確かめる。
+5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `README.md` の該当版の節が欠落なく反映されていること）、`Lucivo-v<版>.zip` を展開して `index.html` が開けること、および公開用 URL が新しい版で開けることを確かめる。
