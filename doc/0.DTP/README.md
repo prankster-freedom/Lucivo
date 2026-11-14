@@ -123,6 +123,7 @@ Lucivo の Visualモード（Visual Stage）の誌面設計の全体方針を定
 | `DTP-001`〜`009`                    | 全体設計・ブランドロゴ配置・操作部の状態の示し方・直接操作の手がかり・フォルダの一覧とメニュー・フォルダ構成のツリー | 本書 |
 | `DTP-VTPL-001`〜                    | Visualモードの記述パターン別の雛形、動的ステージ演出、表紙と誌面の表 | [features/visual-templates.md](features/visual-templates.md) |
 | `DTP-LIGHT-010`〜, `DTP-SHOW-010`〜 | Visualモードの舞台演出（シグナル・ライト、ステージ発表） | [features/stage-show.md](features/stage-show.md) |
+| `DTP-MWLK-010`〜`070`               | 発表モード「ミュージアム・ウォーク」の空間構成・質感・組版・カメラワーク・描画性能制約 | [features/modes/museum-walk.md](features/modes/museum-walk.md) |
 | `RGH-<nnn>`                         | ラフ案 | [roughs/README.md](roughs/README.md) |
 | `AST-<nnn>`                         | 素材   | [assets/README.md](assets/README.md) |
 
