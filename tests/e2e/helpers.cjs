@@ -6,7 +6,13 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
-const APP_DIR = path.join(ROOT_DIR, 'public');
+// file:// で開く E2E はスタンドアロン版（dist/）を検査し、Web 版のテストは public/ をサーバーで配る（doc/2.ARCHITECTURE.md 4.15）
+const APP_DIR = path.join(ROOT_DIR, 'dist');
+const WEB_DIR = path.join(ROOT_DIR, 'public');
+if (!fs.existsSync(path.join(APP_DIR, 'index.html'))) {
+  console.error('dist/index.html がありません。先に npm run build:standalone を実行してください。');
+  process.exit(1);
+}
 const APP_URL = 'file:///' + path.join(APP_DIR, 'index.html').replace(/\\/g, '/');
 const SAMPLE = path.join(APP_DIR, 'samples', 'notation_sample.md');
 const OUT_DIR = path.join(ROOT_DIR, 'work', 'test');
@@ -127,8 +133,8 @@ async function startWebServer() {
   const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.md': 'text/markdown; charset=utf-8', '.png': 'image/png' };
   const server = http.createServer((req, res) => {
     const rel = ((req.url || '/').split('?')[0].replace(/^\/+/, '')) || 'index.html';
-    const fp = path.join(APP_DIR, decodeURIComponent(rel));
-    if (!fp.startsWith(APP_DIR) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
+    const fp = path.join(WEB_DIR, decodeURIComponent(rel));
+    if (!fp.startsWith(WEB_DIR) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
       res.writeHead(404); res.end('Not found'); return;
     }
     res.writeHead(200, { 'Content-Type': mime[path.extname(fp)] || 'application/octet-stream' });

@@ -1,7 +1,7 @@
 // 既存のコードへの大量の指摘を避けるため、規則は壊れた文字列の検出に絞る
 module.exports = [
   {
-    ignores: ['public/vendor/**', 'node_modules/**', 'work/**']
+    ignores: ['public/vendor/**', 'dist/**', 'node_modules/**', 'work/**']
   },
   {
     files: ['public/js/**/*.js'],

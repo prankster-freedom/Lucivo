@@ -999,7 +999,7 @@ async function testSampleLinks(browser) {
   const url = page.url();
   record('TC-FILE-028', images.length === 2 && images.every(i => i.loaded && i.src === 'samples/images/lucivo-flow.svg') && images[1].width === 320
     && selfTop !== null && selfTop >= 0 && selfTop < 120 && otherTop !== null && otherTop >= 0 && otherTop < 120
-    && url.endsWith('/public/index.html') && page.consoleErrors.length === 0,
+    && url.endsWith('/dist/index.html') && page.consoleErrors.length === 0,
   JSON.stringify({ images, selfTop, otherTop, url: url.slice(-30), errors: page.consoleErrors }));
   await page.context().close();
 }

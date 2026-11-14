@@ -5,9 +5,11 @@
   "description": "Lucivo Markdown Presenter - Exhibition-Grade Markdown Viewer",
   "license": "MIT",
   "scripts": {
+    "pretest": "node tools/build-app.cjs --prod --channel standalone",
     "test": "node tests/e2e.cjs",
     "build": "node tools/build-app.cjs",
     "build:prod": "node tools/build-app.cjs --prod",
+    "build:standalone": "node tools/build-app.cjs --prod --channel standalone",
     "build:css": "node tools/build-tailwind-css.cjs",
     "build:vendor": "node tools/build-vendor.cjs",
     "build:samples": "node tools/build-samples-data.cjs",

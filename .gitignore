@@ -3,7 +3,7 @@ node_modules/
 # AI エージェントの作業ディレクトリ（AGENTS.md 1.10）
 work/
 
-# 配布用の圧縮ファイル
+# スタンドアロン版のビルド出力（tools/build-app.cjs --channel standalone）
 dist/
 
 # エディタのローカル設定
