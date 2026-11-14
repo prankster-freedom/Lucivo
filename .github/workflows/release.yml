@@ -57,6 +57,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.check.outputs.version }}
           TAG: ${{ steps.check.outputs.tag }}
+          REPO: ${{ github.repository }}
         run: |
           BUILD_VERSION="${VERSION} (build #${{ github.run_number }})"
           LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod
@@ -68,28 +69,33 @@ jobs:
           cp -R public/. "/tmp/release-pkg/${ZIP_DIR}/"
           (cd /tmp/release-pkg && zip -rq "$GITHUB_WORKSPACE/${ZIP_NAME}" "${ZIP_DIR}")
 
-          node -e "
-            const fs = require('fs');
-            const readme = fs.readFileSync('README.md', 'utf8');
-            const ver = process.env.VERSION;
-            const zipName = 'Lucivo-v' + ver + '.zip';
-            const tag = process.env.TAG;
-            const repo = '${{ github.repository }}';
-            const dlUrl = 'https://github.com/' + repo + '/releases/download/' + tag + '/' + zipName;
-            const re = new RegExp('(^###\\s+' + ver.replace(/\./g, '\\\\.') + '(?:[^\\n]*)\\n[\\s\\S]*?)(?=^###\\s+|^##\\s+|\\Z)', 'm');
-            const m = readme.match(re);
-            const section = m ? m[1].trim() : 'Lucivo ' + ver;
-            const header = [
-              '## スタンドアロン版（ZIP）の使い方',
-              '',
-              '- [**' + zipName + '**](' + dlUrl + ') をダウンロードして展開し、\`index.html\` をブラウザで開いてください。',
-              '- ※ 下部の \`Source code (zip / tar.gz)\` は仕様書やテストを含む開発者向けリポジトリ全体です。利用者は必ず **`' + zipName + '`** を選んでください。',
-              '',
-              '---',
-              ''
-            ].join('\n');
-            fs.writeFileSync('/tmp/release-notes.md', header + section + '\n', 'utf8');
-          "
+          node - <<'EOF'
+          const fs = require('fs');
+          const readme = fs.readFileSync('README.md', 'utf8');
+          const ver = process.env.VERSION;
+          const zipName = `Lucivo-v${ver}.zip`;
+          const tag = process.env.TAG;
+          const repo = process.env.REPO;
+          const dlUrl = `https://github.com/${repo}/releases/download/${tag}/${zipName}`;
+          const escapedVer = ver.replace(/\./g, '\\.');
+          const re = new RegExp(`(^###\\s+${escapedVer}(?:[^\\n]*)\\n[\\s\\S]*?)(?=^###\\s+|^##\\s+|(?![\\s\\S]))`, 'm');
+          const m = readme.match(re);
+          if (!m) {
+            console.error(`Release notes section for ${ver} not found in README.md`);
+            process.exit(1);
+          }
+          const section = m[1].trim();
+          const header = [
+            '## スタンドアロン版（ZIP）の使い方',
+            '',
+            `- [**${zipName}**](${dlUrl}) をダウンロードして展開し、\`index.html\` をブラウザで開いてください。`,
+            `- ※ 下部の \`Source code (zip / tar.gz)\` は仕様書やテストを含む開発者向けリポジトリ全体です。利用者は必ず **\`${zipName}\`** を選んでください。`,
+            '',
+            '---',
+            ''
+          ].join('\n');
+          fs.writeFileSync('/tmp/release-notes.md', header + section + '\n', 'utf8');
+          EOF
 
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
