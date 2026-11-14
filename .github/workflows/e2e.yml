@@ -64,9 +64,7 @@ jobs:
     - name: Install Chromium
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npx playwright install --with-deps chromium
-    - name: Build app
-      if: ${{ needs.changes.outputs.e2e != 'false' }}
-      run: npm run build:prod
+    # public/ と dist/ のビルドは npm test の pretest が行う（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-006）
     - name: Run E2E tests
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm test

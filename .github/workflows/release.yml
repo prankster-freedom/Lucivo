@@ -60,19 +60,16 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           BUILD_VERSION="${VERSION} (build #${{ github.run_number }})"
-          # Web 版（public/）、スタンドアロン版（dist/）の順に、同じビルド番号でビルドする
-          LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod
+          # スタンドアロン版（dist/）だけをビルドして ZIP にする。GitHub Release に付けるのはこの ZIP 1 つ
+          # 公開用 URL の Web 版は、deploy.yml がタグからビルドし直す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-004・005）
           LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod --channel standalone
 
           ZIP_DIR="Lucivo-v${VERSION}"
           ZIP_NAME="Lucivo-v${VERSION}.zip"
-          WEB_ZIP_NAME="Lucivo-v${VERSION}-web.zip"
-          rm -rf /tmp/release-pkg /tmp/release-pkg-web
-          mkdir -p "/tmp/release-pkg/${ZIP_DIR}" "/tmp/release-pkg-web/${ZIP_DIR}"
+          rm -rf /tmp/release-pkg
+          mkdir -p "/tmp/release-pkg/${ZIP_DIR}"
           cp -R dist/. "/tmp/release-pkg/${ZIP_DIR}/"
-          cp -R public/. "/tmp/release-pkg-web/${ZIP_DIR}/"
           (cd /tmp/release-pkg && zip -rq "$GITHUB_WORKSPACE/${ZIP_NAME}" "${ZIP_DIR}")
-          (cd /tmp/release-pkg-web && zip -rq "$GITHUB_WORKSPACE/${WEB_ZIP_NAME}" "${ZIP_DIR}")
 
           node - <<'EOF'
           const fs = require('fs');
@@ -94,7 +91,6 @@ jobs:
             '## スタンドアロン版（ZIP）の使い方',
             '',
             `- [**${zipName}**](${dlUrl}) をダウンロードして展開し、\`index.html\` をブラウザで開いてください。`,
-            `- 利用者が選ぶのは **\`${zipName}\`**（スタンドアロン版）です。\`${zipName.replace(/\.zip$/, '-web.zip')}\` は公開用 Web 版（GitHub Pages）の元で、通常は使いません。`,
             `- ※ 下部の \`Source code (zip / tar.gz)\` は仕様書やテストを含む開発者向けリポジトリ全体です。利用者は必ず **\`${zipName}\`** を選んでください。`,
             '',
             '---',
@@ -105,7 +101,10 @@ jobs:
 
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          git tag "$TAG" HEAD
+          # 注釈付きのタグを GitHub Release より先に作る（Release はタグを指すため）。
+          # 注釈に埋め込んだ版の表記を書き、deploy.yml が公開用 URL のビルドで読んで ZIP とビルド番号をそろえる
+          printf 'Lucivo %s\n\nLUCIVO_VERSION: %s\n' "$VERSION" "$BUILD_VERSION" > /tmp/tag-message.txt
+          git tag -a "$TAG" HEAD -F /tmp/tag-message.txt
           git push origin "$TAG"
 
-          gh release create "$TAG" "$ZIP_NAME" "$WEB_ZIP_NAME" --title "Lucivo ${VERSION}" --notes-file /tmp/release-notes.md
+          gh release create "$TAG" "$ZIP_NAME" --verify-tag --title "Lucivo ${VERSION}" --notes-file /tmp/release-notes.md
