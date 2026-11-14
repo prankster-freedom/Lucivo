@@ -6,18 +6,19 @@ tags: ["Lucivo", "テスト仕様"]
 
 # テスト仕様 目次
 
-| feature      | 略号   | テスト仕様                         | 対応する詳細設計                                                 |
-| :----------- | :----- | :--------------------------------- | :--------------------------------------------------------------- |
-| file-loading | `FILE` | [file-loading.md](file-loading.md) | [file-loading.md](../3.sw_design_notes/features/file-loading.md) |
-| diagram-rendering | `DIAG` | [diagram-rendering.md](diagram-rendering.md) | [diagram-rendering.md](../3.sw_design_notes/features/diagram-rendering.md) |
-| markdown-typography | `MD` | [markdown-typography.md](markdown-typography.md) | [markdown-typography.md](../3.sw_design_notes/features/markdown-typography.md) |
-| math-rendering | `MATH` | [math-rendering.md](math-rendering.md) | [math-rendering.md](../3.sw_design_notes/features/math-rendering.md) |
-| front-matter | `FM`   | [front-matter.md](front-matter.md) | [front-matter.md](../3.sw_design_notes/features/front-matter.md) |
-| edge-style   | `EDGE` | [edge-style.md](edge-style.md)     | [edge-style.md](../3.sw_design_notes/features/edge-style.md)     |
-| visual-templates | `VTPL` | [visual-templates.md](visual-templates.md) | [visual-templates.md](../3.sw_design_notes/features/visual-templates.md) |
-| stage-show   | `LIGHT`, `SHOW` | [stage-show.md](stage-show.md) | [stage-show.md](../3.sw_design_notes/features/stage-show.md) |
-| offline      | `OFF`  | [offline.md](offline.md)           | [offline.md](../3.sw_design_notes/features/offline.md)           |
-| performance  | `PERF` | [performance.md](performance.md)   | [diagram-rendering.md](../3.sw_design_notes/features/diagram-rendering.md)、[math-rendering.md](../3.sw_design_notes/features/math-rendering.md) |
+| feature      | 略号            | テスト仕様                         | 対応する詳細設計                                                 |
+| :----------- | :-------------- | :--------------------------------- | :--------------------------------------------------------------- |
+| file-loading | `FILE`          | [file-loading.md](file-loading.md) | [file-loading.md](../3.sw_design_notes/features/file-loading.md) |
+| diagram-rendering | `DIAG`     | [diagram-rendering.md](diagram-rendering.md) | [diagram-rendering.md](../3.sw_design_notes/features/diagram-rendering.md) |
+| markdown-typography | `MD`     | [markdown-typography.md](markdown-typography.md) | [markdown-typography.md](../3.sw_design_notes/features/markdown-typography.md) |
+| math-rendering | `MATH`        | [math-rendering.md](math-rendering.md) | [math-rendering.md](../3.sw_design_notes/features/math-rendering.md) |
+| front-matter | `FM`            | [front-matter.md](front-matter.md) | [front-matter.md](../3.sw_design_notes/features/front-matter.md) |
+| edge-style   | `EDGE`          | [edge-style.md](edge-style.md)     | [edge-style.md](../3.sw_design_notes/features/edge-style.md)     |
+| visual-templates | `VTPL`      | [visual-templates.md](visual-templates.md) | [visual-templates.md](../3.sw_design_notes/features/visual-templates.md) |
+| stage-show   | `LIGHT`, `SHOW` | [stage-show.md](stage-show.md)     | [stage-show.md](../3.sw_design_notes/features/stage-show.md)     |
+| modes        | `MODE`, `SHOW`  | [modes/README.md](modes/README.md) | [modes/README.md](../3.sw_design_notes/features/modes/README.md) |
+| offline      | `OFF`           | [offline.md](offline.md)           | [offline.md](../3.sw_design_notes/features/offline.md)           |
+| performance  | `PERF`          | [performance.md](performance.md)   | [diagram-rendering.md](../3.sw_design_notes/features/diagram-rendering.md)、[math-rendering.md](../3.sw_design_notes/features/math-rendering.md) |
 
 ## 実行方法
 

@@ -15,8 +15,7 @@ tags: ["Lucivo", "実装"]
 | [js/app.js](../../src/ts/app.ts)                                   | [js/app.js.md](js/app.js.md)                                       | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
 | [js/stage.js](../../src/js/stage.js)                               | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                             |
 | [js/formatter.js](../../src/ts/formatter/index.ts)                 | [js/formatter.js.md](js/formatter.js.md)                           | 読み込み時の Markdown の整形（markdownlint を同梱）        |
-| [js/zoom-map.js](../../src/ts/modes/zoom-map.ts)                   | [js/zoom-map.js.md](js/zoom-map.js.md)                             | ズーミング・マップ（Web 版だけの発表の見せ方）             |
-| [js/playable.js](../../src/ts/modes/playable.ts)                   | [js/playable.js.md](js/playable.js.md)                             | プレイアブル・ダイアグラム（Web 版だけの発表の見せ方）     |
+| [src/ts/modes/](../../src/ts/modes/)                               | [js/modes/README.md](js/modes/README.md)                           | 発表モード（登録表と、モードごとの実装ドキュメントの目次） |
 | [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成                                 |
 | [tools/build-samples-data.cjs](../../tools/build-samples-data.cjs) | [tools/build-samples-data.cjs.md](tools/build-samples-data.cjs.md) | `file://` 直開き時の同梱サンプル遅延読み込みデータの生成   |
 | [tools/build-vendor.cjs](../../tools/build-vendor.cjs)             | [tools/build-vendor.cjs.md](tools/build-vendor.cjs.md)             | ライブラリとフォントの同梱ファイルの生成                   |
