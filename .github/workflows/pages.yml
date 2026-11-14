@@ -12,7 +12,7 @@ on:
   release:
     types: [published]
   workflow_run:
-    workflows: ["Self Approve", "Release"]
+    workflows: ["Self Approve", "Canary Auto Merge", "Release"]
     types: [completed]
   workflow_dispatch:
 

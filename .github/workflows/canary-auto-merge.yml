@@ -1,0 +1,110 @@
+name: Canary Auto Merge
+# release/* 以外の通常 PR（リポジトリ所有者作成・非 Draft）について、E2E Tests 通過後に自動で main へ fast-forward する。
+# workflow_run は main にある定義で動くため、PR の中でこのファイルを書き換えても条件は緩められない。
+# PR のコードは実行しないこと（contents: write の権限で動くため）。
+on:
+  workflow_run:
+    workflows: ["E2E Tests"]
+    types: [completed]
+permissions: {}
+concurrency:
+  group: main-fast-forward
+  cancel-in-progress: false
+jobs:
+  auto-merge:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      checks: read
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: main
+        fetch-depth: 0
+    - name: Fast-forward main for Canary PR
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR_NUM: ${{ github.event.workflow_run.pull_requests[0].number }}
+        HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        OWNER: ${{ github.repository_owner }}
+      run: |
+        api="repos/$GITHUB_REPOSITORY"
+        PR="$PR_NUM"
+        if [ -z "$PR" ]; then
+          PR=$(gh api "$api/pulls?state=open&base=main&per_page=100" \
+            --jq "[.[] | select(.head.sha == \"$HEAD_SHA\")][0].number // empty")
+        fi
+        if [ -z "$PR" ]; then
+          echo "No matching open PR targeting main for $HEAD_SHA. Skipping."
+          exit 0
+        fi
+
+        pr_json=$(gh api "$api/pulls/$PR")
+        author=$(printf '%s' "$pr_json" | jq -r '.user.login')
+        state=$(printf '%s' "$pr_json" | jq -r '.state')
+        draft=$(printf '%s' "$pr_json" | jq -r '.draft')
+        base=$(printf '%s' "$pr_json" | jq -r '.base.ref')
+        branch=$(printf '%s' "$pr_json" | jq -r '.head.ref')
+        head=$(printf '%s' "$pr_json" | jq -r '.head.sha')
+
+        if [ "$author" != "$OWNER" ]; then
+          echo "PR #$PR author ($author) is not owner ($OWNER). Skipping auto-merge."
+          exit 0
+        fi
+        if [ "$state" != "open" ] || [ "$draft" = "true" ]; then
+          echo "PR #$PR is not open/ready (state=$state, draft=$draft). Skipping."
+          exit 0
+        fi
+        if [ "$base" != "main" ]; then
+          echo "PR #$PR targets $base, not main. Skipping."
+          exit 0
+        fi
+        case "$branch" in
+          release/*)
+            echo "PR #$PR ($branch) is a release PR; waiting for /self-approve."
+            exit 0
+            ;;
+        esac
+
+        lint_res=$(gh api "$api/commits/$head/check-runs?check_name=lint" \
+          --jq '[.check_runs[] | select(.app.slug == "github-actions")][0].conclusion')
+        if [ "$lint_res" != "success" ]; then
+          echo "lint check is not success ($lint_res). Skipping."
+          exit 0
+        fi
+
+        test_res=$(gh api "$api/commits/$head/check-runs?check_name=test" \
+          --jq '[.check_runs[] | select(.app.slug == "github-actions")][0].conclusion')
+        case "$test_res" in
+          success|skipped) ;;
+          *)
+            echo "test check is not success/skipped ($test_res). Skipping."
+            exit 0
+            ;;
+        esac
+
+        git fetch origin "pull/$PR/head"
+        if [ "$(git rev-parse FETCH_HEAD)" != "$head" ]; then
+          echo "PR #$PR head commit changed. Skipping."
+          exit 0
+        fi
+        if ! git merge-base --is-ancestor origin/main "$head"; then
+          echo "PR #$PR is not rebased onto latest main. Skipping auto-merge."
+          exit 0
+        fi
+
+        git push origin "$head:refs/heads/main"
+        git push origin --delete "$branch" || echo "::warning::ブランチ $branch を削除できませんでした"
+
+        issues=$(printf '%s' "$pr_json" | jq -r '[ (.body // "") | scan("(?i)(?:^|[^a-z0-9_])(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?[ ]+#([0-9]+)") | .[0] ] | unique | .[]')
+        for n in $issues; do
+          case "$n" in ''|*[!0-9]*) continue ;; esac
+          if [ "$(gh api "$api/issues/$n" --jq 'has("pull_request")')" = "true" ]; then continue; fi
+          gh api -X PATCH "$api/issues/$n" -f state=closed -f state_reason=completed > /dev/null \
+            && gh api "$api/issues/$n/comments" -f body="#$PR の自動マージ（Canary）で閉じました。" > /dev/null \
+            || echo "::warning::#$n を閉じられませんでした"
+        done

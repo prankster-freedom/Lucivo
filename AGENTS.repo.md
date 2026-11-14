@@ -72,7 +72,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 `main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
 
-- **Canary 反映（通常の開発 PR）**: 開発中の feature ブランチは、`lint` および `test` の CI が通過すれば `/self-approve` を経ずに `main` へマージしてよい。`main` の反映を受けて `.github/workflows/pages.yml` がテスト用 URL（`https://prankster-freedom.github.io/Lucivo/preview/`）へ Canary 版（`X.Y.Z-canary (build #N)`）をデプロイする。公開用 URL（`/`）は最新リリースタグのまま維持される
+- **Canary 反映（通常の開発 PR）**: 開発中の feature ブランチ（`release/*` 以外、非 Draft、最新の `main` にリベース済み）は、`lint` および `test` の CI が通過すると `.github/workflows/canary-auto-merge.yml` により `/self-approve` を経ずに自動で `main` へ fast-forward マージされる。マージ後は `.github/workflows/pages.yml` がテスト用 URL（`https://prankster-freedom.github.io/Lucivo/preview/`）へ Canary 版（`X.Y.Z-canary (build #N)`）をデプロイする。公開用 URL（`/`）は最新リリースタグのまま維持される
 - **正式リリース（`release/*` ブランチ PR）**: 正式リリース時は `release/vX.Y.Z` ブランチから `main` 向け PR を発行し、ユーザーによる `/self-approve` を経て `main` へマージする（`GITHUB_TOKEN` によるマージ後は `workflow_run` で `.github/workflows/release.yml` と `pages.yml` が連鎖実行される）
 
 ### 6.1 リリース前の統合ブランチ（`feature/pre-test`）
