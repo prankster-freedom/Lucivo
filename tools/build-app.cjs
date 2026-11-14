@@ -22,13 +22,20 @@ const OUT_DIR = channel === 'standalone' ? path.join(ROOT_DIR, 'dist') : PUBLIC_
 // standalone は、これ以外のファイル（コミットするファイル）だけを public/ から写し、出力は dist/ にビルドで作る
 const BUILD_OUTPUTS = ['js', 'css/style.css', 'css/modes', 'samples/samples-data.js'];
 
-// 発表モード別の独立ビルド対象（#58）。各モード（#61〜#63）は追加時にここへ足す
+// 発表モードの登録表（doc/2.ARCHITECTURE.md 4.16 ARC-MODE-001）。配布先で絞る（ARC-MODE-002）:
+// web は全部、standalone は stage: "all"（スタンドアロン版にも展開したもの）だけ。ビルドするモードも、本体に埋め込む表も、この絞った表で決める
+const MODES_DIR = path.join(ROOT_DIR, 'src', 'ts', 'modes');
+const ALL_MODES = require(path.join(MODES_DIR, 'modes.json'));
+const MODES = ALL_MODES.filter(mode => channel === 'web' || mode.stage === 'all');
+
+// 本体と同じく起動時に読む部品（光の演出）。Visualモードに初めて入ったときに読み込む
 const STAGE_MODE_ENTRIES = [
   { entry: path.join(ROOT_DIR, 'src', 'js', 'stage.js'), outfile: path.join(OUT_DIR, 'js', 'stage.js') },
-  // ズーミング・マップ（#61、FR-054）。Web 版だけで使う
-  { entry: path.join(ROOT_DIR, 'src', 'ts', 'modes', 'zoom-map.ts'), outfile: path.join(OUT_DIR, 'js', 'zoom-map.js') },
-  // プレイアブル・ダイアグラム（#62、FR-055）。Web 版だけで使う
-  { entry: path.join(ROOT_DIR, 'src', 'ts', 'modes', 'playable.ts'), outfile: path.join(OUT_DIR, 'js', 'playable.js') }
+  // 発表モード（src/ts/modes/<id>/index.ts → js/modes/<id>.js）。追加・廃止は登録表の行とフォルダで決まる
+  ...MODES.map(({ id }) => ({
+    entry: path.join(MODES_DIR, id, 'index.ts'),
+    outfile: path.join(OUT_DIR, 'js', 'modes', `${id}.js`)
+  }))
 ];
 
 // 必要なときだけ読み込む部品（起動時には読み込まない。NFR-006）
@@ -73,7 +80,11 @@ async function build() {
       ...commonJsOptions,
       entryPoints: [path.join(ROOT_DIR, 'src', 'ts', 'app.ts')],
       outfile: path.join(OUT_DIR, 'js', 'app.js'),
-      define: { __LUCIVO_VERSION__: JSON.stringify(appVersion) }
+      define: {
+        __LUCIVO_VERSION__: JSON.stringify(appVersion),
+        // この配布先で発表のドロップダウンに出すモード（stage は配布先で決まったあとは要らない）
+        __LUCIVO_PRESENT_MODES__: JSON.stringify(MODES.map(({ id, label }) => ({ id, label })))
+      }
     }),
     ...STAGE_MODE_ENTRIES.map(({ entry, outfile }) =>
       esbuild.build({
@@ -105,6 +116,19 @@ async function build() {
     charset: 'utf8',
     legalComments: 'inline'
   });
+
+  // 発表モードの CSS（src/ts/modes/<id>/style.css → css/modes/<id>.css）。本体の CSS には含めず、モードを選んだときに読み込む
+  await Promise.all(MODES.map(({ id }) =>
+    esbuild.build({
+      entryPoints: [path.join(MODES_DIR, id, 'style.css')],
+      outfile: path.join(OUT_DIR, 'css', 'modes', `${id}.css`),
+      bundle: true,
+      sourcemap: !isProd ? 'inline' : false,
+      minify: isProd,
+      charset: 'utf8',
+      legalComments: 'inline'
+    })
+  ));
 
   // file:// 直開き用の同梱サンプルのデータ（コミットしない出力）
   buildSamplesData(OUT_DIR);

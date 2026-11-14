@@ -64,7 +64,6 @@ import {
 import {
   closeFileMenu,
   setupFormatter,
-  setupPresentModes,
   saveMarkdownFile,
   setupFileMenu,
   setupFileDrop

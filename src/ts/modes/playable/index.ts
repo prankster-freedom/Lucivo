@@ -1,7 +1,7 @@
 // プレイアブル・ダイアグラム（#62、FR-055, DD-SHOW-120〜124）。
 // 文書の中の状態遷移図を「画面の試作品」に、フローチャートを「質問に答えて進む診断」にして、触って動かせるようにする。
-// js/playable.js として別にビルドし、ヘッダーの「発表」のドロップダウンで選んだときだけ読み込む（#58、NFR-006）。
-// Web 版だけで有効にする（呼び出す側の app.ts が、Web 版のときだけ入口を出す）。
+// js/modes/playable.js として別にビルドし、ヘッダーの「発表」のドロップダウンで選んだときだけ読み込む（NFR-006）。
+// 登録表（modes.json）の行で提供の範囲を決める。本体のモジュールは import せず、enter(host) で受け取る host だけを使う（ARC-MODE-006）。
 //
 // 図の構造は Mermaid の原文から読み（playable-graph.ts）、図の SVG は今いる場所を灯すためだけに使う。
 // 図は複製せず、描画済みの図の枠（[data-stage-index]）を一時的にこの画面へ移し、終えたら元の場所へ戻す。
@@ -13,11 +13,12 @@ interface Playable {
   viewport: HTMLElement;
 }
 
-const win = window as unknown as {
-  state: { isVisualMode: boolean };
-  getMermaidSource?: (index: number) => string | null;
-  showToast?: (message: string) => void;
-};
+// enter(host) で受け取る、本体の機能（doc/2.ARCHITECTURE.md 4.16 の host の表）。このモードが使う分だけを書く
+interface ModeHost {
+  previewRoot(): HTMLElement | null;
+  getMermaidSource(index: number): string | null;
+  toast(message: string): void;
+}
 
 const play = {
   active: false,
@@ -45,17 +46,16 @@ function prefersReducedMotion(): boolean {
 /* ------------------------------------------------------------------------
    図を集める
    ------------------------------------------------------------------------ */
-function collect(): Playable[] {
-  const containerId = win.state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container';
-  const container = document.getElementById(containerId);
-  if (!container || !win.getMermaidSource) return [];
+function collect(host: ModeHost): Playable[] {
+  const container = host.previewRoot();
+  if (!container) return [];
   return Array.from(container.querySelectorAll('[data-stage-index]'))
     .map(el => {
       const viewport = el as HTMLElement;
       const svg = viewport.querySelector(':scope > svg');
       if (!svg || !PLAYABLE_TYPES.includes(svg.getAttribute('aria-roledescription') || '')) return null;
       const index = Number(viewport.dataset.stageIndex);
-      const graph = parsePlayable(win.getMermaidSource(index) || '');
+      const graph = parsePlayable(host.getMermaidSource(index) || '');
       // 動かせるのは、始まりがあり、矢印が 1 本以上ある図
       if (!graph || !graph.start || graph.edges.length === 0) return null;
       return { index, graph, viewport };
@@ -325,11 +325,11 @@ function buildOverlay(): HTMLElement {
   return overlay;
 }
 
-function enter(): boolean {
+function enter(host: ModeHost): boolean {
   if (play.active) return true;
-  const items = collect();
+  const items = collect(host);
   if (!items.length) {
-    win.showToast?.('動かせる図（状態遷移図・フローチャート）がありません');
+    host.toast('動かせる図（状態遷移図・フローチャート）がありません');
     return false;
   }
   play.items = items;
@@ -369,4 +369,5 @@ function info() {
   };
 }
 
-(window as unknown as { LucivoPlayable: unknown }).LucivoPlayable = { enter, exit, choose, restart, info, startDiagram };
+// 本体が読み込んだとき（発表のドロップダウンで選ばれたとき）に、自分を登録する。choose・restart・startDiagram はテストが使う
+(window as unknown as { LucivoModes: { register(id: string, mode: object): void } }).LucivoModes.register('playable', { enter, exit, info, choose, restart, startDiagram });

@@ -1,0 +1,164 @@
+/* --------------------------------------------------------------------------
+   ズーミング・マップ（#61、FR-054, DD-SHOW-110〜114）
+   Visualモードの表紙と章を、大きな平面（地図）の上に並べ、カメラ（transform）で章から章へ飛ぶ
+   -------------------------------------------------------------------------- */
+html.is-zoom-map,
+html.is-zoom-map body {
+  overflow: hidden;
+}
+
+/* 画面全体を地図にする。ヘッダーやエディタは地図の下に隠れる */
+html.is-zoom-map #visual-stage-container {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+  padding: 0 !important;
+  margin: 0 !important;
+  background:
+    radial-gradient(ellipse at 50% 40%, var(--accent-soft), transparent 60%),
+    var(--app-bg);
+  cursor: default;
+}
+
+/* 平面。左上を原点に、カメラの拡大と移動を transform でかける。幅は章の幅のまま（container queries の基準） */
+html.is-zoom-map .exhibition-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  display: block;
+  transform-origin: 0 0;
+}
+
+/* 動いている間だけ、合成のための層を作る。止まったら外し、拡大した文字をぼかさずに描き直させる */
+html.is-zoom-map #visual-stage-container.is-flying .exhibition-wrap {
+  will-change: transform;
+}
+
+html.is-zoom-map .exhibition-wrap > .exhibition-hero,
+html.is-zoom-map .exhibition-wrap > .exhibition-slab {
+  position: absolute;
+  margin: 0;
+  box-sizing: border-box;
+  z-index: 1;
+  cursor: pointer;
+  transition: box-shadow 0.4s ease, opacity 0.4s ease;
+}
+
+/* 今いる章の輪郭を、ブランドのアクセントで灯す。ほかの章は少し沈める */
+html.is-zoom-map .exhibition-wrap > .is-zoom-current {
+  box-shadow: 0 0 0 6px var(--accent), 0 30px 80px -20px rgba(15, 23, 42, 0.45);
+}
+
+html.is-zoom-map .exhibition-wrap:has(> .is-zoom-current) > :not(.is-zoom-current):not(.zoom-map-path) {
+  opacity: 0.55;
+}
+
+/* 地図の上では図の光を止める。止めた後に残る光の跡（キャンバス）も隠す */
+html.is-zoom-map #visual-stage-container canvas.signal-light-canvas {
+  display: none;
+}
+
+/* 章の順番を結ぶ道 */
+.zoom-map-path {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.zoom-map-path polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 2 26;
+  opacity: 0.55;
+}
+
+/* 下の操作の帯（今いる場所・番号・操作の案内・終了） */
+.zoom-map-hud {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 71;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--nav-bg);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.zoom-map-hud > * {
+  flex-shrink: 0;
+}
+
+.zoom-map-mode {
+  white-space: nowrap;
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.zoom-map-hud > .zoom-map-label {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.zoom-map-label {
+  max-width: 28rem;
+  overflow: hidden;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.zoom-map-count {
+  white-space: nowrap;
+  font-family: "JetBrains Mono", "Noto Sans JP", monospace;
+  color: var(--text-muted);
+}
+
+.zoom-map-hint {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.zoom-map-exit {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+@media (max-width: 1023.98px) {
+  .zoom-map-hint {
+    display: none;
+  }
+}
+
+@media print {
+  .zoom-map-hud,
+  .zoom-map-path {
+    display: none !important;
+  }
+}

@@ -1,7 +1,7 @@
 // ズーミング・マップ（#61、FR-054, DD-SHOW-110〜114）。
 // Visualモードで組んだ表紙と章を、1 枚の大きな平面（地図）の上に道の形で並べ、カメラが章から章へ飛ぶ。
-// js/zoom-map.js として別にビルドし、ヘッダーの「発表」のドロップダウンで選んだときだけ読み込む（#58、NFR-006）。
-// Web 版だけで有効にする（呼び出す側の app.ts が、Web 版のときだけ入口を出す）。
+// js/modes/zoom-map.js として別にビルドし、ヘッダーの「発表」のドロップダウンで選んだときだけ読み込む（NFR-006）。
+// 登録表（modes.json）の行で提供の範囲を決める。本体のモジュールは import せず、enter(host) で受け取る host だけを使う（ARC-MODE-006）。
 //
 // 章は複製せず、Visualモードの DOM（.exhibition-wrap の子）をそのまま並べ直す。複製すると図の SVG の id が重複し、
 // 矢じりやグラデーションの参照が崩れるため。終わったら、付けたスタイルをすべて外して元の組版に戻す。
@@ -43,15 +43,21 @@ const state = {
   path: null as SVGSVGElement | null,
   // 地図の平面の大きさ。.exhibition-wrap の幅は章の幅のままにする（下記の layoutMap() の説明）
   plane: { w: 0, h: 0 },
-  restore: null as null | { viewMode: string; isVisualMode: boolean; scrollTop: number; lights: boolean; fullscreen: boolean }
+  // 全画面にしたか（終わるときに戻すため）
+  fullscreen: false,
+  // 本体との境界（enter() で受け取る）
+  host: null as ModeHost | null
 };
 
-const win = window as unknown as {
-  state: { viewMode: string; isVisualMode: boolean; signalLightsEnabled?: boolean };
-  LucivoStage?: { toggleLights?: (on: boolean) => void };
-  showToast?: (message: string) => void;
-  updateAllSlabSplits?: () => void;
-};
+// enter(host) で受け取る、本体の機能（doc/2.ARCHITECTURE.md 4.16 の host の表）。このモードが使う分だけを書く
+interface ModeHost {
+  showVisualCanvas(): Promise<HTMLElement | null>;
+  restoreView(): void;
+  isDocumentEmpty(): boolean;
+  relayoutSlabs(): void;
+  setLights(on: boolean): void;
+  toast(message: string): void;
+}
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -78,7 +84,7 @@ function layoutMap(): void {
     node.style.width = `${MAP.cardWidth}px`;
   });
   // 章の幅を変えると、本文と図の 2 段組みの判定や図の大きさが変わる。並べ直してから高さを測る
-  win.updateAllSlabSplits?.();
+  state.host.relayoutSlabs();
   const heights = state.nodes.map(node => node.offsetHeight);
   const rows = Math.ceil(n / cols);
   const rowHeights = Array.from({ length: rows }, (_, r) => Math.max(...heights.slice(r * cols, r * cols + cols)));
@@ -358,43 +364,24 @@ function buildHud(): HTMLElement {
 /* ------------------------------------------------------------------------
    始める・終える
    ------------------------------------------------------------------------ */
-function waitFrames(count: number): Promise<void> {
-  return new Promise(resolve => {
-    const step = (k: number) => (k <= 0 ? resolve() : requestAnimationFrame(() => step(k - 1)));
-    step(count);
-  });
-}
-
-async function enter(): Promise<boolean> {
+async function enter(host: ModeHost): Promise<boolean> {
   if (state.active) return true;
-  const app = win.state;
-  const scroller = document.getElementById('preview-scroll');
-  state.restore = {
-    viewMode: app.viewMode,
-    isVisualMode: app.isVisualMode,
-    scrollTop: scroller ? scroller.scrollTop : 0,
-    lights: app.signalLightsEnabled !== false,
-    fullscreen: false
-  };
-  if (!app.isVisualMode) (document.getElementById('btn-visual-mode') as HTMLButtonElement | null)?.click();
-  if (app.viewMode !== 'canvas') (document.querySelector('[data-view-mode="canvas"]') as HTMLButtonElement | null)?.click();
-  // Visualモードへ切り替えた直後は、図の描画が終わるまで待つ
-  await waitFrames(2);
-  const root = document.getElementById('visual-stage-container');
+  // 今の表示を覚えて Visualモードの Canvas 表示に切り替える（図の描画が終わるまで待つ）。戻すのは host.restoreView()
+  const root = await host.showVisualCanvas();
   const wrap = root?.querySelector('.exhibition-wrap') as HTMLElement | null;
   const nodes = wrap ? Array.from(wrap.querySelectorAll(':scope > .exhibition-hero, :scope > .exhibition-slab')) as HTMLElement[] : [];
-  const hasText = (document.getElementById('markdown-editor') as HTMLTextAreaElement).value.trim() !== '';
-  if (!wrap || !nodes.length || !hasText) {
-    restoreView();
-    win.showToast?.('ズーミング・マップで見せる章がありません');
+  if (!root || !wrap || !nodes.length || host.isDocumentEmpty()) {
+    host.restoreView();
+    host.toast('ズーミング・マップで見せる章がありません');
     return false;
   }
+  state.host = host;
   state.root = root;
   state.wrap = wrap;
   state.nodes = nodes;
   state.active = true;
   // 地図の上では、図の光を止める（全体を映したときに、すべての図が同時に動くと重い）
-  win.LucivoStage?.toggleLights?.(false);
+  host.setLights(false);
   document.documentElement.classList.add('is-zoom-map');
   layoutMap();
   buildSteps();
@@ -406,18 +393,8 @@ async function enter(): Promise<boolean> {
   root.addEventListener('click', onClick, true);
   window.addEventListener('resize', onResize);
   const fullscreen = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
-  if (fullscreen) fullscreen.then(() => { if (state.restore) state.restore.fullscreen = true; }, () => {});
+  if (fullscreen) fullscreen.then(() => { if (state.active) state.fullscreen = true; }, () => {});
   return true;
-}
-
-function restoreView(): void {
-  const r = state.restore;
-  if (!r) return;
-  const app = win.state;
-  if (app.viewMode !== r.viewMode) (document.querySelector(`[data-view-mode="${r.viewMode}"]`) as HTMLButtonElement | null)?.click();
-  if (app.isVisualMode !== r.isVisualMode) {
-    (document.getElementById(r.isVisualMode ? 'btn-visual-mode' : 'btn-mode-fast') as HTMLButtonElement | null)?.click();
-  }
 }
 
 function exit(): void {
@@ -438,14 +415,11 @@ function exit(): void {
     ['left', 'top', 'width'].forEach(p => node.style.removeProperty(p));
     node.classList.remove('is-zoom-current');
   });
-  win.updateAllSlabSplits?.();
-  const restore = state.restore;
-  win.LucivoStage?.toggleLights?.(restore.lights);
-  if (restore.fullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  restoreView();
-  const scroller = document.getElementById('preview-scroll');
-  if (scroller) scroller.scrollTop = restore.scrollTop;
-  state.restore = null;
+  state.host.relayoutSlabs();
+  if (state.fullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  state.fullscreen = false;
+  // 表示（高速 / Visual、Split / Canvas、スクロール位置、光の演出のオン・オフ）を、enter() の前に戻す
+  state.host.restoreView();
 }
 
 function info() {
@@ -457,4 +431,5 @@ function info() {
   };
 }
 
-(window as unknown as { LucivoZoomMap: unknown }).LucivoZoomMap = { enter, exit, next, prev, goTo, info };
+// 本体が読み込んだとき（発表のドロップダウンで選ばれたとき）に、自分を登録する。next・prev・goTo はテストが使う
+(window as unknown as { LucivoModes: { register(id: string, mode: object): void } }).LucivoModes.register('zoom-map', { enter, exit, info, next, prev, goTo });

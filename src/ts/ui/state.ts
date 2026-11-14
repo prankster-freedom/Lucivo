@@ -334,10 +334,7 @@ export const LIBRARIES = {
   // file:// 直開き時の同梱サンプル読み込みフォールバック（FR-006）。サンプルを選んだときだけ読み込む（NFR-006）
   samples: { script: './samples/samples-data.js', global: 'LUCIVO_SAMPLES' },
   // Markdown の整形（FR-053, DD-FILE-088）。文書を読み込むときと「今の文書を整える」のときだけ読み込む（NFR-006）
-  formatter: { script: './js/formatter.js', global: 'LucivoFormatter' },
-  // 発表の見せ方（Web 版だけ。#58 でモードごとに別のファイル）。発表のドロップダウンで選んだときだけ読み込む
-  zoomMap: { script: './js/zoom-map.js', global: 'LucivoZoomMap' },
-  playable: { script: './js/playable.js', global: 'LucivoPlayable' }
+  formatter: { script: './js/formatter.js', global: 'LucivoFormatter' }
 };
 export const libraryLoads = new Map();
 // 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを CDN の URL に置き換える（DD-OFF-003）

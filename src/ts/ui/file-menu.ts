@@ -2,7 +2,8 @@
 import { downloadBlob } from '../utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from '../utils/text-decode';
 import { showToast, updateStatus } from './toast';
-import { applyUpdateCheckState, checkForUpdate, isWebVersion } from './update-check';
+import { applyUpdateCheckState, checkForUpdate } from './update-check';
+import { setupPresentModes } from './present-modes';
 import {
   state,
   isModalOpen,
@@ -164,34 +165,6 @@ export function setupFormatter() {
   });
 }
 
-/* ==========================================================================
-   Web 版だけの発表の見せ方（#61・#62、FR-054・FR-055）
-   ========================================================================== */
-// 発表のドロップダウンの項目 → 読み込む部品と、そのグローバル
-export const PRESENT_MODES = [
-  { menuId: 'menu-present-zoom-map', library: 'zoomMap', global: 'LucivoZoomMap' },
-  { menuId: 'menu-present-playable', library: 'playable', global: 'LucivoPlayable' }
-];
-
-export function setupPresentModes() {
-  const web = isWebVersion();
-  PRESENT_MODES.forEach(({ menuId, library, global }) => {
-    const item = document.getElementById(menuId);
-    if (!item) return;
-    // スタンドアロン版（file://）では出さない（Issue #61・#62 の「提供する版」）
-    item.classList.toggle('hidden', !web);
-    if (!web) return;
-    item.addEventListener('click', async () => {
-      closeHeaderMenus();
-      if (!(await loadLibrary(library)) || !window[global]) {
-        showToast('発表の見せ方を読み込めませんでした');
-        return;
-      }
-      window[global].enter();
-    });
-  });
-}
-
 // ファイルのバイト列を読み、文字コードを判定してから開く（FR-048, DD-FILE-082）
 export async function loadMarkdownFile(file) {
   if (!confirmDiscardEdits(file.name)) return;
@@ -347,7 +320,7 @@ export function setupFileMenu() {
     closeHeaderMenus();
     document.getElementById('btn-stage-show')?.click();
   });
-  setupPresentModes();
+  setupPresentModes(closeHeaderMenus);
   setupMobileMenus();
   document.getElementById('btn-edit-unlock').onclick = () => {
     setEditorReadOnly(false);
