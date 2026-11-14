@@ -8,10 +8,11 @@ tags: ["Lucivo", "テスト仕様", "発表モード"]
 
 モードの一覧は登録表（`src/ts/modes/modes.json`）で、本書の表は登録表と同じ行にする（`npm run lint` で確かめる）。
 
-| モード                           | テスト仕様                 | 対応する詳細設計                                                  |
-| :------------------------------- | :------------------------- | :---------------------------------------------------------------- |
-| ズーミング・マップ（`zoom-map`） | [zoom-map.md](zoom-map.md) | [zoom-map.md](../../3.sw_design_notes/features/modes/zoom-map.md) |
+| モード                                   | テスト仕様                 | 対応する詳細設計                                                  |
+| :--------------------------------------- | :------------------------- | :---------------------------------------------------------------- |
+| ズーミング・マップ（`zoom-map`）         | [zoom-map.md](zoom-map.md) | [zoom-map.md](../../3.sw_design_notes/features/modes/zoom-map.md) |
 | プレイアブル・ダイアグラム（`playable`） | [playable.md](playable.md) | [playable.md](../../3.sw_design_notes/features/modes/playable.md) |
+| ミュージアム・ウォーク（`museum-walk`）  | [museum-walk.md](museum-walk.md) | [museum-walk.md](../../3.sw_design_notes/features/modes/museum-walk.md) |
 
 ## 共通の品質の関門（`ARC-MODE-007`）
 
