@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
 # 公開用 URL（ルート /）とテスト用 URL（/preview/）を分離してビルド・デプロイする（Ref #104, #106）。
 # - 公開用（/）: 最新リリースタグ（lucivo-v*）を "X.Y.Z (build #N)" でビルドして配置

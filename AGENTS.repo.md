@@ -45,7 +45,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 - 版番号は、README の本文の「**Version**」と `package.json` の `version` の 2 か所に書き、この 2 か所を正とする（release スキルの「README の Front Matter の `version`」の例外）。リリースでは 2 か所を同じ版にそろえる
 - 画面に表示するバージョン表記は、本番・スタンドアロン配布版が `X.Y.Z (build #N)`、Canary 版（`/preview/`）が `X.Y.Z-canary (build #N)`、ローカル開発ビルドが `X.Y.Z` とする（`tools/build-app.cjs` が `LUCIVO_VERSION_OVERRIDE` または `package.json` の `version` を埋め込む）
-- `release/*` ブランチでは `package.json` の `"version"` と `README.md` のみを更新し、`public/js/app.js` は CI（`release.yml` / `pages.yml`）側でビルド番号を注入して生成する。これにより、`tools/check-ci-changes.cjs` によりリリース PR で E2E テストが再実行されない（手動で `public/js/app.js` を更新した場合は E2E 対象になる）
+- `release/*` ブランチでは `package.json` の `"version"` と `README.md` のみを更新し、`public/js/app.js` は CI（`release.yml` / `deploy.yml`）側でビルド番号を注入して生成する。これにより、`tools/check-ci-changes.cjs` によりリリース PR で E2E テストが再実行されない（手動で `public/js/app.js` を更新した場合は E2E 対象になる）
 
 ## 5. 「Visualモードの追加訴求ポイントの提案依頼」の定型ワークフロー
 
@@ -72,8 +72,8 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 `main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
 
-- **Canary 反映（通常の開発 PR）**: 開発中の feature ブランチ（`release/*` 以外、非 Draft、最新の `main` にリベース済み）は、`lint` および `test` の CI が通過すると `.github/workflows/canary-auto-merge.yml` により `/self-approve` を経ずに自動で `main` へ fast-forward マージされる。マージ後は `.github/workflows/pages.yml` がテスト用 URL（`https://prankster-freedom.github.io/Lucivo/preview/`）へ Canary 版（`X.Y.Z-canary (build #N)`）をデプロイする。公開用 URL（`/`）は最新リリースタグのまま維持される
-- **正式リリース（`release/*` ブランチ PR）**: 正式リリース時は `release/vX.Y.Z` ブランチから `main` 向け PR を発行し、ユーザーによる `/self-approve` を経て `main` へマージする（`GITHUB_TOKEN` によるマージ後は `workflow_run` で `.github/workflows/release.yml` と `pages.yml` が連鎖実行される）
+- **Canary 反映（通常の開発 PR）**: 開発中の feature ブランチ（`release/*` 以外、非 Draft、最新の `main` にリベース済み）は、`lint` および `test` の CI が通過すると `.github/workflows/canary-auto-merge.yml` により `/self-approve` を経ずに自動で `main` へ fast-forward マージされる。マージ後は `.github/workflows/deploy.yml` がテスト用 URL（`https://prankster-freedom.github.io/Lucivo/preview/`）へ Canary 版（`X.Y.Z-canary (build #N)`）をデプロイする。公開用 URL（`/`）は最新リリースタグのまま維持される
+- **正式リリース（`release/*` ブランチ PR）**: 正式リリース時は `release/vX.Y.Z` ブランチから `main` 向け PR を発行し、ユーザーによる `/self-approve` を経て `main` へマージする（`GITHUB_TOKEN` によるマージ後は `workflow_run` で `.github/workflows/release.yml` と `deploy.yml` が連鎖実行される）
 
 ### 6.1 リリース前の統合ブランチ（`feature/pre-test`）
 
@@ -91,12 +91,12 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 
 ## 8. GitHub Release（release スキルの追加手順）
 
-利用者には GitHub Release（スタンドアロン ZIP）および GitHub Pages（公開用 URL `/`）で配布する。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`pages.yml`）で自動化する。
+利用者には GitHub Release（スタンドアロン ZIP）および GitHub Pages（公開用 URL `/`）で配布する。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`deploy.yml`）で自動化する。
 
 1. **リリース PR の作成（`release/v<版>` ブランチ）**: `package.json` の `"version"` と `README.md`（**Version** とリリースノート）のみを更新して `main` 向け PR を発行する（`public/js/app.js` は変更しないため E2E はスキップされる）。
 2. **【承認】`/self-approve` によるマージ**: ユーザーが PR に `/self-approve` コメントをすると、`main` へマージされる。
 3. **自動タグ・ZIP・GitHub Release 公開（`.github/workflows/release.yml`）**: `main` の `package.json` の `version` に対応するタグ `lucivo-v<版>` が未作成の場合、CI が自動で以下を実行する。
    - `LUCIVO_VERSION_OVERRIDE="<版> (build #<run_number>)"` でビルドし、`Lucivo-v<版>/` フォルダ構成の `Lucivo-v<版>.zip` を作成
    - タグ `lucivo-v<版>` を作成・push し、README の該当版の節＋ZIP ダウンロードリンクを本文にして GitHub Release（タイトル `Lucivo <版>`）を公開
-4. **公開用 GitHub Pages の同期（`.github/workflows/pages.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を `lucivo-v<版>`（`<版> (build #<run_number>)`）へ更新する。
+4. **公開用 GitHub Pages の同期（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を `lucivo-v<版>`（`<版> (build #<run_number>)`）へ更新する。
 5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `README.md` の該当版の節が欠落なく反映されていること）、`Lucivo-v<版>.zip` を展開して `index.html` が開けること、および公開用 URL が新しい版で開けることを確かめる。
