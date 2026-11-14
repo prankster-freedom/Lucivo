@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
+const { buildSamplesData } = require('./build-samples-data.cjs');
 // 起動時の案内に表示し、更新の確認で比べる版（FR-049）。package.json の version を正とし、CI ビルド時は LUCIVO_VERSION_OVERRIDE で上書き可
 const { version } = require('../package.json');
 const appVersion = (process.env.LUCIVO_VERSION_OVERRIDE || '').trim() || version;
@@ -17,8 +18,9 @@ if (channel !== 'web' && channel !== 'standalone') {
 }
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const OUT_DIR = channel === 'standalone' ? path.join(ROOT_DIR, 'dist') : PUBLIC_DIR;
-// standalone に写さない public/ からの相対パス（POSIX 区切り）。当面は public/ と同じ中身にするため空（#115 で使う）
-const STANDALONE_EXCLUDES = [];
+// ビルドの出力（コミットしない。doc/2.ARCHITECTURE.md 4.14 ARC-PUB-001）の public/ からの相対パス（POSIX 区切り）。
+// standalone は、これ以外のファイル（コミットするファイル）だけを public/ から写し、出力は dist/ にビルドで作る
+const BUILD_OUTPUTS = ['js', 'css/style.css', 'css/modes', 'samples/samples-data.js'];
 
 // 発表モード別の独立ビルド対象（#58）。各モード（#61〜#63）は追加時にここへ足す
 const STAGE_MODE_ENTRIES = [
@@ -39,14 +41,21 @@ function copyPublicToStandalone() {
   fs.rmSync(OUT_DIR, { recursive: true, force: true });
   fs.cpSync(PUBLIC_DIR, OUT_DIR, {
     recursive: true,
-    filter: src => !STANDALONE_EXCLUDES.includes(path.relative(PUBLIC_DIR, src).split(path.sep).join('/'))
+    filter: src => !BUILD_OUTPUTS.includes(path.relative(PUBLIC_DIR, src).split(path.sep).join('/'))
   });
+}
+
+// 廃止したモードの出力が残って紛れ込まないように、モードの出力のフォルダを書き込む前に空にする（ARC-PUB-006）
+function cleanModeOutputs() {
+  fs.rmSync(path.join(OUT_DIR, 'js', 'modes'), { recursive: true, force: true });
+  fs.rmSync(path.join(OUT_DIR, 'css', 'modes'), { recursive: true, force: true });
 }
 
 async function build() {
   const start = Date.now();
   console.log(`Building app (${channel}, ${isProd ? 'production' : 'development'})...`);
   if (channel === 'standalone') copyPublicToStandalone();
+  cleanModeOutputs();
 
   const commonJsOptions = {
     bundle: true,
@@ -96,6 +105,9 @@ async function build() {
     charset: 'utf8',
     legalComments: 'inline'
   });
+
+  // file:// 直開き用の同梱サンプルのデータ（コミットしない出力）
+  buildSamplesData(OUT_DIR);
 
   const duration = Date.now() - start;
   console.log(`App build completed in ${duration}ms.`);

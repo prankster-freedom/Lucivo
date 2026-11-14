@@ -3,6 +3,12 @@ node_modules/
 # AI エージェントの作業ディレクトリ（AGENTS.md 1.10）
 work/
 
+# Web 版のビルドの出力（tools/build-app.cjs。doc/2.ARCHITECTURE.md 4.14）。css/tailwind.css は事前生成でコミットする
+/public/js/
+/public/css/style.css
+/public/css/modes/
+/public/samples/samples-data.js
+
 # スタンドアロン版のビルド出力（tools/build-app.cjs --channel standalone）
 dist/
 
