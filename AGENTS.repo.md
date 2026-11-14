@@ -43,9 +43,6 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 ## 4. 版番号（`AGENTS.md` 1.9・release スキルの例外）
 
-- ユーザーから `1.0.0` に上げる指示があるまで、版を `0.y.z` に保つ。この間は、MAJOR に当たる変更（`!` または `BREAKING CHANGE:` を含むコミット）があっても MINOR を上げ、PATCH を 0 に戻す。`feat` は MINOR、`fix` は PATCH を上げる（通常どおり）
-- 背景: `1.0.0` は、ユーザーが製品の仕様がある程度固まったと判断した時点で上げる。それまでは仕様の変更が多く、互換性のない変更のたびに MAJOR を上げると版の意味が薄れるため（Semantic Versioning 2.0.0 の `0.y.z` は初期開発の段階を表す）
-- コミットの型（`feat!` など）と `BREAKING CHANGE:` は、通常どおり変更の内容に合わせて付ける。リリースノートでは、互換性のない変更であることを明記する
 - 版番号は、README の本文の「**Version**」と `package.json` の `version` の 2 か所に書き、この 2 か所を正とする（release スキルの「README の Front Matter の `version`」の例外）。リリースでは 2 か所を同じ版にそろえる
 - 画面に表示するバージョン表記は、本番・スタンドアロン配布版が `X.Y.Z (build #N)`、Canary 版（`/preview/`）が `X.Y.Z-canary (build #N)`、ローカル開発ビルドが `X.Y.Z` とする（`tools/build-app.cjs` が `LUCIVO_VERSION_OVERRIDE` または `package.json` の `version` を埋め込む）
 - `release/*` ブランチでは `package.json` の `"version"` と `README.md` のみを更新し、`public/js/app.js` は CI（`release.yml` / `pages.yml`）側でビルド番号を注入して生成する。これにより、`tools/check-ci-changes.cjs` によりリリース PR で E2E テストが再実行されない（手動で `public/js/app.js` を更新した場合は E2E 対象になる）
