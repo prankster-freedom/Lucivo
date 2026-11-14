@@ -16,7 +16,7 @@ tags: ["Lucivo", "実装", "テスト", "Playwright"]
 flowchart TD
   subgraph Dependencies
     pw["playwright（リポジトリ直下の node_modules、Chromium）"]
-    app["index.html / js/app.js（file:// で開く）"]
+    app["dist/index.html / js/app.js（file:// で開く。npm test の pretest が作る。Web 版のテストは public/ をサーバーで配る）"]
     sample["samples/notation_sample.md"]
   end
   e2e["tests/e2e.cjs"]

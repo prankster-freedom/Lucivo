@@ -5,7 +5,7 @@
 ## 1. リポジトリの概要
 
 - Lucivo は、ブラウザ単体で動く Markdown と Mermaid のビューアー（HTML / CSS / JavaScript。ビルド工程なし）
-- 配布物は `public/` に置く。`doc/`・`tests/`・`tools/`・`work/` は配布物に含めない
+- 配布物は 2 種類ある。Web 版は `public/`（コミットする）、スタンドアロン版（ZIP を展開して `index.html` を開く使い方）は `dist/`（git 管理外）に置く。`dist/` は `node tools/build-app.cjs --channel standalone`（`npm run build:standalone`）で `public/` から作る。`doc/`・`tests/`・`tools/`・`work/` は配布物に含めない（`doc/2.ARCHITECTURE.md` 4.15）
 - `tests/`・`tools/` のスクリプトは CommonJS で、拡張子を `.cjs` にする
 
 ## 2. ドキュメントの格納先（doc スキルの例外）
@@ -37,7 +37,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
   - ツールの警告（Python の `SyntaxWarning` など）は誤りとして扱い、原因を直してから進める
   - この規則に反した場合は、いつ気付いたか（書いた直後か、後か）と、内容が壊れていないかをユーザーに報告する。書いた直後に気付いて内容を確かめられた場合は、それで足りる。直後に気付けなかった失敗（コミット後やレビューで見つかったもの、内容が壊れていたもの）は、報告だけで済ませず、再発を防ぐワークフローの改善（検査の追加など）を提案する
   - `npm run lint` で、制御文字と見えない文字（BOM、置き換え文字、幅のない空白など。全角の空白は除く）を、すべてのテキストファイル（`src/ts/` を含み、まだコミットしていない新しいファイルも）について検出し、eslint で正規表現の中の制御文字を検出する（CI の `lint` ジョブ）。見えない文字が必要なときは `\uFEFF` のようにエスケープで書く
-- ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`public/index.html` を `file://` で開き、Playwright（Chromium）で確認する
+- ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`dist/index.html` を `file://` で開き、Playwright（Chromium）で確認する（`npm test` の前に `pretest` が `dist/` を作る。Web 版のテストは手元のサーバーで `public/` を配る）。`node tests/e2e.cjs` を直接実行するときは、先に `npm run build:standalone` で `dist/` を作る
   - 特定の機能やテストケースだけを確認・再テストするときは、`node tests/e2e.cjs <関数名またはTC ID>`（例: `node tests/e2e.cjs TC-SHOW-011`、`node tests/e2e.cjs testCoverAndTables`）で対象スイートだけを部分実行する（`work/test/results.json` は該当 TC の結果だけが差分更新される）。`node -e` のワンライナーでテストコードを実行しない
 - Markdown ファイル内の表整形には `node agents-support-tools/md-table-align/align-tables.cjs <Markdown ファイル>` を使用する
 
@@ -91,12 +91,12 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 
 ## 8. GitHub Release（release スキルの追加手順）
 
-利用者には GitHub Release（スタンドアロン ZIP）および GitHub Pages（公開用 URL `/`）で配布する。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`deploy.yml`）で自動化する。
+利用者には GitHub Release（スタンドアロン版の ZIP `Lucivo-v<版>.zip`。Web 版の ZIP `Lucivo-v<版>-web.zip` も付くが、公開用 URL の元であり、利用者が選ぶのはスタンドアロン版）および GitHub Pages（公開用 URL `/`）で配布する。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`deploy.yml`）で自動化する。
 
 1. **リリース PR の作成（`release/v<版>` ブランチ）**: `package.json` の `"version"` と `README.md`（**Version** とリリースノート）のみを更新して `main` 向け PR を発行する（`public/js/app.js` は変更しないため E2E はスキップされる）。
 2. **【承認】`/self-approve` によるマージ**: ユーザーが PR に `/self-approve` コメントをすると、`main` へマージされる。
 3. **自動タグ・ZIP・GitHub Release 公開（`.github/workflows/release.yml`）**: `main` の `package.json` の `version` に対応するタグ `lucivo-v<版>` が未作成の場合、CI が自動で以下を実行する。
-   - `LUCIVO_VERSION_OVERRIDE="<版> (build #<run_number>)"` でビルドし、`Lucivo-v<版>/` フォルダ構成の `Lucivo-v<版>.zip` を作成
-   - タグ `lucivo-v<版>` を作成・push し、README の該当版の節＋ZIP ダウンロードリンクを本文にして GitHub Release（タイトル `Lucivo <版>`）を公開
-4. **公開用 GitHub Pages の同期（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、GitHub Release の `Lucivo-v<版>.zip` を展開して公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を更新する（ZIP 版と同じ `<版> (build #<Release の run_number>)` が維持される）。
-5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `README.md` の該当版の節が欠落なく反映されていること）、`Lucivo-v<版>.zip` を展開して `index.html` が開けること、および公開用 URL が新しい版で開けることを確かめる。
+   - `LUCIVO_VERSION_OVERRIDE="<版> (build #<run_number>)"` で Web 版（`public/`）、スタンドアロン版（`dist/`）の順にビルドし（ビルド番号は同じ）、`Lucivo-v<版>/` フォルダ構成の 2 つの ZIP を作成する。`Lucivo-v<版>.zip` は `dist/` から、`Lucivo-v<版>-web.zip` は `public/` から作る
+   - タグ `lucivo-v<版>` を作成・push し、README の該当版の節＋スタンドアロン版の ZIP のダウンロードリンク（利用者が選ぶのはスタンドアロン版であることを冒頭に明記）を本文にして GitHub Release（タイトル `Lucivo <版>`）を公開
+4. **公開用 GitHub Pages の同期（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、GitHub Release の `Lucivo-v<版>-web.zip` を展開して公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を更新する（`-web.zip` がない過去のリリースでは `Lucivo-v<版>.zip`、それもなければタグからのビルド。ZIP 版と同じ `<版> (build #<Release の run_number>)` が維持される）。
+5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `README.md` の該当版の節が欠落なく反映されていること）、2 つの ZIP（`Lucivo-v<版>.zip`、`Lucivo-v<版>-web.zip`）が付いていてどちらも展開して `index.html` が開けること、および公開用 URL が新しい版で開けることを確かめる。
