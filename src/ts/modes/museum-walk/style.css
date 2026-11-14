@@ -1,0 +1,342 @@
+/* ミュージアム・ウォーク（FR-056, DD-MWLK-006、DTP-MWLK-010〜070）。
+   すべて #museum-walk の中に閉じる。クラスは mw- で始め、本体の CSS と名前がぶつからないようにする。
+   壁・床・天井（.mw-wall・.mw-floor・.mw-ceil）は、子要素と疑似要素を持たない 1 枚の要素にする（歩いている間に再ペイントしない。DTP-MWLK-070） */
+
+html.is-museum-walk,
+html.is-museum-walk body { overflow: hidden; }
+
+#museum-walk {
+  --bg: #050608;
+  --ink: #ece8df;
+  --tint: 255, 236, 205;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+#museum-walk *,
+#museum-walk *::before,
+#museum-walk *::after { box-sizing: border-box; }
+#museum-walk.is-dragging { cursor: grabbing; }
+
+#museum-walk .mw-view { position: absolute; inset: 0; perspective: 800px; perspective-origin: 50% 56%; overflow: hidden; }
+#museum-walk .mw-world { position: absolute; left: 50%; top: 56%; width: 0; height: 0; transform-style: preserve-3d; }
+#museum-walk .mw-world > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#museum-walk .mw-measure { position: absolute; left: -100000px; top: 0; visibility: hidden; pointer-events: none; }
+
+/* 建築（壁・床・天井）。1 枚 = 奥行き 1000px。生成時に 1 度だけ描画し、歩行中は再ペイントしない（DTP-MWLK-020） */
+#museum-walk .mw-wall {
+  background:
+    radial-gradient(ellipse 42% 68% at 50% 0%, rgba(var(--tint), .24), rgba(var(--tint), .06) 52%, transparent 78%),
+    radial-gradient(ellipse 70% 26% at 50% 100%, rgba(var(--tint), .06), transparent 72%),
+    linear-gradient(90deg, rgba(0, 0, 0, .42) 0, rgba(255, 255, 255, .035) 1px, transparent 2px, transparent calc(50% - 1px), rgba(0, 0, 0, .24) 50%, rgba(255, 255, 255, .022) calc(50% + 1px), transparent calc(50% + 2px)),
+    linear-gradient(180deg, #1b1e24 0%, #14171c 56%, #0d0f13 96%, #060709 100%);
+  box-shadow:
+    inset 0 12px 0 #040507,
+    inset 0 -22px 0 #050608,
+    inset 0 -23px 0 rgba(var(--tint), .18);
+  border-right: 1px solid rgba(255, 255, 255, .03);
+  backface-visibility: hidden;
+}
+#museum-walk .mw-floor {
+  background:
+    radial-gradient(ellipse 22% 72% at 3% 50%, rgba(var(--tint), .22), transparent 74%),
+    radial-gradient(ellipse 22% 72% at 97% 50%, rgba(var(--tint), .16), transparent 74%),
+    radial-gradient(ellipse 48% 46% at 50% 50%, rgba(var(--tint), .13), rgba(var(--tint), .04) 52%, transparent 78%),
+    linear-gradient(90deg, rgba(255, 255, 255, .09) 0%, transparent 18%, transparent 49.8%, rgba(255, 255, 255, .028) 50%, transparent 50.2%, transparent 82%, rgba(255, 255, 255, .065) 100%),
+    #090a0e;
+  border-top: 1px solid rgba(255, 255, 255, .035);
+  backface-visibility: hidden;
+}
+#museum-walk .mw-ceil {
+  background:
+    radial-gradient(circle 6px at 20% 50%, #fffaf0 0, #ffe9c2 5px, transparent 8px),
+    radial-gradient(circle 6px at 80% 50%, #fffaf0 0, #ffe9c2 5px, transparent 8px),
+    radial-gradient(circle 7px at 50% 50%, #fff8e8 0, #ffeac4 6px, transparent 9px),
+    radial-gradient(ellipse 20% 110px at 20% 50%, rgba(var(--tint), .22), transparent 75%),
+    radial-gradient(ellipse 20% 110px at 80% 50%, rgba(var(--tint), .18), transparent 75%),
+    radial-gradient(circle 80px at 50% 50%, rgba(var(--tint), .18), transparent 84px),
+    #06070a;
+  border-top: 1px solid rgba(255, 255, 255, .025);
+  backface-visibility: hidden;
+}
+#museum-walk .mw-cap { pointer-events: none; background: var(--bg); }
+
+/* 壁のパーツ（2 倍の大きさで組み、3D の中で scale(0.5) に縮める。DTP-MWLK-030） */
+#museum-walk .mw-part { color: var(--ink); backface-visibility: hidden; overflow-wrap: anywhere; }
+#museum-walk .mw-part a { color: rgb(var(--tint)); text-decoration: none; }
+#museum-walk .mw-part strong { color: #fff; }
+#museum-walk .mw-part code {
+  padding: .08em .32em; border-radius: .3em;
+  font-family: ui-monospace, Consolas, monospace; font-size: .86em;
+  background: rgba(255, 255, 255, .08);
+}
+#museum-walk .mw-part img { max-width: 100%; height: auto; }
+#museum-walk .mw-part p { margin: 0 0 .5em; }
+#museum-walk .mw-part p:last-child { margin-bottom: 0; }
+#museum-walk .mw-part ul,
+#museum-walk .mw-part ol { margin: .3em 0 0; padding-left: 1.3em; }
+#museum-walk .mw-h3 {
+  font: 600 164px/1.22 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  letter-spacing: .03em; color: #fff;
+}
+#museum-walk .mw-h3shadow {
+  font: 600 164px/1.22 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  letter-spacing: .03em; color: transparent; text-shadow: 0 24px 56px rgba(0, 0, 0, .9);
+}
+#museum-walk .mw-h3shadow * { color: transparent !important; }
+#museum-walk .mw-body { font-size: 68px; line-height: 1.78; line-break: strict; }
+#museum-walk .mw-bullet {
+  font-size: 80px; line-height: 1.5; padding: 8px 0 8px 68px;
+  border-left: 10px solid rgb(var(--tint)); line-break: strict;
+}
+#museum-walk .mw-bullet dt { font-weight: 700; }
+#museum-walk .mw-bullet dd { margin: .2em 0 0; font-size: .82em; opacity: .86; }
+#museum-walk .mw-plate {
+  padding: 40px 48px; font-size: 48px; line-height: 1.6;
+  background: rgba(10, 12, 16, .74); border: 2px solid rgba(var(--tint), .28); border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .55);
+}
+#museum-walk .mw-plate table { width: 100%; border-collapse: collapse; }
+#museum-walk .mw-plate th,
+#museum-walk .mw-plate td { padding: 14px 20px; text-align: left; border-bottom: 2px solid rgba(255, 255, 255, .1); }
+#museum-walk .mw-plate th { color: rgb(var(--tint)); font-weight: 600; }
+#museum-walk .mw-plate pre { margin: 0; white-space: pre-wrap; word-break: break-all; font: 40px/1.55 ui-monospace, Consolas, monospace; }
+#museum-walk .mw-plate pre code { padding: 0; background: none; font-size: 1em; }
+#museum-walk .mw-aside {
+  font: 500 68px/1.68 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  color: rgb(var(--tint)); line-break: strict;
+  padding: 12px 0 12px 48px;
+  border-left: 6px solid rgba(var(--tint), .65);
+}
+#museum-walk .mw-aside::before {
+  content: 'CURATORIAL NOTE';
+  display: block; margin-bottom: 18px;
+  font: 600 24px/1 ui-monospace, Consolas, monospace;
+  letter-spacing: .28em; color: var(--ink); opacity: .58;
+}
+#museum-walk .mw-aside[data-label]::before { content: attr(data-label); text-transform: uppercase; }
+#museum-walk .mw-aside.is-small { font-size: 46px; line-height: 1.7; }
+#museum-walk .mw-number { color: rgb(var(--tint)); text-align: center; }
+#museum-walk .mw-number b { display: block; font: 700 520px/1 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif; }
+#museum-walk .mw-number span { display: block; margin-top: 28px; font-size: 68px; color: var(--ink); letter-spacing: .08em; }
+
+/* 広間の立体図（枠と説明、線、ノードの 3 層。2 倍の大きさで組み、scale(0.5) で置く。DTP-MWLK-050）。
+   図を載せる板の色は、始めたときの外観（is-dark / is-light）に固定する（DD-MWLK-007） */
+#museum-walk .mw-stand { backface-visibility: hidden; pointer-events: none; }
+#museum-walk .mw-fig-frame {
+  border: 2px solid rgba(var(--tint), .32); border-radius: 12px;
+  background:
+    radial-gradient(ellipse 65% 55% at 50% 42%, rgba(var(--tint), .10), transparent 72%),
+    linear-gradient(180deg, rgba(18, 22, 30, .78), rgba(8, 10, 15, .9));
+  box-shadow:
+    0 48px 112px rgba(0, 0, 0, .65),
+    inset 0 2px 0 rgba(255, 255, 255, .18),
+    inset 0 -6px 0 rgba(var(--tint), .35);
+}
+#museum-walk .mw-fig-frame::before {
+  content: attr(data-label);
+  position: absolute; left: 64px; top: 44px;
+  font: 600 32px/1 ui-monospace, Consolas, monospace; letter-spacing: .24em; color: rgb(var(--tint)); opacity: .82;
+}
+#museum-walk .mw-fig-frame::after {
+  content: ''; position: absolute; left: 18%; right: 18%; bottom: -560px; height: 560px;
+  border-left: 2px solid rgba(var(--tint), .22); border-right: 2px solid rgba(var(--tint), .22);
+  background: radial-gradient(ellipse 68% 24% at 50% 100%, rgba(var(--tint), .32), rgba(var(--tint), .08) 55%, transparent 78%);
+}
+#museum-walk .mw-fig-frame span {
+  position: absolute; left: 64px; right: 64px; bottom: 40px; padding-top: 24px;
+  border-top: 2px solid rgba(255, 255, 255, .1);
+  font-size: 48px; letter-spacing: .08em; color: rgba(236, 232, 223, .88);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#museum-walk .mw-fig-frame.is-light {
+  border-color: rgba(24, 28, 36, .22);
+  background:
+    radial-gradient(ellipse 65% 55% at 50% 42%, rgba(var(--tint), .18), transparent 72%),
+    linear-gradient(180deg, rgba(255, 254, 250, .92), rgba(240, 236, 226, .95));
+  box-shadow:
+    0 48px 112px rgba(36, 30, 20, .16),
+    inset 0 2px 0 rgba(255, 255, 255, .9),
+    inset 0 -6px 0 color-mix(in srgb, rgb(var(--tint)) 55%, #161922);
+}
+#museum-walk .mw-fig-frame.is-light::before { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
+#museum-walk .mw-fig-frame.is-light span { border-top-color: rgba(24, 28, 36, .12); color: rgba(24, 28, 36, .86); }
+#museum-walk .mw-fig-layer img { position: absolute; display: block; }
+#museum-walk .mw-fig-layer.is-nodes img { filter: drop-shadow(0 24px 32px rgba(0, 0, 0, .45)); }
+
+/* 通路の真ん中に立つ章の見出し（門）。周囲に回廊の奥行きを残しつつ、中央の紗幕の上に文字を置いて通り抜ける（DTP-MWLK-040） */
+#museum-walk .mw-gate { backface-visibility: hidden; pointer-events: none; will-change: opacity; }
+#museum-walk .mw-scrim {
+  position: absolute; inset: 0 28px;
+  border-top: 1px solid rgba(var(--tint), .38);
+  border-left: 1px solid rgba(var(--tint), .18);
+  border-right: 1px solid rgba(var(--tint), .18);
+  background:
+    radial-gradient(ellipse 56% 42% at 50% 52%, rgba(var(--tint), .22), transparent 72%),
+    radial-gradient(ellipse 68% 54% at 50% 52%, rgba(5, 6, 8, .96) 25%, rgba(5, 6, 8, .84) 62%, rgba(5, 6, 8, .42) 100%),
+    linear-gradient(180deg, rgba(5, 6, 8, .45) 0%, rgba(5, 6, 8, .90) 28%, rgba(5, 6, 8, .94) 68%, rgba(5, 6, 8, .75) 100%);
+  box-shadow: 0 0 80px rgba(0, 0, 0, .75), inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+#museum-walk .mw-label {
+  position: absolute; inset: 0; padding: 24px 70px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+}
+#museum-walk .mw-no {
+  font: 600 38px/1 ui-monospace, Consolas, monospace; letter-spacing: .42em; margin-right: -.42em;
+  color: rgb(var(--tint)); padding: 8px 20px; border-bottom: 1px solid rgba(var(--tint), .4); margin-bottom: 18px;
+}
+#museum-walk .mw-title {
+  width: 100%;
+  font: 600 204px/1.1 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif; color: #fff;
+  overflow-wrap: anywhere; line-break: strict;
+  text-shadow: 0 8px 36px rgba(0, 0, 0, .9), 0 0 64px rgba(var(--tint), .38);
+}
+#museum-walk .mw-gate.is-cover .mw-title { letter-spacing: .04em; }
+#museum-walk .mw-sub {
+  max-width: 100%; margin-top: 22px; font-size: 28px; line-height: 1.6; letter-spacing: .08em; color: rgba(236, 232, 223, .88);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+}
+#museum-walk .mw-endwall {
+  background: radial-gradient(ellipse 60% 50% at 50% 55%, rgba(var(--tint), .22), transparent 75%), #111216;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 250px; text-align: center;
+}
+#museum-walk .mw-endwall b { font: 600 88px/1.2 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif; }
+#museum-walk .mw-endwall span { margin-top: 20px; font-size: 32px; opacity: .75; }
+
+/* 画面に固定の表示 */
+#museum-walk .mw-flash {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at 50% 55%, rgba(var(--flash, 255, 255, 255), 1), rgba(var(--flash, 255, 255, 255), .25) 70%);
+}
+#museum-walk .mw-hud {
+  position: absolute; left: 0; right: 0; bottom: 14px; padding: 0 16px; text-align: center; pointer-events: none;
+  font-size: 13px; letter-spacing: .04em; color: rgba(236, 232, 223, .62);
+}
+#museum-walk .mw-hint-narrow { display: none; }
+#museum-walk .mw-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .08); pointer-events: none; }
+#museum-walk .mw-progress i { display: block; height: 100%; width: 0; background: rgb(255, 236, 205); }
+#museum-walk .mw-zone {
+  position: absolute; left: 18px; top: 16px; right: 76px; pointer-events: none;
+  font: 600 12px/1.4 ui-monospace, Consolas, monospace; letter-spacing: .18em; color: rgba(236, 232, 223, .62);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#museum-walk .mw-exit {
+  position: absolute; right: 12px; top: 10px; width: 44px; height: 44px;
+  display: grid; place-items: center; cursor: pointer;
+  font-size: 18px; line-height: 1; color: rgba(236, 232, 223, .78);
+  background: rgba(10, 11, 14, .5); border: 1px solid rgba(255, 255, 255, .16); border-radius: 50%;
+}
+#museum-walk .mw-exit:hover,
+#museum-walk .mw-exit:focus-visible { color: #fff; border-color: rgba(var(--tint), .7); outline: none; }
+@media (max-width: 700px) {
+  #museum-walk .mw-hint-wide { display: none; }
+  #museum-walk .mw-hint-narrow { display: inline; font-size: 11px; }
+}
+
+/* カメラワークの調整のパネル（DD-MWLK-010。URL に museum-tune を含めたときだけ作る） */
+#museum-walk .mw-panel {
+  position: absolute; left: 10px; top: 40px; width: 310px; max-width: calc(100% - 20px); max-height: calc(100% - 90px); overflow: auto;
+  padding: 4px 14px 14px; cursor: default; font-size: 12px; line-height: 1.4; color: #ece8df;
+  background: rgba(10, 11, 14, .9); border: 1px solid rgba(255, 255, 255, .14); border-radius: 8px;
+}
+#museum-walk .mw-panel[hidden] { display: none; }
+#museum-walk .mw-panel h4 { margin: 14px 0 4px; font-size: 12px; letter-spacing: .1em; color: rgb(255, 207, 122); }
+#museum-walk .mw-panel label { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; margin-top: 7px; }
+#museum-walk .mw-panel label span { color: rgba(236, 232, 223, .8); }
+#museum-walk .mw-panel output { font-family: ui-monospace, Consolas, monospace; color: #fff; }
+#museum-walk .mw-panel input { grid-column: 1 / -1; width: 100%; margin: 2px 0 0; accent-color: rgb(255, 207, 122); }
+#museum-walk .mw-panel-buttons { display: flex; gap: 6px; margin-top: 14px; }
+#museum-walk .mw-panel button { flex: 1; padding: 5px 0; font: inherit; color: #fff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .2); border-radius: 5px; cursor: pointer; }
+#museum-walk .mw-panel textarea {
+  display: block; width: 100%; height: 76px; margin-top: 8px; resize: vertical; user-select: text; -webkit-user-select: text;
+  font: 11px/1.4 ui-monospace, Consolas, monospace; color: rgba(236, 232, 223, .85); background: #000; border: 1px solid rgba(255, 255, 255, .15); border-radius: 5px;
+}
+
+/* Light の外観（T キー。石灰岩・漆喰の白いギャラリー空間。DTP-MWLK-010） */
+#museum-walk.is-light { --bg: #eae6dc; --ink: #1a1c22; }
+#museum-walk.is-light .mw-wall {
+  background:
+    radial-gradient(ellipse 44% 70% at 50% 0%, rgba(255, 253, 246, .95), rgba(var(--tint), .18) 54%, transparent 80%),
+    radial-gradient(ellipse 70% 26% at 50% 100%, rgba(255, 252, 242, .45), transparent 72%),
+    linear-gradient(90deg, rgba(30, 26, 20, .10) 0, rgba(255, 255, 255, .65) 1px, transparent 2px, transparent calc(50% - 1px), rgba(30, 26, 20, .06) 50%, rgba(255, 255, 255, .45) calc(50% + 1px), transparent calc(50% + 2px)),
+    linear-gradient(180deg, #f5f2ea 0%, #ebe6dc 58%, #dfd9cd 96%, #bdb6a7 100%);
+  box-shadow:
+    inset 0 12px 0 #cfc9bc,
+    inset 0 -22px 0 #c2bbb0,
+    inset 0 -23px 0 rgba(26, 28, 34, .22);
+  border-right-color: rgba(26, 28, 34, .06);
+}
+#museum-walk.is-light .mw-floor {
+  background:
+    radial-gradient(ellipse 24% 72% at 3% 50%, rgba(255, 253, 246, .75), transparent 74%),
+    radial-gradient(ellipse 24% 72% at 97% 50%, rgba(255, 253, 246, .6), transparent 74%),
+    radial-gradient(ellipse 50% 46% at 50% 50%, rgba(255, 253, 248, .55), rgba(var(--tint), .10) 52%, transparent 78%),
+    linear-gradient(90deg, rgba(255, 255, 255, .45) 0%, transparent 18%, transparent 49.8%, rgba(26, 28, 34, .06) 50%, transparent 50.2%, transparent 82%, rgba(255, 255, 255, .35) 100%),
+    #dad4c7;
+  border-top-color: rgba(26, 28, 34, .08);
+}
+#museum-walk.is-light .mw-ceil {
+  background:
+    radial-gradient(circle 6px at 20% 50%, #ffffff 0, #fff4dc 5px, transparent 8px),
+    radial-gradient(circle 6px at 80% 50%, #ffffff 0, #fff4dc 5px, transparent 8px),
+    radial-gradient(circle 7px at 50% 50%, #ffffff 0, #fff2d6 6px, transparent 9px),
+    radial-gradient(ellipse 20% 110px at 20% 50%, rgba(255, 252, 242, .85), transparent 75%),
+    radial-gradient(ellipse 20% 110px at 80% 50%, rgba(255, 252, 242, .75), transparent 75%),
+    radial-gradient(circle 80px at 50% 50%, rgba(255, 252, 242, .85), transparent 84px),
+    #e2ddd1;
+  border-top-color: rgba(26, 28, 34, .06);
+}
+#museum-walk.is-light .mw-h3 { color: #12141a; }
+#museum-walk.is-light .mw-h3shadow { text-shadow: 0 22px 44px rgba(32, 28, 20, .24); }
+#museum-walk.is-light .mw-part strong { color: #0c0d11; }
+#museum-walk.is-light .mw-part code { background: rgba(24, 28, 36, .08); }
+#museum-walk.is-light .mw-part a { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
+#museum-walk.is-light .mw-bullet { border-left-color: color-mix(in srgb, rgb(var(--tint)) 45%, #161922); }
+#museum-walk.is-light .mw-aside,
+#museum-walk.is-light .mw-number { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
+#museum-walk.is-light .mw-aside { border-left-color: color-mix(in srgb, rgb(var(--tint)) 50%, #141720); }
+#museum-walk.is-light .mw-plate {
+  background: rgba(255, 254, 250, .86); border-color: rgba(24, 28, 36, .16);
+  box-shadow: 0 24px 64px rgba(36, 30, 20, .14);
+}
+#museum-walk.is-light .mw-plate th { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
+#museum-walk.is-light .mw-plate th,
+#museum-walk.is-light .mw-plate td { border-bottom-color: rgba(24, 28, 36, .1); }
+#museum-walk.is-light .mw-scrim {
+  border-color: rgba(24, 28, 36, .18);
+  background:
+    radial-gradient(ellipse 56% 42% at 50% 52%, rgba(var(--tint), .26), transparent 72%),
+    radial-gradient(ellipse 68% 54% at 50% 52%, rgba(245, 242, 235, .96) 25%, rgba(245, 242, 235, .86) 62%, rgba(245, 242, 235, .44) 100%),
+    linear-gradient(180deg, rgba(245, 242, 235, .48) 0%, rgba(245, 242, 235, .92) 28%, rgba(245, 242, 235, .95) 68%, rgba(245, 242, 235, .78) 100%);
+  box-shadow: 0 20px 64px rgba(36, 30, 20, .14), inset 0 1px 0 rgba(255, 255, 255, .85);
+}
+#museum-walk.is-light .mw-no {
+  color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720);
+  border-bottom-color: rgba(24, 28, 36, .24);
+}
+#museum-walk.is-light .mw-title {
+  color: #12141a;
+  text-shadow: 0 8px 28px rgba(255, 255, 255, .85), 0 0 48px rgba(var(--tint), .45);
+}
+#museum-walk.is-light .mw-sub { color: rgba(24, 28, 36, .82); }
+#museum-walk.is-light .mw-endwall {
+  background: radial-gradient(ellipse 60% 50% at 50% 55%, rgba(var(--tint), .28), transparent 75%), #e2ddd1;
+}
+#museum-walk.is-light .mw-hud,
+#museum-walk.is-light .mw-zone { color: rgba(24, 28, 36, .66); }
+#museum-walk.is-light .mw-progress { background: rgba(24, 28, 36, .10); }
+#museum-walk.is-light .mw-exit { color: rgba(24, 28, 36, .78); background: rgba(255, 255, 255, .55); border-color: rgba(24, 28, 36, .18); }
+
+/* 動きを減らす設定（DD-MWLK-009）。門を通り抜ける瞬間の光を出さない */
+@media (prefers-reduced-motion: reduce) {
+  #museum-walk .mw-flash { display: none; }
+}

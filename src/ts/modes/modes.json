@@ -1,4 +1,5 @@
 [
   { "id": "zoom-map", "label": "ズーミング・マップ", "stage": "web" },
-  { "id": "playable", "label": "プレイアブル・ダイアグラム", "stage": "web" }
+  { "id": "playable", "label": "プレイアブル・ダイアグラム", "stage": "web" },
+  { "id": "museum-walk", "label": "ミュージアム・ウォーク", "stage": "web" }
 ]

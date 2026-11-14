@@ -1,0 +1,342 @@
+// 割り付けから 3D の空間（DOM）を組み立て、毎フレーム更新する（DD-MWLK-006、DTP-MWLK-020〜070）。
+// 歩いている間に書き換えるのは、世界全体の transform、各要素の opacity と display、近づくと現れるパーツの transform だけで、
+// 値が変わったときだけ書く。壁・床・天井のタイルは、子要素と疑似要素を持たない 1 枚の要素にし、大きさと背景は 1 度だけ設定する。
+import { FLOOR, TINTS, tintAt, zoneAt, type Plan, type PartKind, type Measure } from './layout';
+import { clamp, lerp, smooth, sectionAt, type Cam } from './camera';
+import type { FigureImages } from './figure';
+
+const TILE = 1000;
+// 霞みの始まりと、真っ暗になる距離
+const FOG0 = 900;
+const FOG1 = 7000;
+const FOG_STOPS: Array<[number, number]> = [[0, 0], [0.28, 0.2], [0.58, 0.58], [0.84, 0.88], [1, 1]];
+
+// パーツの種類ごとの、壁からの距離（奥行き）と、現れ始める距離・現れ終わる距離（DTP-MWLK-030）
+const KIND: Record<PartKind, { off: number; range: [number, number] }> = {
+  h3: { off: 150, range: [3700, 2600] },
+  h3shadow: { off: 3, range: [3700, 2600] },
+  body: { off: 4, range: [2300, 1500] },
+  bullet: { off: 46, range: [2000, 1300] },
+  plate: { off: 30, range: [2300, 1500] },
+  aside: { off: 24, range: [1500, 800] },
+  number: { off: 110, range: [3600, 2500] }
+};
+
+// 立体図の層（DTP-MWLK-050）。dz は進む向きと逆へずらす量（大きいほど手前）
+const STAND = { maxW: 1100, maxH: 520, padX: 60, padTop: 70, padBottom: 90, bottom: 180, dzLines: 70, dzNodes: 210 };
+
+interface Tile { el: HTMLElement; near: number; far: number; vis: boolean; key: number; wall: boolean; }
+interface PartRef { el: HTMLElement; kind: PartKind; side: 'L' | 'R'; z: number; y: number; w: number; half: number; key: string; vis: boolean; }
+interface StandRef { el: HTMLElement; z: number; key: number; frame: boolean; }
+interface GateRef { el: HTMLElement; z: number; tint: string; key: number; }
+
+export interface WorldRefs {
+  root: HTMLElement;
+  view: HTMLElement;
+  world: HTMLElement;
+  cap: HTMLElement;
+  flash: HTMLElement;
+  bar: HTMLElement;
+  zone: HTMLElement;
+  tiles: Tile[];
+  parts: PartRef[];
+  stands: StandRef[];
+  gates: GateRef[];
+  zoneKey: number;
+}
+
+export function fogA(d: number): number {
+  const t = clamp((d - FOG0) / (FOG1 - FOG0), 0, 1);
+  for (let i = 1; i < FOG_STOPS.length; i++) {
+    const [t0, a0] = FOG_STOPS[i - 1];
+    const [t1, a1] = FOG_STOPS[i];
+    if (t <= t1) return lerp(a0, a1, (t - t0) / (t1 - t0));
+  }
+  return 1;
+}
+
+function el(cls: string, parent: HTMLElement, html?: string): HTMLElement {
+  const d = document.createElement('div');
+  d.className = cls;
+  if (html != null) d.innerHTML = html;
+  parent.appendChild(d);
+  return d;
+}
+
+// 壁の文字のパーツは、2 倍の大きさで組み、3D の中で scale(0.5) に縮めて置く（近づいてもぼけない。DTP-MWLK-030）
+function partClass(kind: PartKind): string {
+  return `mw-part mw-${kind}`;
+}
+
+function fillPart(node: HTMLElement, kind: PartKind, html: string, w: number, label?: string, small?: boolean): void {
+  node.innerHTML = html;
+  node.style.width = `${w * 2}px`;
+  if (label) node.dataset.label = label;
+  node.classList.toggle('is-small', !!small);
+}
+
+// パーツの高さを測る。重ねの中の見えない入れ物に、同じクラスで組んで測る
+export function createMeasurer(root: HTMLElement): { measure: Measure; dispose(): void } {
+  const box = el('mw-measure', root);
+  const probe = el('', box);
+  return {
+    measure(kind, html, w, label, small) {
+      probe.className = partClass(kind);
+      delete probe.dataset.label;
+      fillPart(probe, kind, html, w, label, small);
+      return probe.offsetHeight / 2;
+    },
+    dispose() {
+      box.remove();
+    }
+  };
+}
+
+function partTransform(p: PartRef, off: number, r: number, reduced: boolean): string {
+  const slide = reduced ? 0 : (1 - r) * 90;
+  const rise = reduced ? 0 : (1 - r) * 28;
+  if (p.side === 'L') {
+    return `translate3d(${-p.half + off}px, ${p.y}px, ${p.z}px) rotateY(90deg) translate3d(${slide}px, ${rise}px, 0) scale(0.5)`;
+  }
+  return `translate3d(${p.half - off}px, ${p.y}px, ${p.z - p.w}px) rotateY(-90deg) translate3d(${-slide}px, ${rise}px, 0) scale(0.5)`;
+}
+
+// 門の題名を、門の幅に 2 行以内で収まるまで小さくする
+function fitTitle(title: HTMLElement, start: number): void {
+  let size = start;
+  title.style.fontSize = `${size}px`;
+  while (size > 72 && (title.scrollWidth > title.clientWidth + 1 || title.offsetHeight > size * 1.1 * 2 + 4)) {
+    size = Math.max(72, Math.round(size * 0.9));
+    title.style.fontSize = `${size}px`;
+  }
+}
+
+export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[], figureAppearance: 'dark' | 'light'): WorldRefs {
+  const view = el('mw-view', root);
+  const world = el('mw-world', view);
+  const tiles: Tile[] = [];
+
+  // 壁・床・天井。区間ごとに断面が違う
+  const surface = (cls: string, tf: string, w: number, h: number, near: number, far: number, tint: string, wall: boolean) => {
+    const node = el(cls, world);
+    node.style.cssText = `transform:${tf};width:${w}px;height:${h}px;--tint:${tint}`;
+    tiles.push({ el: node, near, far, vis: true, key: -1, wall });
+  };
+  plan.sections.forEach((s, i) => {
+    const h = FLOOR - s.ceil;
+    for (let near = s.from; near > s.to; near -= TILE) {
+      const far = Math.max(s.to, near - TILE);
+      const len = near - far;
+      const tint = tintAt(plan, (near + far) / 2);
+      surface('mw-wall', `translate3d(${-s.half}px, ${s.ceil}px, ${near}px) rotateY(90deg)`, len, h, near, far, tint, false);
+      surface('mw-wall', `translate3d(${s.half}px, ${s.ceil}px, ${far}px) rotateY(-90deg)`, len, h, near, far, tint, false);
+      surface('mw-floor', `translate3d(${-s.half}px, ${FLOOR}px, ${far}px) rotateX(90deg)`, s.half * 2, len, near, far, tint, false);
+      surface('mw-ceil', `translate3d(${-s.half}px, ${s.ceil}px, ${near}px) rotateX(-90deg)`, s.half * 2, len, near, far, tint, false);
+    }
+    // 断面が変わる境目の壁（左右の袖と、開口部の上の垂れ壁）
+    const n = plan.sections[i + 1];
+    if (!n) return;
+    const wide = Math.max(s.half, n.half);
+    const narrow = Math.min(s.half, n.half);
+    const top = Math.min(s.ceil, n.ceil);
+    const low = Math.max(s.ceil, n.ceil);
+    const tint = tintAt(plan, s.to);
+    if (wide > narrow) {
+      surface('mw-wall', `translate3d(${-wide}px, ${top}px, ${s.to}px)`, wide - narrow, FLOOR - top, s.to, s.to, tint, true);
+      surface('mw-wall', `translate3d(${narrow}px, ${top}px, ${s.to}px)`, wide - narrow, FLOOR - top, s.to, s.to, tint, true);
+    }
+    if (low > top) surface('mw-wall', `translate3d(${-narrow}px, ${top}px, ${s.to}px)`, narrow * 2, low - top, s.to, s.to, tint, true);
+  });
+
+  // 突き当たりの闇（カメラと一緒に動く）
+  const cap = el('mw-cap', world);
+  cap.style.cssText = 'width:4000px;height:3400px';
+
+  // 広間の真ん中に立つ図。層（枠・線・ノード）を進む向きにずらして置き、手前の層から順に通り抜ける
+  const stands: StandRef[] = [];
+  plan.stands.forEach(s => {
+    const fig = figures[s.figure];
+    if (!fig) return;
+    const k = Math.min(STAND.maxW / fig.width, STAND.maxH / fig.height);
+    const iw = fig.width * k;
+    const ih = fig.height * k;
+    const fw = iw + STAND.padX * 2;
+    const fh = ih + STAND.padTop + STAND.padBottom;
+    const x = -fw / 2;
+    const top = STAND.bottom - fh;
+    const tint = tintAt(plan, s.z);
+    const place = (node: HTMLElement, dz: number) => {
+      node.style.cssText = `transform:translate3d(${x}px, ${top}px, ${s.z + dz}px) scale(0.5);width:${fw * 2}px;height:${fh * 2}px;--tint:${tint}`;
+      stands.push({ el: node, z: s.z + dz, key: -1, frame: dz === 0 });
+    };
+    const frame = el(`mw-stand mw-fig-frame is-${figureAppearance}`, world);
+    frame.dataset.label = s.label;
+    const caption = document.createElement('span');
+    caption.textContent = s.caption;
+    frame.appendChild(caption);
+    place(frame, 0);
+    fig.layers.forEach(layer => {
+      const node = el(`mw-stand mw-fig-layer is-${layer.role}`, world);
+      const img = document.createElement('img');
+      img.src = layer.url;
+      img.alt = '';
+      img.decoding = 'async';
+      img.style.cssText = `left:${STAND.padX * 2}px;top:${STAND.padTop * 2}px;width:${iw * 2}px;height:${ih * 2}px`;
+      node.appendChild(img);
+      place(node, layer.role === 'nodes' ? STAND.dzNodes : STAND.dzLines);
+    });
+  });
+
+  // 突き当たりの壁
+  const last = plan.sections[plan.sections.length - 1];
+  const end = el('mw-endwall', world, '<b>おわり</b><span>R で入口へ戻る ／ Esc で終える</span>');
+  end.style.cssText = `transform:translate3d(${-last.half}px, ${last.ceil}px, ${plan.end}px);width:${last.half * 2}px;height:${FLOOR - last.ceil}px;--tint:${TINTS[zoneAt(plan, plan.end) % TINTS.length]}`;
+
+  // 壁のパーツ
+  const parts: PartRef[] = plan.parts.map(p => {
+    const node = el(partClass(p.kind), world);
+    fillPart(node, p.kind, p.html, p.w, p.label, p.small);
+    node.style.setProperty('--tint', tintAt(plan, p.z));
+    return { el: node, kind: p.kind, side: p.side, z: p.z, y: p.y, w: p.w, half: sectionAt(plan, p.z).half, key: '', vis: true };
+  });
+
+  // 通路の真ん中に立つ門（表紙と章の見出し）
+  const gates: GateRef[] = plan.gates.map((g, i) => {
+    const s = sectionAt(plan, g.z);
+    const gh = 776;
+    const gy = FLOOR - gh - 2;
+    const tint = TINTS[(i + 1) % TINTS.length];
+    const node = el(`mw-gate${g.cover ? ' is-cover' : ''}`, world, '<div class="mw-scrim"></div><div class="mw-label"><div class="mw-no"></div><div class="mw-title"></div></div>');
+    (node.querySelector('.mw-no') as HTMLElement).textContent = g.no;
+    const title = node.querySelector('.mw-title') as HTMLElement;
+    title.textContent = g.title;
+    if (g.sub) {
+      const sub = document.createElement('div');
+      sub.className = 'mw-sub';
+      sub.textContent = g.sub;
+      node.querySelector('.mw-label')?.appendChild(sub);
+    }
+    node.style.cssText = `transform:translate3d(${-s.half + 2}px, ${gy}px, ${g.z}px);width:${s.half * 2 - 4}px;height:${gh}px;--tint:${tint}`;
+    fitTitle(title, g.cover ? 136 : 204);
+    return { el: node, z: g.z, tint, key: -1 };
+  });
+
+  // 画面に固定の表示（門を通り抜ける瞬間の光、進み具合、今いる章）
+  const flash = el('mw-flash', root);
+  const progress = el('mw-progress', root, '<i></i>');
+  const zone = el('mw-zone', root);
+
+  return { root, view, world, cap, flash, bar: progress.firstElementChild as HTMLElement, zone, tiles, parts, stands, gates, zoneKey: -1 };
+}
+
+// 視点の距離（perspective）。縦長の狭い画面では、視野が狭くなりすぎないよう縮める（DTP-MWLK-060）
+export function perspectiveFor(fov: number, width: number): number {
+  return fov * clamp(width / 1290, 0.45, 1);
+}
+
+export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, reduced: boolean): void {
+  refs.world.style.transform = `translateZ(${P}px) rotateX(${cam.pitch}deg) rotateY(${-cam.yaw}deg) translate3d(${-cam.x}px, ${-cam.bob}px, ${-cam.z}px)`;
+
+  // 門を通り抜ける瞬間の光
+  let flashA = 0;
+  let flashTint = TINTS[0];
+  for (const g of refs.gates) {
+    const f = 1 - Math.abs(cam.z - g.z) / 170;
+    if (f > flashA) {
+      flashA = f;
+      flashTint = g.tint;
+    }
+  }
+
+  // 突き当たりの闇と、各面の霞み（タイル自身の opacity だけを更新する）
+  refs.cap.style.transform = `translate3d(-2000px, -2600px, ${cam.z - FOG1}px)`;
+  for (const t of refs.tiles) {
+    const limit = t.wall ? cam.z - 20 : cam.z + 220;
+    const vis = t.near > cam.z - FOG1 - 100 && t.far < limit;
+    if (vis !== t.vis) {
+      t.vis = vis;
+      t.el.style.display = vis ? '' : 'none';
+    }
+    if (!vis) continue;
+    const key = Math.round(fogA(cam.z - (t.near + t.far) * 0.5) * 40);
+    if (key !== t.key) {
+      t.key = key;
+      t.el.style.opacity = ((40 - key) / 40).toFixed(3);
+    }
+  }
+
+  // 手前にある門が閉じている間は、その奥の文字や次の門が重なって読みづらくならないよう控えめにする
+  const behindGate = (z: number, minA: number) => {
+    let m = 1;
+    for (const g of refs.gates) {
+      if (cam.z > g.z && g.z > z) m *= lerp(1, minA, smooth(60, 220, cam.z - g.z));
+    }
+    return m;
+  };
+
+  // 広間の図。層ごとに、近づくと消える（手前の層から順に通り抜ける）
+  for (const s of refs.stands) {
+    const d = cam.z - s.z;
+    const o = d <= 0 ? 0 : smooth(60, 320, d) * (1 - fogA(d)) * behindGate(s.z, 0.04);
+    const key = Math.round(o * 100);
+    if (key !== s.key) {
+      s.key = key;
+      s.el.style.display = key > 0 ? '' : 'none';
+      s.el.style.opacity = (key / 100).toFixed(2);
+    }
+  }
+
+  // 図の枠が手前に立っている間は、その奥の門の文字が枠に透けて重ならないよう控えめにする
+  const behindStand = (z: number) => {
+    let m = 1;
+    for (const s of refs.stands) {
+      if (s.frame && s.key > 0 && cam.z > s.z && s.z > z) m *= 1 - 0.9 * (s.key / 100);
+    }
+    return m;
+  };
+
+  // 壁のパーツ。種類ごとに、現れる距離と奥行きが違う
+  for (const p of refs.parts) {
+    const a = cam.z - p.z;
+    const vis = a < FOG1 && a > -p.w * 0.75;
+    if (vis !== p.vis) {
+      p.vis = vis;
+      p.el.style.display = vis ? '' : 'none';
+    }
+    if (!vis) continue;
+    const k = KIND[p.kind];
+    const r = 1 - smooth(k.range[1], k.range[0], a);
+    const pass = smooth(-p.w * 0.75, -60, a);
+    const o = r * pass * (1 - fogA(Math.max(0, a + p.w * 0.5))) * behindGate(p.z, 0.04);
+    const key = `${Math.round(o * 100)}|${Math.round(r * 100)}`;
+    if (key !== p.key) {
+      p.key = key;
+      p.el.style.opacity = o.toFixed(2);
+      p.el.style.transform = partTransform(p, k.off, r, reduced);
+    }
+  }
+
+  // 門。近づくと文字が消え、紗幕が開く
+  for (const g of refs.gates) {
+    const d = cam.z - g.z;
+    const far = (1 - fogA(Math.max(0, d))) * behindGate(g.z, 0) * behindStand(g.z);
+    const o = d <= 0 ? 0 : smooth(40, 280, d) * far;
+    const key = Math.round(o * 100);
+    if (key !== g.key) {
+      g.key = key;
+      g.el.style.display = d <= 20 || d > FOG1 || key <= 0 ? 'none' : '';
+      g.el.style.opacity = (key / 100).toFixed(2);
+    }
+  }
+
+  refs.flash.style.setProperty('--flash', flashTint);
+  refs.flash.style.opacity = reduced ? '0' : (Math.max(0, flashA) * 0.34).toFixed(3);
+  refs.bar.style.width = `${(clamp((plan.start - cam.z) / (plan.start - plan.end - 520), 0, 1) * 100).toFixed(2)}%`;
+  const zoneNo = zoneAt(plan, cam.z);
+  if (zoneNo !== refs.zoneKey) {
+    refs.zoneKey = zoneNo;
+    refs.bar.style.background = `rgb(${TINTS[zoneNo % TINTS.length]})`;
+    const g = plan.gates[zoneNo - 1];
+    refs.zone.textContent = g ? (g.cover ? g.title : `${g.no}  ${g.title}`) : '';
+  }
+}
