@@ -849,15 +849,19 @@ async function testStageOverviewPointer(browser) {
     const hint = hud.querySelector('.stage-hint');
     const bar = hud.querySelector('.stage-hud-bar');
     const btn = hud.querySelector('.stage-hud-actions button');
+    const actions = hud.querySelector('.stage-hud-actions');
     const hintRect = hint.getBoundingClientRect();
     const barRect = bar.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
+    const actionsRect = actions.getBoundingClientRect();
     return {
       rootFont: parseFloat(getComputedStyle(document.documentElement).fontSize),
       hudFont: parseFloat(getComputedStyle(hud).fontSize),
       hintFont: parseFloat(getComputedStyle(hint).fontSize),
       btnFont: parseFloat(getComputedStyle(btn).fontSize),
       btnHeight: btnRect.height,
+      rightMargin: window.innerWidth - actionsRect.right,
+      bottomMargin: window.innerHeight - actionsRect.bottom,
       noOverlap: hintRect.bottom <= barRect.top + 1
     };
   });
@@ -875,14 +879,17 @@ async function testStageOverviewPointer(browser) {
     const hint = hud.querySelector('.stage-hint');
     const bar = hud.querySelector('.stage-hud-bar');
     const btn = hud.querySelector('.stage-hud-actions button');
+    const actions = hud.querySelector('.stage-hud-actions');
     const hintRect = hint.getBoundingClientRect();
     const barRect = bar.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
+    const actionsRect = actions.getBoundingClientRect();
     return {
       hudFont: parseFloat(getComputedStyle(hud).fontSize),
       hintFont: parseFloat(getComputedStyle(hint).fontSize),
       btnFont: parseFloat(getComputedStyle(btn).fontSize),
       btnHeight: btnRect.height,
+      bottomMargin: window.innerHeight - actionsRect.bottom,
       noOverlap: hintRect.bottom <= barRect.top + 1
     };
   });
@@ -890,9 +897,9 @@ async function testStageOverviewPointer(browser) {
 
   const show25Ok = desktopHud.hudFont >= 13 && desktopHud.hintFont >= 13 && desktopHud.btnFont >= 13
     && mobileLandHud.hudFont >= 14 && mobileLandHud.hintFont >= 14 && mobileLandHud.btnFont >= 14
-    && mobileLandHud.btnHeight >= 36 && mobileLandHud.noOverlap
+    && mobileLandHud.btnHeight >= 36 && mobileLandHud.rightMargin >= 60 && mobileLandHud.bottomMargin >= 20 && mobileLandHud.noOverlap
     && mobilePortHud.hudFont >= 14 && mobilePortHud.hintFont >= 14 && mobilePortHud.btnFont >= 14
-    && mobilePortHud.btnHeight >= 36 && mobilePortHud.noOverlap;
+    && mobilePortHud.btnHeight >= 36 && mobilePortHud.bottomMargin >= 44 && mobilePortHud.noOverlap;
   record('TC-SHOW-025', show25Ok, JSON.stringify({ desktopHud, mobileLandHud, mobilePortHud }));
 }
 
