@@ -50,6 +50,14 @@ function copyPublicToStandalone() {
     recursive: true,
     filter: src => !BUILD_OUTPUTS.includes(path.relative(PUBLIC_DIR, src).split(path.sep).join('/'))
   });
+  // スタンドアロン版は完全オフライン動作（NFR-008）のため、Web 版専用の解析タグを除外する
+  const standaloneHtmlPath = path.join(OUT_DIR, 'index.html');
+  const html = fs.readFileSync(standaloneHtmlPath, 'utf8');
+  fs.writeFileSync(
+    standaloneHtmlPath,
+    html.replace(/[ \t]*<!-- LUCIVO_WEB_ANALYTICS_START -->[\s\S]*?<!-- LUCIVO_WEB_ANALYTICS_END -->\r?\n?/g, ''),
+    'utf8'
+  );
 }
 
 // 廃止したモードの出力が残って紛れ込まないように、モードの出力のフォルダを書き込む前に空にする（ARC-PUB-006）
