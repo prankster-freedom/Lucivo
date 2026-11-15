@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="760" viewBox="0 0 1040 760" font-family="sans-serif">
+  <title>トーンと目的別の配色</title>
+  <desc>上はトーン（明度×彩度）の 12 区分を、赤・黄・緑・青の 4 色相の見本で示す。下は目的別の配色 7 種の見本。色の値は書籍の印刷物からの近似。</desc>
+  <rect width="1040" height="760" fill="#ffffff"/>
+  <style>
+    .h{font-size:15px;fill:#111;font-weight:bold}
+    .l{font-size:12px;fill:#222}
+    .s{font-size:10px;fill:#555}
+  </style>
+  <text x="20" y="26" class="h">トーン（どんな印象にしたい？ → トーンを選ぶ）</text>
+  <text x="20" y="44" class="s">縦が明度（上ほど明るい）、横が彩度（右ほど鮮やか）。各マスの 4 色は赤・黄・緑・青。</text>
+
+  <!-- column: low saturation -->
+  <g transform="translate(20,60)">
+    <text x="0" y="12" class="l">うすい pale</text>
+    <rect x="0" y="18" width="30" height="24" fill="#f2d7da"/><rect x="30" y="18" width="30" height="24" fill="#f4ecd2"/><rect x="60" y="18" width="30" height="24" fill="#d9eadc"/><rect x="90" y="18" width="30" height="24" fill="#d8e2f0"/>
+  </g>
+  <g transform="translate(20,120)">
+    <text x="0" y="12" class="l">あかるいはいみの light grayish</text>
+    <rect x="0" y="18" width="30" height="24" fill="#d2b9bc"/><rect x="30" y="18" width="30" height="24" fill="#d6ceb6"/><rect x="60" y="18" width="30" height="24" fill="#b9c9bd"/><rect x="90" y="18" width="30" height="24" fill="#b7c0cf"/>
+  </g>
+  <g transform="translate(20,180)">
+    <text x="0" y="12" class="l">はいみの grayish</text>
+    <rect x="0" y="18" width="30" height="24" fill="#8e7376"/><rect x="30" y="18" width="30" height="24" fill="#948a70"/><rect x="60" y="18" width="30" height="24" fill="#71857a"/><rect x="90" y="18" width="30" height="24" fill="#6f7a8c"/>
+  </g>
+  <g transform="translate(20,240)">
+    <text x="0" y="12" class="l">くらいはいみの dark grayish</text>
+    <rect x="0" y="18" width="30" height="24" fill="#4f3c3f"/><rect x="30" y="18" width="30" height="24" fill="#524b39"/><rect x="60" y="18" width="30" height="24" fill="#3a4a40"/><rect x="90" y="18" width="30" height="24" fill="#3a4150"/>
+  </g>
+  <!-- column: medium -->
+  <g transform="translate(260,60)">
+    <text x="0" y="12" class="l">あさい light</text>
+    <rect x="0" y="18" width="30" height="24" fill="#f3a7b0"/><rect x="30" y="18" width="30" height="24" fill="#f6e08e"/><rect x="60" y="18" width="30" height="24" fill="#a8dbb0"/><rect x="90" y="18" width="30" height="24" fill="#a9c4ec"/>
+  </g>
+  <g transform="translate(260,120)">
+    <text x="0" y="12" class="l">やわらかい soft</text>
+    <rect x="0" y="18" width="30" height="24" fill="#d98490"/><rect x="30" y="18" width="30" height="24" fill="#dcc472"/><rect x="60" y="18" width="30" height="24" fill="#86bf91"/><rect x="90" y="18" width="30" height="24" fill="#86a5d0"/>
+  </g>
+  <g transform="translate(260,180)">
+    <text x="0" y="12" class="l">にぶい dull</text>
+    <rect x="0" y="18" width="30" height="24" fill="#a85a66"/><rect x="30" y="18" width="30" height="24" fill="#ab9346"/><rect x="60" y="18" width="30" height="24" fill="#5a8e66"/><rect x="90" y="18" width="30" height="24" fill="#5a76a0"/>
+  </g>
+  <g transform="translate(260,240)">
+    <text x="0" y="12" class="l">くらい dark</text>
+    <rect x="0" y="18" width="30" height="24" fill="#6e2a35"/><rect x="30" y="18" width="30" height="24" fill="#6e5c1f"/><rect x="60" y="18" width="30" height="24" fill="#265a35"/><rect x="90" y="18" width="30" height="24" fill="#26406a"/>
+  </g>
+  <!-- column: high -->
+  <g transform="translate(500,60)">
+    <text x="0" y="12" class="l">あかるい bright</text>
+    <rect x="0" y="18" width="30" height="24" fill="#f2566c"/><rect x="30" y="18" width="30" height="24" fill="#f9d43b"/><rect x="60" y="18" width="30" height="24" fill="#4dc46a"/><rect x="90" y="18" width="30" height="24" fill="#4d8ff0"/>
+  </g>
+  <g transform="translate(500,120)">
+    <text x="0" y="12" class="l">つよい strong</text>
+    <rect x="0" y="18" width="30" height="24" fill="#d42a44"/><rect x="30" y="18" width="30" height="24" fill="#e0b414"/><rect x="60" y="18" width="30" height="24" fill="#22a046"/><rect x="90" y="18" width="30" height="24" fill="#2266cc"/>
+  </g>
+  <g transform="translate(500,180)">
+    <text x="0" y="12" class="l">こい deep</text>
+    <rect x="0" y="18" width="30" height="24" fill="#9a1028"/><rect x="30" y="18" width="30" height="24" fill="#a07c00"/><rect x="60" y="18" width="30" height="24" fill="#0a7030"/><rect x="90" y="18" width="30" height="24" fill="#0a3f96"/>
+  </g>
+  <g transform="translate(740,120)">
+    <text x="0" y="12" class="l">さえた vivid（最も鮮やか）</text>
+    <rect x="0" y="18" width="30" height="24" fill="#ff1f3d"/><rect x="30" y="18" width="30" height="24" fill="#ffd400"/><rect x="60" y="18" width="30" height="24" fill="#00b83f"/><rect x="90" y="18" width="30" height="24" fill="#0066ff"/>
+  </g>
+  <line x1="20" y1="316" x2="900" y2="316" stroke="#333" marker-end="url(#a)"/>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#333"/></marker></defs>
+  <text x="905" y="320" class="s">彩度 高</text>
+
+  <text x="20" y="360" class="h">目的別の配色</text>
+  <g transform="translate(20,374)">
+    <text x="0" y="12" class="l">なじませる：ドミナント・カラー</text><text x="0" y="26" class="s">色相を揃える</text>
+    <rect x="0" y="34" width="40" height="40" fill="#e8344a"/><rect x="40" y="34" width="40" height="40" fill="#f2564a"/><rect x="80" y="34" width="40" height="40" fill="#c8303c"/>
+  </g>
+  <g transform="translate(270,374)">
+    <text x="0" y="12" class="l">なじませる：トーン・オン・トーン</text><text x="0" y="26" class="s">色相を絞り、明度に差</text>
+    <rect x="0" y="34" width="40" height="40" fill="#f1b8aa"/><rect x="40" y="34" width="40" height="40" fill="#bfa0a0"/><rect x="80" y="34" width="40" height="40" fill="#7a5054"/>
+  </g>
+  <g transform="translate(520,374)">
+    <text x="0" y="12" class="l">なじませる：ドミナント・トーン</text><text x="0" y="26" class="s">トーンを揃える（色相は違う）</text>
+    <rect x="0" y="34" width="40" height="40" fill="#d98490"/><rect x="40" y="34" width="40" height="40" fill="#dcc472"/><rect x="80" y="34" width="40" height="40" fill="#86bf91"/><rect x="120" y="34" width="40" height="40" fill="#86a5d0"/>
+  </g>
+  <g transform="translate(770,374)">
+    <text x="0" y="12" class="l">繊細に：カマイユ</text><text x="0" y="26" class="s">遠目に 1 色に見えるほどの差</text>
+    <rect x="0" y="34" width="40" height="40" fill="#f0a8ac"/><rect x="40" y="34" width="40" height="40" fill="#ec9ca2"/><rect x="80" y="34" width="40" height="40" fill="#f3b0aa"/>
+  </g>
+
+  <g transform="translate(20,474)">
+    <text x="0" y="12" class="l">引きしめる：アクセントカラー</text><text x="0" y="26" class="s">ベース 7 割、同系 2 割、正反対 1 割</text>
+    <rect x="0" y="34" width="140" height="40" fill="#e0287a"/><rect x="140" y="34" width="40" height="40" fill="#f06aa3"/><rect x="180" y="34" width="20" height="40" fill="#1f8fd0"/>
+  </g>
+  <g transform="translate(270,474)">
+    <text x="0" y="12" class="l">引きしめる：セパレーション</text><text x="0" y="26" class="s">色の間に無彩色を細く挟む</text>
+    <rect x="0" y="34" width="60" height="40" fill="#2a9ad6"/><rect x="60" y="34" width="8" height="40" fill="#2b2140"/><rect x="68" y="34" width="60" height="40" fill="#9cc65a"/>
+  </g>
+  <g transform="translate(520,474)">
+    <text x="0" y="12" class="l">色数が多くてもまとめる</text><text x="0" y="26" class="s">上：ウォームシェード／下：クールシェード</text>
+    <rect x="0" y="34" width="40" height="20" fill="#f25a6a"/><rect x="40" y="34" width="40" height="20" fill="#f7b04a"/><rect x="80" y="34" width="40" height="20" fill="#9fcf5a"/><rect x="120" y="34" width="40" height="20" fill="#3a8ad0"/>
+    <rect x="0" y="54" width="40" height="20" fill="#c8304e"/><rect x="40" y="54" width="40" height="20" fill="#cdbd3a"/><rect x="80" y="54" width="40" height="20" fill="#1fa088"/><rect x="120" y="54" width="40" height="20" fill="#7a3aa8"/>
+  </g>
+  <g transform="translate(770,474)">
+    <text x="0" y="12" class="l">統一しつつ単調にしない</text><text x="0" y="26" class="s">グラデーション（色相の例）</text>
+    <rect x="0" y="34" width="40" height="40" fill="#3a4a9a"/><rect x="40" y="34" width="40" height="40" fill="#2a6a7a"/><rect x="80" y="34" width="40" height="40" fill="#2a9a6a"/><rect x="120" y="34" width="40" height="40" fill="#a8c84a"/>
+  </g>
+
+  <g transform="translate(20,574)">
+    <text x="0" y="12" class="l">自然で落ち着く：ナチュラルハーモニー</text><text x="0" y="26" class="s">黄に近い色を明るく、青紫に近い色を暗く</text>
+    <rect x="0" y="34" width="60" height="40" fill="#8cc63a"/><rect x="60" y="34" width="60" height="40" fill="#1d5a32"/>
+    <rect x="130" y="34" width="60" height="40" fill="#ff6a5a"/><rect x="190" y="34" width="60" height="40" fill="#8a1c3a"/>
+  </g>
+  <g transform="translate(520,574)">
+    <text x="0" y="12" class="l">人工的で斬新：コンプレックスハーモニー</text><text x="0" y="26" class="s">黄に近い色を暗く、青紫に近い色を明るく（逆）</text>
+    <rect x="0" y="34" width="60" height="40" fill="#7a1a2a"/><rect x="60" y="34" width="60" height="40" fill="#e0306a"/>
+    <rect x="130" y="34" width="60" height="40" fill="#6a2222"/><rect x="190" y="34" width="60" height="40" fill="#2a7ad0"/>
+  </g>
+  <text x="20" y="700" font-size="13" fill="#333">・色を決める前に、目的が「機能（差をつける・強調する・分ける）」か「印象（気分・味・記憶に訴える）」かを決める。</text>
+  <text x="20" y="730" font-size="12" fill="#777">色の値は書籍の印刷見本からの近似で、正確な色見本ではない。関係（揃える軸、比率、明暗の向き）を読み取るための図。</text>
+</svg>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="480" viewBox="0 0 900 480" font-family="sans-serif">
+  <title>写真の構図 6 種</title>
+  <desc>上段はシンプルライン（シンメトリー、二分割、三分割）、下段は動きが生まれる構図（曲線、放射線、三角形）。灰色の枠が写真、赤い線が構図の線。</desc>
+  <rect width="900" height="480" fill="#ffffff"/>
+  <style>.f{fill:#ececec;stroke:#999}.r{stroke:#d33;stroke-width:2;fill:none}.h{font-size:14px;fill:#111;font-weight:bold}.c{font-size:12px;fill:#333}.s{font-size:11px;fill:#555}</style>
+  <text x="20" y="24" class="h">シンプルライン（スッキリ。単調にならないよう注意）</text>
+  <rect x="20" y="40" width="240" height="150" class="f"/>
+  <path d="M20 40 L140 115 L20 190 M260 40 L140 115 L260 190 M20 115 H260" class="r"/><circle cx="140" cy="115" r="14" class="r"/>
+  <text x="20" y="210" class="c">シンメトリー</text><text x="20" y="226" class="s">上下・左右が対称。整理され、非日常の美しさ</text>
+
+  <rect x="320" y="40" width="240" height="150" class="f"/>
+  <line x1="320" y1="115" x2="560" y2="115" class="r"/>
+  <text x="320" y="210" class="c">二分割構図</text><text x="320" y="226" class="s">水平線・地平線などで上下（左右）に二分割</text>
+
+  <rect x="620" y="40" width="240" height="150" class="f"/>
+  <path d="M700 40 V190 M780 40 V190 M620 90 H860 M620 140 H860" class="r"/>
+  <circle cx="700" cy="90" r="5" fill="#d33"/><circle cx="780" cy="140" r="5" fill="#d33"/>
+  <text x="620" y="210" class="c">三分割構図</text><text x="620" y="226" class="s">三等分の線と交点に主役を置く。リズムが出る</text>
+
+  <text x="20" y="262" class="h">動きが生まれる（放射線はダイナミック、曲線はやさしく広がる）</text>
+  <rect x="20" y="278" width="240" height="150" class="f"/>
+  <path d="M30 420 Q140 280 250 300 M30 380 Q140 300 250 340" class="r"/>
+  <text x="20" y="446" class="c">曲線構図</text><text x="20" y="462" class="s">川・地形・植物や建物の曲線。柔らかい動き</text>
+
+  <rect x="320" y="278" width="240" height="150" class="f"/>
+  <path d="M440 353 L320 278 M440 353 L440 278 M440 353 L560 278 M440 353 L320 428 M440 353 L440 428 M440 353 L560 428 M440 353 L320 353 M440 353 L560 353" class="r"/>
+  <circle cx="440" cy="353" r="8" class="r"/>
+  <text x="320" y="446" class="c">放射線構図</text><text x="320" y="462" class="s">上向きは開放的、下向きは神秘的・劇的</text>
+
+  <rect x="620" y="278" width="240" height="150" class="f"/>
+  <path d="M740 288 L630 418 L850 418 Z" class="r"/>
+  <text x="620" y="446" class="c">三角形構図</text><text x="620" y="462" class="s">末広がりで安定し、ダイナミック</text>
+</svg>

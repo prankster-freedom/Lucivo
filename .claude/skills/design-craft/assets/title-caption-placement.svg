@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="640" viewBox="0 0 1040 640" font-family="sans-serif">
+  <title>タイトルの置き方とキャプションの入れ方</title>
+  <desc>上段はタイトルの置き方 7 種、下段はキャプションの入れ方 6 種。灰色の面は写真、細い線の束は本文、黒はタイトル。</desc>
+  <rect width="1040" height="640" fill="#ffffff"/>
+  <style>
+    .pg{fill:#fff;stroke:#444;stroke-width:1.2}
+    .ph{fill:#cfcfcf}
+    .tx{stroke:#9a9a9a;stroke-width:2}
+    .t{fill:#222}
+    .c{font-size:10px;fill:#333}
+    .h{font-size:15px;fill:#111;font-weight:bold}
+    .cp{fill:#e06666}
+  </style>
+  <text x="20" y="26" class="h">タイトルの置き方（黒＝タイトル）</text>
+
+  <!-- 1 small top-left -->
+  <rect x="20" y="40" width="130" height="170" class="pg"/>
+  <rect x="28" y="48" width="114" height="80" class="ph"/>
+  <rect x="28" y="136" width="50" height="5" class="t"/>
+  <g class="tx"><line x1="28" y1="150" x2="142" y2="150"/><line x1="28" y1="158" x2="142" y2="158"/><line x1="28" y1="166" x2="142" y2="166"/><line x1="28" y1="174" x2="120" y2="174"/></g>
+  <text x="20" y="226" class="c">小さくても、始まりの</text><text x="20" y="240" class="c">左上に置けばタイトル</text>
+
+  <!-- 2 biggest -->
+  <rect x="165" y="40" width="130" height="170" class="pg"/>
+  <rect x="173" y="48" width="114" height="60" class="ph"/>
+  <rect x="173" y="116" width="114" height="22" class="t"/>
+  <g class="tx"><line x1="173" y1="150" x2="287" y2="150"/><line x1="173" y1="158" x2="287" y2="158"/><line x1="173" y1="166" x2="287" y2="166"/></g>
+  <text x="165" y="226" class="c">一番大きく目立てば</text><text x="165" y="240" class="c">はっきり分かる</text>
+
+  <!-- 3 inside body -->
+  <rect x="310" y="40" width="130" height="170" class="pg"/>
+  <g class="tx"><line x1="318" y1="52" x2="432" y2="52"/><line x1="318" y1="60" x2="432" y2="60"/><line x1="318" y1="68" x2="432" y2="68"/><line x1="318" y1="76" x2="432" y2="76"/></g>
+  <rect x="318" y="88" width="80" height="16" class="t"/>
+  <g class="tx"><line x1="318" y1="116" x2="432" y2="116"/><line x1="318" y1="124" x2="432" y2="124"/><line x1="318" y1="132" x2="432" y2="132"/><line x1="318" y1="140" x2="432" y2="140"/><line x1="318" y1="148" x2="432" y2="148"/></g>
+  <text x="310" y="226" class="c">本文の中にあっても、</text><text x="310" y="240" class="c">一番大きければよい</text>
+
+  <!-- 4 along photo flow -->
+  <rect x="455" y="40" width="130" height="170" class="pg"/>
+  <rect x="463" y="50" width="40" height="30" class="ph"/><rect x="510" y="70" width="40" height="30" class="ph"/><rect x="470" y="105" width="40" height="30" class="ph"/><rect x="520" y="130" width="50" height="40" class="ph"/>
+  <rect x="535" y="52" width="40" height="4" class="t"/><rect x="535" y="59" width="40" height="4" class="t"/>
+  <text x="455" y="226" class="c">主役の写真の流れに</text><text x="455" y="240" class="c">そっと寄り添わせる</text>
+
+  <!-- 5 middle, big -->
+  <rect x="600" y="40" width="130" height="170" class="pg"/>
+  <rect x="608" y="48" width="114" height="60" class="ph"/>
+  <g class="tx"><line x1="608" y1="118" x2="660" y2="118"/><line x1="608" y1="126" x2="660" y2="126"/><line x1="608" y1="134" x2="660" y2="134"/></g>
+  <rect x="670" y="115" width="14" height="60" class="t"/><rect x="690" y="115" width="14" height="45" class="t"/>
+  <text x="600" y="226" class="c">途中にあっても、大きい</text><text x="600" y="240" class="c">ならタイトル（縦組み）</text>
+
+  <!-- 6 tilted -->
+  <rect x="745" y="40" width="130" height="170" class="pg"/>
+  <rect x="770" y="80" width="80" height="20" class="t" transform="rotate(-18 810 90)"/>
+  <g class="tx"><line x1="753" y1="140" x2="867" y2="140"/><line x1="753" y1="148" x2="867" y2="148"/><line x1="753" y1="156" x2="867" y2="156"/><line x1="753" y1="164" x2="867" y2="164"/></g>
+  <text x="745" y="226" class="c">傾けると、存在感が</text><text x="745" y="240" class="c">もっと上がる</text>
+
+  <!-- 7 split far apart -->
+  <rect x="890" y="40" width="130" height="170" class="pg"/>
+  <rect x="898" y="48" width="36" height="36" class="t"/><rect x="976" y="160" width="36" height="36" class="t"/>
+  <g class="tx"><line x1="945" y1="60" x2="1012" y2="60"/><line x1="945" y1="68" x2="1012" y2="68"/><line x1="898" y1="110" x2="1012" y2="110"/><line x1="898" y1="118" x2="1012" y2="118"/><line x1="898" y1="170" x2="965" y2="170"/></g>
+  <text x="890" y="226" class="c">大きければ、離れて</text><text x="890" y="240" class="c">いても続けて読める</text>
+
+  <text x="20" y="300" class="h">キャプションの入れ方（赤＝キャプション、細い文字）</text>
+
+  <!-- c1 in title block -->
+  <rect x="20" y="314" width="150" height="150" class="pg"/>
+  <rect x="28" y="324" width="110" height="14" class="t"/><rect x="28" y="344" width="80" height="4" class="cp"/>
+  <g class="tx"><line x1="28" y1="360" x2="162" y2="360"/><line x1="28" y1="368" x2="162" y2="368"/><line x1="28" y1="376" x2="162" y2="376"/></g>
+  <text x="20" y="480" class="c">スタッフ名をタイトルの</text><text x="20" y="494" class="c">ブロックに入れる</text>
+
+  <!-- c2 simple horizontal -->
+  <rect x="190" y="314" width="150" height="150" class="pg"/>
+  <rect x="198" y="324" width="134" height="90" class="ph"/>
+  <rect x="198" y="440" width="70" height="4" class="cp"/>
+  <text x="190" y="480" class="c">シンプルな横組みで</text><text x="190" y="494" class="c">ページの下に入れる</text>
+
+  <!-- c3 profile beside person -->
+  <rect x="360" y="314" width="150" height="150" class="pg"/>
+  <circle cx="400" cy="360" r="16" class="ph"/><rect x="380" y="378" width="40" height="70" class="ph"/>
+  <rect x="430" y="380" width="60" height="4" class="cp"/><rect x="430" y="388" width="50" height="4" class="cp"/><rect x="430" y="396" width="55" height="4" class="cp"/>
+  <text x="360" y="480" class="c">プロフィールを人物に</text><text x="360" y="494" class="c">添える</text>
+
+  <!-- c4 leader lines -->
+  <rect x="530" y="314" width="150" height="150" class="pg"/>
+  <rect x="538" y="324" width="60" height="50" class="ph"/><rect x="610" y="340" width="60" height="50" class="ph"/><rect x="560" y="390" width="60" height="50" class="ph"/>
+  <line x1="568" y1="349" x2="560" y2="320" stroke="#e06666"/><rect x="540" y="316" width="30" height="3" class="cp"/>
+  <line x1="640" y1="365" x2="665" y2="398" stroke="#e06666"/><rect x="640" y="398" width="34" height="3" class="cp"/>
+  <text x="530" y="480" class="c">引き出し線でつないで</text><text x="530" y="494" class="c">照らし合わせる</text>
+
+  <!-- c5 numbers -->
+  <rect x="700" y="314" width="150" height="150" class="pg"/>
+  <g fill="#cfcfcf"><circle cx="725" cy="340" r="14"/><circle cx="765" cy="340" r="14"/><circle cx="805" cy="340" r="14"/><circle cx="725" cy="380" r="14"/><circle cx="765" cy="380" r="14"/><circle cx="805" cy="380" r="14"/></g>
+  <g font-size="9" fill="#e06666"><text x="709" y="330">1</text><text x="749" y="330">2</text><text x="789" y="330">3</text><text x="709" y="370">4</text><text x="749" y="370">5</text><text x="789" y="370">6</text></g>
+  <rect x="708" y="410" width="134" height="40" fill="#f6f6f6"/><g class="cp"><rect x="712" y="416" width="60" height="3"/><rect x="712" y="424" width="60" height="3"/><rect x="712" y="432" width="60" height="3"/><rect x="778" y="416" width="60" height="3"/><rect x="778" y="424" width="60" height="3"/><rect x="778" y="432" width="60" height="3"/></g>
+  <text x="700" y="480" class="c">まとめて入れて、番号で</text><text x="700" y="494" class="c">照らし合わせる</text>
+
+  <!-- c6 layout map -->
+  <rect x="870" y="314" width="150" height="150" class="pg"/>
+  <rect x="878" y="322" width="80" height="60" class="ph"/><rect x="962" y="322" width="50" height="28" class="ph"/><rect x="962" y="354" width="50" height="28" class="ph"/><rect x="878" y="386" width="134" height="30" class="ph"/>
+  <g fill="none" stroke="#e06666"><rect x="880" y="426" width="18" height="14"/><line x1="890" y1="426" x2="890" y2="440"/><line x1="880" y1="433" x2="898" y2="433"/></g>
+  <rect x="904" y="428" width="100" height="3" class="cp"/><rect x="904" y="436" width="90" height="3" class="cp"/>
+  <text x="870" y="480" class="c">まとめて入れて、小さな</text><text x="870" y="494" class="c">配置図で照らし合わせる</text>
+
+  <text x="20" y="540" font-size="13" fill="#333">・タイトルは「一番大きい」か「始まりの位置にある」のどちらかで、タイトルと分かる。大きさが足りなければ位置で、位置が自由なら大きさで示す。</text>
+  <text x="20" y="564" font-size="13" fill="#333">・キャプションは主役の邪魔をしない場所に、一番小さく置く。写真との対応は、近接・引き出し線・番号・配置図のどれかで示す。</text>
+  <text x="20" y="604" font-size="12" fill="#777">書籍の見本（第 3 章）をもとに、配置の関係だけを縮図にしたもの。</text>
+</svg>

@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="520" viewBox="0 0 1040 520" font-family="sans-serif">
+  <title>トーストのページの変化（STEP 1〜5）</title>
+  <desc>雑誌の 1 ページ「毎日楽しい 彩りトーストレシピ」が、方向性の比較から仕上げまでどう変わるかを、ページの縮図で示す。○は写真（キリヌキ）、四角はレシピの文字、色地はコラム。</desc>
+  <rect width="1040" height="520" fill="#ffffff"/>
+  <style>
+    .page{fill:#fff;stroke:#444;stroke-width:1.5}
+    .cap{font-size:13px;fill:#222}
+    .sub{font-size:10px;fill:#555}
+    .photo{fill:#e9b872;stroke:#8a5a1f;stroke-width:1}
+    .txt{fill:#c9c9c9}
+    .col{fill:#f3d9a4}
+    .ttl{fill:#333}
+    .ng{font-size:16px;fill:#c0392b;font-weight:bold}
+    .ok{font-size:16px;fill:#2e7d32;font-weight:bold}
+  </style>
+
+  <!-- STEP1 案A -->
+  <text x="20" y="24" class="cap">STEP 1 方向性：案 A</text>
+  <rect x="20" y="36" width="150" height="200" class="page"/>
+  <rect x="30" y="46" width="70" height="10" class="ttl"/>
+  <circle cx="50" cy="90" r="18" class="photo"/><circle cx="50" cy="135" r="18" class="photo"/><circle cx="50" cy="180" r="18" class="photo"/>
+  <rect x="80" y="80" width="80" height="6" class="txt"/><rect x="80" y="125" width="80" height="6" class="txt"/><rect x="80" y="170" width="45" height="6" class="txt"/>
+  <rect x="120" y="180" width="44" height="48" class="col"/>
+
+  <!-- STEP1 案B -->
+  <text x="190" y="24" class="cap">STEP 1 方向性：案 B</text>
+  <rect x="190" y="36" width="150" height="200" class="page"/>
+  <rect x="200" y="46" width="70" height="10" class="ttl"/>
+  <rect x="200" y="66" width="40" height="40" class="col"/>
+  <circle cx="265" cy="120" r="18" class="photo"/><circle cx="265" cy="160" r="18" class="photo"/><circle cx="265" cy="200" r="18" class="photo"/>
+  <rect x="200" y="140" width="40" height="6" class="txt"/><rect x="292" y="120" width="40" height="6" class="txt"/><rect x="292" y="180" width="40" height="6" class="txt"/>
+
+  <!-- STEP2 -->
+  <text x="360" y="24" class="cap">STEP 2 骨格</text>
+  <rect x="360" y="36" width="150" height="200" class="page"/>
+  <rect x="370" y="46" width="70" height="12" class="ttl"/><rect x="370" y="62" width="60" height="5" class="txt"/>
+  <circle cx="470" cy="80" r="20" class="photo"/><circle cx="395" cy="135" r="20" class="photo"/><circle cx="465" cy="165" r="20" class="photo"/>
+  <rect x="420" y="105" width="40" height="5" class="txt"/><rect x="420" y="113" width="30" height="5" class="txt"/>
+  <rect x="370" y="160" width="40" height="5" class="txt"/><rect x="370" y="168" width="30" height="5" class="txt"/>
+  <rect x="420" y="190" width="40" height="5" class="txt"/>
+  <rect x="370" y="200" width="130" height="28" class="col"/>
+  <polyline points="470,80 395,135 465,165 470,80" fill="none" stroke="#c0392b" stroke-dasharray="3 2"/>
+
+  <!-- STEP3 -->
+  <text x="530" y="24" class="cap">STEP 3 キャラ</text>
+  <rect x="530" y="36" width="150" height="200" class="page"/>
+  <rect x="570" y="44" width="70" height="6" class="txt"/><rect x="555" y="54" width="100" height="14" class="ttl"/>
+  <circle cx="640" cy="90" r="20" class="photo"/><circle cx="565" cy="140" r="20" class="photo"/><circle cx="635" cy="170" r="20" class="photo"/>
+  <text x="590" y="112" font-size="9" fill="#333" letter-spacing="3">トースト名</text>
+  <line x1="590" y1="117" x2="625" y2="117" stroke="#999"/><line x1="590" y1="122" x2="625" y2="122" stroke="#999"/>
+  <text x="590" y="132" font-size="8" fill="#333">❶❷❸ 手順</text>
+  <rect x="540" y="200" width="130" height="28" class="col"/>
+
+  <!-- STEP4 -->
+  <text x="700" y="24" class="cap">STEP 4 足し算と引き算</text>
+  <rect x="700" y="36" width="150" height="200" fill="#f6ead2" stroke="#444" stroke-width="1.5"/>
+  <path d="M735 46 h80 l-6 7 l6 7 h-80 l6 -7 z" fill="#d9534f"/><text x="760" y="57" font-size="9" fill="#fff">毎日</text>
+  <rect x="725" y="66" width="100" height="14" class="ttl"/>
+  <circle cx="810" cy="105" r="20" fill="#fff"/><circle cx="810" cy="105" r="15" class="photo"/>
+  <circle cx="735" cy="150" r="20" fill="#fff"/><circle cx="735" cy="150" r="15" class="photo"/>
+  <circle cx="805" cy="180" r="20" fill="#fff"/><circle cx="805" cy="180" r="15" class="photo"/>
+  <rect x="760" y="125" width="30" height="6" fill="#e07b39"/><rect x="710" y="172" width="30" height="6" fill="#6aa84f"/>
+  <rect x="710" y="205" width="130" height="24" class="col"/>
+
+  <!-- STEP5 -->
+  <text x="870" y="24" class="cap">STEP 5 ブラッシュアップ</text>
+  <rect x="870" y="36" width="150" height="200" fill="#efd9ad" stroke="#444" stroke-width="1.5"/>
+  <rect x="876" y="42" width="138" height="188" fill="none" stroke="#fff" stroke-width="3"/>
+  <path d="M905 50 h80 l-6 7 l6 7 h-80 l6 -7 z" fill="#d9534f"/>
+  <rect x="895" y="70" width="100" height="14" rx="3" class="ttl"/>
+  <circle cx="930" cy="92" r="3" fill="#d9534f"/><circle cx="945" cy="92" r="3" fill="#d9534f"/><circle cx="960" cy="92" r="3" fill="#d9534f"/>
+  <circle cx="985" cy="115" r="20" fill="#fff"/><circle cx="985" cy="115" r="15" class="photo"/>
+  <circle cx="905" cy="155" r="20" fill="#fff"/><circle cx="905" cy="155" r="15" class="photo"/>
+  <circle cx="975" cy="185" r="20" fill="#fff"/><circle cx="975" cy="185" r="15" class="photo"/>
+  <rect x="880" y="208" width="130" height="18" fill="#f3d9a4"/>
+
+  <text x="20" y="256" class="ng">×</text>
+  <text x="36" y="254" class="sub">写真を左にまとめる案。</text>
+  <text x="36" y="268" class="sub">右下にコラムが入り、</text>
+  <text x="36" y="282" class="sub">写真とレシピの</text>
+  <text x="36" y="296" class="sub">対応がずれる</text>
+  <text x="190" y="256" class="ng">×</text>
+  <text x="206" y="254" class="sub">写真を中央に固める案。</text>
+  <text x="206" y="268" class="sub">3 点（奇数）では</text>
+  <text x="206" y="282" class="sub">固まって見えず、</text>
+  <text x="206" y="296" class="sub">コラムが左上に来る</text>
+  <text x="360" y="256" class="ok">○</text>
+  <text x="376" y="254" class="sub">タイトルとリードは左上。</text>
+  <text x="376" y="268" class="sub">写真は三角形に置く。</text>
+  <text x="376" y="282" class="sub">コラムは最後（下）に</text>
+  <text x="376" y="296" class="sub">色地で差をつける</text>
+  <text x="530" y="256" class="ok">○</text>
+  <text x="546" y="254" class="sub">タイトルまわりだけ</text>
+  <text x="546" y="268" class="sub">中央揃え。名前は字間を</text>
+  <text x="546" y="282" class="sub">あけ、材料に罫線、</text>
+  <text x="546" y="296" class="sub">手順に ❶❷❸</text>
+  <text x="700" y="256" class="ok">＋</text>
+  <text x="716" y="254" class="sub">リボン・名前の色・</text>
+  <text x="716" y="268" class="sub">紙の質感・白い皿を足す</text>
+  <text x="716" y="282" class="sub">− ごちゃついた欧文の</text>
+  <text x="716" y="296" class="sub">キャッチを削る</text>
+  <text x="870" y="256" class="ok">○</text>
+  <text x="886" y="254" class="sub">紙色を濃く、全体に白フチ。</text>
+  <text x="886" y="268" class="sub">●●● で止めを作る。</text>
+  <text x="886" y="282" class="sub">名前を太く丸く。</text>
+  <text x="886" y="296" class="sub">コラムの罫線を外す</text>
+  <text x="20" y="330" font-size="15" fill="#222">読み方</text>
+  <text x="20" y="354" font-size="13" fill="#333">・STEP 1 では、ラフを並べて問題点を言葉にしてから構造を選ぶ（×の 2 案は採らなかった理由つき）。</text>
+  <text x="20" y="378" font-size="13" fill="#333">・STEP 2 では色も書体も変えず、配置だけで「タイトル→写真とレシピ→コラム」の読む順を作る。</text>
+  <text x="20" y="402" font-size="13" fill="#333">・STEP 3 で個性（書体・字間・組み）、STEP 4 で足し算と引き算、STEP 5 で引いた目と寄った目の仕上げ。</text>
+  <text x="20" y="426" font-size="13" fill="#333">・各 STEP で変えた部分だけが前の STEP との差。大きな構成は STEP 2 以降で動かさない。</text>
+  <text x="20" y="466" font-size="12" fill="#777">書籍の見本（第 1 章）をもとに、配置の関係だけを縮図にしたもの。写真や文字の細部は省略している。</text>
+</svg>

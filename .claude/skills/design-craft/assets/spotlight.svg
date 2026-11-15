@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="560" viewBox="0 0 1040 560" font-family="sans-serif">
+  <title>スポットライト：色・地・サイズ・揃えないのライト</title>
+  <desc>同じ 9 個の要素のうち 1 つ（主役）を目立たせる方法の比較。色のライト（足し算と引き算）、地のライト（枠線を太くするより色ベタの面）、揃えないライト（傾ける・ずらす・枠線を足す）、サイズのライト（スパイスの見本：文字を足すより大きさで特別扱い）。</desc>
+  <rect width="1040" height="560" fill="#ffffff"/>
+  <style>.h{font-size:15px;fill:#111;font-weight:bold}.c{font-size:12px;fill:#333}.s{font-size:11px;fill:#555}.g{fill:#cfcfcf}.o{fill:none;stroke:#444;stroke-width:1.5}</style>
+
+  <text x="20" y="26" class="h">色のライト</text>
+  <g transform="translate(20,40)">
+    <g class="g"><rect x="0" y="0" width="28" height="28"/><rect x="34" y="0" width="28" height="28"/><rect x="68" y="0" width="28" height="28"/><rect x="0" y="34" width="28" height="28"/><rect x="34" y="34" width="28" height="28"/><rect x="68" y="34" width="28" height="28"/><rect x="0" y="68" width="28" height="28"/><rect x="34" y="68" width="28" height="28"/></g><rect x="68" y="68" width="28" height="28" fill="#e8434a"/>
+    <text x="0" y="116" class="s">○ 無彩色に 1 色</text>
+  </g>
+  <g transform="translate(140,40)">
+    <rect x="0" y="0" width="28" height="28" fill="#e84"/><rect x="34" y="0" width="28" height="28" fill="#48c"/><rect x="68" y="0" width="28" height="28" fill="#c4c"/><rect x="0" y="34" width="28" height="28" fill="#4a8"/><rect x="34" y="34" width="28" height="28" fill="#ec4"/><rect x="68" y="34" width="28" height="28" fill="#8c4"/><rect x="0" y="68" width="28" height="28" fill="#48e"/><rect x="34" y="68" width="28" height="28" fill="#c84"/><rect x="68" y="68" width="28" height="28" fill="#e8434a"/>
+    <text x="0" y="116" class="s">× 色が多いと</text><text x="0" y="130" class="s">主役が消える</text>
+  </g>
+  <g transform="translate(260,40)">
+    <g class="g"><rect x="0" y="0" width="28" height="28"/><rect x="68" y="0" width="28" height="28"/><rect x="0" y="34" width="28" height="28"/><rect x="34" y="34" width="28" height="28"/><rect x="68" y="34" width="28" height="28"/><rect x="0" y="68" width="28" height="28"/><rect x="34" y="68" width="28" height="28"/></g><rect x="34" y="0" width="28" height="28" fill="#48c" opacity="0.35"/><rect x="68" y="68" width="28" height="28" fill="#e8434a"/>
+    <text x="0" y="116" class="s">○ 主役以外の</text><text x="0" y="130" class="s">色を引く</text>
+  </g>
+
+  <text x="400" y="26" class="h">地のライト</text>
+  <g transform="translate(400,40)">
+    <g class="o"><rect x="0" y="0" width="28" height="28"/><rect x="34" y="0" width="28" height="28"/><rect x="68" y="0" width="28" height="28"/><rect x="0" y="34" width="28" height="28"/><rect x="34" y="34" width="28" height="28"/><rect x="68" y="34" width="28" height="28"/><rect x="34" y="68" width="28" height="28"/><rect x="68" y="68" width="28" height="28"/></g><rect x="0" y="68" width="28" height="28" fill="none" stroke="#222" stroke-width="4"/>
+    <text x="0" y="116" class="s">× 枠線を太く</text><text x="0" y="130" class="s">しても弱い</text>
+  </g>
+  <g transform="translate(520,40)">
+    <g class="o"><rect x="0" y="0" width="28" height="28"/><rect x="34" y="0" width="28" height="28"/><rect x="68" y="0" width="28" height="28"/><rect x="0" y="34" width="28" height="28"/><rect x="34" y="34" width="28" height="28"/><rect x="68" y="34" width="28" height="28"/><rect x="34" y="68" width="28" height="28"/><rect x="68" y="68" width="28" height="28"/></g><rect x="0" y="68" width="28" height="28" fill="#333"/>
+    <text x="0" y="116" class="s">○ 主役だけ</text><text x="0" y="130" class="s">色ベタの面に</text>
+  </g>
+
+  <text x="660" y="26" class="h">揃えないライト（秩序を作ってから崩す）</text>
+  <g transform="translate(660,40)">
+    <g class="g"><rect x="0" y="0" width="28" height="28"/><rect x="34" y="0" width="28" height="28"/><rect x="68" y="0" width="28" height="28"/><rect x="0" y="34" width="28" height="28"/><rect x="68" y="34" width="28" height="28"/><rect x="0" y="68" width="28" height="28"/><rect x="34" y="68" width="28" height="28"/><rect x="68" y="68" width="28" height="28"/></g><rect x="34" y="34" width="28" height="28" fill="#888" transform="rotate(30 48 48)"/>
+    <text x="0" y="116" class="s">○ 1 つを傾ける</text>
+  </g>
+  <g transform="translate(780,40)">
+    <g class="g"><rect x="0" y="0" width="28" height="28"/><rect x="34" y="0" width="28" height="28"/><rect x="68" y="0" width="28" height="28"/><rect x="0" y="34" width="28" height="28"/><rect x="0" y="68" width="28" height="28"/><rect x="34" y="68" width="28" height="28"/><rect x="68" y="68" width="28" height="28"/><rect x="34" y="34" width="28" height="28"/></g><rect x="80" y="40" width="28" height="28" fill="#888"/>
+    <text x="0" y="116" class="s">○ 1 つを</text><text x="0" y="130" class="s">列からずらす</text>
+  </g>
+  <g transform="translate(900,40)">
+    <g class="g"><rect x="0" y="0" width="28" height="28"/><rect x="34" y="0" width="28" height="28"/><rect x="68" y="0" width="28" height="28"/><rect x="0" y="34" width="28" height="28"/><rect x="68" y="34" width="28" height="28"/><rect x="0" y="68" width="28" height="28"/><rect x="34" y="68" width="28" height="28"/><rect x="68" y="68" width="28" height="28"/></g><rect x="34" y="34" width="28" height="28" fill="#cfcfcf" stroke="#222" stroke-width="2"/>
+    <text x="0" y="116" class="s">× 枠線を</text><text x="0" y="130" class="s">足すだけは弱い</text>
+  </g>
+
+  <text x="20" y="200" class="h">サイズのライト（見本：15 種のスパイスのうち 2 つを特別扱いする）</text>
+  <g transform="translate(20,215)">
+    <g class="g">
+      <circle cx="25" cy="25" r="20"/><circle cx="75" cy="25" r="20"/><circle cx="125" cy="25" r="20"/><circle cx="175" cy="25" r="20"/><circle cx="225" cy="25" r="20"/>
+      <circle cx="25" cy="75" r="20"/><circle cx="75" cy="75" r="20"/><circle cx="125" cy="75" r="20"/><circle cx="175" cy="75" r="20"/><circle cx="225" cy="75" r="20"/>
+      <circle cx="25" cy="125" r="20"/><circle cx="75" cy="125" r="20"/><circle cx="125" cy="125" r="20"/><circle cx="175" cy="125" r="20"/><circle cx="225" cy="125" r="20"/>
+    </g>
+    <text x="7" y="8" font-size="8" fill="#c33">FEATURE</text><text x="207" y="108" font-size="8" fill="#c33">FEATURE</text>
+    <text x="0" y="172" class="c">× 文字（FEATURE）を足すだけ</text><text x="0" y="188" class="s">同じ大きさのままでは、離れると特別扱いが分からない</text>
+  </g>
+  <g transform="translate(360,215)">
+    <circle cx="45" cy="45" r="42" fill="#c8a060"/>
+    <g class="g">
+      <circle cx="115" cy="20" r="15"/><circle cx="155" cy="20" r="15"/><circle cx="195" cy="20" r="15"/><circle cx="235" cy="20" r="15"/>
+      <circle cx="115" cy="60" r="15"/><circle cx="155" cy="60" r="15"/><circle cx="195" cy="60" r="15"/><circle cx="235" cy="60" r="15"/>
+      <circle cx="20" cy="115" r="15"/><circle cx="60" cy="115" r="15"/><circle cx="100" cy="115" r="15"/><circle cx="140" cy="115" r="15"/>
+      <circle cx="20" cy="150" r="15"/>
+    </g>
+    <circle cx="205" cy="125" r="42" fill="#c8a060"/>
+    <text x="0" y="192" class="c">○ 2 つを思い切って大きく、対角に置く</text><text x="0" y="208" class="s">ほかをやや小さくしてバランスを取る。文字がなくても伝わる</text>
+  </g>
+  <g transform="translate(700,215)">
+    <text x="0" y="12" class="c">主役の大きさは、脇役が決める</text>
+    <g class="g"><rect x="0" y="25" width="30" height="30"/><rect x="36" y="25" width="30" height="30"/><rect x="0" y="61" width="30" height="30"/></g><rect x="36" y="61" width="80" height="80" fill="#555"/>
+    <text x="0" y="160" class="s">脇役が大きい → はみ出すほど大きく</text>
+    <g fill="#cfcfcf"><rect x="170" y="30" width="10" height="10"/><rect x="186" y="30" width="10" height="10"/><rect x="202" y="30" width="10" height="10"/><rect x="170" y="46" width="10" height="10"/><rect x="202" y="46" width="10" height="10"/><rect x="170" y="62" width="10" height="10"/><rect x="186" y="62" width="10" height="10"/><rect x="202" y="62" width="10" height="10"/></g><rect x="184" y="44" width="14" height="14" fill="#555"/>
+    <text x="160" y="96" class="s">脇役が小さい</text><text x="160" y="110" class="s">→ 少しだけ大きく</text>
+  </g>
+  <text x="20" y="520" font-size="11" fill="#777">書籍の見本（第 2 章「スポットライト」）をもとに作り直した図。スパイスの写真は丸で代用している。</text>
+</svg>
