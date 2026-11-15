@@ -258,7 +258,7 @@ async function testFileLoading(browser) {
   const closedByEsc = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   record('TC-FILE-002',
     menuState.opened && closedByOutside && closedByEsc
-    && JSON.stringify(menuState.items) === JSON.stringify(['ファイルを開く…', 'フォルダを開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)']),
+    && JSON.stringify(menuState.items) === JSON.stringify(['ファイルを開く…', 'フォルダを開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)', 'ミュージアム・ウォーク サンプル (museum-walk-sample.md)']),
     JSON.stringify({ ...menuState, closedByOutside, closedByEsc }));
 
   // TC-FILE-003 未編集の状態での読み込みと同梱サンプル選択
@@ -280,6 +280,12 @@ async function testFileLoading(browser) {
   await waitRendered(page);
   const extraSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
   const extraSampleMatched = extraSampleValue === fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample_extra1.md'), 'utf8').replace(/^\uFEFF/, '');
+  await page.click('#btn-file-menu');
+  await page.click('#menu-sample-museum-walk');
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value.includes('# 回遊する文書'));
+  await waitRendered(page);
+  const museumSampleValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  const museumSampleMatched = museumSampleValue === fs.readFileSync(path.join(APP_DIR, 'samples', 'museum-walk-sample.md'), 'utf8').replace(/^\uFEFF/, '');
   await page.evaluate(() => { document.getElementById('markdown-editor').value = ''; lastLoadedMarkdown = ''; renderApp(); });
   await waitRendered(page);
   const dialogOnFirstLoad = await loadSample(page);
@@ -292,7 +298,7 @@ async function testFileLoading(browser) {
   const editorValue = await page.evaluate(() => document.getElementById('markdown-editor').value);
   after.sameAsFile = editorValue === await formattedForLoad(page, fs.readFileSync(SAMPLE, 'utf8').replace(/^\uFEFF/, ''));
   record('TC-FILE-003',
-    !dialogOnFirstLoad && visualSampleMatched && notationSampleMatched && extraSampleMatched && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast),
+    !dialogOnFirstLoad && visualSampleMatched && notationSampleMatched && extraSampleMatched && museumSampleMatched && after.sameAsFile && after.h1 === 'Lucivo サンプル文書' && after.cards > 0 && /読み込みました/.test(after.toast),
     JSON.stringify({ dialogOnFirstLoad, visualSampleMatched, notationSampleMatched, extraSampleMatched, ...after }));
   record('TC-FILE-006', after.inputCleared, `file-input.value cleared: ${after.inputCleared}`);
 
