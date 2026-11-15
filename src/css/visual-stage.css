@@ -198,7 +198,8 @@ html.is-stage-show .stage-hud {
   pointer-events: none;
   color: #CBD5E1;
   font-family: 'Inter', 'Noto Sans JP', sans-serif;
-  font-size: 0.62rem;
+  /* html.is-stage-show は版面縮小のためルート font-size を変えるため、HUD は rem ではなく px 基準にする */
+  font-size: clamp(13px, 1.05vw, 16px);
 }
 html.is-stage-show body:not([data-appearance="dark"]) .stage-hud {
   color: #475569;
@@ -241,7 +242,7 @@ body:not([data-appearance="dark"]) .stage-hud::before {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.45rem 1rem;
+  gap: 0.45em 1em;
 }
 .stage-hud-title {
   flex: 1;
@@ -258,7 +259,7 @@ body:not([data-appearance="dark"]) .stage-hud::before {
 }
 .stage-hud-actions {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.35em;
   pointer-events: auto;
   transition: opacity 0.4s ease;
 }
@@ -267,7 +268,7 @@ html.is-stage-idle .stage-hud-actions {
   pointer-events: none;
 }
 .stage-hud-actions button {
-  padding: 0.25rem 0.65rem;
+  padding: 0.35em 0.75em;
   border: 1px solid rgba(148, 163, 184, 0.5);
   border-radius: 6px;
   background: rgba(15, 23, 42, 0.72);
@@ -279,28 +280,6 @@ body:not([data-appearance="dark"]) .stage-hud-actions button {
   background: rgba(255, 255, 255, 0.85);
   color: #1E293B;
 }
-@media (max-width: 767.98px) {
-  html.is-stage-show .stage-hud {
-    font-size: 0.8rem;
-  }
-  .stage-hud-bar {
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    gap: 0.4rem 0.6rem;
-  }
-  .stage-hud-actions {
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-  .stage-hud-actions button {
-    min-height: 34px;
-    padding: 0.35rem 0.65rem;
-  }
-}
-@media (max-height: 520px) {
-  html.is-stage-show #visual-stage-container {
-    padding: 3dvh 4vw calc(52px + env(safe-area-inset-bottom, 0px));
-  }
-}
 .stage-hud-actions button:hover,
 .stage-hud-actions button.is-active {
   border-color: currentColor;
@@ -309,10 +288,44 @@ body:not([data-appearance="dark"]) .stage-hud-actions button {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 7vh;
+  bottom: max(7vh, 58px);
   text-align: center;
   opacity: 0;
   animation: stage-hint 6s ease both;
+}
+@media (pointer: coarse), (max-width: 767.98px) {
+  html.is-stage-show .stage-hud {
+    font-size: clamp(14px, 1.6vw, 16px);
+  }
+  .stage-hud-bar {
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 0.4em 0.6em;
+  }
+  .stage-hud-actions {
+    flex-wrap: wrap;
+    gap: 0.35em;
+  }
+  .stage-hud-actions button {
+    min-height: 36px;
+    padding: 0.4em 0.8em;
+  }
+}
+@media (max-width: 767.98px) {
+  html.is-stage-show #visual-stage-container {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+  }
+  .stage-hint {
+    bottom: calc(136px + env(safe-area-inset-bottom, 0px));
+    padding: 0 4vw;
+  }
+}
+@media (max-height: 520px) {
+  html.is-stage-show #visual-stage-container {
+    padding: 3dvh 4vw calc(58px + env(safe-area-inset-bottom, 0px));
+  }
+  .stage-hint {
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
 }
 .stage-sweep {
   position: absolute;
