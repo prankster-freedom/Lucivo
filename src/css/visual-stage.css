@@ -298,7 +298,9 @@ body:not([data-appearance="dark"]) .stage-hud-actions button {
     font-size: clamp(14px, 1.6vw, 16px);
   }
   .stage-hud-bar {
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    left: max(2.5vw, calc(16px + env(safe-area-inset-left, 0px)));
+    right: max(2.5vw, calc(16px + env(safe-area-inset-right, 0px)));
+    bottom: calc(48px + env(safe-area-inset-bottom, 0px));
     gap: 0.4em 0.6em;
   }
   .stage-hud-actions {
@@ -310,21 +312,28 @@ body:not([data-appearance="dark"]) .stage-hud-actions button {
     padding: 0.4em 0.8em;
   }
 }
+@media (pointer: coarse) and (orientation: landscape) {
+  .stage-hud-bar {
+    left: max(64px, calc(24px + env(safe-area-inset-left, 0px)));
+    right: max(64px, calc(24px + env(safe-area-inset-right, 0px)));
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+}
 @media (max-width: 767.98px) {
   html.is-stage-show #visual-stage-container {
-    padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px));
   }
   .stage-hint {
-    bottom: calc(136px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(172px + env(safe-area-inset-bottom, 0px));
     padding: 0 4vw;
   }
 }
 @media (max-height: 520px) {
   html.is-stage-show #visual-stage-container {
-    padding: 3dvh 4vw calc(58px + env(safe-area-inset-bottom, 0px));
+    padding: 3dvh 4vw calc(72px + env(safe-area-inset-bottom, 0px));
   }
   .stage-hint {
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }
 .stage-sweep {
