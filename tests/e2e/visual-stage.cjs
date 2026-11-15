@@ -964,6 +964,12 @@ async function testCoverAndTables(browser) {
     const metricVals = Array.from(metricSlab.querySelectorAll('.vs-point-title.vs-metric-value'));
     const normalTitle = normalSlab.querySelector('.vs-point-title');
     const metricFontPx = metricVals[0] ? parseFloat(getComputedStyle(metricVals[0]).fontSize) : 0;
+    const unitEls = Array.from(metricSlab.querySelectorAll('.vs-point-title.vs-metric-value .vs-metric-unit'));
+    const unitFontPx = unitEls[0] ? parseFloat(getComputedStyle(unitEls[0]).fontSize) : 0;
+    const metricDisplayOk = metricVals.every(el => {
+      const cs = getComputedStyle(el);
+      return cs.display === 'inline-block' && parseFloat(cs.marginRight) >= 6;
+    });
     const normalFontPx = normalTitle ? parseFloat(getComputedStyle(normalTitle).fontSize) : 0;
     const tabular = metricVals.every(el => /tabular-nums/.test(getComputedStyle(el).fontVariantNumeric));
     const barAfter = metricVals.every(el => parseFloat(getComputedStyle(el, '::after').height) >= 2);
@@ -972,7 +978,10 @@ async function testCoverAndTables(browser) {
       tpl: metricSlab.classList.contains('vs-tpl-points'),
       metricCount: metricItems.length,
       valCount: metricVals.length,
+      unitCount: unitEls.length,
       metricFontPx,
+      unitFontPx,
+      metricDisplayOk,
       normalFontPx,
       tabular,
       barAfter,
@@ -980,8 +989,9 @@ async function testCoverAndTables(browser) {
     };
   });
   await page.locator('#visual-stage-container .exhibition-slab').nth(0).screenshot({ path: path.join(SHOT_DIR, 'vtpl-kpi-metrics.png') });
-  const vtpl18Ok = vtpl18.tpl && vtpl18.metricCount === 3 && vtpl18.valCount === 3
-    && vtpl18.metricFontPx >= vtpl18.normalFontPx * 1.4 && vtpl18.tabular && vtpl18.barAfter && vtpl18.normalHasMetric === 0;
+  const vtpl18Ok = vtpl18.tpl && vtpl18.metricCount === 3 && vtpl18.valCount === 3 && vtpl18.unitCount === 3
+    && vtpl18.metricFontPx >= vtpl18.normalFontPx * 1.4 && vtpl18.unitFontPx > 0 && vtpl18.unitFontPx <= vtpl18.metricFontPx * 0.7
+    && vtpl18.metricDisplayOk && vtpl18.tabular && vtpl18.barAfter && vtpl18.normalHasMetric === 0;
   record('TC-VTPL-018', vtpl18Ok, JSON.stringify(vtpl18));
 
   // TC-VTPL-019 タイムライン・ロードマップ修飾（FR-029）と Before / After 比較ペアカード修飾（FR-030）
@@ -1155,6 +1165,61 @@ async function testCoverAndTables(browser) {
     && firstSrcCircles.length > 500
     && firstSrcShapes !== firstSrcCircles;
   record('TC-VTPL-025', vtpl25Ok, JSON.stringify({ mathPlotVisual, mathPlotStandard, styleChanged: firstSrcShapes !== firstSrcCircles }));
+
+  // TC-VTPL-026 Visual モードの組版ディティール（見出し折り返し・標準リスト装飾・複数リスト並列グリッド）
+  const detailsMd = [
+    '# 組版ディティール確認',
+    '',
+    '## 【文書量比較】箇条書きの項目数・文字量が多い場合（標準リストへの自動切替）',
+    '',
+    '長文リストは標準リストで表示されます。',
+    '',
+    '- 項目1: 自動フォールバックの確認用長文アイテムです',
+    '- 項目2: 自動フォールバックの確認用長文アイテムです',
+    '- 項目3: 自動フォールバックの確認用長文アイテムです',
+    '- 項目4: 自動フォールバックの確認用長文アイテムです',
+    '- 項目5: 自動フォールバックの確認用長文アイテムです',
+    '- 項目6: 自動フォールバックの確認用長文アイテムです',
+    '- 項目7: 自動フォールバックの確認用長文アイテムです',
+    '',
+    '## リスト',
+    '',
+    '- 箇条書き',
+    '  - 入れ子の箇条書き',
+    '- 箇条書き2',
+    '',
+    '1. 番号付きリスト',
+    '2. 番号付きリスト2',
+    '',
+    '- [x] 完了したタスク',
+    '- [ ] 未完了のタスク'
+  ].join('\n');
+  await setDocument(page, detailsMd);
+  const vtpl26 = await page.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab');
+    const h2 = slabs[0] ? slabs[0].querySelector('h2') : null;
+    const h2Cs = h2 ? getComputedStyle(h2) : null;
+    const fallbackUl = slabs[0] ? slabs[0].querySelector('ul') : null;
+    const listSlab = slabs[1];
+    const cards = listSlab ? Array.from(listSlab.querySelectorAll('.vs-list-grid > .vs-list-card')) : [];
+    const cardTops = cards.map(c => Math.round(c.getBoundingClientRect().top));
+    const sameRow = cardTops.length === 3 && Math.max(...cardTops) - Math.min(...cardTops) <= 4;
+    const stdOl = listSlab ? listSlab.querySelector('ol') : null;
+    const chk = listSlab ? listSlab.querySelector('input[type="checkbox"]') : null;
+    return {
+      wordBreak: h2Cs ? h2Cs.wordBreak : '',
+      textWrap: h2Cs ? h2Cs.textWrap : '',
+      fallbackListStyle: fallbackUl ? getComputedStyle(fallbackUl).listStyleType : '',
+      olListStyle: stdOl ? getComputedStyle(stdOl).listStyleType : '',
+      chkAppearance: chk ? getComputedStyle(chk).appearance : '',
+      cardCount: cards.length,
+      sameRow
+    };
+  });
+  const vtpl26Ok = vtpl26.wordBreak === 'auto-phrase' && vtpl26.textWrap === 'balance'
+    && vtpl26.fallbackListStyle === 'none' && vtpl26.olListStyle === 'none'
+    && vtpl26.chkAppearance === 'none' && vtpl26.cardCount === 3 && vtpl26.sameRow;
+  record('TC-VTPL-026', vtpl26Ok, JSON.stringify(vtpl26));
 
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();

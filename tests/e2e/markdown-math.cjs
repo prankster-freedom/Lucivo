@@ -70,7 +70,10 @@ function inspectMarkdown(isVisual) {
       const indented = li.every(Boolean) && li[0].getBoundingClientRect().left < li[1].getBoundingClientRect().left && li[1].getBoundingClientRect().left < li[2].getBoundingClientRect().left;
       const olType = ol && cs(ol).listStyleType;
       const taskType = task && cs(task).listStyleType;
-      return { ok: types.join() === 'disc,circle,square' && olType === 'decimal' && indented && taskType === 'none', types, olType, indented, taskType };
+      const styleOk = isVisual
+        ? types.join() === 'none,none,none' && olType === 'none' && cs(li[0], '::before').content !== 'none'
+        : types.join() === 'disc,circle,square' && olType === 'decimal';
+      return { ok: styleOk && indented && taskType === 'none', types, olType, indented, taskType };
     })(),
     link: link && (() => {
       const s = cs(link);

@@ -94,6 +94,19 @@ export function applySlabTemplate(template, els) {
         if (METRIC_TITLE_RE.test(titleText) && !TIMELINE_TITLE_RE.test(titleText)) {
           li.classList.add('vs-metric-item');
           head.classList.add('vs-metric-value');
+          if (head.childNodes.length === 1 && head.firstChild.nodeType === Node.TEXT_NODE) {
+            const metricParts = /^([+\-−±≈~]?[¥$€£]?\d[\d,]*(?:\.\d+)?)\s*(.+)$/.exec(titleText);
+            if (metricParts) {
+              const numSpan = document.createElement('span');
+              numSpan.className = 'vs-metric-num';
+              numSpan.textContent = metricParts[1];
+              const unitSpan = document.createElement('span');
+              unitSpan.className = 'vs-metric-unit';
+              unitSpan.textContent = metricParts[2];
+              head.textContent = '';
+              head.append(numSpan, unitSpan);
+            }
+          }
         }
       }
       const ornament = document.createElement('span');
@@ -154,6 +167,20 @@ export function applySlabTemplate(template, els) {
     last.classList.add('vs-quote');
     const cite = last.lastElementChild;
     if (last.children.length > 1 && /^\s*(—|―|--)/.test(cite.textContent)) cite.classList.add('vs-quote-cite');
+  } else if (template === 'standard' && els.length >= 2 && els.every(el => el.tagName === 'UL' || el.tagName === 'OL')) {
+    const allShortItems = els.every(list => Array.from(list.querySelectorAll('li')).every(li => li.textContent.trim().length <= 60));
+    if (allShortItems) {
+      const grid = document.createElement('div');
+      grid.className = 'vs-list-grid';
+      grid.style.setProperty('--vs-list-cols', String(Math.min(els.length, 3)));
+      els[0].before(grid);
+      els.forEach(list => {
+        const card = document.createElement('div');
+        card.className = 'vs-list-card';
+        card.appendChild(list);
+        grid.appendChild(card);
+      });
+    }
   }
 }
 

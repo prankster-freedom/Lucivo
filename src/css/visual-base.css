@@ -331,6 +331,8 @@ body[data-appearance="dark"] .exhibition-slab {
   align-items: center;
   gap: 0.75rem;
   color: var(--text-primary);
+  word-break: auto-phrase;
+  text-wrap: balance;
 }
 
 .exhibition-num-badge {
@@ -385,4 +387,110 @@ body[data-appearance="dark"] .exhibition-slab {
   .exhibition-slab-split > .exhibition-slab-body {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ==================== Visual モード標準リストのカスタム装飾（#4） ==================== */
+.exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)) {
+  list-style: none;
+  padding-left: 0;
+}
+.exhibition-slab ul:not(.vs-points):not(.vs-cover-agenda) > li:not(:has(> input[type="checkbox"])) {
+  position: relative;
+  padding-left: 1.35rem;
+  margin: 0.45rem 0;
+  line-height: 1.65;
+}
+.exhibition-slab ul:not(.vs-points):not(.vs-cover-agenda) > li:not(:has(> input[type="checkbox"]))::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.65em;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--vs-c1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vs-c1) 18%, transparent);
+}
+.exhibition-slab ul:not(.vs-points):not(.vs-cover-agenda) ul > li:not(:has(> input[type="checkbox"]))::before {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+  border: 1.75px solid var(--vs-c2);
+  box-shadow: none;
+}
+.exhibition-slab ul:not(.vs-points):not(.vs-cover-agenda) ul ul > li:not(:has(> input[type="checkbox"]))::before {
+  border-radius: 2px;
+  border: none;
+  background: var(--vs-c3);
+}
+.exhibition-slab ol:not(.vs-steps):not(.vs-cover-agenda) {
+  counter-reset: vs-ol;
+}
+.exhibition-slab ol:not(.vs-steps):not(.vs-cover-agenda) > li {
+  counter-increment: vs-ol;
+  position: relative;
+  padding-left: 1.9rem;
+  margin: 0.45rem 0;
+  line-height: 1.65;
+}
+.exhibition-slab ol:not(.vs-steps):not(.vs-cover-agenda) > li::before {
+  content: counter(vs-ol);
+  position: absolute;
+  left: 0;
+  top: 0.18em;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--vs-c1) 14%, transparent);
+  color: color-mix(in srgb, var(--vs-c1) 82%, var(--vs-tone));
+}
+.exhibition-slab ol:not(.vs-steps):not(.vs-cover-agenda) ol > li::before {
+  background: color-mix(in srgb, var(--vs-c2) 16%, transparent);
+  color: color-mix(in srgb, var(--vs-c2) 82%, var(--vs-tone));
+}
+.exhibition-slab li:has(> input[type="checkbox"]) {
+  padding-left: 0;
+  margin-left: 0;
+  margin-top: 0.4rem;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  line-height: 1.65;
+}
+.exhibition-slab li:has(> input[type="checkbox"])::before {
+  content: none;
+}
+.exhibition-slab li > input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0.3em 0 0;
+  border-radius: 5px;
+  border: 1.75px solid color-mix(in srgb, var(--vs-c1) 45%, var(--border-strong));
+  background: var(--vs-card-bg);
+  position: relative;
+}
+.exhibition-slab li > input[type="checkbox"]:checked {
+  border-color: var(--vs-c1);
+  background: var(--vs-c1);
+}
+.exhibition-slab li > input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.29rem;
+  top: 0.1rem;
+  width: 0.28rem;
+  height: 0.54rem;
+  border: solid #FFFFFF;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
