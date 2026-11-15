@@ -29,7 +29,7 @@ export const RECENT_FOLDER_KEY = 'recentFolder';
 // 同梱サンプルとして開いた文書のファイル名（同梱サンプルでなければ null）（DD-FILE-081）
 // 同梱サンプルのフォルダ（index.html からの相対パス）と、サンプルのファイル名
 export const SAMPLES_DIR = 'samples';
-export const BUNDLED_SAMPLES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md'];
+export const BUNDLED_SAMPLES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md', 'museum-walk-sample.md'];
 // フォルダの画像のパス → blob URL（読み込み中は Promise）（DD-FILE-076）
 export const folderImageUrls = new Map();
 // File System Access API が使えなかったとき、次からはフォルダの選択の入力欄を使う（DD-FILE-071）
