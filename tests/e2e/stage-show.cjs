@@ -818,6 +818,82 @@ async function testStageOverviewPointer(browser) {
 
   if (page.consoleErrors.length) record('TC-SHOW-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
+
+  // TC-SHOW-025 HUD の操作説明とボタンの文字サイズ・重なり防止（#124）
+  const desktopPage = await openStagePage(browser, { width: 1440, height: 900 });
+  const sampleMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
+  await setDocument(desktopPage, sampleMd);
+  await desktopPage.click('#btn-stage-show');
+  await desktopPage.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.showState().active);
+  const desktopHud = await desktopPage.evaluate(() => {
+    const hud = document.getElementById('stage-hud');
+    const hint = hud.querySelector('.stage-hint');
+    const btn = hud.querySelector('.stage-hud-actions button');
+    return {
+      hudFont: parseFloat(getComputedStyle(hud).fontSize),
+      hintFont: parseFloat(getComputedStyle(hint).fontSize),
+      btnFont: parseFloat(getComputedStyle(btn).fontSize)
+    };
+  });
+  await desktopPage.context().close();
+
+  const mobileLandCtx = await browser.newContext({ viewport: { width: 891, height: 411 }, hasTouch: true, isMobile: true });
+  const mobileLandPage = await mobileLandCtx.newPage();
+  await mobileLandPage.goto(APP_URL, { waitUntil: 'load' });
+  await waitRendered(mobileLandPage);
+  await setDocument(mobileLandPage, sampleMd);
+  await mobileLandPage.click('#btn-stage-show');
+  await mobileLandPage.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.showState().active);
+  const mobileLandHud = await mobileLandPage.evaluate(() => {
+    const hud = document.getElementById('stage-hud');
+    const hint = hud.querySelector('.stage-hint');
+    const bar = hud.querySelector('.stage-hud-bar');
+    const btn = hud.querySelector('.stage-hud-actions button');
+    const hintRect = hint.getBoundingClientRect();
+    const barRect = bar.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    return {
+      rootFont: parseFloat(getComputedStyle(document.documentElement).fontSize),
+      hudFont: parseFloat(getComputedStyle(hud).fontSize),
+      hintFont: parseFloat(getComputedStyle(hint).fontSize),
+      btnFont: parseFloat(getComputedStyle(btn).fontSize),
+      btnHeight: btnRect.height,
+      noOverlap: hintRect.bottom <= barRect.top + 1
+    };
+  });
+  await mobileLandCtx.close();
+
+  const mobilePortCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const mobilePortPage = await mobilePortCtx.newPage();
+  await mobilePortPage.goto(APP_URL, { waitUntil: 'load' });
+  await waitRendered(mobilePortPage);
+  await setDocument(mobilePortPage, sampleMd);
+  await mobilePortPage.click('#btn-stage-show');
+  await mobilePortPage.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.showState().active);
+  const mobilePortHud = await mobilePortPage.evaluate(() => {
+    const hud = document.getElementById('stage-hud');
+    const hint = hud.querySelector('.stage-hint');
+    const bar = hud.querySelector('.stage-hud-bar');
+    const btn = hud.querySelector('.stage-hud-actions button');
+    const hintRect = hint.getBoundingClientRect();
+    const barRect = bar.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    return {
+      hudFont: parseFloat(getComputedStyle(hud).fontSize),
+      hintFont: parseFloat(getComputedStyle(hint).fontSize),
+      btnFont: parseFloat(getComputedStyle(btn).fontSize),
+      btnHeight: btnRect.height,
+      noOverlap: hintRect.bottom <= barRect.top + 1
+    };
+  });
+  await mobilePortCtx.close();
+
+  const show25Ok = desktopHud.hudFont >= 13 && desktopHud.hintFont >= 13 && desktopHud.btnFont >= 13
+    && mobileLandHud.hudFont >= 14 && mobileLandHud.hintFont >= 14 && mobileLandHud.btnFont >= 14
+    && mobileLandHud.btnHeight >= 36 && mobileLandHud.noOverlap
+    && mobilePortHud.hudFont >= 14 && mobilePortHud.hintFont >= 14 && mobilePortHud.btnFont >= 14
+    && mobilePortHud.btnHeight >= 36 && mobilePortHud.noOverlap;
+  record('TC-SHOW-025', show25Ok, JSON.stringify({ desktopHud, mobileLandHud, mobilePortHud }));
 }
 
 // TC-UI-001〜003: 狭い画面のヘッダー・Web 版の更新確認非表示・Split 境目ドラッグ（#88, #89, #82）
