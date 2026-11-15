@@ -2,7 +2,7 @@
 // 共通の品質（始められる・エラーがない・スマホの幅ではみ出さない・Esc で戻る）は present-modes.cjs の関門で確かめる。ここでは体験の核心だけを確かめる。
 // 確かめた場面のスクリーンショット（ゲラ）を SHOT_DIR に mw-*.png で残す（dtp の校正で使う）。
 const path = require('path');
-const { record, SHOT_DIR, startWebServer, openWebPageWithSample, setDocument } = require('../helpers.cjs');
+const { record, SHOT_DIR, startWebServer, openWebPageWithSample, setDocument, waitRendered } = require('../helpers.cjs');
 
 const MODE = 'museum-walk';
 
@@ -178,6 +178,42 @@ async function testMuseumWalk(browser) {
     record('TC-MWLK-006', ri.reducedMotion && sliding.length > 0 && sliding.every(t => /translate3d\(0px, 0px, 0px\)/.test(t)) && Number(flash) === 0 && reduced.consoleErrors.length === 0,
       JSON.stringify({ reducedMotion: ri.reducedMotion, sliding: sliding.slice(0, 2), flash, errors: reduced.consoleErrors }));
     await reduced.context().close();
+
+    // TC-MWLK-007: タッチ主体端末（pointer: coarse）のスマホではメニュー項目が無効化され、デスクトップでは有効であること（#125）
+    const checkRestricted = async viewport => {
+      const ctx = await browser.newContext({ viewport, hasTouch: true, isMobile: true });
+      const p = await ctx.newPage();
+      await p.goto(server.url, { waitUntil: 'load' });
+      await waitRendered(p);
+      await p.click('#btn-present-menu');
+      const state = await p.evaluate(id => {
+        const btn = document.getElementById(`menu-present-${id}`);
+        return {
+          disabled: !!btn && btn.disabled,
+          ariaDisabled: btn ? btn.getAttribute('aria-disabled') : null,
+          text: btn ? btn.textContent.trim() : '',
+          coarse: window.matchMedia('(pointer: coarse)').matches
+        };
+      }, MODE);
+      await ctx.close();
+      return state;
+    };
+    const mobilePort = await checkRestricted({ width: 390, height: 844 });
+    const mobileLand = await checkRestricted({ width: 891, height: 411 });
+    const desktopCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const desktop = await desktopCtx.newPage();
+    await desktop.goto(server.url, { waitUntil: 'load' });
+    await waitRendered(desktop);
+    await desktop.click('#btn-present-menu');
+    const desktopState = await desktop.evaluate(id => {
+      const btn = document.getElementById(`menu-present-${id}`);
+      return { disabled: !!btn && btn.disabled, text: btn ? btn.textContent.trim() : '' };
+    }, MODE);
+    await desktopCtx.close();
+    const mw7Ok = mobilePort.coarse && mobilePort.disabled && mobilePort.ariaDisabled === 'true' && /スマホ非対応/.test(mobilePort.text)
+      && mobileLand.coarse && mobileLand.disabled && mobileLand.ariaDisabled === 'true' && /スマホ非対応/.test(mobileLand.text)
+      && !desktopState.disabled && !/スマホ非対応/.test(desktopState.text);
+    record('TC-MWLK-007', mw7Ok, JSON.stringify({ mobilePort, mobileLand, desktopState }));
   } finally {
     await server.close();
   }
@@ -185,6 +221,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006'], fn: testMuseumWalk, timeoutMs: 180000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007'], fn: testMuseumWalk, timeoutMs: 180000 }
   ]
 };
