@@ -536,6 +536,50 @@ flowchart TD
   const visualRes = await inspectStyles();
 
   record('TC-DIAG-030', fastRes && fastRes.pass && visualRes && visualRes.pass, JSON.stringify({ fast: fastRes, visual: visualRes }));
+
+  // TC-DIAG-031 Mermaid 図表の組版品質改善（分岐ラベル揃い・サブグラフ重なり回避・円グラフドーナツ化）（#6〜#9）
+  const layoutDoc = [
+    '```mermaid',
+    'flowchart TD',
+    '  A[受付] --> B{在庫はある?}',
+    '  B -->|はい| C[出荷]',
+    '  B -->|いいえ| D[発注]',
+    '  D --> C',
+    '  subgraph Inv [在庫の引き当て]',
+    '    C --> E[完了]',
+    '  end',
+    '```',
+    '',
+    '```mermaid',
+    'pie title 利用ブラウザの割合',
+    '  "Chrome" : 62',
+    '  "Safari" : 20',
+    '  "Edge" : 12',
+    '  "その他" : 6',
+    '```'
+  ].join('\n');
+  await setDocument(page, layoutDoc);
+  await waitRendered(page);
+  const diag31 = await page.evaluate(() => {
+    const svgs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-viewport svg'));
+    const flow = svgs.find(s => s.getAttribute('aria-roledescription') === 'flowchart-v2');
+    const pie = svgs.find(s => s.getAttribute('aria-roledescription') === 'pie');
+    const parseY = tr => {
+      const m = /translate\(\s*[-\d.]+[\s,]+([-\d.]+)\s*\)/.exec(tr || '');
+      return m ? parseFloat(m[1]) : null;
+    };
+    const labels = flow ? Array.from(flow.querySelectorAll('g.edgeLabel')).filter(l => l.textContent.trim()) : [];
+    const ys = labels.map(l => parseY(l.getAttribute('transform'))).filter(y => y !== null);
+    const branchAligned = ys.length === 2 && Math.abs(ys[0] - ys[1]) <= 1;
+    const cluster = flow ? flow.querySelector('g.cluster') : null;
+    const hasClusterPill = !!(cluster && cluster.querySelector('.vs-cluster-pill-bg'));
+    const sliceFont = pie && pie.querySelector('text.slice') ? parseFloat(getComputedStyle(pie.querySelector('text.slice')).fontSize) : 0;
+    const legendFont = pie && pie.querySelector('g.legend text') ? parseFloat(getComputedStyle(pie.querySelector('g.legend text')).fontSize) : 0;
+    const hasDonutHole = !!(pie && pie.querySelector('.vs-pie-donut-hole'));
+    return { ys, branchAligned, hasClusterPill, sliceFont, legendFont, hasDonutHole };
+  });
+  const diag31Ok = diag31.branchAligned && diag31.hasClusterPill && diag31.sliceFont >= 20 && diag31.legendFont >= 18 && diag31.hasDonutHole;
+  record('TC-DIAG-031', diag31Ok, JSON.stringify(diag31));
   await page.context().close();
 }
 

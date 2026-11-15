@@ -18,6 +18,7 @@ import {
   getBlockCurve
 } from './mermaid-config';
 import { decorateVisualSvg } from './svg-visual-styles';
+import { applyDiagramLayoutFixes } from './svg-layout-fixes';
 
 // シーケンス図のライフライン・活性区間・メッセージ線・矢じりを、背景と見分けられる配色にする（NFR-004）
 export function styleSequenceDiagram(svg, colors) {
@@ -167,6 +168,7 @@ export function postProcessSvg(rawSvg, isVisualMode) {
     } else {
       decorateStandardSvg(svg, diagramType);
     }
+    applyDiagramLayoutFixes(svg, diagramType, isVisualMode);
     scopeSvgIds(svg);
     return svg.outerHTML;
   } catch (e) {
