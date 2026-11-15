@@ -49,6 +49,14 @@
   background: var(--panel-sub);
   outline: none;
 }
+.file-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.file-menu-item:disabled:hover,
+.file-menu-item:disabled:focus-visible {
+  background: transparent;
+}
 
 /* ==========================================================================
    フォルダの一覧（FR-044, DTP-008）

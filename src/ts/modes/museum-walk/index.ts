@@ -191,6 +191,12 @@ function buildPanel(root: HTMLElement): HTMLElement {
    ------------------------------------------------------------------------ */
 async function enter(host: ModeHost): Promise<boolean> {
   if (S.active || S.starting) return true;
+  if (typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches
+    && Math.min(window.innerWidth, window.innerHeight) <= 768) {
+    host.toast('ミュージアム・ウォークは現在スマホでは利用できません（PC でご利用ください）');
+    return false;
+  }
   if (host.isDocumentEmpty()) {
     host.toast(EMPTY_MESSAGE);
     return false;

@@ -145,18 +145,45 @@ function loadMode(id: string): Promise<boolean> {
   return loads.get(id)!;
 }
 
+// #123 の暫定対応（#125）: スマホの縦長画面で描画が欠ける不具合が解決するまで、タッチ主体端末では選択を制限する
+function isMobileTouchDevice(): boolean {
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches
+    && Math.min(window.innerWidth, window.innerHeight) <= 768;
+}
+
 // 発表のドロップダウンの項目を、埋め込まれた表の順に、ステージ発表の後ろへ作る（ARC-MODE-005）。closeMenus はメニューを閉じる関数
 export function setupPresentModes(closeMenus: () => void): void {
   const menu = document.getElementById('present-menu');
   if (!menu) return;
+  const syncRestrictions: Array<() => void> = [];
   PRESENT_MODES.forEach(({ id, label }) => {
     const item = document.createElement('button');
     item.id = `menu-present-${id}`;
     item.type = 'button';
     item.setAttribute('role', 'menuitem');
     item.className = 'file-menu-item';
-    item.textContent = label;
+    const sync = () => {
+      if (id === 'museum-walk' && isMobileTouchDevice()) {
+        item.disabled = true;
+        item.setAttribute('aria-disabled', 'true');
+        item.textContent = `${label}（スマホ非対応）`;
+        item.title = 'スマホでは表示崩れのため一時的に制限しています（PC でご利用ください）';
+      } else {
+        item.disabled = false;
+        item.removeAttribute('aria-disabled');
+        item.textContent = label;
+        item.removeAttribute('title');
+      }
+    };
+    sync();
+    syncRestrictions.push(sync);
     item.addEventListener('click', async () => {
+      if (id === 'museum-walk' && isMobileTouchDevice()) {
+        closeMenus();
+        showToast('ミュージアム・ウォークは現在スマホでは利用できません（PC でご利用ください）');
+        return;
+      }
       closeMenus();
       if (!(await loadMode(id))) {
         showToast('発表の見せ方を読み込めませんでした');
@@ -166,4 +193,10 @@ export function setupPresentModes(closeMenus: () => void): void {
     });
     menu.appendChild(item);
   });
+  const btn = document.getElementById('btn-present-menu');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      syncRestrictions.forEach(fn => fn());
+    });
+  }
 }
