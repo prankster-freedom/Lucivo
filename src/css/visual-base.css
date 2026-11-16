@@ -335,6 +335,32 @@ body[data-appearance="dark"] .exhibition-slab {
   text-wrap: balance;
 }
 
+/* 章の中の小見出し（h1・h3〜h6）のジャンプ率（DTP-004, #160）。本文 1 に対し h3 は 1.25、h4 は 1.1、h5・h6 は本文と同じ大きさのラベル調。
+   上の余白を下の余白より大きくして、見出しが直後の本文に属することを示す。章の中の h1 は h3 と同じ扱いにする（章の題は h2）。
+   通常モード（.prose-doc）は変えないため、Visualモードのスラブに限る */
+.exhibition-wrap .exhibition-slab :is(h1, h3) {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.4;
+  margin-top: 2rem;
+  margin-bottom: 0.6rem;
+}
+.exhibition-wrap .exhibition-slab h4 {
+  font-size: 1.1rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.45rem;
+}
+.exhibition-wrap .exhibition-slab :is(h5, h6) {
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  margin-top: 1.4rem;
+  margin-bottom: 0.4rem;
+}
+/* 章の題（h2）の直後は、題の下の余白だけで間を取る */
+.exhibition-wrap .exhibition-slab h2 + :is(h1, h3, h4, h5, h6) {
+  margin-top: 0;
+}
+
 .exhibition-num-badge {
   display: inline-flex;
   align-items: center;

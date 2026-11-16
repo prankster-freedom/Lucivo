@@ -1048,6 +1048,29 @@ async function testCoverAndTables(browser) {
     && vtpl19.beforeBorderStyle === 'dashed' && vtpl19.afterBandHeight >= 5;
   record('TC-VTPL-019', vtpl19Ok, JSON.stringify(vtpl19));
 
+  // TC-VTPL-027 章の中の小見出し（h1・h3〜h6）が本文に対して階層を持つ（DTP-004, #160）
+  const headingScale = await page.evaluate(() => {
+    const slab = document.querySelectorAll('#visual-stage-container .exhibition-slab')[2];
+    const body = document.createElement('div');
+    body.innerHTML = '<p>本文</p><h1>H1</h1><h3>H3</h3><h4>H4</h4><h5>H5</h5><h6>H6</h6>';
+    slab.appendChild(body);
+    const px = el => parseFloat(getComputedStyle(el).fontSize);
+    const m = (el, side) => parseFloat(getComputedStyle(el)[side]);
+    const base = px(body.querySelector('p'));
+    const h = tag => body.querySelector(tag);
+    const out = {
+      h1: +(px(h('h1')) / base).toFixed(2), h3: +(px(h('h3')) / base).toFixed(2), h4: +(px(h('h4')) / base).toFixed(2),
+      h5: +(px(h('h5')) / base).toFixed(2), h6: +(px(h('h6')) / base).toFixed(2),
+      h3SpaceAbove: m(h('h3'), 'marginTop'), h3SpaceBelow: m(h('h3'), 'marginBottom'),
+      h4SpaceAbove: m(h('h4'), 'marginTop'), h4SpaceBelow: m(h('h4'), 'marginBottom')
+    };
+    body.remove();
+    return out;
+  });
+  record('TC-VTPL-027', headingScale.h3 >= 1.2 && headingScale.h1 === headingScale.h3 && headingScale.h4 >= 1.05 && headingScale.h4 < headingScale.h3
+    && headingScale.h5 >= 1 && headingScale.h6 >= 1 && headingScale.h3SpaceAbove > headingScale.h3SpaceBelow * 2 && headingScale.h4SpaceAbove > headingScale.h4SpaceBelow * 2,
+  JSON.stringify(headingScale));
+
   // TC-VTPL-020 コード・ショーケース（FR-031）と表紙スペックバッジ・ドットマトリクス透かし（FR-032）
   const vtpl20Before = await page.evaluate(() => {
     const hero = document.querySelector('#visual-stage-container .exhibition-hero.vs-cover');
