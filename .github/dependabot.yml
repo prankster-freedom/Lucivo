@@ -1,0 +1,11 @@
+# version updates は GitHub Actions のアクションに限る（AGENTS.repo.md 7 章）。npm は対象にしない
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    labels:
+      - CI

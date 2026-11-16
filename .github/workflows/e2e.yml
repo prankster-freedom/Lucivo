@@ -10,10 +10,10 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v7
-    - uses: actions/setup-node@v7
+    - uses: actions/checkout@v7.0.1
+    - uses: actions/setup-node@v7.1.0
       with:
-        node-version: lts/*
+        node-version: 22
     - name: Install dependencies
       run: npm ci
     - name: Lint
@@ -28,12 +28,12 @@ jobs:
     outputs:
       e2e: ${{ steps.filter.outputs.e2e }}
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v7.0.1
       with:
         fetch-depth: 0
-    - uses: actions/setup-node@v7
+    - uses: actions/setup-node@v7.1.0
       with:
-        node-version: lts/*
+        node-version: 22
     - id: filter
       env:
         BASE: ${{ github.event.pull_request.base.sha }}
@@ -52,12 +52,12 @@ jobs:
     - name: Skip E2E if only docs changed
       if: ${{ needs.changes.outputs.e2e == 'false' }}
       run: echo "Skipping E2E tests because only documentation was changed."
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v7.0.1
       if: ${{ needs.changes.outputs.e2e != 'false' }}
-    - uses: actions/setup-node@v7
+    - uses: actions/setup-node@v7.1.0
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       with:
-        node-version: lts/*
+        node-version: 22
     - name: Install dependencies
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm ci
@@ -68,7 +68,7 @@ jobs:
     - name: Run E2E tests
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm test
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@v7.0.2
       if: ${{ !cancelled() && needs.changes.outputs.e2e != 'false' }}
       with:
         name: e2e-results
