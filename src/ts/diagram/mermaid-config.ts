@@ -202,7 +202,8 @@ export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', la
     themeCSS: nodeLabelThemeCss(isVisual),
     flowchart: {
       curve: getMermaidCurve(curve),
-      padding: 11,
+      // 2 段カードは上部に帯を足して文字を下げるため、上下の余白を確保する（#187）
+      padding: isVisual && state.infographicStyle === 'cards' ? 22 : 11,
       minNodeWidth: 0,
       nodeSpacing: 44,
       rankSpacing: 56,

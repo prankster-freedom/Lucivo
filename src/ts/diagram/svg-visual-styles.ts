@@ -253,7 +253,7 @@ export function decorateVisualCardNode(g: Element, uid: string, capGradients: st
   g.appendChild(cap);
 
   const label = g.querySelector(':scope > .label');
-  if (label) label.setAttribute('transform', `${label.getAttribute('transform') || ''} translate(0, ${capH / 2 + 2})`.trim());
+  if (label) label.setAttribute('transform', `${label.getAttribute('transform') || ''} translate(0, ${capH / 2})`.trim());
 
   const stepText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   stepText.setAttribute('x', String(x + 10));
