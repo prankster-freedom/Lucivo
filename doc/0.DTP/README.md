@@ -49,16 +49,20 @@ Lucivo の Visualモード（Visual Stage）の誌面設計の全体方針を定
 
 ## DTP-004 タイポグラフィ
 
-| 要素                         | 書体                             | 大きさ                          | ウェイト | 行送り |
-| :--------------------------- | :------------------------------- | :------------------------------ | :------- | :----- |
-| ヒーローの題名（`h1`）       | Plus Jakarta Sans / Noto Sans JP | `1.25rem`〜`1.5rem`             | 800      | 1.25   |
-| 章の見出し（`h2`）           | Plus Jakarta Sans / Noto Sans JP | `1.25rem`                       | 800      | —      |
-| ステートメント（`DTP-VTPL-050`） | Plus Jakarta Sans / Noto Sans JP | `clamp(1.2rem, 2.2vw, 1.6rem)` | 700   | 1.6    |
-| リード（`DTP-VTPL-020`）     | Inter / Noto Sans JP             | `clamp(1.1rem, 1.8vw, 1.35rem)` | 600      | 1.85   |
-| カード・手順の番号           | Plus Jakarta Sans                | `1.75rem`（カード）/ `1.05rem`（手順） | 800 | 1    |
-| カードの題（`DTP-VTPL-030`） | Inter / Noto Sans JP             | `1rem`                          | 700      | 1.5    |
-| 本文                         | Inter / Noto Sans JP             | `1rem`（ブラウザの既定）        | 400      | 1.75   |
+| 要素                                         | 書体                             | 大きさ                   | ウェイト | 行送り |
+| :------------------------------------------- | :------------------------------- | :----------------------- | :------- | :----- |
+| ヒーローの題名（`h1`）                       | Plus Jakarta Sans / Noto Sans JP | `1.25rem`〜`1.5rem`      | 800      | 1.25   |
+| 章の見出し（`h2`）                           | Plus Jakarta Sans / Noto Sans JP | `1.25rem`                | 800      | —      |
+| 章の中の小見出し（`h1`・`h3`、Visualモード） | Plus Jakarta Sans / Noto Sans JP | `1.25rem`                | 800      | 1.4    |
+| 章の中の小見出し（`h4`、Visualモード）       | Plus Jakarta Sans / Noto Sans JP | `1.1rem`                 | 700      | 1.4    |
+| 章の中の小見出し（`h5`・`h6`、Visualモード） | Plus Jakarta Sans / Noto Sans JP | `1rem`・灰色のラベル調   | 700      | 1.4    |
+| ステートメント（`DTP-VTPL-050`）             | Plus Jakarta Sans / Noto Sans JP | `clamp(1.2rem, 2.2vw, 1.6rem)` | 700 | 1.6   |
+| リード（`DTP-VTPL-020`）                     | Inter / Noto Sans JP             | `clamp(1.1rem, 1.8vw, 1.35rem)` | 600 | 1.85 |
+| カード・手順の番号                           | Plus Jakarta Sans                | `1.75rem`（カード）/ `1.05rem`（手順） | 800 | 1 |
+| カードの題（`DTP-VTPL-030`）                 | Inter / Noto Sans JP             | `1rem`                   | 700      | 1.5    |
+| 本文                                         | Inter / Noto Sans JP             | `1rem`（ブラウザの既定） | 400      | 1.75   |
 
+- 章の中の小見出し（`#160`）: Visualモードのスラブの中の小見出しは、本文 1 に対し `h3` を 1.25、`h4` を 1.1 とし、`h5`・`h6` は本文と同じ大きさの灰色のラベル調にする。上の余白（`h3` は `2rem`、`h4` は `1.6rem`）を下の余白（`0.6rem`、`0.45rem`）より大きくし、見出しが直後の本文に属することを示す。章の題（`h2`）の直後は上の余白を 0 にする。章の中の `h1` は `h3` と同じ扱いにする（章の題は `h2` で、`h1` は表紙の題のため）。本文との差が小さいと、見出しの階層が離れて見ても伝わらず、段落と区別できない。通常モード（高速）は変えない。
 - ジャンプ率: 本文 1 に対し、ステートメント 1.2〜1.6、リード 1.1〜1.35。章の見出しより大きくなるのはステートメントだけで、章の主役が「その一文」であることを示す。
 - 行の折り返し: ステートメントは `text-wrap: balance`、リードは `text-wrap: pretty` で、最後の行に 1〜2 文字だけが残る折り返しを避ける。雛形の文字（リード、カード、手順、ステートメント）は `word-break: auto-phrase` で文節の区切りで折り返し、「切り／替える」のような語の途中の改行を避ける（対応していないブラウザでは通常の折り返し）。禁則は `line-break: strict`（全体）に従う。
 
