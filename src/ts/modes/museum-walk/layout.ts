@@ -9,7 +9,7 @@ export const FLOOR = 360;
 export const SHAPES = {
   passage: { half: 520, ceil: -645 },
   hall: { half: 1100, ceil: -1500 },
-  alcove: { half: 300, ceil: -390 }
+  alcove: { half: 400, ceil: -460 }
 };
 
 // 区間ごとの色（DTP-MWLK-010）。手前にある門の数で決め、順に使う
@@ -39,10 +39,10 @@ export const LAYOUT = {
   hallAfter: 300,
   alcoveBefore: 300,
   alcoveInset: 300,     // 小部屋に入ってから、銘板まで
-  alcoveTail: 110,      // 銘板の奥の端から、小部屋の奥まで
+  alcoveTail: 220,      // 銘板の奥の端から、小部屋の奥まで
   alcoveAfter: 300,
   asideMaxW: 760,       // 銘板を広げる上限（広げすぎると、止まったときに画面に収まらない）
-  asideMaxH: 440,       // 銘板の高さの目安。越えるときは文字を小さくし、それでも越えるときは幅を広げる
+  asideMaxH: 380,       // 銘板の高さの目安。越えるときは文字を小さくし、それでも越えるときは幅を広げる
   endAfter: 900,        // 最後のパーツから、突き当たりまで
   endMin: 1600          // 最後の門から、突き当たりまでの最小
 };

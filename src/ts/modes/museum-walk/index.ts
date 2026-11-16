@@ -6,7 +6,7 @@
 import { readOutline, isOutlineEmpty } from './outline';
 import { layout, type Plan } from './layout';
 import { CAMERA_SPEC, REDUCED_MOTION, defaultCamera, loadCamera, direct, clamp, type Cam, type CameraValues } from './camera';
-import { buildWorld, createMeasurer, updateWorld, perspectiveFor, type WorldRefs } from './world';
+import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, type WorldRefs } from './world';
 import { attachInput, stepWalk, type Input } from './input';
 import { figureImages, revokeFigures, type FigureImages } from './figure';
 
@@ -18,6 +18,7 @@ interface ModeHost {
   setLights(on: boolean): void;
   toast(message: string): void;
   appearance(): 'dark' | 'light';
+  setAppearance(appearance: 'dark' | 'light'): Promise<HTMLElement | null>;
 }
 
 const EMPTY_MESSAGE = 'ミュージアム・ウォークで見せる文書がありません';
@@ -30,7 +31,8 @@ const S = {
   plan: null as Plan | null,
   refs: null as WorldRefs | null,
   input: null as Input | null,
-  figures: [] as FigureImages[],
+  figuresByAppearance: {} as Partial<Record<'dark' | 'light', FigureImages[]>>,
+  appearanceGen: 0,
   cam: null as Cam | null,
   camera: defaultCamera() as CameraValues,
   gaze: true,
@@ -68,6 +70,25 @@ function setLight(on: boolean): void {
   S.root?.classList.toggle('is-light', on);
 }
 
+async function applyStandAppearance(target: 'dark' | 'light'): Promise<void> {
+  const gen = ++S.appearanceGen;
+  let figs = S.figuresByAppearance[target];
+  if (!figs) {
+    const host = S.host;
+    if (!host) return;
+    const source = await host.setAppearance(target);
+    if (!S.active || gen !== S.appearanceGen || !source) return;
+    figs = readOutline(source).figures.map(svg => figureImages(svg));
+    if (!S.active || gen !== S.appearanceGen) {
+      revokeFigures(figs);
+      return;
+    }
+    S.figuresByAppearance[target] = figs;
+  }
+  if (!S.active || !S.refs) return;
+  updateStandAppearance(S.refs, figs, target);
+}
+
 function backToEntrance(): void {
   if (!S.cam || !S.plan) return;
   S.cam.z = S.plan.start;
@@ -79,7 +100,11 @@ function backToEntrance(): void {
 function command(key: string): boolean {
   if (key === 'Escape') exit();
   else if (key === 'g' || key === 'G') S.gaze = !S.gaze;
-  else if (key === 't' || key === 'T') setLight(!S.light);
+  else if (key === 't' || key === 'T') {
+    const next = !S.light;
+    setLight(next);
+    void applyStandAppearance(next ? 'light' : 'dark');
+  }
   else if (key === 'r' || key === 'R' || key === 'Home') backToEntrance();
   else if ((key === 'c' || key === 'C') && S.panel) S.panel.hidden = !S.panel.hidden;
   else return false;
@@ -232,8 +257,9 @@ async function enter(host: ModeHost): Promise<boolean> {
   const measurer = createMeasurer(root);
   S.plan = layout(outline, measurer.measure);
   measurer.dispose();
-  S.figures = outline.figures.map(svg => figureImages(svg));
-  S.refs = buildWorld(root, S.plan, S.figures, appearance);
+  const initialFigs = outline.figures.map(svg => figureImages(svg));
+  S.figuresByAppearance = { [appearance]: initialFigs };
+  S.refs = buildWorld(root, S.plan, initialFigs, appearance);
   buildChrome(root);
   S.panel = /museum-tune/.test(location.search + location.hash) ? buildPanel(root) : null;
 
@@ -264,8 +290,11 @@ function exit(): void {
   S.root = null;
   S.refs = null;
   S.panel = null;
-  revokeFigures(S.figures);
-  S.figures = [];
+  S.appearanceGen++;
+  for (const figs of Object.values(S.figuresByAppearance)) {
+    if (figs) revokeFigures(figs);
+  }
+  S.figuresByAppearance = {};
   document.documentElement.classList.remove('is-museum-walk');
   if (S.fullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
   S.fullscreen = false;

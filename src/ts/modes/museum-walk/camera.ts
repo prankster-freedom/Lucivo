@@ -29,13 +29,14 @@ export const CAMERA_SPEC: SpecRow[] = [
   ['fov', '視野（小さいほど広角）', 800, 420, 1500, 10],
   ['bob', '歩きの揺れ', 0, 0, 14, 0.5],
   ['門（通路の真ん中の見出し）'],
-  ['gateFar', '正面を向き始める距離', 1700, 600, 3500, 50],
-  ['gateNear', '正面を向き切る距離', 800, 100, 1600, 50],
+  ['gateFar', '正面を向き始める距離', 1350, 600, 3500, 50],
+  ['gateNear', '正面を向き切る距離', 650, 100, 1600, 50],
   ['gateAfter', '通り抜けたあと、正面を保つ距離', 400, 0, 1500, 50],
   ['広間（真ん中に図が立つ）'],
   ['hallPitch', '見上げる角度（度）', 7, 0, 16, 0.5],
   ['小部屋（引用）'],
-  ['alcoveX', '立つ位置（左右）', 40, -150, 150, 10],
+  ['alcoveX', '立つ位置（左右）', 190, -150, 270, 10],
+  ['alcoveYaw', '止まったときの向き（度）', 68, 30, 85, 1],
   ['縦長の画面'],
   ['portraitYaw', '止まったときの向きの下限（度）', 52, 0, 85, 1],
   ['portraitX', '立つ位置の下限', 240, 0, 380, 10]
@@ -64,8 +65,8 @@ export function loadCamera(target: CameraValues, values: Record<string, unknown>
 // カメラの状態。z は進む向き（-Z）の位置、vel は前へ進む速さ（px/s）、yaw は左向きが正（度）、userYaw はドラッグで見回した分
 export interface Cam { z: number; x: number; yaw: number; pitch: number; userYaw: number; vel: number; bob: number; }
 
-// 場所ごとの指示。w は効き具合（0〜1）。yaw・x・pitch は、その場所での向き・立つ位置・見上げる角度
-interface Cue { w: number; yaw?: number; x?: number; pitch?: number; }
+// 場所ごとの指示。w は効き具合（0〜1）。yaw・stopYaw・x・pitch は、その場所での向き・止まったときの向き・立つ位置・見上げる角度
+interface Cue { w: number; yaw?: number; stopYaw?: number; x?: number; pitch?: number; }
 
 export function sectionAt(plan: Plan, z: number): Section {
   return plan.sections.find(s => z <= s.from && z > s.to) || plan.sections[plan.sections.length - 1];
@@ -82,13 +83,13 @@ function cues(plan: Plan, C: CameraValues, z: number): Cue[] {
     list.push({ w, yaw: 0, x: 0 });
   }
   // 突き当たりの壁では、正面を向く
-  list.push({ w: 1 - smooth(1300, 2200, z - plan.end), yaw: 0, x: 0 });
-  // 広間では真ん中で正面を向いて見上げ、小部屋では壁の近くに立つ
+  list.push({ w: 1 - smooth(700, 1250, z - plan.end), yaw: 0, x: 0 });
+  // 広間では真ん中で正面を向いて見上げ、小部屋では十分な視距離と正対角度をとる
   for (const s of plan.sections) {
     if (!s.name) continue;
     const w = smooth(s.from + 700, s.from, z) * (1 - smooth(s.to + 500, s.to, z));
     if (s.name === 'hall') list.push({ w, yaw: 0, x: 0, pitch: C.hallPitch });
-    else list.push({ w, x: C.alcoveX });
+    else list.push({ w, x: C.alcoveX, stopYaw: C.alcoveYaw });
   }
   return list;
 }
@@ -97,15 +98,19 @@ function cues(plan: Plan, C: CameraValues, z: number): Cue[] {
 export function direct(cam: Cam, dt: number, plan: Plan, C: CameraValues, gaze: boolean, portrait: boolean): void {
   const speed = Math.min(1, Math.abs(cam.vel) / C.walkSpeed);
   // 縦長の狭い画面では、壁の文字が左右とも欠けずに入るよう、向きと立つ位置を合わせる
-  const stopYaw = portrait ? Math.max(C.stopYaw, C.portraitYaw) : C.stopYaw;
-  let yaw = gaze ? lerp(stopYaw, C.walkYaw, speed) : 0;
+  let stopYaw = portrait ? Math.max(C.stopYaw, C.portraitYaw) : C.stopYaw;
   let x = portrait ? Math.max(C.x, C.portraitX) : C.x;
   let pitch = C.pitch;
-  for (const c of cues(plan, C, cam.z)) {
+  const list = cues(plan, C, cam.z);
+  for (const c of list) {
     if (c.w <= 0) continue;
-    if (c.yaw != null) yaw = lerp(yaw, c.yaw, c.w);
-    if (c.x != null) x = lerp(x, c.x, c.w);
+    if (c.stopYaw != null) stopYaw = lerp(stopYaw, c.stopYaw, c.w);
+    if (c.x != null) x = lerp(x, portrait && c.stopYaw != null ? Math.max(c.x, C.portraitX) : c.x, c.w);
     if (c.pitch != null) pitch = lerp(pitch, c.pitch, c.w);
+  }
+  let yaw = gaze ? lerp(stopYaw, C.walkYaw, speed) : 0;
+  for (const c of list) {
+    if (c.w > 0 && c.yaw != null) yaw = lerp(yaw, c.yaw, c.w);
   }
   const k = 1 - Math.exp(-dt * C.ease);
   // 壁にめり込まない範囲

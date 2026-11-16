@@ -21,6 +21,7 @@ export interface ModeHost {
   setLights(on: boolean): void;
   toast(message: string): void;
   appearance(): 'dark' | 'light';
+  setAppearance(appearance: 'dark' | 'light'): Promise<HTMLElement | null>;
 }
 
 interface Mode {
@@ -73,7 +74,7 @@ function toggleLights(on: boolean): void {
 }
 
 // showVisualCanvas() で覚えた表示。restoreView() で戻したら消す
-let remembered: null | { viewMode: string; isVisualMode: boolean; scrollTop: number; lights: boolean } = null;
+let remembered: null | { viewMode: string; isVisualMode: boolean; scrollTop: number; lights: boolean; appearance: string } = null;
 
 const host: ModeHost = {
   async showVisualCanvas() {
@@ -82,7 +83,8 @@ const host: ModeHost = {
       viewMode: state.viewMode,
       isVisualMode: state.isVisualMode,
       scrollTop: scroller ? scroller.scrollTop : 0,
-      lights: state.signalLightsEnabled !== false
+      lights: state.signalLightsEnabled !== false,
+      appearance: state.appearance
     };
     if (!state.isVisualMode) clickById('btn-visual-mode');
     if (state.viewMode !== 'canvas') (document.querySelector('[data-view-mode="canvas"]') as HTMLButtonElement | null)?.click();
@@ -96,9 +98,10 @@ const host: ModeHost = {
     const r = remembered;
     if (!r) return;
     remembered = null;
-    toggleLights(r.lights);
+    if (state.appearance !== r.appearance) clickById('btn-theme-toggle');
     if (state.viewMode !== r.viewMode) (document.querySelector(`[data-view-mode="${r.viewMode}"]`) as HTMLButtonElement | null)?.click();
     if (state.isVisualMode !== r.isVisualMode) clickById(r.isVisualMode ? 'btn-visual-mode' : 'btn-mode-fast');
+    toggleLights(r.lights);
     const scroller = document.getElementById('preview-scroll');
     if (scroller) scroller.scrollTop = r.scrollTop;
   },
@@ -118,6 +121,16 @@ const host: ModeHost = {
   toast: showToast,
   appearance() {
     return state.appearance === 'dark' ? 'dark' : 'light';
+  },
+  async setAppearance(appearance) {
+    if (state.appearance !== appearance) {
+      clickById('btn-theme-toggle');
+      await waitFrames(2);
+    }
+    const container = document.getElementById('visual-stage-container');
+    await waitDiagrams(container, 10000);
+    toggleLights(false);
+    return container;
   }
 };
 

@@ -27,7 +27,17 @@ const STAND = { maxW: 1100, maxH: 520, padX: 60, padTop: 70, padBottom: 90, bott
 
 interface Tile { el: HTMLElement; near: number; far: number; vis: boolean; key: number; wall: boolean; }
 interface PartRef { el: HTMLElement; kind: PartKind; side: 'L' | 'R'; z: number; y: number; w: number; half: number; key: string; vis: boolean; }
-interface StandRef { el: HTMLElement; z: number; key: number; frame: boolean; }
+interface StandRef {
+  el: HTMLElement;
+  z: number;
+  baseZ: number;
+  dz: number;
+  key: number;
+  frame: boolean;
+  figure: number;
+  role?: 'lines' | 'nodes' | 'all';
+  img?: HTMLImageElement;
+}
 interface GateRef { el: HTMLElement; z: number; tint: string; key: number; }
 
 export interface WorldRefs {
@@ -157,17 +167,11 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   plan.stands.forEach(s => {
     const fig = figures[s.figure];
     if (!fig) return;
-    const k = Math.min(STAND.maxW / fig.width, STAND.maxH / fig.height);
-    const iw = fig.width * k;
-    const ih = fig.height * k;
-    const fw = iw + STAND.padX * 2;
-    const fh = ih + STAND.padTop + STAND.padBottom;
-    const x = -fw / 2;
-    const top = STAND.bottom - fh;
+    const g = standGeometry(fig);
     const tint = tintAt(plan, s.z);
-    const place = (node: HTMLElement, dz: number) => {
-      node.style.cssText = `transform:translate3d(${x}px, ${top}px, ${s.z + dz}px) scale(0.5);width:${fw * 2}px;height:${fh * 2}px;--tint:${tint}`;
-      stands.push({ el: node, z: s.z + dz, key: -1, frame: dz === 0 });
+    const place = (node: HTMLElement, dz: number, role?: 'lines' | 'nodes' | 'all', img?: HTMLImageElement) => {
+      node.style.cssText = `transform:translate3d(${g.x}px, ${g.top}px, ${s.z + dz}px) scale(0.5);width:${g.fw * 2}px;height:${g.fh * 2}px;--tint:${tint}`;
+      stands.push({ el: node, z: s.z + dz, baseZ: s.z, dz, key: -1, frame: dz === 0, figure: s.figure, role, img });
     };
     const frame = el(`mw-stand mw-fig-frame is-${figureAppearance}`, world);
     frame.dataset.label = s.label;
@@ -181,9 +185,9 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
       img.src = layer.url;
       img.alt = '';
       img.decoding = 'async';
-      img.style.cssText = `left:${STAND.padX * 2}px;top:${STAND.padTop * 2}px;width:${iw * 2}px;height:${ih * 2}px`;
+      img.style.cssText = `left:${STAND.padX * 2}px;top:${STAND.padTop * 2}px;width:${g.iw * 2}px;height:${g.ih * 2}px`;
       node.appendChild(img);
-      place(node, layer.role === 'nodes' ? STAND.dzNodes : STAND.dzLines);
+      place(node, layer.role === 'nodes' ? STAND.dzNodes : STAND.dzLines, layer.role, img);
     });
   });
 
@@ -232,6 +236,38 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
 // 視点の距離（perspective）。縦長の狭い画面では、視野が狭くなりすぎないよう縮める（DTP-MWLK-060）
 export function perspectiveFor(fov: number, width: number): number {
   return fov * clamp(width / 1290, 0.45, 1);
+}
+
+function standGeometry(fig: FigureImages): { iw: number; ih: number; fw: number; fh: number; x: number; top: number } {
+  const k = Math.min(STAND.maxW / fig.width, STAND.maxH / fig.height);
+  const iw = fig.width * k;
+  const ih = fig.height * k;
+  const fw = iw + STAND.padX * 2;
+  const fh = ih + STAND.padTop + STAND.padBottom;
+  return { iw, ih, fw, fh, x: -fw / 2, top: STAND.bottom - fh };
+}
+
+// T キー等で外観を切り替えたときに、広間の図板の色と図の画像を新しい外観へ合わせる（#129）
+export function updateStandAppearance(refs: WorldRefs, figures: FigureImages[], figureAppearance: 'dark' | 'light'): void {
+  const isLight = figureAppearance === 'light';
+  for (const st of refs.stands) {
+    const fig = figures[st.figure];
+    if (st.frame) {
+      st.el.classList.toggle('is-light', isLight);
+      st.el.classList.toggle('is-dark', !isLight);
+    }
+    if (!fig) continue;
+    const g = standGeometry(fig);
+    st.el.style.transform = `translate3d(${g.x}px, ${g.top}px, ${st.baseZ + st.dz}px) scale(0.5)`;
+    st.el.style.width = `${g.fw * 2}px`;
+    st.el.style.height = `${g.fh * 2}px`;
+    if (st.img) {
+      const layer = fig.layers.find(l => l.role === st.role) || fig.layers[0];
+      if (layer) st.img.src = layer.url;
+      st.img.style.width = `${g.iw * 2}px`;
+      st.img.style.height = `${g.ih * 2}px`;
+    }
+  }
 }
 
 export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, reduced: boolean): void {
