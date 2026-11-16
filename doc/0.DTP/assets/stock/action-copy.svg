@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-124a: Action Icon - Copy. Monochrome (currentColor). -->
+  <rect x="5.5" y="5.5" width="7.5" height="8" rx="1.6" stroke="currentColor" stroke-width="1.5"/>
+  <path d="M10.5 5.5V4.1C10.5 3.22 9.78 2.5 8.9 2.5H4.1C3.22 2.5 2.5 3.22 2.5 4.1V8.9C2.5 9.78 3.22 10.5 4.1 10.5H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

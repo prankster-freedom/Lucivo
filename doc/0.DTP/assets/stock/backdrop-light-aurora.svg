@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-137a: Light Aurora Soft Multi-Glow Backdrop. Monochrome (currentColor). -->
+  <defs>
+    <radialGradient id="la-1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(120 20) rotate(20) scale(210 120)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.32"/>
+      <stop offset="60%" stop-color="currentColor" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="la-2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(310 60) rotate(-25) scale(180 110)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#la-1)"/>
+  <rect width="400" height="240" fill="url(#la-2)"/>
+</svg>

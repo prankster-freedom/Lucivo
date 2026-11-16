@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-142a: Organic Light Bleed (irregular blurred atmospheric glow). Monochrome (currentColor). -->
+  <defs>
+    <filter id="light-bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+  <g filter="url(#light-bleed)">
+    <path d="M78 24C136 8 186 48 168 96C150 144 82 152 46 112C10 72 20 40 78 24Z" fill="currentColor" fill-opacity="0.28"/>
+    <path d="M268 78C334 52 384 102 362 156C340 210 252 204 226 154C200 104 202 104 268 78Z" fill="currentColor" fill-opacity="0.22"/>
+  </g>
+</svg>

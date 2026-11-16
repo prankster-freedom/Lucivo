@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- AST-127c: Border / Dashed Glow Frame Corner (for drop zones / featured cards). Monochrome (currentColor). -->
+  <path d="M4 16V8C4 5.79 5.79 4 8 4H16" stroke="currentColor" stroke-width="1.75" stroke-dasharray="3 3" stroke-linecap="round"/>
+  <path d="M8 8L8.7 9.8L10.5 10.5L8.7 11.2L8 13L7.3 11.2L5.5 10.5L7.3 9.8L8 8Z" fill="currentColor" fill-opacity="0.6"/>
+</svg>

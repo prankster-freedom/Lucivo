@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- AST-130c: Glass Edge Specular Bevel Corner. Monochrome (currentColor). -->
+  <defs>
+    <linearGradient id="bevel-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="currentColor" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M4 44V16C4 9.37 9.37 4 16 4H44" stroke="url(#bevel-grad)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="10" cy="10" r="2.2" fill="currentColor" fill-opacity="0.45"/>
+</svg>

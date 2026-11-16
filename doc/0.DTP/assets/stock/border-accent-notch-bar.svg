@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 8" fill="none">
+  <!-- AST-127d: Border / Accent Notch Top Bar (for card / heading accents). Monochrome (currentColor). -->
+  <rect x="2" y="2.5" width="22" height="3" rx="1.5" fill="currentColor"/>
+  <circle cx="28.5" cy="4" r="1.5" fill="currentColor" fill-opacity="0.65"/>
+  <rect x="33.5" y="3" width="28.5" height="2" rx="1" fill="currentColor" fill-opacity="0.28"/>
+</svg>

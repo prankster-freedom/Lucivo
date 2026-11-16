@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- AST-120a: Card Corner Ornament - Concentric Rings (for circles / KPI cards). Monochrome (currentColor). -->
+  <circle cx="56" cy="8" r="24" stroke="currentColor" stroke-width="1.25" stroke-opacity="0.22"/>
+  <circle cx="56" cy="8" r="16" stroke="currentColor" stroke-width="1.25" stroke-opacity="0.32" stroke-dasharray="3 3"/>
+  <circle cx="56" cy="8" r="8" fill="currentColor" fill-opacity="0.18"/>
+  <circle cx="44" cy="20" r="2" fill="currentColor" fill-opacity="0.45"/>
+</svg>

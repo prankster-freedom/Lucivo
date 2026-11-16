@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-136a: Water Surface Soft Ripple Gradient Backdrop. Monochrome (currentColor). -->
+  <defs>
+    <linearGradient id="ws-base" x1="0" y1="0" x2="0" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.16"/>
+      <stop offset="55%" stop-color="currentColor" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0.14"/>
+    </linearGradient>
+    <radialGradient id="ws-ripple" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 120) scale(180 85)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0"/>
+      <stop offset="58%" stop-color="currentColor" stop-opacity="0.12"/>
+      <stop offset="72%" stop-color="currentColor" stop-opacity="0"/>
+      <stop offset="86%" stop-color="currentColor" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#ws-base)"/>
+  <rect width="400" height="240" fill="url(#ws-ripple)"/>
+</svg>

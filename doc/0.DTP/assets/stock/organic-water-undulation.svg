@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-141a: Organic Water Undulation (asymmetric soft ripples). Monochrome (currentColor). -->
+  <defs>
+    <filter id="water-blur" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+  <g filter="url(#water-blur)">
+    <path d="M-10 72C55 44 118 98 195 66C272 34 335 88 410 58" stroke="currentColor" stroke-width="10" stroke-opacity="0.18" stroke-linecap="round"/>
+    <path d="M-10 132C74 162 142 96 226 128C310 160 352 104 410 138" stroke="currentColor" stroke-width="14" stroke-opacity="0.14" stroke-linecap="round"/>
+    <path d="M-10 192C68 172 135 218 214 184C295 150 348 202 410 176" stroke="currentColor" stroke-width="8" stroke-opacity="0.16" stroke-linecap="round"/>
+  </g>
+</svg>

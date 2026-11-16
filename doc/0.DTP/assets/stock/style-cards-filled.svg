@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-118f: Style Swatch - 2-Tier Cards (Filled variant). Monochrome (currentColor). -->
+  <rect x="2" y="2.5" width="5.2" height="11" rx="1.4" fill="currentColor" fill-opacity="0.22"/>
+  <rect x="2" y="2.5" width="5.2" height="2.6" rx="1" fill="currentColor"/>
+  <rect x="8.8" y="2.5" width="5.2" height="11" rx="1.4" fill="currentColor" fill-opacity="0.38"/>
+  <rect x="8.8" y="2.5" width="5.2" height="2.6" rx="1" fill="currentColor"/>
+</svg>

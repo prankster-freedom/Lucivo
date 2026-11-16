@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- AST-132b: Light Soft Bokeh Cluster. Monochrome (currentColor). -->
+  <circle cx="24" cy="26" r="14" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.22"/>
+  <circle cx="42" cy="22" r="10" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.26"/>
+  <circle cx="36" cy="40" r="12" fill="currentColor" fill-opacity="0.1" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.2"/>
+  <circle cx="18" cy="44" r="6.5" fill="currentColor" fill-opacity="0.2"/>
+  <circle cx="48" cy="46" r="4.5" fill="currentColor" fill-opacity="0.24"/>
+</svg>

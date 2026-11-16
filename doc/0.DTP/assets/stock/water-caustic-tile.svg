@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- AST-131b: Water Caustics Seamless Pattern Tile. Monochrome (currentColor). -->
+  <path d="M0 16C12 10 20 22 32 16C44 10 52 22 64 16" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.22" stroke-linecap="round"/>
+  <path d="M0 48C12 42 20 54 32 48C44 42 52 54 64 48" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.22" stroke-linecap="round"/>
+  <path d="M16 0C22 12 10 20 16 32C22 44 10 52 16 64" stroke="currentColor" stroke-width="1.1" stroke-opacity="0.18" stroke-linecap="round"/>
+  <path d="M48 0C54 12 42 20 48 32C54 44 42 52 48 64" stroke="currentColor" stroke-width="1.1" stroke-opacity="0.18" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="4" fill="currentColor" fill-opacity="0.12"/>
+</svg>

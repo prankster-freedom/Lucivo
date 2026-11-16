@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-142b: Organic Light Prism Mist (soft drifting haze layers). Monochrome (currentColor). -->
+  <defs>
+    <filter id="mist-blur" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+  <g filter="url(#mist-blur)">
+    <path d="M-20 156C48 112 132 146 218 98C304 50 348 84 420 44V168C346 206 254 174 166 206C88 234 32 198 -20 218Z" fill="currentColor" fill-opacity="0.2"/>
+    <ellipse cx="140" cy="64" rx="92" ry="34" transform="rotate(-18 140 64)" fill="currentColor" fill-opacity="0.16"/>
+  </g>
+</svg>

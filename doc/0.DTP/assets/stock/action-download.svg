@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-124c: Action Icon - Download (PNG / SVG export). Monochrome (currentColor). -->
+  <path d="M8 2.75V10.25M5.25 7.75L8 10.5L10.75 7.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3 11.75V12.25C3 12.94 3.56 13.5 4.25 13.5H11.75C12.44 13.5 13 12.94 13 12.25V11.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

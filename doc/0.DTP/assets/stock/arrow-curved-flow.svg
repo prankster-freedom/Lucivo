@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 24" fill="none">
+  <!-- AST-129d: Arrow Curved Flow - Expressive Arc with Origin Dot. Monochrome (currentColor). -->
+  <circle cx="5" cy="18" r="2" fill="currentColor" fill-opacity="0.45"/>
+  <path d="M7.5 17.5C12 17.5 13 6.5 25 6.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+  <path d="M21 3L25.5 6.5L21 10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

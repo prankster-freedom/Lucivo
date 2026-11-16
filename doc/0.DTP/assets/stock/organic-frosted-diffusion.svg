@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-140a: Organic Frosted Glass Soft Diffusion (blurred irregular light blobs). Monochrome (currentColor). -->
+  <defs>
+    <filter id="frost-blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+  <g filter="url(#frost-blur)">
+    <path d="M22 48C56 12 138 24 164 68C188 109 132 166 76 154C20 142 -12 84 22 48Z" fill="currentColor" fill-opacity="0.22"/>
+    <path d="M214 96C258 58 346 42 374 92C402 142 342 208 268 198C194 188 170 134 214 96Z" fill="currentColor" fill-opacity="0.18"/>
+    <ellipse cx="182" cy="176" rx="74" ry="38" transform="rotate(-14 182 176)" fill="currentColor" fill-opacity="0.14"/>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-138b: Flame Corona Arc Gradient Overlay. Monochrome (currentColor). -->
+  <defs>
+    <radialGradient id="fc-arc" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 260) scale(220 185)">
+      <stop offset="45%" stop-color="currentColor" stop-opacity="0"/>
+      <stop offset="72%" stop-color="currentColor" stop-opacity="0.22"/>
+      <stop offset="88%" stop-color="currentColor" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#fc-arc)"/>
+</svg>

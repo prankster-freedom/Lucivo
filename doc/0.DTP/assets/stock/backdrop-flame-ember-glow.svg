@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-138a: Flame Rising Ember Glow Backdrop. Monochrome (currentColor). -->
+  <defs>
+    <radialGradient id="fe-core" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 240) scale(190 150)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.34"/>
+      <stop offset="48%" stop-color="currentColor" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fe-plume" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(215 170) rotate(-8) scale(95 130)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#fe-core)"/>
+  <rect width="400" height="240" fill="url(#fe-plume)"/>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 48" fill="none">
+  <!-- AST-134b: Sunlight Horizon Halo (half sunburst for cover / chapter headers). Monochrome (currentColor). -->
+  <path d="M16 44C16 26.33 30.33 12 48 12C65.67 12 80 26.33 80 44" stroke="currentColor" stroke-width="1.25" stroke-opacity="0.28" stroke-dasharray="4 4"/>
+  <path d="M28 44C28 32.95 36.95 24 48 24C59.05 24 68 32.95 68 44" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.4" stroke-opacity="0.45"/>
+  <path d="M48 4V9M22 14L25.5 17.5M74 14L70.5 17.5M8 44H88" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-opacity="0.5"/>
+</svg>

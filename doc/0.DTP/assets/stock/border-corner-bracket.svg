@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AST-127a: Border / Corner Bracket with Terminal Dots. Monochrome (currentColor). -->
+  <path d="M3 14V5C3 3.9 3.9 3 5 3H14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="3" cy="17.5" r="1.35" fill="currentColor" fill-opacity="0.55"/>
+  <circle cx="17.5" cy="3" r="1.35" fill="currentColor" fill-opacity="0.55"/>
+</svg>

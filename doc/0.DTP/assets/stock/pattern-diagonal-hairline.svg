@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AST-122a: Pattern Tile - Diagonal Hairline (for Before cards / muted panels). Monochrome (currentColor). -->
+  <path d="M-6 6L6 -6M0 24L24 0M18 30L30 18" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.16"/>
+</svg>

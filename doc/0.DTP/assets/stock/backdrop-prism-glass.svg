@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-135b: Prism Glass Soft Diffusion Backdrop. Monochrome (currentColor). -->
+  <defs>
+    <radialGradient id="pg-1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(80 40) rotate(25) scale(220 140)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pg-2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(330 200) rotate(-15) scale(200 130)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#pg-1)"/>
+  <rect width="400" height="240" fill="url(#pg-2)"/>
+  <polygon points="150,0 240,0 175,240 85,240" fill="currentColor" fill-opacity="0.05"/>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AST-126c: Ordered List / Step Number Frame - Dashed Double Ring. Monochrome (currentColor). -->
+  <circle cx="12" cy="12" r="10.25" stroke="currentColor" stroke-width="1.25" stroke-dasharray="3 2.5" stroke-opacity="0.55"/>
+  <circle cx="12" cy="12" r="7.75" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.35"/>
+</svg>

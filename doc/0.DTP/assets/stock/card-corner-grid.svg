@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- AST-120b: Card Corner Ornament - Micro Dot Matrix Grid (for editorial / tech cards). Monochrome (currentColor). -->
+  <circle cx="34" cy="10" r="1.4" fill="currentColor" fill-opacity="0.22"/>
+  <circle cx="44" cy="10" r="1.4" fill="currentColor" fill-opacity="0.35"/>
+  <circle cx="54" cy="10" r="1.8" fill="currentColor" fill-opacity="0.5"/>
+  <circle cx="44" cy="20" r="1.4" fill="currentColor" fill-opacity="0.25"/>
+  <circle cx="54" cy="20" r="1.6" fill="currentColor" fill-opacity="0.4"/>
+  <circle cx="54" cy="30" r="1.4" fill="currentColor" fill-opacity="0.25"/>
+</svg>

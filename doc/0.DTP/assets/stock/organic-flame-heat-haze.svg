@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-143b: Organic Flame Heat Haze (rising shimmering bands). Monochrome (currentColor). -->
+  <defs>
+    <filter id="haze-blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+  </defs>
+  <g filter="url(#haze-blur)" stroke="currentColor" stroke-linecap="round">
+    <path d="M98 245C118 195 78 152 112 106C146 60 108 22 132 -5" stroke-width="26" stroke-opacity="0.16"/>
+    <path d="M214 248C192 192 238 142 198 92C162 48 208 14 188 -8" stroke-width="32" stroke-opacity="0.14"/>
+    <path d="M312 244C334 198 292 156 326 112C356 74 318 38 334 6" stroke-width="22" stroke-opacity="0.15"/>
+  </g>
+</svg>

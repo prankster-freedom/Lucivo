@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- AST-122c: Pattern Tile - Prism Mosaic Watermark (for covers / stage backdrops). Monochrome (currentColor). -->
+  <polygon points="24,6 42,24 24,42 6,24" stroke="currentColor" stroke-width="0.85" stroke-opacity="0.14"/>
+  <circle cx="24" cy="24" r="1.5" fill="currentColor" fill-opacity="0.22"/>
+  <circle cx="0" cy="0" r="1.2" fill="currentColor" fill-opacity="0.14"/>
+  <circle cx="48" cy="0" r="1.2" fill="currentColor" fill-opacity="0.14"/>
+  <circle cx="0" cy="48" r="1.2" fill="currentColor" fill-opacity="0.14"/>
+  <circle cx="48" cy="48" r="1.2" fill="currentColor" fill-opacity="0.14"/>
+</svg>

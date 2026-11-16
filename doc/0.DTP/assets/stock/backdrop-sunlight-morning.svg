@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-139a: Sunlight Morning Cone Rays Backdrop. Monochrome (currentColor). -->
+  <defs>
+    <radialGradient id="sm-halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 0) rotate(32) scale(340 210)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.34"/>
+      <stop offset="45%" stop-color="currentColor" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sm-beam" x1="0" y1="0" x2="320" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#sm-halo)"/>
+  <polygon points="0,0 130,0 360,240 160,240 0,80" fill="url(#sm-beam)"/>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-135a: Frosted Glass Veil Foreground / Backdrop Gradient. Monochrome (currentColor). -->
+  <defs>
+    <linearGradient id="fg-veil" x1="0" y1="0" x2="400" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.22"/>
+      <stop offset="35%" stop-color="currentColor" stop-opacity="0.06"/>
+      <stop offset="50%" stop-color="currentColor" stop-opacity="0.18"/>
+      <stop offset="72%" stop-color="currentColor" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0.12"/>
+    </linearGradient>
+    <linearGradient id="fg-edge" x1="0" y1="0" x2="400" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0"/>
+      <stop offset="25%" stop-color="currentColor" stop-opacity="0.5"/>
+      <stop offset="75%" stop-color="currentColor" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="240" rx="20" fill="url(#fg-veil)"/>
+  <path d="M0 0H260L90 240H0V0Z" fill="currentColor" fill-opacity="0.06"/>
+  <line x1="20" y1="1.5" x2="380" y2="1.5" stroke="url(#fg-edge)" stroke-width="1.5"/>
+</svg>

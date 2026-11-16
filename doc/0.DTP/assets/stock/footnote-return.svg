@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-123c: Footnote Return Arrow (replaces raw Unicode ↩). Monochrome (currentColor). -->
+  <path d="M12.5 4.5V7.5C12.5 8.88 11.38 10 10 10H4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M6.75 7.25L4 10L6.75 12.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

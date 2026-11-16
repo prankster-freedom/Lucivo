@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none">
+  <!-- AST-125a: Bullet Marker - Prism Diamond. Monochrome (currentColor). -->
+  <polygon points="6,1.5 10.5,6 6,10.5 1.5,6" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/>
+  <circle cx="6" cy="6" r="1.4" fill="currentColor"/>
+</svg>

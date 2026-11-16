@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- AST-134a: Sunlight Diagonal Sunbeams Overlay. Monochrome (currentColor). -->
+  <defs>
+    <linearGradient id="sun-ray" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <polygon points="0,0 42,0 116,74 74,116 0,42" fill="url(#sun-ray)"/>
+  <polygon points="56,0 82,0 120,38 120,64" fill="url(#sun-ray)" fill-opacity="0.7"/>
+</svg>

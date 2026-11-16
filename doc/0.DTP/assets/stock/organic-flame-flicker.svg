@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-143a: Organic Flame Flicker Plumes (asymmetric blurred glow). Monochrome (currentColor). -->
+  <defs>
+    <filter id="flame-blur" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+  <g filter="url(#flame-blur)">
+    <path d="M126 248C94 202 108 148 144 114C178 82 162 42 184 22C202 68 232 104 204 156C182 196 226 218 206 248Z" fill="currentColor" fill-opacity="0.24"/>
+    <path d="M242 248C224 208 248 164 276 138C302 114 290 78 308 62C322 98 342 132 318 176C296 216 322 224 304 248Z" fill="currentColor" fill-opacity="0.18"/>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- AST-120c: Card Corner Ornament - Luminous Rays & Prism (for shapes / After cards). Monochrome (currentColor). -->
+  <path d="M64 0L24 22L42 40L64 0Z" fill="currentColor" fill-opacity="0.16"/>
+  <line x1="64" y1="0" x2="18" y2="14" stroke="currentColor" stroke-width="1" stroke-opacity="0.28" stroke-linecap="round"/>
+  <line x1="64" y1="0" x2="30" y2="34" stroke="currentColor" stroke-width="1" stroke-opacity="0.35" stroke-linecap="round"/>
+  <line x1="64" y1="0" x2="50" y2="46" stroke="currentColor" stroke-width="1" stroke-opacity="0.28" stroke-linecap="round"/>
+  <polygon points="48,16 52,20 48,24 44,20" fill="currentColor" fill-opacity="0.45"/>
+</svg>

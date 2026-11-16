@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" fill="none">
+  <!-- AST-115c: Horizontal Rule - Triple Spark Asterism. Monochrome (currentColor). -->
+  <path d="M13 5.5L13.7 7.3L15.5 8L13.7 8.7L13 10.5L12.3 8.7L10.5 8L12.3 7.3L13 5.5Z" fill="currentColor" fill-opacity="0.65"/>
+  <path d="M24 3L25.2 6.8L29 8L25.2 9.2L24 13L22.8 9.2L19 8L22.8 6.8L24 3Z" fill="currentColor"/>
+  <path d="M35 5.5L35.7 7.3L37.5 8L35.7 8.7L35 10.5L34.3 8.7L32.5 8L34.3 7.3L35 5.5Z" fill="currentColor" fill-opacity="0.65"/>
+</svg>

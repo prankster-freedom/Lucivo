@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-136b: Water Caustics Glow Foreground Veil. Monochrome (currentColor). -->
+  <defs>
+    <radialGradient id="wc-1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(110 70) rotate(12) scale(130 55)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="wc-2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(285 145) rotate(-14) scale(140 60)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#wc-1)"/>
+  <rect width="400" height="240" fill="url(#wc-2)"/>
+  <path d="M0 95C80 70 150 120 230 92C300 68 350 105 400 88" stroke="currentColor" stroke-width="1.25" stroke-opacity="0.16" stroke-linecap="round"/>
+</svg>

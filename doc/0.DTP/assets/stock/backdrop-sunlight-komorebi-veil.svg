@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-139b: Sunlight Komorebi Soft Dappled Foreground Veil. Monochrome (currentColor). -->
+  <defs>
+    <radialGradient id="sk-1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(95 65) scale(85 65)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sk-2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(260 105) scale(110 75)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sk-3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(175 180) scale(75 50)">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="240" fill="url(#sk-1)"/>
+  <rect width="400" height="240" fill="url(#sk-2)"/>
+  <rect width="400" height="240" fill="url(#sk-3)"/>
+</svg>

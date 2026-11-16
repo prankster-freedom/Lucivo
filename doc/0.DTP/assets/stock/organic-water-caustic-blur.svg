@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-141b: Organic Water Caustics Soft Net (irregular blurred light mesh). Monochrome (currentColor). -->
+  <defs>
+    <filter id="caustic-blur" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="5.5"/>
+    </filter>
+  </defs>
+  <g filter="url(#caustic-blur)" stroke="currentColor" stroke-linecap="round">
+    <path d="M35 18C62 64 24 118 76 164C128 210 92 225 112 248" stroke-width="4" stroke-opacity="0.22"/>
+    <path d="M168 -8C145 52 212 96 178 156C144 216 208 218 195 252" stroke-width="5" stroke-opacity="0.18"/>
+    <path d="M298 6C325 68 258 106 306 162C354 218 282 228 310 250" stroke-width="4.5" stroke-opacity="0.2"/>
+    <path d="M-12 88C54 68 108 118 178 92C248 66 296 128 412 84" stroke-width="4" stroke-opacity="0.18"/>
+    <path d="M-12 174C64 198 134 142 216 178C298 214 342 152 412 182" stroke-width="5" stroke-opacity="0.16"/>
+  </g>
+</svg>

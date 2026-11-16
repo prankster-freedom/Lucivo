@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-140b: Organic Molded / Fluted Glass Refraction Waves. Monochrome (currentColor). -->
+  <defs>
+    <filter id="wave-soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <linearGradient id="glass-flow" x1="0" y1="0" x2="400" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.24"/>
+      <stop offset="50%" stop-color="currentColor" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0.18"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#wave-soft)">
+    <path d="M-20 40C70 10 140 85 230 48C310 15 360 65 420 35V125C340 155 270 95 190 132C110 168 45 110 -20 145Z" fill="url(#glass-flow)"/>
+    <path d="M-20 135C65 105 155 180 245 142C320 110 370 150 420 130V215C345 235 265 185 175 215C95 242 35 195 -20 220Z" fill="currentColor" fill-opacity="0.12"/>
+  </g>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none">
+  <!-- AST-125b: Bullet Marker - Glow Ring Dot. Monochrome (currentColor). -->
+  <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.25" stroke-opacity="0.35"/>
+  <circle cx="6" cy="6" r="2.2" fill="currentColor"/>
+</svg>
