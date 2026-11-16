@@ -518,11 +518,9 @@ async function testNodeLabelWrap(browser) {
         }
       }
       const shape = node.querySelector('rect, polygon, path').getBoundingClientRect();
-      // 2 段カードは、帯の分だけ文字を下げるため、下の余白が足りないことがある（#187）。左右だけを確かめる
-      const checkBottom = !(state.isVisualMode && state.infographicStyle === 'cards');
       return {
         lines: lines.map(l => l.trim()),
-        inside: text.left >= shape.left - 2 && text.right <= shape.right + 2 && (!checkBottom || text.bottom <= shape.bottom + 2),
+        inside: text.left >= shape.left - 2 && text.right <= shape.right + 2 && text.bottom <= shape.bottom + 2,
         bottomGap: Math.round(shape.bottom - text.bottom)
       };
     }).filter(Boolean);
