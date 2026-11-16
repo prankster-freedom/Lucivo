@@ -240,6 +240,34 @@ async function testVisualStageQuality(browser) {
     && actualStacked && narrowStacked;
   record('TC-DIAG-021', splitOk, JSON.stringify({ ...splitCheck, actualStacked, narrowStacked }));
 
+  // TC-DIAG-033 Light の Visualモードのマインドマップ・タイムラインの枝の色が、誌面の淡い調子にそろう（4 スタイル。#148）
+  const PALETTE_FIRST = { shapes: 'rgb(226, 149, 120)', cards: 'rgb(226, 149, 120)', circles: 'rgb(212, 93, 83)', editorial: 'rgb(214, 140, 140)' };
+  const branchRows = [];
+  for (const style of VISUAL_STYLES) {
+    await setMode(page, { style, appearance: 'light' });
+    const r = await page.evaluate(() => {
+      const root = document.getElementById('visual-stage-container');
+      const svgOf = type => Array.from(root.querySelectorAll('[data-stage-index] > svg')).find(s => s.getAttribute('aria-roledescription') === type);
+      // 彩度の目安: RGB の最大と最小の差（0〜1）。蛍光の黄緑（rgb(212, 247, 48) など）は 0.8 前後になる
+      const chroma = color => { const v = color.match(/[\d.]+/g).slice(0, 3).map(Number); return (Math.max(...v) - Math.min(...v)) / 255; };
+      const fills = (svg, selector) => Array.from(svg.querySelectorAll(selector)).map(el => getComputedStyle(el).fill).filter(f => /^rgb/.test(f));
+      const mind = svgOf('mindmap');
+      const time = svgOf('timeline');
+      const mindFills = fills(mind, '.mindmap-node:not(.section-root) :is(rect, path, circle, polygon)');
+      const timeFills = fills(time, '.timeline-node :is(rect, path, circle, polygon)');
+      const rootShape = mind.querySelector('.section-root :is(rect, path, circle, polygon)');
+      return {
+        mindCount: mindFills.length, timeCount: timeFills.length,
+        maxChroma: +Math.max(...mindFills.map(chroma), ...timeFills.map(chroma)).toFixed(2),
+        distinct: new Set(mindFills).size,
+        rootFill: getComputedStyle(rootShape).fill
+      };
+    });
+    branchRows.push({ style, ok: r.mindCount >= 6 && r.timeCount >= 4 && r.maxChroma <= 0.5 && r.distinct >= 2 && r.rootFill === PALETTE_FIRST[style], ...r });
+  }
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  record('TC-DIAG-033', branchRows.every(r => r.ok), JSON.stringify(branchRows));
+
   if (page.consoleErrors.length) record('TC-DIAG-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }

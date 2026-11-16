@@ -6,6 +6,7 @@ import {
   VISUAL_THEMES_DARK,
   DEFAULT_CURVES,
   darkSectionScale,
+  lightSectionScale,
   state
 } from '../ui/state';
 
@@ -73,7 +74,7 @@ export function buildMermaidThemeVariables(spec, isVisual: boolean, isDark: bool
     : { tertiaryColor: spec.clusterBg };
   return {
     darkMode: isDark,
-    ...(isDark ? darkSectionScale() : {}),
+    ...(isDark ? darkSectionScale() : isVisual ? lightSectionScale(state.infographicStyle) : {}),
     background: 'transparent',
     mainBkg: spec.nodeBg,
     primaryColor: spec.nodeBg,

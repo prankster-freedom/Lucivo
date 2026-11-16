@@ -4,6 +4,8 @@ import {
   NODE_DECORATED_TYPES,
   CIRCLE_DARK_TEXT_FILLS,
   SEQUENCE_MATH_LIFT,
+  VISUAL_STYLE_PALETTES,
+  LIGHT_SECTION_TEXT,
   state
 } from '../ui/state';
 import { getThemeSpec, getDiagramSpec } from './mermaid-config';
@@ -25,6 +27,7 @@ export function decorateVisualSvg(svg, diagramType) {
     decorateVisualSequence(svg, styleMode, visualSpec, uid);
     return;
   }
+  if (diagramType === 'mindmap' && state.appearance !== 'dark') decorateMindmapRoot(svg, styleMode);
   // その他の図種は、構造を保ったまま setupMermaid のスタイル配色だけで描画する（FR-008）
   if (!NODE_DECORATED_TYPES.includes(diagramType)) return;
 
@@ -51,6 +54,29 @@ export function decorateVisualSvg(svg, diagramType) {
   if (decorate) decorate(svg, uid);
 
   fixMarkerScale(svg);
+}
+
+// Light のマインドマップの中心（主題）を、スタイルの第 1 色で塗る（DD-DIAG-026）。
+// 中心の色は Mermaid では Git グラフと共通の変数（git0）から決まり、ノードが白いスタイルでは灰色になって主役に見えない。
+// 変数を変えると Git グラフの色も変わるため、描画後に中心だけを塗り直す（書き出しにも残るよう、要素のスタイルに書く）
+function decorateMindmapRoot(svg, styleMode) {
+  const base = (VISUAL_STYLE_PALETTES[styleMode] || VISUAL_STYLE_PALETTES.shapes)[0];
+  // 塗りが暗いスタイル（Circles の赤）では、文字を白にする
+  const v = parseInt(base.slice(1), 16);
+  const lin = c => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+  const luminance = 0.2126 * lin((v >> 16) & 255) + 0.7152 * lin((v >> 8) & 255) + 0.0722 * lin(v & 255);
+  const textColor = luminance < 0.3 ? '#FFFFFF' : LIGHT_SECTION_TEXT;
+  svg.querySelectorAll('.section-root').forEach(root => {
+    root.querySelectorAll('rect, path, circle, polygon, ellipse').forEach(shape => {
+      if (hasUserStyle(shape, 'fill')) return;
+      shape.style.setProperty('fill', base, 'important');
+    });
+    root.querySelectorAll('.nodeLabel, .nodeLabel *, text, tspan').forEach(label => {
+      if (hasUserTextColor(label)) return;
+      label.style.setProperty('color', textColor, 'important');
+      label.style.setProperty('fill', textColor, 'important');
+    });
+  });
 }
 
 // Visual Stage で使う影・グラデーションを defs に追加し、id の接尾辞を返す

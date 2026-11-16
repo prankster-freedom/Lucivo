@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { mixHex } from '../utils/color';
 export const APP_TITLE_SUFFIX = ' - Lucivo';
 export const DROPPABLE_FILE_PATTERN = /\.(md|markdown|txt)$/i;
 
@@ -260,6 +261,30 @@ export function darkSectionScale() {
     vars[`cScaleLabel${i}`] = '#F1F5F9';
     vars[`pie${i + 1}`] = `hsl(${hue}, 45%, 42%)`;
   });
+  return vars;
+}
+// スタイルごとの 4 色（CSS の --vs-c1〜c4 と同じ値。DTP-VTPL-070）。図の枝の色と、数式の補足グラフの線の色に使う
+export const VISUAL_STYLE_PALETTES: Record<string, string[]> = {
+  shapes: ['#E29578', '#EBB453', '#6CC4C9', '#9CCB86'],
+  cards: ['#E29578', '#E6B34B', '#A3B4E4', '#6DB1B4'],
+  circles: ['#D45D53', '#7EA6BF', '#ECB674', '#7D9763'],
+  editorial: ['#D68C8C', '#8FA876', '#C9A66B', '#8FA3B8']
+};
+// Light の Visualモードの、マインドマップ・タイムラインなどの枝ごとの色（DD-DIAG-026, DTP-003）。
+// Mermaid の派生のままでは、色相を 30 度ずつ回した彩度の高い色（蛍光の黄緑など）になり、誌面の淡い調子から浮く。
+// スタイルの 4 色を白で薄めた塗り（3 段の濃さ）にして、トーンを誌面にそろえる。文字は濃い色、縁と下線は元の色を少し沈めた色
+const LIGHT_SECTION_TINTS = [0.42, 0.62, 0.28];
+export const LIGHT_SECTION_TEXT = '#1E293B';
+export function lightSectionScale(style: string) {
+  const palette = VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
+  const vars = {};
+  for (let i = 0; i < 12; i++) {
+    const base = palette[i % 4];
+    vars[`cScale${i}`] = mixHex(base, '#FFFFFF', LIGHT_SECTION_TINTS[Math.floor(i / 4)]);
+    vars[`cScalePeer${i}`] = mixHex(base, LIGHT_SECTION_TEXT, 0.18);
+    vars[`cScaleInv${i}`] = mixHex(base, LIGHT_SECTION_TEXT, 0.3);
+    vars[`cScaleLabel${i}`] = LIGHT_SECTION_TEXT;
+  }
   return vars;
 }
 // Vibrant Circles で、白文字では読みにくい明るい塗り

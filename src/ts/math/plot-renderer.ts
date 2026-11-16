@@ -1,16 +1,12 @@
 import { hexToRgba } from '../utils/color';
+import { VISUAL_STYLE_PALETTES } from '../ui/state';
 import type { TexPlotSpec } from './plot-parser';
 
 /* ==========================================================================
    数式の補足グラフ: 範囲計算・目盛生成・Canvas プロット描画（FR-048, DD-VTPL-142〜144）
    ========================================================================== */
 
-export const MATH_PLOT_PALETTES: Record<string, string[]> = {
-  shapes: ['#E29578', '#EBB453', '#6CC4C9', '#9CCB86'],
-  cards: ['#E29578', '#E6B34B', '#A3B4E4', '#6DB1B4'],
-  circles: ['#D45D53', '#7EA6BF', '#ECB674', '#7D9763'],
-  editorial: ['#D68C8C', '#8FA876', '#C9A66B', '#8FA3B8']
-};
+export const MATH_PLOT_PALETTES: Record<string, string[]> = VISUAL_STYLE_PALETTES;
 
 export interface MathPlotBoxConfig {
   w: number;
