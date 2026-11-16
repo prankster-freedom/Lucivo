@@ -71,6 +71,19 @@ export function getMermaidLayout(code, curve = null) {
   return 'dagre';
 }
 
+// フローチャートのノードの文字の先頭の番号（「1.」「4A.」）と本文を、同じ行に置く（DD-DIAG-035, #145）。
+// 番号の後の空白を改行しない空白（U+00A0）にして Mermaid に渡す。文節の折り返し（diagrams.css）だけでは、
+// 「1. / ユーザー入力…」のように番号だけの行ができるため。番号は、形の開き記号（[ ( { > や引用符 "）の直後の
+// 「数字 + 任意の英字 1 字 + ピリオド」に限る。著者の Markdown は書き換えず、描画に渡す文字だけを変える。
+// 改行しない空白は、Mermaid の文字参照（#160;）で渡す。文字そのものを書くと、ソースとビルドの出力に
+// 見えない文字が入り、npm run lint で止まる（esbuild は String.fromCharCode(0xa0) も文字に置き換える）
+const NODE_NUMBER_SPACE = /([[({>"])(\d{1,3}[A-Za-z]?[.．])[ \t]+(?=[^\s\-=.~&|;:>\])}"])/g;
+
+export function prepareMermaidSource(code: string): string {
+  if (getCurveTarget(code) !== 'flowchart') return code;
+  return code.replace(NODE_NUMBER_SPACE, (_, open, number) => `${open}${number}#160;`);
+}
+
 export function buildMermaidThemeVariables(spec, isVisual: boolean, isDark: boolean) {
   const visualColors = isVisual
     ? { secondaryColor: spec.secondary, tertiaryColor: spec.tertiary }

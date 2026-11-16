@@ -11,6 +11,13 @@ svg .label > div {
   font-family: 'Inter', 'Noto Sans JP', sans-serif !important;
   font-weight: 600 !important;
 }
+/* ノードの文字は文節の区切りで折り返し、行の長さをそろえる（DD-DIAG-035, #145）。
+   Mermaid はこの CSS が効いた状態でノードの大きさを測るため、長い文節はノードの幅を広げて 1 行に収める */
+svg .nodeLabel,
+svg .nodeLabel p {
+  word-break: auto-phrase;
+  text-wrap: balance;
+}
 svg .edgeLabel,
 svg .edgeLabel span {
   padding: 2px 9px !important;
