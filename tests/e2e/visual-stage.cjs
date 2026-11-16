@@ -268,6 +268,38 @@ async function testVisualStageQuality(browser) {
   await setMode(page, { style: 'shapes', appearance: 'light' });
   record('TC-DIAG-033', branchRows.every(r => r.ok), JSON.stringify(branchRows));
 
+  // TC-DIAG-034 円グラフの扇同士・凡例の色見本・扇の上の文字が見分けられる（4 スタイル × Light / Dark。#150）
+  const pieRows = [];
+  for (const appearance of ['light', 'dark']) {
+    for (const style of VISUAL_STYLES) {
+      await setMode(page, { style, appearance });
+      const r = await page.evaluate(() => {
+        const root = document.getElementById('visual-stage-container');
+        const svg = Array.from(root.querySelectorAll('[data-stage-index] > svg')).find(s => s.getAttribute('aria-roledescription') === 'pie');
+        const rgb = color => color.match(/[\d.]+/g).slice(0, 3).map(Number);
+        const lum = color => { const [r, g, b] = rgb(color).map(c => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+        const contrast = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+        const dist = (a, b) => Math.hypot(...rgb(a).map((v, i) => v - rgb(b)[i]));
+        const slices = Array.from(svg.querySelectorAll('path.pieCircle'));
+        const fills = slices.map(p => getComputedStyle(p).fill);
+        const texts = Array.from(svg.querySelectorAll('text.slice')).map(t => getComputedStyle(t).fill);
+        const pairs = [];
+        fills.forEach((a, i) => fills.slice(i + 1).forEach(b => pairs.push(dist(a, b))));
+        const swatches = Array.from(svg.querySelectorAll('g.legend rect')).map(rect => { const cs = getComputedStyle(rect); return { width: parseFloat(cs.strokeWidth), differs: cs.stroke !== cs.fill && cs.stroke !== 'none' }; });
+        return {
+          slices: fills.length,
+          minDistance: Math.round(Math.min(...pairs)),
+          opacity: Math.min(...slices.map(p => parseFloat(getComputedStyle(p).opacity))),
+          minTextContrast: +Math.min(...fills.map((f, i) => contrast(f, texts[i]))).toFixed(2),
+          swatchOutlined: swatches.length === fills.length && swatches.every(s => s.width >= 1 && s.differs)
+        };
+      });
+      pieRows.push({ style, appearance, ok: r.slices === 4 && r.minDistance >= 40 && r.minTextContrast >= 3 && r.swatchOutlined && (appearance === 'dark' || r.opacity === 1), ...r });
+    }
+  }
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  record('TC-DIAG-034', pieRows.every(r => r.ok), JSON.stringify(pieRows));
+
   if (page.consoleErrors.length) record('TC-DIAG-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }

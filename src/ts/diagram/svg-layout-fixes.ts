@@ -205,6 +205,23 @@ export function polishClusterHeaders(svg, isVisualMode, spec) {
   });
 }
 
+// 色（#RRGGBB または rgb(r, g, b)）の相対輝度（0〜1）。読めない形式は null
+function relativeLuminance(color) {
+  if (!color) return null;
+  let rgb = null;
+  const hex = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  if (hex) {
+    const v = parseInt(hex[1], 16);
+    rgb = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  } else {
+    const m = color.match(/[\d.]+/g);
+    if (/^rgb/i.test(color.trim()) && m && m.length >= 3) rgb = m.slice(0, 3).map(Number);
+  }
+  if (!rgb) return null;
+  const lin = c => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
+}
+
 // #7 & #9: 円グラフの視認性向上（文字サイズ拡大＋Visual モードのドーナツインフォグラフィック化）
 export function enhancePieChart(svg, isVisualMode, spec) {
   const isDark = state.appearance === 'dark';
@@ -253,7 +270,14 @@ export function enhancePieChart(svg, isVisualMode, spec) {
       rect.setAttribute('rx', '6');
       rect.setAttribute('ry', '6');
       rect.setAttribute('y', '-2');
-      rect.style.setProperty('stroke-width', '0', 'important');
+      // 色見本に輪郭を付け、淡い色でも背景に溶けないようにする（#150）。輪郭は、塗りと同じ色相の濃い色
+      const swatch = rect.style.fill || rect.getAttribute('fill');
+      if (isVisualMode && swatch) {
+        rect.style.setProperty('stroke', `color-mix(in srgb, ${swatch} 72%, ${isDark ? '#FFFFFF' : '#1E293B'})`, 'important');
+        rect.style.setProperty('stroke-width', '1.5px', 'important');
+      } else {
+        rect.style.setProperty('stroke-width', '0', 'important');
+      }
     }
     const text = g.querySelector('text');
     if (text) {
@@ -263,6 +287,15 @@ export function enhancePieChart(svg, isVisualMode, spec) {
       text.style.setProperty('font-weight', '600', 'important');
     }
   });
+
+  // Light では、暗い扇（Circles の赤・緑など）の上の文字だけ白にする（#150）。明るい扇は濃い文字のまま
+  if (isVisualMode && !isDark) {
+    slices.forEach((p, i) => {
+      const text = sliceTexts[i];
+      const lum = relativeLuminance(p.style.fill || p.getAttribute('fill'));
+      if (text && lum !== null && lum < 0.3) text.style.setProperty('fill', '#FFFFFF', 'important');
+    });
+  }
 
   if (isVisualMode) {
     const holeFill = isDark ? '#1E293B' : '#FFFFFF';

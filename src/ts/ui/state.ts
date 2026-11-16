@@ -287,6 +287,19 @@ export function lightSectionScale(style: string) {
   }
   return vars;
 }
+// Light の Visualモードの円グラフの扇の色（DD-DIAG-027, DTP-003）。
+// Mermaid の派生のままでは、淡い主色から作った半透明の色になり、隣の扇や背景と見分けにくい。
+// スタイルの 4 色をそのまま（濃い側）先頭の 4 枚に当て、5 枚目以降は白・濃紺を混ぜた段にする。不透明で塗る
+export function lightPieScale(style: string) {
+  const palette = VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
+  const vars = { pieOpacity: '1' };
+  for (let i = 0; i < 12; i++) {
+    const base = palette[i % 4];
+    const band = Math.floor(i / 4);
+    vars[`pie${i + 1}`] = band === 0 ? base : band === 1 ? mixHex(base, '#FFFFFF', 0.42) : mixHex(base, LIGHT_SECTION_TEXT, 0.22);
+  }
+  return vars;
+}
 // Vibrant Circles で、白文字では読みにくい明るい塗り
 export const CIRCLE_DARK_TEXT_FILLS = ['#ECB674'];
 // シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）
