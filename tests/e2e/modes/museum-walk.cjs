@@ -1,4 +1,4 @@
-// ミュージアム・ウォーク（TC-MWLK-001〜006、FR-056）のテスト。tests/e2e.cjs が tests/e2e/modes/ のファイルを自動で集める（ARC-MODE-008）。
+// ミュージアム・ウォーク（TC-MWLK-001〜008、FR-056）のテスト。tests/e2e.cjs が tests/e2e/modes/ のファイルを自動で集める（ARC-MODE-008）。
 // 共通の品質（始められる・エラーがない・スマホの幅ではみ出さない・Esc で戻る）は present-modes.cjs の関門で確かめる。ここでは体験の核心だけを確かめる。
 // 確かめた場面のスクリーンショット（ゲラ）を SHOT_DIR に mw-*.png で残す（dtp の校正で使う）。
 const path = require('path');
@@ -63,6 +63,40 @@ async function testMuseumWalk(browser) {
       && built.stands === built.figures && built.alcoves === built.quotes && ['body', 'bullet', 'h3', 'number'].every(k => built.kinds.includes(k))
       && built.signs === built.slabs && built.imagesLoaded && built.idsInside.length === 0 && built.contiguous && built.lights && page.consoleErrors.length === 0,
     JSON.stringify({ scriptBefore, ...built, errors: page.consoleErrors }));
+
+    // TC-MWLK-008: 長い題名の表紙で、題名が語の途中で折り返さない（#156）
+    const title = await page.evaluate(() => {
+      const el = document.querySelector('#museum-walk .mw-gate.is-cover .mw-title');
+      const cs = getComputedStyle(el);
+      // 題名は 3D 変換の中にあり、文字の位置が傾く。変換の外に同じ書体・幅の複製を置いて、行の切れ目を測る
+      const copy = document.createElement('div');
+      copy.textContent = el.textContent;
+      copy.style.cssText = `position:fixed;left:0;top:0;visibility:hidden;width:${el.offsetWidth}px;font:${cs.font};letter-spacing:${cs.letterSpacing};overflow-wrap:${cs.overflowWrap};line-break:${cs.lineBreak};word-break:${cs.wordBreak};text-wrap:${cs.textWrap}`;
+      document.body.appendChild(copy);
+      const node = copy.firstChild;
+      const text = node.textContent;
+      const range = document.createRange();
+      const tops = [];
+      for (let k = 0; k < text.length; k++) {
+        range.setStart(node, k);
+        range.setEnd(node, k + 1);
+        const r = range.getClientRects()[0];
+        tops.push(r ? Math.round(r.top) : null);
+      }
+      // 行の切れ目（隣り合う文字の top が違う位置）が、語の中にないこと
+      const words = ['ボリューム', '雛形', '総合', 'サンプル', '図表', 'サイズ', 'Lucivo'];
+      const broken = [];
+      words.forEach(w => {
+        let from = text.indexOf(w);
+        while (from >= 0) {
+          for (let k = from + 1; k < from + w.length; k++) if (tops[k] !== null && tops[k - 1] !== null && tops[k] !== tops[k - 1]) broken.push(`${w}@${k}`);
+          from = text.indexOf(w, from + 1);
+        }
+      });
+      copy.remove();
+      return { text, lines: new Set(tops.filter(t => t !== null)).size, wordBreak: cs.wordBreak, textWrap: cs.textWrap, broken };
+    });
+    record('TC-MWLK-008', title.text.length > 20 && title.lines >= 2 && title.wordBreak === 'auto-phrase' && title.textWrap === 'balance' && title.broken.length === 0, JSON.stringify(title));
 
     // TC-MWLK-002: 歩く（押し続ける・1 回押し・ホイール・後ろへ）。門を通り抜けると、今いる章の表示が変わる。止まると左の壁を向き、G で正面に戻る
     const i0 = await info(page);
@@ -221,6 +255,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007'], fn: testMuseumWalk, timeoutMs: 180000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008'], fn: testMuseumWalk, timeoutMs: 180000 }
   ]
 };

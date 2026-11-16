@@ -199,6 +199,19 @@ async function testVisualStageQuality(browser) {
   const firstSplitSlab = await page.$('#visual-stage-container .exhibition-slab-split:not(.is-stacked)');
   if (firstSplitSlab) await firstSplitSlab.screenshot({ path: path.join(SHOT_DIR, 'slab-split-shapes-light.png') });
 
+  // TC-DIAG-032 2 段組みの右カラムの図のカードで、札（INFOGRAPHIC // 01）が 1 行に収まる（#153）
+  await page.waitForFunction(() => document.querySelector('#visual-stage-container .exhibition-slab-split:not(.is-stacked) .exhibition-diagram-header'), null, { timeout: 5000 });
+  const tag = await page.evaluate(() => {
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab-split:not(.is-stacked)');
+    const header = slab.querySelector('.exhibition-diagram-header');
+    const label = header.querySelector(':scope > div:first-child > span:last-child');
+    const cs = getComputedStyle(label);
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    return { text: label.textContent.trim(), lines: range.getClientRects().length, whiteSpace: cs.whiteSpace, height: +label.getBoundingClientRect().height.toFixed(1), fontSize: parseFloat(cs.fontSize) };
+  });
+  record('TC-DIAG-032', tag.lines === 1 && tag.whiteSpace === 'nowrap' && tag.height <= tag.fontSize * 2, JSON.stringify(tag));
+
   // 9 章の図を 1:1 に切り替えると 1 段組み（is-stacked）になり、Fit に戻すと 2 段組みに戻る
   await page.click('#visual-stage-container [data-action="scale-actual"][data-index="0"]');
   const actualStacked = await page.evaluate(() => {
