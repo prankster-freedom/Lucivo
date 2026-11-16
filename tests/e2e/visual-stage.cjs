@@ -212,6 +212,51 @@ async function testVisualStageQuality(browser) {
   });
   record('TC-DIAG-032', tag.lines === 1 && tag.whiteSpace === 'nowrap' && tag.height <= tag.fontSize * 2, JSON.stringify(tag));
 
+  // TC-DIAG-038 2 段組みの解説の置き方と、図の拡大の上限（DTP-VTPL-060, DD-DIAG-044, #146）
+  const proseFit = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    const slabs = Array.from(root.querySelectorAll('.exhibition-slab'));
+    const findSlab = titleRe => slabs.find(s => { const h2 = s.querySelector('h2'); return h2 && titleRe.test(h2.textContent); });
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const measure = s => {
+      const body = s.querySelector('.exhibition-slab-body').getBoundingClientRect();
+      const prose = s.querySelector('.exhibition-slab-prose');
+      const svg = s.querySelector('.exhibition-viewport > svg');
+      const boxes = Array.from(prose.children).map(el => el.getBoundingClientRect());
+      const round = v => +v.toFixed(1);
+      return {
+        stacked: s.classList.contains('is-stacked'),
+        lead: !!prose.querySelector(':scope > .vs-lead'),
+        above: round(Math.min(...boxes.map(b => b.top)) - body.top),
+        below: round(body.bottom - Math.max(...boxes.map(b => b.bottom))),
+        svgH: round(svg.getBoundingClientRect().height),
+        naturalH: round(svg.viewBox.baseVal.height)
+      };
+    };
+    window.__measureSplitProse = title => measure(findSlab(new RegExp(title)));
+    return { rem, state12: measure(findSlab(/^STAGE \d+状態遷移図$/)), flow9: measure(findSlab(/フローチャート$/)), bigFlow23: measure(findSlab(/大きなフローチャート/)) };
+  });
+  // 画面より長い図（24 章）は、Canvas 表示の幅で 2 段組みになる。上の空きが上限で止まることを確かめる
+  await page.click('[data-view-mode="canvas"]');
+  await waitRendered(page);
+  await page.waitForFunction(() => { const m = window.__measureSplitProse('大きな状態遷移図'); return !m.stacked && m.svgH > 0; }, null, { timeout: 10000 }).catch(() => {});
+  proseFit.bigState24 = await page.evaluate(() => window.__measureSplitProse('大きな状態遷移図'));
+  await page.click('[data-view-mode="split"]');
+  await waitRendered(page);
+  const offsetCap = 18 * proseFit.rem;
+  const heightCap = 30 * proseFit.rem;
+  // 上の空きは下の空きと同じ（中央）か、上限（--split-prose-offset）で止まる
+  const centered = m => !m.stacked && (m.above <= offsetCap + 1) && (Math.abs(m.above - m.below) <= 2 || (Math.abs(m.above - offsetCap) <= 1 && m.below > m.above));
+  // 等倍の幅は 1px 単位に切り上げるため、高さは 1% まで大きくなる
+  const fitCapped = m => m.svgH <= Math.max(m.naturalH, heightCap) * 1.01 + 1;
+  record('TC-DIAG-038',
+    proseFit.state12.lead && !proseFit.flow9.lead
+      && centered(proseFit.state12) && centered(proseFit.flow9) && centered(proseFit.bigState24)
+      && proseFit.state12.above > 20 && Math.abs(proseFit.bigState24.above - offsetCap) <= 1
+      && fitCapped(proseFit.state12) && fitCapped(proseFit.flow9)
+      && proseFit.bigFlow23.stacked && proseFit.bigFlow23.above <= 1,
+    JSON.stringify(proseFit));
+
   // 9 章の図を 1:1 に切り替えると 1 段組み（is-stacked）になり、Fit に戻すと 2 段組みに戻る
   await page.click('#visual-stage-container [data-action="scale-actual"][data-index="0"]');
   const actualStacked = await page.evaluate(() => {

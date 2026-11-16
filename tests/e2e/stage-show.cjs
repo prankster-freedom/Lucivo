@@ -415,6 +415,7 @@ async function testStageShow(browser) {
   await widePage.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(widePage);
   const wideOverflows = [];
+  const cappedInShow = [];
   for (let i = 0; i < SHOWCASE_SCENES; i++) {
     if (i > 0) {
       await widePage.keyboard.press('b');
@@ -427,16 +428,19 @@ async function testStageShow(browser) {
       const root = document.getElementById('visual-stage-container');
       const cur = document.querySelector('#visual-stage-container .exhibition-wrap > .is-scene');
       const h = cur ? ((cur.querySelector('h1, h2') || {}).textContent || '').trim().slice(0, 24) : '';
-      return { overflow: root.scrollHeight - root.clientHeight, h };
+      // 2 段組みの図の拡大の上限（DD-DIAG-044）は、発表では使わない。図の幅は fitSceneDiagrams が決める（DD-SHOW-004, #146）
+      const splitSvg = cur && cur.classList.contains('exhibition-slab-split') ? cur.querySelector('.exhibition-viewport > svg') : null;
+      return { overflow: root.scrollHeight - root.clientHeight, h, splitMaxWidth: splitSvg ? getComputedStyle(splitSvg).maxWidth : null };
     });
     if (st.overflow > 0 && ![12, 13, 14].includes(i)) {
       wideOverflows.push({ slide: i + 1, ...st });
     }
+    if (st.splitMaxWidth && st.splitMaxWidth !== 'none') cappedInShow.push({ slide: i + 1, ...st });
   }
   await widePage.context().close();
 
-  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100 && wideOverflows.length === 0,
-    JSON.stringify({ diagram, flowHead, wideOverflows }));
+  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100 && wideOverflows.length === 0 && cappedInShow.length === 0,
+    JSON.stringify({ diagram, flowHead, wideOverflows, cappedInShow }));
 
   // TC-SHOW-004 画面に収まらない章は、次の章へ進む前に残りをスクロールする
   await pressUntil(page, () => document.getElementById('visual-stage-container').scrollHeight - innerHeight > 200);
