@@ -59,7 +59,7 @@ jobs:
           TAG: ${{ steps.check.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
-          BUILD_VERSION="${VERSION} (build #${{ github.run_number }})"
+          BUILD_VERSION="${VERSION} (build id: ${{ github.run_id }})"
           # スタンドアロン版（dist/）だけをビルドして ZIP にする。GitHub Release に付けるのはこの ZIP 1 つ
           # 公開用 URL の Web 版は、deploy.yml がタグからビルドし直す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-004・005）
           LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod --channel standalone
