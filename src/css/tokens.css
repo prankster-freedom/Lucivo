@@ -3,6 +3,7 @@
    ========================================================================== */
 :root,
 body[data-appearance="light"] {
+  color-scheme: light;
   --app-bg: #F8FAFC;
   --nav-bg: rgba(255, 255, 255, 0.95);
   --nav-border: #E2E8F0;
@@ -37,6 +38,7 @@ body[data-appearance="light"] {
 }
 
 body[data-appearance="dark"] {
+  color-scheme: dark;
   --app-bg: #0B0F19;
   --nav-bg: rgba(15, 23, 42, 0.95);
   --nav-border: #1E293B;
