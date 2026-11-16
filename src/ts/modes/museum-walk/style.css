@@ -198,6 +198,7 @@ html.is-museum-walk body { overflow: hidden; }
   width: 100%;
   font: 600 204px/1.1 "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif; color: #fff;
   overflow-wrap: anywhere; line-break: strict;
+  word-break: auto-phrase; text-wrap: balance;
   text-shadow: 0 8px 36px rgba(0, 0, 0, .9), 0 0 64px rgba(var(--tint), .38);
 }
 #museum-walk .mw-gate.is-cover .mw-title { letter-spacing: .04em; }
