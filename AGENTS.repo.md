@@ -46,7 +46,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 ## 4. 版番号（`AGENTS.md` 1.9・release スキルの例外）
 
 - 版番号は、README の本文の「**Version**」と `package.json` の `version` の 2 か所に書き、この 2 か所を正とする（release スキルの「README の Front Matter の `version`」の例外）。リリースでは 2 か所を同じ版にそろえる
-- 画面に表示するバージョン表記は、本番・スタンドアロン配布版が `X.Y.Z (build #N)`、Canary 版（`/preview/`）が `X.Y.Z-canary (build #N)`、ローカル開発ビルドが `X.Y.Z` とする（`tools/build-app.cjs` が `LUCIVO_VERSION_OVERRIDE` または `package.json` の `version` を埋め込む）
+- 画面に表示するバージョン表記は、本番・スタンドアロン配布版が `X.Y.Z (build id: <run_id>)`、Canary 版（`/preview/`）が `X.Y.Z-canary (build id: <run_id>)`、ローカル開発ビルドが `X.Y.Z` とする（`tools/build-app.cjs` が `LUCIVO_VERSION_OVERRIDE` または `package.json` の `version` を埋め込む）
 - `release/*` ブランチでは `package.json` の `"version"` と `README.md` のみを更新する。版の表記はファイルに書いてコミットせず、CI（`release.yml` / `deploy.yml`）がビルドのときに注入する（`doc/2.ARCHITECTURE.md` 4.14 `ARC-PUB-003`）。リリース PR は版番号と文書しか変えないため、`tools/check-ci-changes.cjs` により E2E テストは再実行されない
 
 ## 5. 「Visualモードの追加訴求ポイントの提案依頼」の定型ワークフロー
@@ -74,7 +74,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 `main` への反映は branch-strategy スキルに従う。`.github/workflows/self-approve.yml` は同スキルのひな形から導入している。
 
-- **Canary 反映（通常の開発 PR）**: 開発中の feature ブランチ（`release/*` 以外、非 Draft、最新の `main` にリベース済み）は、`lint` および `test` の CI が通過すると `.github/workflows/canary-auto-merge.yml` により `/self-approve` を経ずに自動で `main` へ fast-forward マージされる。マージ後は `.github/workflows/deploy.yml` がテスト用 URL（`https://prankster-freedom.github.io/Lucivo/preview/`）へ Canary 版（`X.Y.Z-canary (build #N)`）をデプロイする。公開用 URL（`/`）は最新リリースタグのまま維持される
+- **Canary 反映（通常の開発 PR）**: 開発中の feature ブランチ（`release/*` 以外、非 Draft、最新の `main` にリベース済み）は、`lint` および `test` の CI が通過すると `.github/workflows/canary-auto-merge.yml` により `/self-approve` を経ずに自動で `main` へ fast-forward マージされる。マージ後は `.github/workflows/deploy.yml` がテスト用 URL（`https://prankster-freedom.github.io/Lucivo/preview/`）へ Canary 版（`X.Y.Z-canary (build id: <run_id>)`）をデプロイする。公開用 URL（`/`）は最新リリースタグのまま維持される
 - **正式リリース（`release/*` ブランチ PR）**: 正式リリース時は `release/vX.Y.Z` ブランチから `main` 向け PR を発行し、ユーザーによる `/self-approve` を経て `main` へマージする（`GITHUB_TOKEN` によるマージ後は `workflow_run` で `.github/workflows/release.yml` と `deploy.yml` が連鎖実行される）
 
 ### 6.1 リリース前の統合ブランチ（`feature/pre-test`）
@@ -104,10 +104,10 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 1. **リリース PR の作成（`release/v<版>` ブランチ）**: `package.json` の `"version"` と `README.md`（**Version** とリリースノート）のみを更新して `main` 向け PR を発行する（版番号と文書しか変えないため E2E はスキップされる）。
 2. **【承認】`/self-approve` によるマージ**: ユーザーが PR に `/self-approve` コメントをすると、`main` へマージされる。
 3. **自動ビルド・タグ・GitHub Release 公開（`.github/workflows/release.yml`）**: `main` の `package.json` の `version` に対応するタグ `lucivo-v<版>` が未作成の場合、CI が自動で以下を順に実行する。
-   - `LUCIVO_VERSION_OVERRIDE="<版> (build #<run_number>)"` でスタンドアロン版（`dist/`）をビルドし、`Lucivo-v<版>/` フォルダ構成の ZIP `Lucivo-v<版>.zip` を作成する
-   - 注釈付きのタグ `lucivo-v<版>` を作成・push する。注釈の本文には、埋め込んだ版の表記（`<版> (build #<run_number>)`）をそのまま書く
+   - `LUCIVO_VERSION_OVERRIDE="<版> (build id: <run_id>)"` でスタンドアロン版（`dist/`）をビルドし、`Lucivo-v<版>/` フォルダ構成の ZIP `Lucivo-v<版>.zip` を作成する
+   - 注釈付きのタグ `lucivo-v<版>` を作成・push する。注釈の本文には、埋め込んだ版の表記（`<版> (build id: <run_id>)`）をそのまま書く
    - README の該当版の節＋ZIP のダウンロードリンクと使い方を本文にして GitHub Release（タイトル `Lucivo <版>`）を公開し、ZIP を付ける
-4. **GitHub Pages の更新（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、最新のタグからビルドし直して公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を更新する。版の表記はタグの注釈から読むため、ZIP と同じ `<版> (build #<Release の run_number>)` になる。あわせて `main` からテスト用 URL（`/preview/`）も更新する。
+4. **GitHub Pages の更新（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、最新のタグからビルドし直して公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を更新する。版の表記はタグの注釈から読むため、ZIP と同じ `<版> (build id: <Release の run_id>)` になる。あわせて `main` からテスト用 URL（`/preview/`）も更新する。
 5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `README.md` の該当版の節が欠落なく反映されていること）、付いている ZIP が `Lucivo-v<版>.zip` の 1 つだけで、展開して `index.html` が開けること、公開用 URL の版の表記が ZIP と同じであること、テスト用 URL が開けることを確かめる。
 
 ## 9. モデルの区分の対応（`AGENTS.md` 1.11）
