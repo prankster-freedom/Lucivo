@@ -245,7 +245,7 @@ journey
 
 ```mermaid
 quadrantChart
-  title "施策の評価"
+  title 施策の評価
   x-axis "効果が低い" --> "効果が高い"
   y-axis "工数が小さい" --> "工数が大きい"
   quadrant-1 "計画して実施"
