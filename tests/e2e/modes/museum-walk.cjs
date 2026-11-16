@@ -17,6 +17,30 @@ const info = page => page.evaluate(id => window.LucivoModes.get(id).info(), MODE
 const walkTo = (page, z) => page.evaluate(([id, zz]) => window.LucivoModes.get(id).walkTo(zz), [MODE, z]);
 const shot = (page, name) => page.screenshot({ path: path.join(SHOT_DIR, `mw-${name}.png`) });
 
+// 歩きは速度と摩擦で動き、1 コマの進みに上限（0.05 秒分）がある。毎秒のコマ数が少ない環境では、動きが実時間より遅れる。
+// そのため、実時間の待ち（waitForTimeout）で位置を読むと、滑りの途中の値になる。位置が止まるまで待ってから読む（TC-MWLK-002）
+async function settle(page, maxMs = 15000) {
+  let last = (await info(page)).z;
+  let still = 0;
+  for (let t = 0; t < maxMs && still < 3; t += 250) {
+    await page.waitForTimeout(250);
+    const z = (await info(page)).z;
+    still = Math.abs(z - last) < 0.5 ? still + 1 : 0;
+    last = z;
+  }
+  return last;
+}
+
+// key を押し続け、条件を満たすか上限の時間になったら離す
+async function holdUntil(page, key, done, maxMs = 15000) {
+  await page.keyboard.down(key);
+  for (let t = 0; t < maxMs; t += 100) {
+    await page.waitForTimeout(100);
+    if (done((await info(page)).z)) break;
+  }
+  await page.keyboard.up(key);
+}
+
 // 止まって左の壁を向いたとき、パーツの真ん中が正面に来る位置（横の距離 lateral のとき）
 const readingZ = (part, lateral) => part.z - part.w / 2 + lateral;
 
@@ -101,28 +125,21 @@ async function testMuseumWalk(browser) {
     // TC-MWLK-002: 歩く（押し続ける・1 回押し・ホイール・後ろへ）。門を通り抜けると、今いる章の表示が変わる。止まると左の壁を向き、G で正面に戻る
     const i0 = await info(page);
     const g1 = i0.gates[1];
-    // 画面なしの Chromium は毎秒のコマ数が少なく、1 コマの進みに上限（0.05 秒分）があるため、門のすぐ手前から長めに押す
+    // 門のすぐ手前から、門を通り抜けるまで押し続け、滑りが止まってから位置を読む（待ちは実時間でなく、位置が止まるまで）
     await walkTo(page, g1.z + 120);
     const zoneBefore = await page.textContent('#museum-walk .mw-zone');
-    await page.keyboard.down('ArrowUp');
-    await page.waitForTimeout(2500);
-    await page.keyboard.up('ArrowUp');
-    await page.waitForTimeout(1500);
+    await holdUntil(page, 'ArrowUp', z => z < g1.z - 60);
+    await settle(page);
     const afterHold = await info(page);
     const zoneAfter = await page.textContent('#museum-walk .mw-zone');
     const zTap0 = afterHold.z;
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(1800);
-    const zTap1 = (await info(page)).z;
+    const zTap1 = await settle(page);
     await page.mouse.move(700, 450);
     await page.mouse.wheel(0, 400);
-    await page.waitForTimeout(1500);
-    const zWheel = (await info(page)).z;
-    await page.keyboard.down('ArrowDown');
-    await page.waitForTimeout(800);
-    await page.keyboard.up('ArrowDown');
-    await page.waitForTimeout(1500);
-    const zBack = (await info(page)).z;
+    const zWheel = await settle(page);
+    await holdUntil(page, 'ArrowDown', z => z > zWheel + 100);
+    const zBack = await settle(page);
     const body = i0.parts.find(p => p.kind === 'body' && p.z < g1.z);
     await walkTo(page, readingZ(body, 512));
     const stopped = await info(page);
