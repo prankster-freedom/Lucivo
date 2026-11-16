@@ -106,21 +106,26 @@ function fitSceneDiagrams(scene) {
   scene.querySelectorAll('.exhibition-slab-split').forEach(updateSlabSplit);
   if (scene.classList.contains('exhibition-slab-split')) updateSlabSplit(scene);
   const stage = stageContainer();
-  const stageBottomPad = stage ? (parseFloat(getComputedStyle(stage).paddingBottom) || 0) : 0;
-  const effectiveBottomMargin = Math.max(SCENE_FIT.bottomMargin, stageBottomPad + 28);
+  const stageStyle = stage ? getComputedStyle(stage) : null;
+  const stageTopPad = stageStyle ? (parseFloat(stageStyle.paddingTop) || 0) : 0;
+  const stageBottomPad = stageStyle ? (parseFloat(stageStyle.paddingBottom) || 0) : 0;
+  const effectiveBottomMargin = Math.max(SCENE_FIT.bottomMargin, stageBottomPad + 16);
   scene.querySelectorAll('.exhibition-viewport > svg').forEach(svg => {
     const viewBox = svg.viewBox && svg.viewBox.baseVal;
     if (!viewBox || !viewBox.width) return;
+    const prevSvgH = svg.getBoundingClientRect().height;
+    const chromeH = Math.max(0, scene.getBoundingClientRect().height - prevSvgH);
     svg.style.removeProperty('--scene-width');
     const host = svg.parentElement;
     const style = getComputedStyle(host);
     const availableWidth = host.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
     const top = host.getBoundingClientRect().top + parseFloat(style.paddingTop);
     const remaining = window.innerHeight - top - parseFloat(style.paddingBottom) - effectiveBottomMargin;
+    const byChrome = window.innerHeight - stageTopPad - effectiveBottomMargin - chromeH;
     const isSplit = Boolean(svg.closest('.exhibition-slab-split'));
     const availableHeight = isSplit
       ? Math.max(160, remaining)
-      : Math.max(remaining, window.innerHeight * SCENE_FIT.minHeightRatio);
+      : Math.max(Math.min(remaining, byChrome), window.innerHeight * SCENE_FIT.minHeightRatio);
     const readable = (parseFloat(svg.style.minWidth) || 0) / viewBox.width;
     const scale = Math.max(readable, Math.min(availableWidth / viewBox.width, availableHeight / viewBox.height, SCENE_FIT.maxScale));
     svg.style.setProperty('--scene-width', `${Math.round(viewBox.width * scale)}px`);
@@ -173,11 +178,9 @@ function applyScene(animate) {
     if (s !== scene) s.classList.remove('is-scene-in');
   });
   applyBuild(scene);
+  if (animate) stageContainer().scrollTop = 0;
   fitSceneDiagrams(scene);
-  if (animate) {
-    stageContainer().scrollTop = 0;
-    replaySceneEntrance(scene);
-  }
+  if (animate) replaySceneEntrance(scene);
   updateHud();
   scheduleAuto();
 }
