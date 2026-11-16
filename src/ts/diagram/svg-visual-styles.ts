@@ -8,7 +8,7 @@ import {
   LIGHT_SECTION_TEXT,
   state
 } from '../ui/state';
-import { getThemeSpec, getDiagramSpec } from './mermaid-config';
+import { getThemeSpec, getDiagramSpec, VISUAL_NODE_LABEL_WEIGHT } from './mermaid-config';
 import {
   pathBox,
   createSvgElement,
@@ -146,7 +146,7 @@ export function decorateVisualShapes(svg, uid) {
       if (hasUserTextColor(el)) return;
       el.style.setProperty('color', '#1E293B', 'important');
       el.style.setProperty('fill', '#1E293B', 'important');
-      el.style.setProperty('font-weight', '700', 'important');
+      el.style.setProperty('font-weight', String(VISUAL_NODE_LABEL_WEIGHT.shapes), 'important');
     });
 
     if (rect) {
@@ -215,7 +215,7 @@ export function decorateVisualCardNode(g: Element, uid: string, capGradients: st
       if (hasUserTextColor(el)) return;
       el.style.setProperty('color', '#0F172A', 'important');
       el.style.setProperty('fill', '#0F172A', 'important');
-      el.style.setProperty('font-weight', '700', 'important');
+      el.style.setProperty('font-weight', String(VISUAL_NODE_LABEL_WEIGHT.cards), 'important');
     });
   };
 
@@ -335,7 +335,7 @@ export function decorateVisualCircles(svg, uid) {
       if (hasUserTextColor(el)) return;
       el.style.setProperty('color', textColor, 'important');
       el.style.setProperty('fill', textColor, 'important');
-      el.style.setProperty('font-weight', '700', 'important');
+      el.style.setProperty('font-weight', String(VISUAL_NODE_LABEL_WEIGHT.circles), 'important');
     });
   });
 
@@ -402,7 +402,7 @@ export function decorateVisualEditorial(svg, uid) {
       if (hasUserTextColor(el)) return;
       el.style.setProperty('color', '#2B2D42', 'important');
       el.style.setProperty('fill', '#2B2D42', 'important');
-      el.style.setProperty('font-weight', '600', 'important');
+      el.style.setProperty('font-weight', String(VISUAL_NODE_LABEL_WEIGHT.editorial), 'important');
     });
   });
 

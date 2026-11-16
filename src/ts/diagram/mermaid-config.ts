@@ -167,6 +167,18 @@ export function buildMermaidThemeVariables(spec, isVisual: boolean, isDark: bool
   };
 }
 
+// Visualモードのノードの文字の太さ（スタイルごと）。後処理（svg-visual-styles.ts）がこの太さにする（DD-DIAG-035）
+export const VISUAL_NODE_LABEL_WEIGHT: Record<string, number> = { shapes: 700, cards: 700, circles: 700, editorial: 600 };
+
+// Mermaid がノードの大きさを測るときの文字の太さを、後処理で付ける太さにそろえる（DD-DIAG-035, #145）。
+// themeCSS は図の SVG の <style> に入り、Mermaid は描く前にこれを入れるため、測るときにも効く。
+// そろえないと、太くした文字が測った幅に収まらずに折り返し、形の高さ（1 行分）からはみ出す
+function nodeLabelThemeCss(isVisual: boolean): string {
+  if (!isVisual) return '';
+  const weight = VISUAL_NODE_LABEL_WEIGHT[state.infographicStyle] || VISUAL_NODE_LABEL_WEIGHT.shapes;
+  return `.nodeLabel, .nodeLabel *, .stateLabel, .stateLabel * { font-weight: ${weight} !important; }`;
+}
+
 export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 'dagre', code = '') {
   syncCssTokens();
   const spec = getDiagramSpec(isVisual);
@@ -187,6 +199,7 @@ export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', la
     suppressErrorRendering: true,
     fontFamily: '"Inter", "Noto Sans JP", -apple-system, sans-serif',
     fontSize: 13,
+    themeCSS: nodeLabelThemeCss(isVisual),
     flowchart: {
       curve: getMermaidCurve(curve),
       padding: 11,
