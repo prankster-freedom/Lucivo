@@ -403,6 +403,36 @@ body[data-appearance="dark"] .exhibition-slab {
 .exhibition-slab-split:not(.is-stacked) > .exhibition-slab-body > .exhibition-slab-figure > .exhibition-diagram-card {
   margin: 0;
 }
+/* 解説を図の上下中央に置く（DTP-VTPL-060, DD-DIAG-044, #146）。上下に伸びる空きを入れて中央にそろえ、
+   上の空きは --split-prose-offset までにする。図が画面より長くても、解説は最初の画面に見える。
+   解説が図より長いときは空きが 0 になり、上端から始まる */
+.exhibition-slab-split {
+  --split-prose-offset: 18rem;
+  --split-fit-height: 30rem;
+}
+.exhibition-slab-split:not(.is-stacked) > .exhibition-slab-body > .exhibition-slab-prose {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+.exhibition-slab-split:not(.is-stacked) > .exhibition-slab-body > .exhibition-slab-prose::before,
+.exhibition-slab-split:not(.is-stacked) > .exhibition-slab-body > .exhibition-slab-prose::after {
+  content: "";
+  flex: 1 1 0;
+}
+.exhibition-slab-split:not(.is-stacked) > .exhibition-slab-body > .exhibition-slab-prose::before {
+  max-height: var(--split-prose-offset);
+}
+/* 細い段のリードは、文節で折り返す */
+.exhibition-slab-split > .exhibition-slab-body > .exhibition-slab-prose > .vs-lead {
+  word-break: auto-phrase;
+}
+/* 2 段組みでは、小さな図の拡大を、図の高さが --split-fit-height を超えない範囲に抑える（等倍は下回らない）。
+   --fit-aspect（幅 ÷ 高さ）と --natural-width は applyReadableFit が図に渡す。
+   ステージ発表では、図の大きさを fitSceneDiagrams が画面に合わせて決めるため、この上限を使わない（DD-SHOW-004） */
+html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport:not(.is-actual-size) svg {
+  max-width: min(100%, var(--fit-max-width, 100%), max(var(--natural-width, 100%), calc(var(--fit-aspect, 100) * var(--split-fit-height)))) !important;
+}
 .exhibition-slab-split:not(.is-stacked) .exhibition-viewport {
   padding: clamp(1rem, 2vw, 1.75rem);
 }

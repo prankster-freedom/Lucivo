@@ -97,6 +97,8 @@ export function applyReadableFit(svg, cacheKey) {
   if (fit.minWidth) svg.style.minWidth = `${fit.minWidth}px`;
   svg.style.setProperty('--fit-max-width', `${fit.maxWidth}px`);
   svg.style.setProperty('--natural-width', `${fit.naturalWidth}px`);
+  // 2 段組みで、拡大を図の高さで抑えるための縦横比（幅 ÷ 高さ。DD-DIAG-044）
+  if (viewBox.height) svg.style.setProperty('--fit-aspect', (viewBox.width / viewBox.height).toFixed(4));
   updateSlabSplit(svg.closest('.exhibition-slab-split'));
 }
 

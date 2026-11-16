@@ -31,13 +31,19 @@ export function isGlossaryList(items) {
   });
 }
 
+// 本文が短い文章だけ（段落 2 つ以下、合計 leadChars 字以内）かどうか。リード型（DTP-VTPL-020）と、
+// 解説＋図版型の解説をリードで組むかどうか（DTP-VTPL-060, DD-DIAG-044）の判定に使う
+export function isLeadProse(els) {
+  const leadLen = els.reduce((sum, el) => sum + el.textContent.trim().length, 0);
+  return els.length >= 1 && els.length <= 2 && els.every(el => el.tagName === 'P') && leadLen > 0 && leadLen <= TEMPLATE_LIMITS.leadChars;
+}
+
 export function detectSlabTemplate(els, slotCount) {
   if (slotCount > 0 || els.length === 0) return 'standard';
   const textLen = el => el.textContent.trim().length;
   const tags = els.map(el => el.tagName);
 
-  const leadLen = els.reduce((sum, el) => sum + textLen(el), 0);
-  if (tags.every(t => t === 'P') && els.length <= 2 && leadLen > 0 && leadLen <= TEMPLATE_LIMITS.leadChars) return 'lead';
+  if (isLeadProse(els)) return 'lead';
 
   const list = els[els.length - 1];
   const hasIntro = els.length === 2 && tags[0] === 'P';
@@ -388,8 +394,10 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
     if (slots.length === 1 && proseEls.length >= 1 && !hasComplexBlock) {
       const fm = wrapper.querySelector(':scope > .front-matter');
       const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
-      const proseHtml = proseEls.map(el => el.outerHTML).join('');
-      const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
+      // 解説が短い文章だけのときは、リード型と同じ組み方にして、図と釣り合わせる（DTP-VTPL-060, DD-DIAG-044, #146）
+      const proseInner = proseEls.map(el => el.outerHTML).join('');
+      const proseHtml = isLeadProse(proseEls) ? `<div class="vs-lead">${proseInner}</div>` : proseInner;
+      const headHtml =`${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
       slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div>${footnotesHtml}${actionsHtml}</section>`;
     } else {
       const template = detectSlabTemplate(proseEls, slots.length);
