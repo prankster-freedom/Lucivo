@@ -249,6 +249,8 @@ export const CURVE_LABELS = { smooth: '曲線', step: '直角', straight: '直�
 // Fit 表示で保つ、図の中の文字の表示上の最小サイズ（NFR-005）と、小さな図の拡大の上限
 export const MIN_FIT_FONT_PX = 10;
 export const MAX_FIT_SCALE = 1.5;
+// 図の周りの広い余白を詰める図種（DD-DIAG-028）
+export const TIGHT_VIEWBOX_TYPES = ['timeline', 'journey'];
 
 // マインドマップなどの枝ごとの色（cScale）と円グラフの色（pie）。Mermaid は darkMode のとき派生色を暗くしすぎ、
 // Dark の背景の上でノードと枝、スライスと凡例が黒く沈むので、明度をそろえた色を明示する（DD-DIAG-025）

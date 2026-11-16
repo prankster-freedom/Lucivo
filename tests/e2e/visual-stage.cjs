@@ -300,6 +300,41 @@ async function testVisualStageQuality(browser) {
   await setMode(page, { style: 'shapes', appearance: 'light' });
   record('TC-DIAG-034', pieRows.every(r => r.ok), JSON.stringify(pieRows));
 
+  // TC-DIAG-035 ガント・タイムライン・ジャーニーの文字が読める大きさで、日付や登場人物の色が崩れない（#149）
+  const readable = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    const svgOf = type => Array.from(root.querySelectorAll('[data-stage-index] > svg')).find(s => s.getAttribute('aria-roledescription') === type);
+    // 文字の大きさは、図そのものの大きさ（表示の倍率を掛ける前）で調べる。表示の倍率は画面の幅で変わるため
+    const shown = (svg, selector) => Array.from(svg.querySelectorAll(selector)).filter(el => el.textContent.trim() && getComputedStyle(el).display !== 'none')
+      .map(el => parseFloat(getComputedStyle(el).fontSize));
+    const min = list => +Math.min(...list).toFixed(1);
+    const gantt = svgOf('gantt');
+    const timeline = svgOf('timeline');
+    const journey = svgOf('journey');
+    // 見えている日付同士が重ならない
+    const ticks = Array.from(gantt.querySelectorAll('g.grid .tick text')).filter(t => getComputedStyle(t).display !== 'none').map(t => t.getBoundingClientRect()).sort((a, b) => a.left - b.left);
+    const tickOverlap = ticks.some((r, i) => i > 0 && r.left < ticks[i - 1].right - 0.5);
+    // バーの中の作業名は、バーの幅に収まる
+    const taskOverflow = Array.from(gantt.querySelectorAll('text.taskText')).some(t => {
+      const tr = t.getBoundingClientRect();
+      return !Array.from(gantt.querySelectorAll('rect.task')).some(rect => { const r = rect.getBoundingClientRect(); return tr.left >= r.left - 1 && tr.right <= r.right + 1 && tr.top >= r.top - 1 && tr.bottom <= r.bottom + 1; });
+    });
+    const chroma = color => { const v = color.match(/[\d.]+/g).slice(0, 3).map(Number); return (Math.max(...v) - Math.min(...v)) / 255; };
+    const box = svg => { const b = svg.getBBox(); const v = svg.viewBox.baseVal; return +((b.width * b.height) / (v.width * v.height)).toFixed(2); };
+    return {
+      ganttTask: min(shown(gantt, 'text.taskText, text.taskTextOutsideRight, text.taskTextOutsideLeft, text.sectionTitle')),
+      ganttTick: min(shown(gantt, 'g.grid .tick text')),
+      tickCount: ticks.length, tickOverlap, taskOverflow,
+      timelineText: min(shown(timeline, 'text, tspan')),
+      timelineFill: box(timeline),
+      journeyText: min(shown(journey, 'foreignObject div.label')),
+      journeyFill: box(journey),
+      actorChroma: +Math.max(...Array.from(journey.querySelectorAll('circle[class^="actor-"]')).map(c => chroma(getComputedStyle(c).fill))).toFixed(2)
+    };
+  });
+  record('TC-DIAG-035', readable.ganttTask >= 15 && readable.ganttTick >= 12 && readable.tickCount >= 8 && !readable.tickOverlap && !readable.taskOverflow
+    && readable.timelineText >= 17 && readable.journeyText >= 17 && readable.timelineFill >= 0.8 && readable.journeyFill >= 0.8 && readable.actorChroma <= 0.5, JSON.stringify(readable));
+
   if (page.consoleErrors.length) record('TC-DIAG-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }

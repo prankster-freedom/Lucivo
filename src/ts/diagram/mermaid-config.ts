@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { hexToRgba } from '../utils/color';
+import { hexToRgba, mixHex } from '../utils/color';
 import {
   THEMES,
+  VISUAL_STYLE_PALETTES,
   VISUAL_THEMES,
   VISUAL_THEMES_DARK,
   DEFAULT_CURVES,
@@ -152,7 +153,7 @@ export function buildMermaidThemeVariables(spec, isVisual: boolean, isDark: bool
   };
 }
 
-export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 'dagre') {
+export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', layout = 'dagre', code = '') {
   syncCssTokens();
   const spec = getDiagramSpec(isVisual);
   const isDark = state.appearance === 'dark';
@@ -190,7 +191,17 @@ export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', la
       boxMargin: 12,
       useMaxWidth: true
     },
-    gantt: {
+    // Visualモードでは、作業名・区分・日付を本文に近い大きさで読めるよう、文字とバーを大きくする（DD-DIAG-028, #149）
+    gantt: isVisual ? {
+      useWidth: 820,
+      barHeight: 32,
+      barGap: 8,
+      topPadding: 64,
+      leftPadding: 96,
+      fontSize: 15,
+      sectionFontSize: 15,
+      useMaxWidth: true
+    } : {
       useWidth: 820,
       barHeight: 24,
       barGap: 6,
@@ -200,6 +211,11 @@ export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', la
       sectionFontSize: 12,
       useMaxWidth: true
     },
+    ...(isVisual ? {
+      // ジャーニーは、作業の箱と文字を大きくし、左の凡例の幅を詰める（図が枠の幅に収まるときの縮小を減らす）
+      journey: { width: 176, height: 60, taskFontSize: 17, taskMargin: 56, leftMargin: 132, useMaxWidth: true },
+      timeline: { width: 190, useMaxWidth: true }
+    } : {}),
     state: {
       curve: getMermaidCurve(curve),
       padding: 8,
@@ -211,7 +227,16 @@ export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', la
     class: {
       curve: getMermaidCurve(curve)
     },
-    themeVariables: buildMermaidThemeVariables(spec, isVisual, isDark)
+    themeVariables: {
+      ...buildMermaidThemeVariables(spec, isVisual, isDark),
+      // タイムラインの文字は、テーマの文字の大きさで決まる。Visualモードでは年とイベント名を読める大きさにする（DD-DIAG-028）
+      ...(isVisual && /^\s*timeline\b/m.test(code) ? { fontSize: '17px' } : {}),
+      // ジャーニーの登場人物の丸（actor0〜5）は、既定では蛍光の黄緑などになる。スタイルの 4 色（Light では少し沈めた色）にする
+      ...(isVisual ? Object.fromEntries([0, 1, 2, 3, 4, 5].map(i => {
+        const palette = VISUAL_STYLE_PALETTES[state.infographicStyle] || VISUAL_STYLE_PALETTES.shapes;
+        return [`actor${i}`, mixHex(palette[(i + 2) % 4], '#1E293B', isDark ? 0 : 0.18)];
+      })) : {})
+    }
   });
 }
 

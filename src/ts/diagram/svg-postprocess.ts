@@ -7,6 +7,7 @@ import {
   CURVE_LABELS,
   MIN_FIT_FONT_PX,
   MAX_FIT_SCALE,
+  TIGHT_VIEWBOX_TYPES,
   SEQUENCE_MATH_LIFT,
   state,
   fitCache
@@ -66,6 +67,19 @@ export function applyReadableFit(svg, cacheKey) {
   const viewBox = svg && svg.viewBox && svg.viewBox.baseVal;
   if (!viewBox || !viewBox.width) return;
   let fit = cacheKey && fitCache.get(cacheKey);
+  // タイムラインとジャーニーは、Mermaid が図の周りに広い余白を取る。余白のぶん図が縮んで文字が小さくなるため、
+  // viewBox を中身の大きさ（と少しの余白）に詰める（DD-DIAG-028, #149）。計測は初回だけで、結果はキャッシュする
+  let tightViewBox = fit ? fit.viewBox : null;
+  if (!fit && TIGHT_VIEWBOX_TYPES.includes(svg.getAttribute('aria-roledescription'))) {
+    const box = svg.getBBox();
+    const pad = 16;
+    if (box.width > 0 && box.height > 0 && (box.width + pad * 2 < viewBox.width * 0.97 || box.height + pad * 2 < viewBox.height * 0.97)) {
+      tightViewBox = [box.x - pad, box.y - pad, box.width + pad * 2, box.height + pad * 2].map(v => Math.round(v)).join(' ');
+    }
+  }
+  if (tightViewBox) {
+    svg.setAttribute('viewBox', tightViewBox);
+  }
   if (!fit) {
     const sizes = Array.from(svg.querySelectorAll('text, tspan, foreignObject *'))
       .filter(el => !el.closest('math') && Array.from(el.childNodes).some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim()))
@@ -75,7 +89,8 @@ export function applyReadableFit(svg, cacheKey) {
     fit = {
       naturalWidth: Math.ceil(viewBox.width),
       minWidth: Math.ceil(viewBox.width * minScale),
-      maxWidth: Math.ceil(viewBox.width * MAX_FIT_SCALE)
+      maxWidth: Math.ceil(viewBox.width * MAX_FIT_SCALE),
+      viewBox: tightViewBox
     };
     if (cacheKey) fitCache.set(cacheKey, fit);
   }

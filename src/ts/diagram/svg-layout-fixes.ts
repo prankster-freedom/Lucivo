@@ -340,6 +340,59 @@ export function enhancePieChart(svg, isVisualMode, spec) {
   }
 }
 
+// ガントチャートの読みやすさ（Visualモード。DD-DIAG-028, #149）。
+// 要素の大きさは計測できない（DOM に入れる前の処理のため）ので、属性の座標と文字数から判断する
+export function enhanceGantt(svg) {
+  const title = svg.querySelector('text.titleText');
+  if (title) {
+    title.style.setProperty('font-size', '21px', 'important');
+    title.style.setProperty('font-weight', '800', 'important');
+  }
+  // 縦の罫線は、バーと文字より後ろに引いて見えるよう薄くする
+  svg.querySelectorAll('g.grid .tick line').forEach(line => {
+    line.style.setProperty('stroke-opacity', '0.28', 'important');
+  });
+  // 軸の日付は Mermaid の既定で 10px。区分名・作業名（15px）との差を縮める
+  const TICK_FONT = 12.5;
+  const ticks = Array.from(svg.querySelectorAll('g.grid .tick')).map(tick => {
+    const tr = parseTranslate(tick.getAttribute('transform'));
+    const text = tick.querySelector('text');
+    if (!tr || !text) return null;
+    text.style.setProperty('font-size', `${TICK_FONT}px`, 'important');
+    // 半角は 0.6 文字ぶん、全角は 1 文字ぶんの幅として見積もる
+    const width = Array.from(text.textContent.trim()).reduce((sum, ch) => sum + (/[ -~]/.test(ch) ? 0.6 : 1), 0) * TICK_FONT;
+    return { x: tr.x, width, text };
+  }).filter(Boolean);
+  // 隣の日付と重なる日付は隠す。期間の終わりの日付を残すため、右から順に確かめる（右端の 01/31 と 02/01 の重なり）
+  let kept = null;
+  for (let i = ticks.length - 1; i >= 0; i--) {
+    const t = ticks[i];
+    if (kept && t.x + t.width / 2 + 6 > kept.x - kept.width / 2) {
+      t.text.style.setProperty('display', 'none', 'important');
+    } else {
+      kept = t;
+    }
+  }
+  // マイルストーンの名前は、ひし形の左に置かれる。ひし形に接しないよう少し離す
+  svg.querySelectorAll('text.milestoneText.taskTextOutsideLeft').forEach(text => {
+    const x = parseFloat(text.getAttribute('x'));
+    if (Number.isFinite(x)) text.setAttribute('x', String(x - 8));
+  });
+}
+
+// ユーザージャーニーの読みやすさ（Visualモード。DD-DIAG-028, #149）。区分と作業の名前は foreignObject の中の div で、
+// テーマの文字の大きさ（13px）のまま。箱を大きくした設定（mermaid-config）に合わせて、文字も大きくする
+export function enhanceJourney(svg) {
+  svg.querySelectorAll('foreignObject div').forEach(div => {
+    div.style.setProperty('font-size', div.closest('.journey-section') ? '18px' : '17px', 'important');
+    div.style.setProperty('font-weight', div.closest('.journey-section') ? '700' : '600', 'important');
+    div.style.setProperty('line-height', '1.3', 'important');
+  });
+  svg.querySelectorAll('text.legend').forEach(text => {
+    text.style.setProperty('font-size', '15px', 'important');
+  });
+}
+
 // 全図表共通のレイアウト・視認性補正エントリポイント
 export function applyDiagramLayoutFixes(svg, diagramType, isVisualMode) {
   const spec = getDiagramSpec(isVisualMode);
@@ -349,5 +402,9 @@ export function applyDiagramLayoutFixes(svg, diagramType, isVisualMode) {
     polishClusterHeaders(svg, isVisualMode, spec);
   } else if (diagramType === 'pie') {
     enhancePieChart(svg, isVisualMode, spec);
+  } else if (diagramType === 'gantt' && isVisualMode) {
+    enhanceGantt(svg);
+  } else if (diagramType === 'journey' && isVisualMode) {
+    enhanceJourney(svg);
   }
 }

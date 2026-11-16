@@ -220,7 +220,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
     const lkgKey = `${block.index}-${block.modeTag}`;
     const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
     try {
-      setupMermaid(target.isVisual, block.curve || 'smooth', getMermaidLayout(block.code, block.curve));
+      setupMermaid(target.isVisual, block.curve || 'smooth', getMermaidLayout(block.code, block.curve), block.code);
       const { svg } = await mermaid.render(renderId, block.code);
       if (isStale()) return;
       const finalSvg = postProcessSvg(svg, target.isVisual);
