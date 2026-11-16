@@ -44,7 +44,7 @@ flowchart TD
   camera --> layoutTs
   subgraph Uses
     vis["Visualモードの .exhibition-wrap（読むだけ）"]
-    host["host（showVisualCanvas・restoreView・isDocumentEmpty・setLights・toast・appearance）"]
+    host["host（showVisualCanvas・restoreView・isDocumentEmpty・setLights・toast・appearance・setAppearance）"]
   end
   outline --> vis
   idx --> host
@@ -57,7 +57,7 @@ flowchart TD
 - **歩いている間に再ペイントしない**: 壁・床・天井のタイル（`.mw-wall`・`.mw-floor`・`.mw-ceil`）に、子要素・疑似要素・CSS 変数の書き換え・`filter` を足さない。毎フレーム書くのは `opacity`・`display`・`transform` だけで、値が変わったときだけ書く（`DTP-MWLK-070`）。画面の外の要素は `visibility: hidden` ではなく `display: none` で外す。
 - **文字のぼけ**: 壁の文字のパーツと立体図は、2 倍の大きさで組み、`transform` の末尾の `scale(0.5)` で置く。CSS の文字の大きさは、表示の大きさの 2 倍で書く（例: 本文は 34px 相当を `68px`）。
 - **Visualモードの DOM を書き換えない**: `outline.ts` は複製（`cloneNode`）して使い、`id`・ボタン・飾りを消す。元の DOM に触ると、終えたあとの Visualモードが崩れる。
-- **図の画像**: `figure.ts` が作る Blob の URL は、`exit()` で解放する。図の配色は、始めたときの外観で描かれているため、図を載せる板（`.mw-fig-frame.is-dark` / `.is-light`）は、`T` で外観を変えても替えない。Mermaid の図でない層の構造（`.nodes`・`.edgePaths` がない）のときは、1 枚の画像にする。
+- **図の画像**: `figure.ts` が作る Blob の URL は、外観ごとに保持して `exit()` で解放する。`T` で外観を切り替えたときは、`host.setAppearance()` で図を再描画して図板（`.mw-fig-frame.is-dark` / `.is-light`）と画像を追従させる。Mermaid の図でない層の構造（`.nodes`・`.edgePaths` がない）のときは、1 枚の画像にする。
 - **本体に触れない**: 本体の中身を使わず、`enter(host)` で受け取る host だけを使う（`ARC-MODE-006`）。外観の初期値は `host.appearance()` で受け取る。
 - **CSS の名前**: クラスは `mw-` で始め、すべて `#museum-walk` の中に書く。本体の CSS（`.wall` などの一般的な名前）とぶつけない。
 - **テスト**: `walkTo(z)` で位置を決めて確かめる。画面なしの Chromium は毎秒のコマ数が少なく、1 コマの進みに上限（0.05 秒分）があるため、キーを押し続けるテストは、短い距離を長めに押して確かめる。
