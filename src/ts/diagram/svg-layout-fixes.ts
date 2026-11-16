@@ -393,6 +393,38 @@ export function enhanceJourney(svg) {
   });
 }
 
+// 4 象限チャートの点の名前を、点の右上に寄せる（DD-DIAG-029, #151）。Mermaid の既定は点の真下・中央で、文字が点に重なって欠ける。
+// 右端の近くの点は、図の外にはみ出さないよう左上に置く。位置は属性の座標と、文字数から見積もった幅で決める
+export function enhanceQuadrantChart(svg) {
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  const FONT = 14;
+  svg.querySelectorAll('g.data-point').forEach(point => {
+    const circle = point.querySelector('circle');
+    const text = point.querySelector('text');
+    if (!circle || !text) return;
+    const cx = parseFloat(circle.getAttribute('cx'));
+    const cy = parseFloat(circle.getAttribute('cy'));
+    const r = parseFloat(circle.getAttribute('r')) || 5;
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return;
+    const width = Array.from(text.textContent.trim()).reduce((sum, ch) => sum + (/[ -~]/.test(ch) ? 0.6 : 1), 0) * FONT;
+    const toLeft = !!vb && vb.width > 0 && cx + r + 6 + width > vb.x + vb.width - 8;
+    const x = toLeft ? cx - r - 6 : cx + r + 6;
+    const y = cy - r - 3;
+    if (text.hasAttribute('transform')) {
+      text.setAttribute('transform', `translate(${x}, ${y})`);
+      text.setAttribute('x', '0');
+      text.setAttribute('y', '0');
+    } else {
+      text.setAttribute('x', String(x));
+      text.setAttribute('y', String(y));
+    }
+    text.setAttribute('text-anchor', toLeft ? 'end' : 'start');
+    text.setAttribute('dominant-baseline', 'auto');
+    text.style.setProperty('font-size', `${FONT}px`, 'important');
+    text.style.setProperty('font-weight', '600', 'important');
+  });
+}
+
 // 全図表共通のレイアウト・視認性補正エントリポイント
 export function applyDiagramLayoutFixes(svg, diagramType, isVisualMode) {
   const spec = getDiagramSpec(isVisualMode);
@@ -402,6 +434,8 @@ export function applyDiagramLayoutFixes(svg, diagramType, isVisualMode) {
     polishClusterHeaders(svg, isVisualMode, spec);
   } else if (diagramType === 'pie') {
     enhancePieChart(svg, isVisualMode, spec);
+  } else if (diagramType === 'quadrantChart') {
+    enhanceQuadrantChart(svg);
   } else if (diagramType === 'gantt' && isVisualMode) {
     enhanceGantt(svg);
   } else if (diagramType === 'journey' && isVisualMode) {

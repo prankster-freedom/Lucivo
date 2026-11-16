@@ -302,6 +302,18 @@ export function lightPieScale(style: string) {
   }
   return vars;
 }
+// Light の Visualモードの 4 象限チャートの塗り（DD-DIAG-029, DTP-003）。Mermaid の派生のままでは、4 つの象限がほぼ同じ色になり、
+// 象限の違いが伝わらない。スタイルの 4 色を白で薄めた色を 1 象限ずつ当てる。点は濃紺で、象限の上でも見分けられる
+export function lightQuadrantScale(style: string) {
+  const palette = VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
+  const vars = { quadrantPointFill: LIGHT_SECTION_TEXT, quadrantPointTextFill: LIGHT_SECTION_TEXT, quadrantTitleFill: LIGHT_SECTION_TEXT };
+  // Mermaid の番号は、1: 右上、2: 左上、3: 左下、4: 右下
+  [1, 2, 3, 4].forEach((n, i) => {
+    vars[`quadrant${n}Fill`] = mixHex(palette[i], '#FFFFFF', 0.5);
+    vars[`quadrant${n}TextFill`] = LIGHT_SECTION_TEXT;
+  });
+  return vars;
+}
 // Vibrant Circles で、白文字では読みにくい明るい塗り
 export const CIRCLE_DARK_TEXT_FILLS = ['#ECB674'];
 // シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）

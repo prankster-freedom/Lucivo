@@ -335,6 +335,28 @@ async function testVisualStageQuality(browser) {
   record('TC-DIAG-035', readable.ganttTask >= 15 && readable.ganttTick >= 12 && readable.tickCount >= 8 && !readable.tickOverlap && !readable.taskOverflow
     && readable.timelineText >= 17 && readable.journeyText >= 17 && readable.timelineFill >= 0.8 && readable.journeyFill >= 0.8 && readable.actorChroma <= 0.5, JSON.stringify(readable));
 
+  // TC-DIAG-036 4 象限チャートの点の名前が点と重ならず、4 つの象限の塗りが見分けられる（#151）
+  const quadrant = await page.evaluate(() => {
+    const root = document.getElementById('visual-stage-container');
+    const svg = Array.from(root.querySelectorAll('[data-stage-index] > svg')).find(s => s.getAttribute('aria-roledescription') === 'quadrantChart');
+    const points = Array.from(svg.querySelectorAll('g.data-point')).map(g => {
+      const c = g.querySelector('circle').getBoundingClientRect();
+      const t = g.querySelector('text').getBoundingClientRect();
+      return { overlap: !(t.left >= c.right - 0.5 || t.right <= c.left + 0.5 || t.top >= c.bottom - 0.5 || t.bottom <= c.top + 0.5), near: Math.hypot((t.left + t.right) / 2 - (c.left + c.right) / 2, (t.top + t.bottom) / 2 - (c.top + c.bottom) / 2) < 80 };
+    });
+    const frame = svg.getBoundingClientRect();
+    const fills = Array.from(svg.querySelectorAll('g.quadrant rect')).map(r => getComputedStyle(r).fill);
+    const rgb = color => color.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const pairs = [];
+    fills.forEach((a, i) => fills.slice(i + 1).forEach(b => pairs.push(Math.hypot(...rgb(a).map((v, k) => v - rgb(b)[k])))));
+    return {
+      points: points.length, overlap: points.some(p => p.overlap), near: points.every(p => p.near),
+      inside: Array.from(svg.querySelectorAll('g.data-point text')).every(t => { const r = t.getBoundingClientRect(); return r.left >= frame.left - 1 && r.right <= frame.right + 1; }),
+      quadrants: fills.length, minDistance: Math.round(Math.min(...pairs))
+    };
+  });
+  record('TC-DIAG-036', quadrant.points === 3 && !quadrant.overlap && quadrant.near && quadrant.inside && quadrant.quadrants === 4 && quadrant.minDistance >= 20, JSON.stringify(quadrant));
+
   if (page.consoleErrors.length) record('TC-DIAG-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }

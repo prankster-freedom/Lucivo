@@ -9,6 +9,7 @@ import {
   darkSectionScale,
   lightSectionScale,
   lightPieScale,
+  lightQuadrantScale,
   state
 } from '../ui/state';
 
@@ -76,7 +77,7 @@ export function buildMermaidThemeVariables(spec, isVisual: boolean, isDark: bool
     : { tertiaryColor: spec.clusterBg };
   return {
     darkMode: isDark,
-    ...(isDark ? darkSectionScale() : isVisual ? { ...lightSectionScale(state.infographicStyle), ...lightPieScale(state.infographicStyle) } : {}),
+    ...(isDark ? darkSectionScale() : isVisual ? { ...lightSectionScale(state.infographicStyle), ...lightPieScale(state.infographicStyle), ...lightQuadrantScale(state.infographicStyle) } : {}),
     background: 'transparent',
     mainBkg: spec.nodeBg,
     primaryColor: spec.nodeBg,
