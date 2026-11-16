@@ -553,8 +553,46 @@ async function testFootnotes(browser) {
   await page.close();
 }
 
+// TC-MD-021 絵文字ショートコード（FR-058）。表は、ショートコードを含む文書を描くときだけ読み込む
+async function testEmojiShortcodes(browser) {
+  const page = await openStagePage(browser);
+  const emojiScriptLoaded = () => page.evaluate(() => Array.from(document.scripts).some(s => /js\/emoji\.js/.test(s.src)));
+  await setDocument(page, ['# 絵文字なし', '', '## 章', '', '時刻は 10:30:15 です。', ''].join('\n'));
+  const beforeLoaded = await emojiScriptLoaded();
+  const md = [
+    '# 絵文字', '',
+    '## 章', '',
+    '完了 :white_check_mark: と :rocket: と :+1: と :unknown_name_x: と時刻 10:30:15。',
+    'コード `:rocket:` と URL https://example.com/a:rocket:b です。', '',
+    '```text', ':rocket:', '```', ''
+  ].join('\n');
+  await setDocument(page, md);
+  await page.waitForFunction(() => !document.querySelector('.lucivo-emoji-pending') && document.querySelector('.lucivo-emoji'), null, { timeout: 15000 });
+  const inspect = () => page.evaluate(() => {
+    const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+    const text = root.textContent;
+    return {
+      emojis: Array.from(root.querySelectorAll('.lucivo-emoji')).map(e => e.textContent),
+      pending: root.querySelectorAll('.lucivo-emoji-pending').length,
+      unknownLiteral: text.includes(':unknown_name_x:'),
+      timeLiteral: text.includes('10:30:15'),
+      inlineCode: Array.from(root.querySelectorAll('code')).some(c => c.textContent === ':rocket:'),
+      codeBlock: Array.from(root.querySelectorAll('pre')).some(p => p.textContent.trim() === ':rocket:'),
+      urlLiteral: Array.from(root.querySelectorAll('a')).some(a => a.textContent.includes('a:rocket:b'))
+    };
+  });
+  const afterLoaded = await emojiScriptLoaded();
+  const fast = await inspect();
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const visual = await inspect();
+  const ok = r => JSON.stringify(r.emojis) === JSON.stringify(['✅', '🚀', '👍']) && r.pending === 0 && r.unknownLiteral && r.timeLiteral && r.inlineCode && r.codeBlock && r.urlLiteral;
+  record('TC-MD-021', !beforeLoaded && afterLoaded && ok(fast) && ok(visual) && page.consoleErrors.length === 0, JSON.stringify({ beforeLoaded, afterLoaded, fast, visual, errors: page.consoleErrors }));
+  await page.close();
+}
+
 module.exports = {
   testFootnotes,
+  testEmojiShortcodes,
   testMarkdownTypography,
   testMathRendering,
   testFrontMatter,

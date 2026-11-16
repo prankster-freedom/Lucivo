@@ -23,6 +23,7 @@
     "dompurify": "3.4.17",
     "esbuild": "^0.28.2",
     "eslint": "10.14.0",
+    "gemoji": "8.1.0",
     "katex": "0.19.1",
     "markdownlint": "0.42.1",
     "marked": "18.1.3",

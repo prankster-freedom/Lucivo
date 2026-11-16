@@ -62,6 +62,7 @@ import {
   wrapTables
 } from './markdown/local-images';
 import { setupMarkedFootnotes, resetFootnotes, applyFootnotes } from './markdown/footnotes';
+import { setupMarkedEmoji, renderEmoji } from './markdown/emoji';
 import {
   closeFileMenu,
   setupFormatter,
@@ -149,6 +150,7 @@ function renderApp() {
   wrapTables(activeContainer);
   resolveFolderImages(activeContainer);
   renderMath(activeContainer);
+  renderEmoji(activeContainer);
   const slots = activeContainer.querySelectorAll('.lucivo-slot');
   const modeTag = isVisual ? `vis-${state.infographicStyle}` : 'std';
 
@@ -802,6 +804,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupMarkedMath();
   setupMarkedHeadings();
   setupMarkedFootnotes();
+  setupMarkedEmoji();
   setupMermaid();
   renderApp();
   loadMarkdownFromUrlParam();

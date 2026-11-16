@@ -41,7 +41,9 @@ const STAGE_MODE_ENTRIES = [
 // 必要なときだけ読み込む部品（起動時には読み込まない。NFR-006）
 const LAZY_ENTRIES = [
   // Markdown の整形（FR-053, DD-FILE-088）。markdownlint を同梱する
-  { entry: path.join(ROOT_DIR, 'src', 'ts', 'formatter', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'formatter.js') }
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'formatter', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'formatter.js') },
+  // 絵文字ショートコードの対応表（FR-058, DD-MD-070〜072）。gemoji を同梱する
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'emoji', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'emoji.js') }
 ];
 
 function copyPublicToStandalone() {

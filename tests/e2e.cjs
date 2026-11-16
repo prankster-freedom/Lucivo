@@ -33,7 +33,8 @@ const {
   testFrontMatter,
   testTree,
   testFormatter,
-  testFootnotes
+  testFootnotes,
+  testEmojiShortcodes
 } = require('./e2e/markdown-math.cjs');
 
 const {
@@ -73,6 +74,7 @@ const SUITES = [
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
   { name: 'testFootnotes', tcPrefix: ['TC-MD-020'], fn: testFootnotes },
+  { name: 'testEmojiShortcodes', tcPrefix: ['TC-MD-021'], fn: testEmojiShortcodes },
   { name: 'testFormatter', tcPrefix: ['TC-FILE-036', 'TC-FILE-037', 'TC-FILE-038', 'TC-FILE-039', 'TC-FILE-040'], fn: testFormatter },
   ...MODE_SUITES,
   ...GATE_SUITES,
