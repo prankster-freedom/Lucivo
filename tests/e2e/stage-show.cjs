@@ -341,6 +341,25 @@ async function testStageShow(browser) {
   record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === SHOWCASE_SCENES - 1 && first.index === 0 && first.shown === 1,
     JSON.stringify([second.index, third.index, back.index, last.index, first.index]));
 
+  // TC-SHOW-026 画面より短いシーンは、舞台の枠の上下の中央に置く（#144）
+  const centered = [];
+  for (let i = 1; i <= 4; i++) {
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(900);
+    centered.push(await page.evaluate(() => {
+      const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+      const scene = Array.from(wrap.children).find(c => c.classList.contains('is-scene') && getComputedStyle(c).display !== 'none');
+      const w = wrap.getBoundingClientRect();
+      const s = scene.getBoundingClientRect();
+      return { top: Math.round(s.top - w.top), bottom: Math.round(w.bottom - s.bottom), short: s.height < w.height - 40 };
+    }));
+  }
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-centered.png') });
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(600);
+  record('TC-SHOW-026', centered.some(c => c.short) && centered.filter(c => c.short).every(c => c.top > 40 && Math.abs(c.top - c.bottom) <= 4)
+    && centered.filter(c => !c.short).every(c => c.top >= 0 && c.top <= 4), JSON.stringify(centered));
+
   // TC-SHOW-003 要点カード・手順は 1 項目ずつ見せる
   await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-points'));
   await page.waitForTimeout(800);

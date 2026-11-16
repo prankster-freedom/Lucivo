@@ -107,6 +107,11 @@ html.is-stage-show .exhibition-wrap > .is-scene {
   /* 俯瞰から戻るとき、スラブの transform のトランジションで縮小図からもう一度拡大し直さないようにする */
   transition: none;
 }
+/* 画面より短いシーンは枠の中で上下の中央に置く。長いシーンは余白が 0 になり、上から置いてスクロールで見せる（DTP-SHOW-020, #144）。
+   俯瞰では格子の升目に置くため、対象から外す */
+html.is-stage-show:not(.is-stage-overview) .exhibition-wrap > .is-scene {
+  margin-block: auto;
+}
 html.is-stage-show .exhibition-hero h1 {
   font-size: 3.4rem;
   line-height: 1.25;
