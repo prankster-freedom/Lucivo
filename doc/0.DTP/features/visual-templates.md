@@ -99,7 +99,7 @@ Visualモードでは、文書を章（`h2`）ごとのスラブに分ける。�
 用途: 要点カード型のすべての項目（2 個以上）の題が日付・四半期・フェーズ・マイルストーン・バージョンを表す章（`RGH-112`、`FR-029`）。
 
 - **判定規則**: 要点カード型（`ul.vs-points`）のすべての項目が題（`.vs-point-title`）を持ち、かつ全項目の題が `2026 Q1`, `2026-04`, `2026年5月`, `Phase 1`, `Step 2`, `Milestone 3`, `v1.2`, `Day 1`, `第1期` などの時系列・フェーズ表記に一致するとき、`ul.vs-points` に `.vs-points-timeline`、各 `li` に `.vs-timeline-item`、題の `strong` に `.vs-timeline-badge` を付与する。
-- **デザイン**: カードのグリッド配置は維持したまま、`.vs-timeline-badge` を等幅フォント（JetBrains Mono・`0.82rem`・700）の角丸ピルバッジ（背景 `color-mix(in srgb, var(--vs-c) 18%, transparent)`、枠線 `1px solid color-mix(in srgb, var(--vs-c) 48%, transparent)`）として上部に配置し、カード間に破線の接続ガイドを通して時系列の連続性を示す。
+- **デザイン**: カードのグリッド配置は維持したまま、`.vs-timeline-badge` を等幅フォント（JetBrains Mono・`0.82rem`・700）の角丸ピルバッジ（背景 `color-mix(in srgb, var(--vs-c) 18%, transparent)`、枠線 `1px solid color-mix(in srgb, var(--vs-c) 48%, transparent)`）として上部に配置し、カード間に破線の接続ガイドを通して時系列の連続性を示す。バッジは本文と別の行（ブロック）に置き、本文は次の行から通常の行間で組む。インラインにすると本文の書き出しがバッジの右に続き、見出しのように見える 1 行目が文の途中で切れるため。左上の小さな番号（`01` など）は、バッジと役割が重なるため出さない（#147）。
 
 ### DTP-VTPL-037 Before / After 比較ペアカード修飾（要点カード型の派生）
 
