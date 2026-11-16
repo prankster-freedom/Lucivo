@@ -2,7 +2,20 @@ const fs = require("fs");
 const LIMIT = 120;
 const wide = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]/;
 const w = s => [...s].reduce((a, c) => a + (wide.test(c) ? 2 : 1), 0);
-const split = l => l.trim().slice(1, -1).split("|").map(c => c.trim());
+// 行をセルに分ける。GFM と同じく、バックスラッシュでエスケープした \| は区切りにしない（#165）
+const split = l => {
+  let body = l.trim().slice(1);
+  if (body.endsWith("|") && !body.endsWith("\\|")) body = body.slice(0, -1);
+  const cells = [];
+  let cur = "";
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === "\\" && i + 1 < body.length) { cur += body[i] + body[i + 1]; i++; continue; }
+    if (body[i] === "|") { cells.push(cur.trim()); cur = ""; continue; }
+    cur += body[i];
+  }
+  cells.push(cur.trim());
+  return cells;
+};
 function fmt(block) {
   const indent = block[0].match(/^\s*/)[0];
   let rows = block.map(split);
