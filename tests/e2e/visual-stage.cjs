@@ -1023,6 +1023,17 @@ async function testCoverAndTables(browser) {
       tlCount: tlItems.length,
       tlBadgeCount: tlBadges.length,
       tlBadgeRadius: tlBadges[0] ? parseFloat(getComputedStyle(tlBadges[0]).borderTopLeftRadius) : 0,
+      // バッジは本文と別の行にある。本文の書き出しの上端が、バッジの下端より下にあること（#147）
+      tlBadgeOwnLine: tlItems.length > 0 && tlItems.every(li => {
+        const badge = li.querySelector('.vs-timeline-badge');
+        const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        while (node && (badge.contains(node) || !node.textContent.trim())) node = walker.nextNode();
+        if (!node) return false;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return range.getClientRects()[0].top >= badge.getBoundingClientRect().bottom - 1;
+      }),
       cmpHasClass: cmpList && cmpList.classList.contains('vs-points-compare'),
       hasBefore: Boolean(beforeCard),
       hasAfter: Boolean(afterCard),
@@ -1032,7 +1043,7 @@ async function testCoverAndTables(browser) {
   });
   await page.locator('#visual-stage-container .exhibition-slab').nth(2).screenshot({ path: path.join(SHOT_DIR, 'vtpl-timeline-cards.png') });
   await page.locator('#visual-stage-container .exhibition-slab').nth(3).screenshot({ path: path.join(SHOT_DIR, 'vtpl-compare-cards.png') });
-  const vtpl19Ok = vtpl19.tlHasClass && vtpl19.tlCount === 3 && vtpl19.tlBadgeCount === 3 && vtpl19.tlBadgeRadius >= 10
+  const vtpl19Ok = vtpl19.tlHasClass && vtpl19.tlCount === 3 && vtpl19.tlBadgeCount === 3 && vtpl19.tlBadgeRadius >= 10 && vtpl19.tlBadgeOwnLine
     && vtpl19.cmpHasClass && vtpl19.hasBefore && vtpl19.hasAfter
     && vtpl19.beforeBorderStyle === 'dashed' && vtpl19.afterBandHeight >= 5;
   record('TC-VTPL-019', vtpl19Ok, JSON.stringify(vtpl19));

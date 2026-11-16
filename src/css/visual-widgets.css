@@ -88,14 +88,14 @@ html.is-stage-show .slab-actions {
 }
 
 /* ==================== タイムライン・ロードマップ修飾（FR-029, DTP-VTPL-036） ==================== */
+/* 左上の小さな番号（01 など）は、日付のバッジと役割が重なるため出さない（#147） */
 .exhibition-slab .vs-points.vs-points-timeline > li.vs-timeline-item::before {
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  opacity: 0.65;
-  margin-bottom: 0.35rem;
+  display: none;
 }
 .exhibition-slab .vs-points.vs-points-timeline > li.vs-timeline-item .vs-point-title.vs-timeline-badge {
-  display: inline-flex;
+  /* バッジは本文の上の行に置く。inline-flex では本文の書き出しが同じ行に続き、折り返しが崩れる（#147） */
+  display: flex;
+  width: fit-content;
   align-items: center;
   margin-bottom: 0.55rem;
   padding: 0.2rem 0.65rem;
