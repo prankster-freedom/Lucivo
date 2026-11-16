@@ -479,6 +479,82 @@ flowchart TD
   await page.context().close();
 }
 
+// TC-DIAG-037 フローチャートのノードの文字は文節の区切りで折り返し、番号だけの行や 1 文字だけの行を作らない（DD-DIAG-035, #145）
+async function testNodeLabelWrap(browser) {
+  const page = await openStagePage(browser, { viewport: { width: 1440, height: 900 } });
+  // 同梱サンプルの、語の途中で折り返していたフローチャート（visual-sample.md 11.1 と creative-sample.md「物語の流れ」）
+  const flowchartWith = (file, text) => {
+    const md = fs.readFileSync(path.join(APP_DIR, 'samples', file), 'utf8');
+    return (md.match(/```mermaid\r?\nflowchart[\s\S]*?```/g) || []).find(block => block.includes(text)) || '';
+  };
+  const doc = ['# 図', '', flowchartWith('visual-sample.md', 'ユーザー入力イベント検知'), '', '## 物語', '', flowchartWith('creative-sample.md', '言葉が光になって抜け出す'), ''].join('\n');
+  const inspect = () => page.evaluate(() => {
+    const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+    return Array.from(root.querySelectorAll('[data-stage-index] > svg g.node')).map(node => {
+      const label = node.querySelector('.nodeLabel');
+      if (!label) return null;
+      // 文字ごとの位置から、表示上の行と字面の範囲（行送りの空きを含めない）を取り出す
+      const lines = [];
+      const text = { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity };
+      let top = null;
+      const walker = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
+      let textNode;
+      while ((textNode = walker.nextNode())) {
+        for (let i = 0; i < textNode.data.length; i++) {
+          const range = document.createRange();
+          range.setStart(textNode, i);
+          range.setEnd(textNode, i + 1);
+          const rect = range.getClientRects()[0];
+          if (!rect) continue;
+          if (textNode.data[i].trim()) {
+            text.left = Math.min(text.left, rect.left);
+            text.right = Math.max(text.right, rect.right);
+            text.top = Math.min(text.top, rect.top);
+            text.bottom = Math.max(text.bottom, rect.bottom);
+          }
+          if (top === null || Math.abs(rect.top - top) > 3) lines.push('');
+          top = rect.top;
+          lines[lines.length - 1] += textNode.data[i];
+        }
+      }
+      const shape = node.querySelector('rect, polygon, path').getBoundingClientRect();
+      // 2 段カードは、帯の分だけ文字を下げるため、下の余白が足りないことがある（#187）。左右だけを確かめる
+      const checkBottom = !(state.isVisualMode && state.infographicStyle === 'cards');
+      return {
+        lines: lines.map(l => l.trim()),
+        inside: text.left >= shape.left - 2 && text.right <= shape.right + 2 && (!checkBottom || text.bottom <= shape.bottom + 2),
+        bottomGap: Math.round(shape.bottom - text.bottom)
+      };
+    }).filter(Boolean);
+  });
+  const judge = nodes => {
+    const all = nodes.flatMap(n => n.lines);
+    const find = head => (nodes.find(n => n.lines.join('').replace(/\s/g, '').startsWith(head)) || { lines: [] }).lines;
+    return {
+      nodes: nodes.length,
+      shortLines: all.filter(l => l.replace(/\s/g, '').length < 2),
+      numberOnly: all.filter(l => /^\d+[A-Za-z]?\.$/.test(l)),
+      outside: nodes.filter(n => !n.inside).map(n => n.lines.join('/') + ' ' + n.bottomGap),
+      // 文節の区切りで折り返す（Chromium の auto-phrase の区切り）
+      write: find('自分の言葉を').join('/'),
+      gather: find('光が一冊の').join('/'),
+      first: find('1.').join('/')
+    };
+  };
+  const rows = {};
+  await setDocument(page, doc);
+  rows.fast = judge(await inspect());
+  // Visualモードは、スタイルごとに文字の太さが違うため、4 スタイルで確かめる
+  for (const style of VISUAL_STYLES) {
+    await setMode(page, { style, appearance: 'light' });
+    rows[style] = judge(await inspect());
+  }
+  const ok = Object.values(rows).every(r => r.nodes >= 15 && r.shortLines.length === 0 && r.numberOnly.length === 0 && r.outside.length === 0
+    && r.write === '自分の言葉を/書き込む' && r.gather === '光が一冊の/本に集まる' && /^1\.\s?ユーザー入力イベント検知$/.test(r.first));
+  record('TC-DIAG-037', ok && page.consoleErrors.length === 0, JSON.stringify({ ...rows, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 // TC-DIAG-030 ユーザー指定のスタイル（style / classDef / linkStyle）の保持（Issue #55）
 async function testDiagramUserStyles(browser) {
   const page = await openStagePage(browser);
@@ -780,6 +856,7 @@ module.exports = {
   testEditFollow,
   testSyntaxErrorCleanup,
   testDiagramLongLabel,
+  testNodeLabelWrap,
   testDiagramUserStyles,
   testStyleBar,
   testDiagramPanZoom

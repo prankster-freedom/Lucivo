@@ -22,6 +22,7 @@ const {
   testEditFollow,
   testSyntaxErrorCleanup,
   testDiagramLongLabel,
+  testNodeLabelWrap,
   testDiagramUserStyles,
   testStyleBar,
   testDiagramPanZoom
@@ -98,6 +99,7 @@ const SUITES = [
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
   { name: 'testSyntaxErrorCleanup', tcPrefix: ['TC-DIAG-025'], fn: testSyntaxErrorCleanup },
   { name: 'testDiagramLongLabel', tcPrefix: ['TC-DIAG-029'], fn: testDiagramLongLabel },
+  { name: 'testNodeLabelWrap', tcPrefix: ['TC-DIAG-037'], fn: testNodeLabelWrap },
   { name: 'testDiagramUserStyles', tcPrefix: ['TC-DIAG-030'], fn: testDiagramUserStyles },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
