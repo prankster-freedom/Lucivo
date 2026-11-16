@@ -152,25 +152,68 @@ async function testMuseumWalk(browser) {
       && stopped.yaw > 40 && !noGaze.gaze && Math.abs(noGaze.yaw) < 5,
     JSON.stringify({ g1: g1.z, afterHold: afterHold.z, zoneBefore, zoneAfter, zTap0, zTap1, zWheel, zBack, stoppedYaw: stopped.yaw, noGazeYaw: noGaze.yaw }));
 
-    // TC-MWLK-003: 広間の立体図と小部屋の銘板（ゲラ）。T で外観を切り替え、R で入口へ戻る
+    // TC-MWLK-003: 広間の立体図と小部屋の銘板（ゲラ）。T で外観を切り替え（図板と図の色も追従）、R で入口へ戻る（#129）
     const hall = i0.sections.find(s => s.name === 'hall');
     await walkTo(page, hall.from - 200);
     await shot(page, 'hall');
-    const aside = i0.parts.find(p => p.kind === 'aside');
-    await walkTo(page, readingZ(aside, 265));
+    const asides = i0.parts.filter(p => p.kind === 'aside');
+    const aside = asides[0];
+    await walkTo(page, readingZ(aside, 229));
     await shot(page, 'alcove');
+    const asideChecks = [];
+    for (let k = 0; k < asides.length; k++) {
+      const a = asides[k];
+      await walkTo(page, readingZ(a, 229));
+      const fit = await page.evaluate(idx => {
+        const target = document.querySelectorAll('#museum-walk .mw-aside')[idx];
+        const r = target.getBoundingClientRect();
+        return { idx, left: r.left, right: r.right, top: r.top, bottom: r.bottom, len: (target.textContent || '').trim().length };
+      }, k);
+      asideChecks.push(fit);
+    }
+    const longestIdx = asideChecks.reduce((best, cur, idx, arr) => (cur.len > arr[best].len ? idx : best), 0);
+    await walkTo(page, readingZ(asides[longestIdx], 229));
+    await shot(page, 'alcove-long');
+    const allAsidesFit = asideChecks.every(r => r.left >= 0 && r.right <= 1440 && r.top >= 0 && r.bottom <= 900);
+    const zoneStyle = await page.evaluate(() => {
+      const z = document.querySelector('#museum-walk .mw-zone');
+      const cs = getComputedStyle(z);
+      return { bg: cs.backgroundColor, radius: cs.borderRadius };
+    });
+    const standBefore = await page.evaluate(() => ({
+      frameLight: document.querySelector('#museum-walk .mw-fig-frame')?.classList.contains('is-light') ?? null,
+      imgSrc: document.querySelector('#museum-walk .mw-fig-layer img')?.getAttribute('src') || ''
+    }));
     const appearance = await page.evaluate(() => state.appearance === 'dark' ? 'dark' : 'light');
     const first = (await info(page)).appearance;
     await page.keyboard.press('t');
+    await page.waitForFunction(({ wantLight, prevSrc }) => {
+      const frame = document.querySelector('#museum-walk .mw-fig-frame');
+      const img = document.querySelector('#museum-walk .mw-fig-layer img');
+      return !!frame && frame.classList.contains('is-light') === wantLight && !!img && img.getAttribute('src') !== prevSrc && img.complete && img.naturalWidth > 0;
+    }, { wantLight: first !== 'light', prevSrc: standBefore.imgSrc }, { timeout: 10000 });
+    await walkTo(page, hall.from - 200);
+    const standAfter = await page.evaluate(() => ({
+      frameLight: document.querySelector('#museum-walk .mw-fig-frame')?.classList.contains('is-light') ?? null,
+      imgSrc: document.querySelector('#museum-walk .mw-fig-layer img')?.getAttribute('src') || ''
+    }));
+    await shot(page, first === 'light' ? 'hall-dark' : 'hall-light');
     await walkTo(page, readingZ(body, 512));
     const toggled = await page.evaluate(id => ({ appearance: window.LucivoModes.get(id).info().appearance, cls: document.getElementById('museum-walk').classList.contains('is-light') }), MODE);
     await shot(page, toggled.appearance === 'light' ? 'wall-light' : 'wall-dark');
     await page.keyboard.press('t');
+    await page.waitForFunction(wantLight => {
+      const frame = document.querySelector('#museum-walk .mw-fig-frame');
+      return !!frame && frame.classList.contains('is-light') === wantLight;
+    }, first === 'light', { timeout: 10000 });
     await page.keyboard.press('r');
     await page.waitForTimeout(200);
     const atEntrance = await info(page);
-    record('TC-MWLK-003', first === appearance && toggled.appearance !== first && toggled.cls === (toggled.appearance === 'light') && atEntrance.z === atEntrance.start,
-      JSON.stringify({ appearance, first, toggled, z: atEntrance.z, start: atEntrance.start }));
+    record('TC-MWLK-003', first === appearance && toggled.appearance !== first && toggled.cls === (toggled.appearance === 'light')
+      && standBefore.frameLight === (first === 'light') && standAfter.frameLight === (toggled.appearance === 'light')
+      && standAfter.imgSrc !== standBefore.imgSrc && allAsidesFit && zoneStyle.bg !== 'rgba(0, 0, 0, 0)' && zoneStyle.radius !== '0px'
+      && atEntrance.z === atEntrance.start,
+    JSON.stringify({ appearance, first, toggled, standBefore, standAfter, asideChecks, allAsidesFit, zoneStyle, z: atEntrance.z, start: atEntrance.start }));
 
     // TC-MWLK-004: Esc で終えると、重ねと付けたクラスが消える（元の表示に戻ることは TC-MODE-004 で確かめる）
     await page.keyboard.press('Escape');
