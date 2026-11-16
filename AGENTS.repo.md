@@ -91,6 +91,12 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 Dependabot security updates はオフにする。自動の PR は `package.json` と `package-lock.json` しか更新せず、配布物の `public/vendor/` と、ソース（`src/ts/`）の `EXPORT_URLS` が古いまま残るため。修正済みに見えて、利用者に配布される中身は直っていない状態になる。ライブラリの更新は、3 か所を揃えて手動で行う。
 
+一方、Dependabot version updates は、GitHub Actions のアクションに限ってオンにする（`.github/dependabot.yml` の `github-actions` だけ。npm は対象にしない）。アクションには、上の「配布物が古いまま残る」問題がないため。
+
+- アクションの指定は、SHA に固定せず、マイナー・パッチまで書いたタグ（`actions/checkout@v7.0.1` など）にする。許可するアクションは GitHub 製のみで、タグの付け替えの危険より、版の読みやすさと更新の手間の少なさを採る
+- Node.js の版は、全ワークフローで `22` にそろえる（E2E で試した版と、配布物をビルドする版を同じにする）。上げるときは、1 つの PR で全ワークフローを上げる
+- Dependabot の PR は、作成者が所有者でないため `canary-auto-merge.yml` の対象にならず、自動でマージされない。CI（lint・test）の結果を見て、ユーザーがマージする
+
 ## 8. GitHub Release（release スキルの追加手順）
 
 利用者には GitHub Release（スタンドアロン版の ZIP `Lucivo-v<版>.zip` の 1 つだけを付ける）および GitHub Pages（公開用 URL `/`）で配布する。流れの設計は `doc/2.ARCHITECTURE.md` 4.14（`ARC-PUB-004`・`005`）による。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`deploy.yml`）で自動化する。
