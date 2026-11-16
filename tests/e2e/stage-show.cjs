@@ -439,8 +439,36 @@ async function testStageShow(browser) {
   }
   await widePage.context().close();
 
-  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100 && wideOverflows.length === 0 && cappedInShow.length === 0,
-    JSON.stringify({ diagram, flowHead, wideOverflows, cappedInShow }));
+  // WQHD（2560x1440）でもシーケンス図・クラス図・ER 図・円グラフ・4 象限・XY チャートが 1 画面に収まる
+  const notationMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample.md'), 'utf8');
+  const wqhdPage = await openStagePage(browser, { viewport: { width: 2560, height: 1440 } });
+  await setDocument(wqhdPage, notationMd);
+  await wqhdPage.click('#btn-stage-show');
+  await wqhdPage.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
+  await waitRendered(wqhdPage);
+  const targetScenes = await wqhdPage.evaluate(() => {
+    const types = new Set(['sequence', 'classDiagram', 'er', 'pie', 'quadrantChart', 'xychart']);
+    return Array.from(document.querySelectorAll('#visual-stage-container .exhibition-wrap > section'))
+      .map((s, idx) => ({ idx, type: s.querySelector('svg')?.getAttribute('aria-roledescription') || '' }))
+      .filter(x => types.has(x.type));
+  });
+  const wqhdOverflows = [];
+  for (const t of targetScenes) {
+    await wqhdPage.keyboard.press('b');
+    await wqhdPage.waitForFunction(() => document.documentElement.classList.contains('is-stage-curtain'), null, { timeout: 5000 });
+    await wqhdPage.click(`[data-curtain-scene="${t.idx}"]`);
+    await wqhdPage.waitForFunction(target => !document.documentElement.classList.contains('is-stage-curtain') && LucivoStage.showState().index === target, t.idx, { timeout: 5000 });
+    await wqhdPage.waitForTimeout(180);
+    const overflow = await wqhdPage.evaluate(() => {
+      const root = document.getElementById('visual-stage-container');
+      return root.scrollHeight - root.clientHeight;
+    });
+    if (overflow > 0) wqhdOverflows.push({ ...t, overflow });
+  }
+  await wqhdPage.context().close();
+
+  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100 && wideOverflows.length === 0 && cappedInShow.length === 0 && targetScenes.length >= 6 && wqhdOverflows.length === 0,
+    JSON.stringify({ diagram, flowHead, wideOverflows, cappedInShow, wqhdOverflows }));
 
   // TC-SHOW-004 画面に収まらない章は、次の章へ進む前に残りをスクロールする
   await pressUntil(page, () => document.getElementById('visual-stage-container').scrollHeight - innerHeight > 200);
