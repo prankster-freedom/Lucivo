@@ -87,6 +87,13 @@ body[data-appearance="dark"] .exhibition-diagram-header {
 .exhibition-diagram-header > div:first-child > span:last-child {
   white-space: nowrap;
 }
+/* 操作バーは、カードの幅を超えるときに自身の中で折り返す。スマホ幅でボタンが右にはみ出さないようにする（#152） */
+.exhibition-diagram-header > div:last-child {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  row-gap: 4px;
+}
 
 .exhibition-viewport {
   padding: clamp(1.5rem, 3.5vw, 3rem);

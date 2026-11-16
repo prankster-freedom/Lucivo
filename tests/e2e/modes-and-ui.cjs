@@ -193,6 +193,44 @@ async function testResponsiveAndWebUi(browser) {
     JSON.stringify({ webWide, webNarrow })
   );
 
+  // TC-UI-004: スマホ幅（390px）の Visualモードで、見出し・図の操作バー・右下の表示が崩れない（#152）
+  const phoneServer = await startWebServer();
+  try {
+    const phonePage = await openWebPageWithSample(browser, phoneServer);
+    await phonePage.setViewportSize({ width: 390, height: 844 });
+    await phonePage.evaluate(() => {
+      if (!state.isVisualMode) document.getElementById('btn-visual-mode').click();
+      document.querySelector('[data-view-mode="canvas"]').click();
+    });
+    await phonePage.waitForFunction(() => document.querySelector('#visual-stage-container .exhibition-diagram-header'), null, { timeout: 15000 });
+    await phonePage.waitForTimeout(800);
+    const phone = await phonePage.evaluate(() => {
+      const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab'));
+      // 見出し: STAGE バッジが見出しの文字より上の行にあり、文字がスラブの幅いっぱいに組まれる
+      const headings = slabs.map(s => s.querySelector('h2')).filter(h => h && h.querySelector('.exhibition-num-badge')).map(h => {
+        const badge = h.querySelector('.exhibition-num-badge').getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(h);
+        const textRects = Array.from(range.getClientRects()).filter(r => r.width > 0 && r.top >= badge.bottom - 1);
+        const slabRect = h.closest('.exhibition-slab').getBoundingClientRect();
+        return { badgeAbove: textRects.length > 0, textLeft: textRects.length ? Math.min(...textRects.map(r => r.left)) - slabRect.left : -1 };
+      });
+      // 操作バー: ボタンがカードの右端を超えない
+      const bars = slabs.map(s => ({ s, header: s.querySelector('.exhibition-diagram-header') })).filter(x => x.header).map(({ s, header }) => {
+        const card = header.closest('.exhibition-diagram-card').getBoundingClientRect();
+        const rights = Array.from(header.querySelectorAll('button')).map(b => b.getBoundingClientRect().right);
+        return Math.round(Math.max(...rights) - card.right);
+      });
+      const tele = document.getElementById('telemetry-pill').getBoundingClientRect();
+      return { headingCount: headings.length, headingsOk: headings.every(h => h.badgeAbove && h.textLeft < 40), bars, teleWidth: Math.round(tele.width), docOverflow: document.documentElement.scrollWidth - innerWidth };
+    });
+    await phonePage.screenshot({ path: path.join(SHOT_DIR, 'mobile-visual-390.png') });
+    record('TC-UI-004', phone.headingCount >= 10 && phone.headingsOk && phone.bars.length >= 3 && phone.bars.every(o => o <= 0) && phone.teleWidth <= 40 && phone.docOverflow <= 0, JSON.stringify(phone));
+    await phonePage.context().close();
+  } finally {
+    phoneServer.close();
+  }
+
   // TC-UI-003: Split 表示で境目をドラッグして幅比率を変更・20〜80% クランプ・リロード復元（#82）
   const splitCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const splitPage = await splitCtx.newPage();

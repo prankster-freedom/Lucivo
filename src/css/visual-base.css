@@ -387,6 +387,12 @@ body[data-appearance="dark"] .exhibition-slab {
   .exhibition-slab-split > .exhibition-slab-body {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* スマホ幅では STAGE バッジを見出しの上の行に置き、見出しに幅を使わせる（#152） */
+  .exhibition-slab h2 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 }
 
 /* ==================== Visual モード標準リストのカスタム装飾（#4） ==================== */

@@ -662,3 +662,17 @@ body.is-split-dragging {
     cursor: row-resize;
   }
 }
+/* 右下のステータス表示（telemetry）は、スマホ幅では点だけにして本文に重ならないようにする。文字は読み上げ用に残す（#152） */
+@media (max-width: 767px) {
+  #telemetry-pill {
+    padding: 0.4rem;
+  }
+  #telemetry-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
