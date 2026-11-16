@@ -61,6 +61,7 @@ import {
   resolveFolderImages,
   wrapTables
 } from './markdown/local-images';
+import { setupMarkedFootnotes, resetFootnotes, applyFootnotes } from './markdown/footnotes';
 import {
   closeFileMenu,
   setupFormatter,
@@ -77,6 +78,7 @@ import {
 } from './ui/folder-browser';
 
 function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
+  resetFootnotes();
   const parsed = marked.lexer(body);
   const mermaidBlocks: any[] = [];
   runtime.lastMermaidSources = [];
@@ -102,7 +104,8 @@ function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
       tokensToKeep.push(treeTokenFor(token) || token);
     }
   });
-  return { mermaidBlocks, tokensToKeep };
+  // 脚注の番号と一覧を決める。Visualモードは章ごと、高速モードは文書の末尾に置く（FR-057）
+  return { mermaidBlocks, tokensToKeep: applyFootnotes(tokensToKeep, state.isVisualMode) };
 }
 
 function renderApp() {
@@ -798,6 +801,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupFormatter();
   setupMarkedMath();
   setupMarkedHeadings();
+  setupMarkedFootnotes();
   setupMermaid();
   renderApp();
   loadMarkdownFromUrlParam();

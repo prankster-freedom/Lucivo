@@ -311,6 +311,13 @@ export function setupDocumentLinks() {
     const href = link.getAttribute('href');
     if (href.startsWith('#')) {
       event.preventDefault();
+      // 脚注の参照と戻りリンク（fn-…・fnref-…）は、その要素へ送る（FR-057）
+      const footnoteTarget = /^#fn(?:ref)?-\d/.test(href) ? document.getElementById(href.slice(1)) : null;
+      if (footnoteTarget) {
+        const scroller = document.getElementById('preview-scroll');
+        scroller.scrollTo({ top: previewScrollTopOf(footnoteTarget, scroller), behavior: scrollBehavior() });
+        return;
+      }
       if (!scrollToHeadingAnchor(href.slice(1))) showToast('リンク先の見出しが見つかりません');
       return;
     }

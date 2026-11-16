@@ -547,3 +547,65 @@ th {
   font-size: 0.75rem;
 }
 
+/* --------------------------------------------------------------------------
+   脚注（FR-057、DTP-VTPL-140）。参照は上付きの番号、一覧は小さな字のキャプション。
+   高速モードは文書の末尾、Visualモードは参照した章の末尾に置く
+   -------------------------------------------------------------------------- */
+sup.fn-ref {
+  font-size: 0.75em;
+  line-height: 0;
+  vertical-align: super;
+  margin-left: 0.1em;
+}
+sup.fn-ref a {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  padding: 0 0.1em;
+}
+sup.fn-ref a:hover {
+  text-decoration: underline;
+}
+.lucivo-footnotes {
+  margin-top: 2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-strong);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.exhibition-slab .lucivo-footnotes {
+  margin-top: 1.5rem;
+  font-size: 0.78rem;
+  border-top-style: dashed;
+}
+.lucivo-footnotes .fn-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.25rem 0;
+  padding: 0.1rem 0.3rem;
+  border-radius: 6px;
+}
+.lucivo-footnotes .fn-item:target {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.lucivo-footnotes .fn-num {
+  flex: none;
+  min-width: 1.2em;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--accent);
+}
+.lucivo-footnotes .fn-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lucivo-footnotes .fn-back {
+  flex: none;
+  margin-left: auto;
+  color: var(--accent);
+  text-decoration: none;
+}
+

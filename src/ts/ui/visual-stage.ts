@@ -367,6 +367,10 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
   slabs.forEach((nodes) => {
     const wrapper = document.createElement('div');
     nodes.forEach(n => wrapper.appendChild(n.cloneNode(true)));
+    // 脚注の一覧は章の末尾に小さく置く。雛形の判定には入れない（FR-057）
+    const footnotesEl = wrapper.querySelector(':scope > .lucivo-footnotes');
+    const footnotesHtml = footnotesEl ? footnotesEl.outerHTML : '';
+    if (footnotesEl) footnotesEl.remove();
     const h2 = wrapper.querySelector('h2');
     if (h2) {
       sectionCounter++;
@@ -386,11 +390,11 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
       const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
       const proseHtml = proseEls.map(el => el.outerHTML).join('');
       const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
-      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div>${actionsHtml}</section>`;
+      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div>${footnotesHtml}${actionsHtml}</section>`;
     } else {
       const template = detectSlabTemplate(proseEls, slots.length);
       applySlabTemplate(template, proseEls);
-      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}"${stageAttr}>${wrapper.innerHTML}${actionsHtml}</section>`;
+      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}"${stageAttr}>${wrapper.innerHTML}${footnotesHtml}${actionsHtml}</section>`;
     }
   });
 

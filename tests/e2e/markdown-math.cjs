@@ -503,7 +503,58 @@ async function testFormatter(browser) {
   await page.context().close();
 }
 
+// TC-MD-020 GFM の脚注（FR-057）。高速モードは文書の末尾に、Visualモードは参照した章の末尾に一覧を置く
+async function testFootnotes(browser) {
+  const page = await openStagePage(browser);
+  const md = [
+    '# 脚注', '',
+    '## 1. 章 A', '',
+    '本文 A[^a] と[^b]、再参照[^a]、定義のない[^zz]。', '',
+    '## 2. 章 B', '',
+    '本文 B[^b]。', '',
+    '```text', '[^a]', '```', '',
+    '[^a]: 脚注 A',
+    '[^b]: 脚注 B [リンク](https://example.com)',
+    '[^unused]: 参照されない脚注', ''
+  ].join('\n');
+  await setDocument(page, md);
+  const inspect = () => page.evaluate(() => {
+    const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+    const lists = Array.from(root.querySelectorAll('.lucivo-footnotes')).map(l => ({
+      inSlab: !!l.closest('.exhibition-slab'),
+      nums: Array.from(l.querySelectorAll('.fn-num')).map(n => n.textContent),
+      texts: Array.from(l.querySelectorAll('.fn-text')).map(n => n.textContent),
+      link: !!l.querySelector('.fn-text a[href="https://example.com"]')
+    }));
+    const ids = Array.from(root.querySelectorAll('[id]')).map(e => e.id);
+    const hrefs = Array.from(root.querySelectorAll('sup.fn-ref a, .fn-back')).map(a => a.getAttribute('href').slice(1));
+    return {
+      refs: Array.from(root.querySelectorAll('sup.fn-ref a')).map(a => a.textContent),
+      lists,
+      duplicateIds: ids.length - new Set(ids).size,
+      brokenLinks: hrefs.filter(h => !document.getElementById(h)).length,
+      defLeft: /\[\^[a-z]+\]:/.test(root.textContent),
+      undefinedLiteral: root.textContent.includes('[^zz]'),
+      codeLiteral: Array.from(root.querySelectorAll('pre')).some(p => p.textContent.trim() === '[^a]')
+    };
+  });
+  await setMode(page, { style: 'std', appearance: 'light' });
+  const fast = await inspect();
+  await page.screenshot({ path: path.join(SHOT_DIR, 'footnotes-fast.png') });
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const visual = await inspect();
+  await page.locator('#visual-stage-container .exhibition-slab', { has: page.locator('.lucivo-footnotes') }).first().screenshot({ path: path.join(SHOT_DIR, 'footnotes-visual.png') });
+  const common = r => r.defLeft === false && r.undefinedLiteral && r.codeLiteral && r.duplicateIds === 0 && r.brokenLinks === 0;
+  const fastOk = JSON.stringify(fast.refs) === '["1","2","1","2"]' && fast.lists.length === 1 && !fast.lists[0].inSlab
+    && JSON.stringify(fast.lists[0].nums) === '["1","2"]' && fast.lists[0].link && common(fast);
+  const visualOk = JSON.stringify(visual.refs) === '["1","2","1","2"]' && visual.lists.length === 2 && visual.lists.every(l => l.inSlab)
+    && JSON.stringify(visual.lists[0].nums) === '["1","2"]' && JSON.stringify(visual.lists[1].nums) === '["2"]' && common(visual);
+  record('TC-MD-020', fastOk && visualOk && page.consoleErrors.length === 0, JSON.stringify({ fast, visual, errors: page.consoleErrors }));
+  await page.close();
+}
+
 module.exports = {
+  testFootnotes,
   testMarkdownTypography,
   testMathRendering,
   testFrontMatter,
