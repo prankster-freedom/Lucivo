@@ -41,12 +41,20 @@ async function testFileLoading(browser) {
     const hDark = document.querySelector('#header-brand-logo .brand-logo-dark');
     const gLight = guideEl ? guideEl.querySelector('.empty-guide-logo .brand-logo-light') : null;
     const gDark = guideEl ? guideEl.querySelector('.empty-guide-logo .brand-logo-dark') : null;
+    const guideIcons = guideEl ? guideEl.querySelectorAll('.empty-guide-card h4 svg.empty-guide-icon').length : 0;
+    const featuredCard = guideEl ? guideEl.querySelector('.empty-guide-card-featured') : null;
+    const styleIcons = document.querySelectorAll('#style-bar .info-style-btn svg').length;
+    const hasEmoji = /[🎨📋⭕📖⚡🎤💡]/u.test((guideEl ? guideEl.textContent : '') + (document.getElementById('style-bar')?.textContent || ''));
     return {
       editor: document.getElementById('markdown-editor').value,
       guide: !!guideEl,
       hasFastModeDesc: guideEl ? guideEl.textContent.includes('高速モード') : false,
       hasVisualModeDesc: guideEl ? guideEl.textContent.includes('Visualモード') : false,
       hasShowModeDesc: guideEl ? guideEl.textContent.includes('ステージ発表') : false,
+      guideIcons,
+      hasFeaturedCard: !!featuredCard,
+      styleIcons,
+      hasEmoji,
       fastBtnActive: document.getElementById('btn-mode-fast') ? document.getElementById('btn-mode-fast').classList.contains('is-active') : false,
       favHref: fav ? fav.getAttribute('href') : '',
       headerLightVisible: !!hLight && getComputedStyle(hLight).display !== 'none' && hLight.naturalWidth > 0,
@@ -55,6 +63,15 @@ async function testFileLoading(browser) {
       guideDarkHidden: !!gDark && getComputedStyle(gDark).display === 'none'
     };
   });
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(200);
+  const guideRowTops = await page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('#standard-doc-container .empty-guide-card'));
+    const tops = cards.map(c => Math.round(c.getBoundingClientRect().top));
+    return { count: tops.length, sameRow: tops.length === 3 && Math.max(...tops) - Math.min(...tops) <= 4 };
+  });
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  await page.waitForTimeout(200);
   await page.click('#btn-theme-toggle');
   await waitRendered(page);
   const darkLogo = await page.evaluate(() => {
@@ -75,7 +92,9 @@ async function testFileLoading(browser) {
   await page.click('#btn-theme-toggle');
   await waitRendered(page);
   record('TC-FILE-001',
-    init.editor === '' && init.guide && init.hasFastModeDesc && init.hasVisualModeDesc && init.hasShowModeDesc && init.fastBtnActive
+    init.editor === '' && init.guide && init.hasFastModeDesc && init.hasVisualModeDesc && init.hasShowModeDesc
+    && init.guideIcons === 3 && init.hasFeaturedCard && init.styleIcons === 4 && !init.hasEmoji
+    && guideRowTops.count === 3 && guideRowTops.sameRow && init.fastBtnActive
     && init.favHref === './assets/logos/light/favicon.svg'
     && init.headerLightVisible && init.headerDarkHidden && init.guideLightVisible && init.guideDarkHidden
     && darkLogo.favHref === './assets/logos/dark/favicon.svg'

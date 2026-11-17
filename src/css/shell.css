@@ -359,8 +359,9 @@ body[data-appearance="light"] .brand-mark-dark {
   font-size: 0.875rem;
   line-height: 1.8;
   color: var(--text-secondary);
-  max-width: 680px;
+  max-width: 58rem;
   margin: 0 auto;
+  container-type: inline-size;
 }
 .empty-guide-logo {
   display: flex;
@@ -384,14 +385,20 @@ body[data-appearance="light"] .brand-mark-dark {
 .empty-guide-desc {
   color: var(--text-secondary);
   font-size: 0.875rem;
-  margin-bottom: 1.5rem;
+  max-width: 44rem;
+  margin: 0 auto 1.5rem;
 }
 .empty-guide-modes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin: 1.25rem 0 1.5rem;
   text-align: left;
+}
+@container (min-width: 44rem) {
+  .empty-guide-modes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 .empty-guide-card {
   padding: 1.1rem 1.25rem;
@@ -403,6 +410,10 @@ body[data-appearance="light"] .brand-mark-dark {
   flex-direction: column;
   gap: 0.4rem;
 }
+.empty-guide-card-featured {
+  border-color: color-mix(in oklab, var(--accent) 42%, var(--border-subtle));
+  background: linear-gradient(160deg, color-mix(in oklab, var(--accent) 8%, var(--panel-sub)), var(--panel-sub));
+}
 .empty-guide-card h4 {
   font-size: 0.95rem;
   font-weight: 700;
@@ -412,6 +423,15 @@ body[data-appearance="light"] .brand-mark-dark {
   gap: 0.5rem;
   margin: 0;
 }
+.empty-guide-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+.empty-guide-card-featured .empty-guide-icon {
+  color: var(--accent);
+}
 .empty-guide-card p {
   font-size: 0.8rem;
   line-height: 1.6;
@@ -419,11 +439,21 @@ body[data-appearance="light"] .brand-mark-dark {
   margin: 0;
 }
 .empty-guide-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   font-size: 0.8rem;
   color: var(--text-muted);
   border-top: 1px dashed var(--border-subtle);
   padding-top: 1rem;
   margin-top: 0.5rem;
+}
+.empty-guide-footer-icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  flex-shrink: 0;
+  color: var(--accent);
 }
 /* 最新版の配布元（FR-024）。案内の最後に、控えめな 1 行で置く */
 .empty-guide-latest {

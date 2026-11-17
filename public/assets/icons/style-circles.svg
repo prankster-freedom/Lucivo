@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
+  <!-- AST-118c: Style Swatch - Vibrant Circles (clustered nodes). Monochrome (currentColor). -->
+  <circle cx="5.2" cy="5.5" r="2.6" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.22"/>
+  <circle cx="11.2" cy="5.2" r="2.1" stroke="currentColor" stroke-width="1.4"/>
+  <circle cx="8.5" cy="11" r="2.8" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.12"/>
+</svg>
