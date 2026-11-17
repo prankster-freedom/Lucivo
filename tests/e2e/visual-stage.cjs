@@ -18,6 +18,7 @@ const {
   loadSample,
   selectVisualStyle,
   setMode,
+  selectScale,
   openStagePage,
   setDocument,
   scrollToSlab,
@@ -82,7 +83,7 @@ async function testVisualStageQuality(browser) {
     const svg = document.querySelector('#standard-doc-container [data-stage-index="0"] > svg');
     return +(svg.getBoundingClientRect().width / svg.viewBox.baseVal.width).toFixed(2);
   });
-  await page.click('#standard-doc-container [data-action="scale-actual"][data-index="0"]');
+  await selectScale(page, '#standard-doc-container [data-action="scale-actual"][data-index="0"]');
   const actual = await page.evaluate(() => {
     const svg = document.querySelector('#standard-doc-container [data-stage-index="0"] > svg');
     return { width: svg.getBoundingClientRect().width, vb: svg.viewBox.baseVal.width };
@@ -258,7 +259,7 @@ async function testVisualStageQuality(browser) {
     JSON.stringify(proseFit));
 
   // 9 章の図を 1:1 に切り替えると 1 段組み（is-stacked）になり、Fit に戻すと 2 段組みに戻る
-  await page.click('#visual-stage-container [data-action="scale-actual"][data-index="0"]');
+  await selectScale(page, '#visual-stage-container [data-action="scale-actual"][data-index="0"]');
   const actualStacked = await page.evaluate(() => {
     const s = document.querySelector('#visual-stage-container #diagram-frame-0').closest('.exhibition-slab');
     const pr = s.querySelector('.exhibition-slab-prose').getBoundingClientRect();
@@ -859,7 +860,7 @@ async function testVisualTemplates(browser) {
     const svg = document.querySelector('#visual-stage-container [data-stage-index="1"] > svg');
     return svg ? svg.getBoundingClientRect().width : 0;
   });
-  await page.click('#visual-stage-container [data-action="scale-actual"][data-index="1"]');
+  await selectScale(page, '#visual-stage-container [data-action="scale-actual"][data-index="1"]');
   const wideActual = await page.evaluate(() => {
     const svg = document.querySelector('#visual-stage-container [data-stage-index="1"] > svg');
     return svg ? { width: svg.getBoundingClientRect().width, vb: svg.viewBox.baseVal.width } : { width: 0, vb: 0 };
@@ -1579,7 +1580,127 @@ async function testCalloutsGlossaryPrint(browser) {
 
 // TC-DIAG-022, 023 Split 表示の編集位置への追従（FR-037）。スクロールを即座に終えるため、動きを減らす設定で開く
 
+// TC-DIAG-039・040 図の倍率（Fit / 1:n / n:1 / 100%）と、Expand の画面の倍率（FR-005, DD-DIAG-045）
+const SCALE_MD = [
+  '# 倍率', '',
+  '## 縦長の図', '',
+  '```mermaid', 'flowchart TD',
+  '  A[開始] --> B[手順 1] --> C[手順 2] --> D[手順 3] --> E[手順 4] --> F[手順 5] --> G[手順 6] --> H[手順 7] --> I[手順 8] --> J[終了]',
+  '```', '',
+  '## 横長の図', '',
+  '```mermaid', 'flowchart LR',
+  '  A[開始] --> B[手順 1] --> C[手順 2] --> D[手順 3] --> E[手順 4] --> F[手順 5] --> G[終了]',
+  '```', ''
+].join('\n');
+
+async function testDiagramScaleModes(browser) {
+  const page = await openStagePage(browser, { viewport: { width: 1600, height: 900 } });
+  await setDocument(page, SCALE_MD);
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await page.click('[data-view-mode="canvas"]');
+  for (const i of [0, 1]) await scrollToSlab(page, i);
+  await page.waitForFunction(() => document.querySelectorAll('#visual-stage-container .exhibition-viewport > svg').length >= 2, null, { timeout: 30000 });
+  await waitRendered(page);
+
+  const measure = idx => page.evaluate(i => {
+    const vp = document.querySelector(`#visual-stage-container [data-stage-index="${i}"]`);
+    const svg = vp.querySelector(':scope > svg');
+    const cs = getComputedStyle(vp);
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const r = svg.getBoundingClientRect();
+    const picker = vp.parentElement.querySelector('.scale-picker');
+    const toggle = picker.querySelector('.scale-more-toggle');
+    const round = v => +v.toFixed(1);
+    return {
+      w: round(r.width), h: round(r.height), vbW: round(svg.viewBox.baseVal.width),
+      cw: round(vp.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)),
+      areaH: round(Math.max(16 * rem, window.innerHeight - 12 * rem)),
+      minW: parseFloat(svg.style.minWidth) || 0,
+      fitMax: parseFloat(svg.style.getPropertyValue('--fit-max-width')) || 1e9,
+      scrolls: vp.scrollWidth > vp.clientWidth + 1,
+      fit: vp.classList.contains('is-scale-fit'),
+      active: Array.from(picker.querySelectorAll('.scale-btn.is-active')).map(b => b.dataset.action),
+      toggle: toggle.textContent.trim(), toggleActive: toggle.classList.contains('is-active'),
+      menuOpen: !picker.querySelector('.scale-menu').hidden, expanded: toggle.getAttribute('aria-expanded')
+    };
+  }, idx);
+  const sel = (idx, action) => `#visual-stage-container [data-action="${action}"][data-index="${idx}"]`;
+
+  const tallFit = await measure(0);
+  await page.click(sel(0, 'scale-width'));
+  const tallWidth = await measure(0);
+  // プルダウンの開閉: 開くボタンで開き、Esc で閉じる
+  await page.evaluate(() => document.querySelectorAll('#visual-stage-container .scale-more-toggle')[1].click());
+  const menuOpened = await measure(1);
+  await page.keyboard.press('Escape');
+  const menuClosed = await measure(1);
+  await selectScale(page, sel(1, 'scale-height'));
+  const wideHeight = await measure(1);
+  await selectScale(page, sel(1, 'scale-actual'));
+  const wideActual = await measure(1);
+  await page.click(sel(1, 'scale-fit'));
+  const wideFit = await measure(1);
+  const near = (a, b, tol = 2) => Math.abs(a - b) <= tol;
+  const inline = {
+    tallFit: tallFit.fit && tallFit.active.join() === 'scale-fit' && tallFit.w <= tallFit.cw + 1 && (tallFit.h <= tallFit.areaH + 2 || near(tallFit.w, tallFit.minW)),
+    tallWidth: tallWidth.active.join() === 'scale-width' && near(tallWidth.w, Math.min(tallWidth.cw, tallWidth.fitMax)) && tallWidth.h > tallFit.h,
+    menu: menuOpened.menuOpen && menuOpened.expanded === 'true' && !menuClosed.menuOpen && menuClosed.expanded === 'false',
+    wideHeight: near(wideHeight.h, wideHeight.areaH) && wideHeight.scrolls && wideHeight.toggle === 'n:1 ▾' && wideHeight.toggleActive && !wideHeight.menuOpen,
+    wideActual: near(wideActual.w, wideActual.vbW) && wideActual.toggle === '100% ▾' && wideActual.active.join() === 'scale-actual',
+    wideFit: wideFit.w <= wideFit.cw + 1 && wideFit.h <= wideFit.areaH + 2 && wideFit.toggle === '▾' && !wideFit.toggleActive
+  };
+  record('TC-DIAG-039', Object.values(inline).every(Boolean) && page.consoleErrors.length === 0,
+    JSON.stringify({ inline, tallFit, tallWidth, wideHeight, wideActual, wideFit, errors: page.consoleErrors }));
+
+  // Expand の画面: 同じ部品があり、描画領域（#zoom-viewport の内側）に対して倍率を合わせる
+  const zoomMeasure = () => page.evaluate(() => {
+    const vp = document.getElementById('zoom-viewport');
+    const svg = document.querySelector('#zoom-canvas svg');
+    const cs = getComputedStyle(vp);
+    const r = svg.getBoundingClientRect();
+    const round = v => +v.toFixed(1);
+    return {
+      open: !document.getElementById('zoom-modal').classList.contains('hidden'),
+      w: round(r.width), h: round(r.height), vbW: round(svg.viewBox.baseVal.width),
+      cw: round(vp.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)),
+      ch: round(vp.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)),
+      active: Array.from(document.querySelectorAll('#zoom-scale-picker .scale-btn.is-active')).map(b => b.dataset.action),
+      menuOpen: !document.querySelector('#zoom-scale-picker .scale-menu').hidden
+    };
+  });
+  await page.click('#visual-stage-container [data-action="zoom"][data-index="0"]');
+  await page.waitForTimeout(300);
+  const zTallFit = await zoomMeasure();
+  await page.click('#zoom-close-btn');
+  await page.click('#visual-stage-container [data-action="zoom"][data-index="1"]');
+  await page.waitForTimeout(300);
+  const zFit = await zoomMeasure();
+  await page.click('#zoom-scale-picker [data-action="scale-width"]');
+  const zWidth = await zoomMeasure();
+  await selectScale(page, '#zoom-scale-picker [data-action="scale-height"]');
+  const zHeight = await zoomMeasure();
+  await selectScale(page, '#zoom-scale-picker [data-action="scale-actual"]');
+  const zActual = await zoomMeasure();
+  // プルダウンを開いて Esc を押すと、プルダウンだけが閉じ、Expand の画面は開いたまま
+  await page.click('#zoom-scale-picker .scale-more-toggle');
+  await page.keyboard.press('Escape');
+  const zEsc = await zoomMeasure();
+  await page.click('#zoom-close-btn');
+  const zoom = {
+    tallFit: zTallFit.open && zTallFit.active.join() === 'scale-fit' && near(zTallFit.h, zTallFit.ch, 3) && zTallFit.w <= zTallFit.cw + 2,
+    fit: zFit.active.join() === 'scale-fit' && near(zFit.w, zFit.cw, 3) && zFit.h <= zFit.ch + 2,
+    width: zWidth.active.join() === 'scale-width' && near(zWidth.w, zWidth.cw, 3),
+    height: zHeight.active.join() === 'scale-height' && near(zHeight.h, zHeight.ch, 3) && zHeight.w > zHeight.cw,
+    actual: zActual.active.join() === 'scale-actual' && near(zActual.w, zActual.vbW, 2),
+    esc: zEsc.open && !zEsc.menuOpen
+  };
+  record('TC-DIAG-040', Object.values(zoom).every(Boolean) && page.consoleErrors.length === 0,
+    JSON.stringify({ zoom, zTallFit, zFit, zWidth, zHeight, zActual, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 module.exports = {
+  testDiagramScaleModes,
   testVisualStageQuality,
   testVisualTemplates,
   testCoverAndTables,

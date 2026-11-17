@@ -42,7 +42,8 @@ const {
   testVisualStageQuality,
   testVisualTemplates,
   testCoverAndTables,
-  testCalloutsGlossaryPrint
+  testCalloutsGlossaryPrint,
+  testDiagramScaleModes,
 } = require('./e2e/visual-stage.cjs');
 
 const {
@@ -88,6 +89,7 @@ const SUITES = [
   { name: 'testMathRendering', tcPrefix: ['TC-MATH-'], fn: testMathRendering },
   { name: 'testFrontMatter', tcPrefix: ['TC-FM-'], fn: testFrontMatter },
   { name: 'testEdgeStyle', tcPrefix: ['TC-EDGE-'], fn: testEdgeStyle },
+  { name: 'testDiagramScaleModes', tcPrefix: ['TC-DIAG-039', 'TC-DIAG-040'], fn: testDiagramScaleModes },
   { name: 'testVisualStageQuality', tcPrefix: ['TC-STAGE-', 'TC-DIAG-021', 'TC-DIAG-032', 'TC-DIAG-033', 'TC-DIAG-034', 'TC-DIAG-035', 'TC-DIAG-036', 'TC-DIAG-038'], fn: testVisualStageQuality },
   { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates, timeoutMs: 150000 },
   { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024', 'TC-VTPL-027'], fn: testCoverAndTables },

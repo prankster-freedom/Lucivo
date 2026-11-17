@@ -18,6 +18,7 @@ const {
   loadSample,
   selectVisualStyle,
   setMode,
+  selectScale,
   openStagePage,
   setDocument,
   scrollToSlab,
@@ -819,7 +820,7 @@ async function testDiagramPanZoom(browser) {
   await page.click(`#preview-scroll [data-action="scale-fit"][data-index="1"]`);
   const backToFit = await vpState(1);
   await ctrlWheelOn(1, -300);
-  await page.click(`#preview-scroll [data-action="scale-actual"][data-index="1"]`);
+  await selectScale(page, `#preview-scroll [data-action="scale-actual"][data-index="1"]`);
   const backToActual = await vpState(1);
   await page.click(`#preview-scroll [data-action="scale-fit"][data-index="1"]`);
   const plainBefore = await vpState(1);

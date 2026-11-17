@@ -159,7 +159,17 @@ async function openWebPageWithSample(browser, server, contextOptions = {}, sampl
   return page;
 }
 
+// 図の倍率を選ぶ。n:1・100% はプルダウンの中にあるため、先に開く（DD-DIAG-045）
+async function selectScale(page, selector) {
+  // 利用者と同じく、部品が見えている状態で開く（開いた後のスクロールで、プルダウンが閉じないように）
+  await page.$eval(selector, el => el.closest('.scale-picker').scrollIntoView({ block: 'center' }));
+  const inMenu = await page.$eval(selector, el => !!el.closest('.scale-menu') && el.closest('.scale-menu').hidden);
+  if (inMenu) await page.$eval(selector, el => el.closest('.scale-more').querySelector('.scale-more-toggle').click());
+  await page.click(selector);
+}
+
 module.exports = {
+  selectScale,
   ENCODING_FIXTURE,
   FORMAT_FIXTURE,
   MD_MODES,

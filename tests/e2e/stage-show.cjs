@@ -18,6 +18,7 @@ const {
   loadSample,
   selectVisualStyle,
   setMode,
+  selectScale,
   openStagePage,
   setDocument,
   scrollToSlab,
@@ -111,7 +112,7 @@ async function testSignalLight(browser) {
   aligned.split = await page.evaluate(inspectLightHead, { flowIndex: 0, edgeIndex: 2, t: 1.0 });
   await page.click('.view-mode-btn[data-view-mode="canvas"]');
   await page.waitForTimeout(400);
-  await page.click('#visual-stage-container [data-action="scale-actual"][data-index="0"]');
+  await selectScale(page, '#visual-stage-container [data-action="scale-actual"][data-index="0"]');
   await page.waitForTimeout(400);
   aligned.actual = await page.evaluate(inspectLightHead, { flowIndex: 0, edgeIndex: 2, t: 1.0 });
   await page.click('#visual-stage-container [data-action="scale-fit"][data-index="0"]');
