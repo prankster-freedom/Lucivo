@@ -829,7 +829,7 @@ async function testFolder(browser) {
   await page.click('#btn-save-menu');
   const saveMenu = await page.evaluate(() => ({
     label: document.querySelector('#btn-save-menu span').textContent,
-    // 見えている項目だけ。16:9 の印刷は Visualモードのときだけ出す（DD-VTPL-134）
+    // 見えている項目だけを数える
     items: Array.from(document.querySelectorAll('#save-menu [role="menuitem"]')).filter(e => e.getClientRects().length > 0).map(e => e.textContent.trim()),
     fileMenuClosed: document.getElementById('file-menu').classList.contains('hidden'),
     expanded: document.getElementById('btn-save-menu').getAttribute('aria-expanded')
