@@ -1,3 +1,9 @@
+:root {
+  /* AST-146: Editorial スタイルの微細紙テクスチャ（feTurbulence ノイズ、160×160 タイル） */
+  --paper-grain-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.18   0 0 0 0 0.14   0 0 0 0 0.10   0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  --paper-grain-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='noise-d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0.95   0 1 0 0 0.92   0 0 1 0 0.85   0 0 0 0.03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise-d)'/%3E%3C/svg%3E");
+}
+
 /* Style 1: パステルグラデーション＋白グリッド (リファレンス1) */
 .infographic-bg-shapes {
   background-color: #B8DFD8;
@@ -18,9 +24,18 @@
   background: #FFFFFF !important;
 }
 
-/* Style 4: クリーム背景・診断チャート (リファレンス3) */
+/* Style 4: クリーム背景・診断チャート (リファレンス3, AST-146) */
 .infographic-bg-editorial {
-  background: #F7F4EB !important;
+  background-color: #F7F4EB !important;
+  background-image: var(--paper-grain-light) !important;
+  background-repeat: repeat !important;
+}
+
+/* Editorial スタイル選択時のステージ地（紙の誌面テクスチャ） */
+#visual-stage-container:has(.vs-theme-editorial) {
+  background-color: #EDE9DF;
+  background-image: var(--paper-grain-light);
+  background-repeat: repeat;
 }
 
 /* Dark の Visual Stage（DD-DIAG-024）: 各スタイルの調子を保った暗いカード背景。
@@ -39,7 +54,14 @@ body[data-appearance="dark"] .infographic-bg-circles {
   background: #14171C !important;
 }
 body[data-appearance="dark"] .infographic-bg-editorial {
-  background: #221E17 !important;
+  background-color: #221E17 !important;
+  background-image: var(--paper-grain-dark) !important;
+  background-repeat: repeat !important;
+}
+body[data-appearance="dark"] #visual-stage-container:has(.vs-theme-editorial) {
+  background-color: #17140F;
+  background-image: var(--paper-grain-dark);
+  background-repeat: repeat;
 }
 
 /* 展示用のカードの中の横スクロールバーは、操作するときだけ目立つようにする。

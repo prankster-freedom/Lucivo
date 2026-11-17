@@ -29,6 +29,9 @@
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 .slab-action-btn:hover {
   color: var(--text-primary);
@@ -84,7 +87,7 @@ html.is-stage-show .slab-actions {
   width: 2.25rem;
   height: 3px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, var(--vs-c), color-mix(in srgb, var(--vs-c) 30%, transparent));
+  background: linear-gradient(90deg, var(--vs-c), color-mix(in oklab, var(--vs-c) 30%, transparent));
 }
 
 /* ==================== タイムライン・ロードマップ修飾（FR-029, DTP-VTPL-036） ==================== */
@@ -105,20 +108,23 @@ html.is-stage-show .slab-actions {
   font-weight: 700;
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
-  background: color-mix(in srgb, var(--vs-c) 18%, var(--vs-card-bg));
-  border: 1px solid color-mix(in srgb, var(--vs-c) 55%, var(--vs-card-border));
+  background: color-mix(in oklab, var(--vs-c) 18%, var(--vs-card-bg));
+  border: 1px solid color-mix(in oklab, var(--vs-c) 55%, var(--vs-card-border));
   color: var(--text-primary);
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 
 /* ==================== Before / After 比較ペアカード修飾（FR-030, DTP-VTPL-037） ==================== */
 .exhibition-slab .vs-points.vs-points-compare > li.vs-compare-before {
   --vs-c: var(--border-strong);
-  background: color-mix(in srgb, var(--vs-card-bg) 82%, transparent);
+  background: color-mix(in oklab, var(--vs-card-bg) 82%, transparent);
   border-style: dashed;
 }
 .exhibition-slab .vs-points.vs-points-compare > li.vs-compare-after {
   --vs-c: var(--vs-c1);
-  border-color: color-mix(in srgb, var(--vs-c1) 65%, var(--vs-card-border));
+  border-color: color-mix(in oklab, var(--vs-c1) 65%, var(--vs-card-border));
   box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.22);
 }
 .exhibition-slab .vs-points.vs-points-compare > li.vs-compare-after::after {
@@ -130,6 +136,14 @@ html.is-stage-show .slab-actions {
 .exhibition-slab pre.vs-code-block {
   position: relative;
   padding-top: 2.45rem !important;
+  background-color: #0F172A !important;
+  color: #E2E8F0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.35) !important;
+}
+.exhibition-slab pre.vs-code-block code {
+  color: #E2E8F0 !important;
+  background: transparent !important;
 }
 .exhibition-slab pre.vs-code-block::before {
   content: attr(data-code-lang);
@@ -140,8 +154,8 @@ html.is-stage-show .slab-actions {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--text-secondary);
-  opacity: 0.85;
+  color: #94A3B8;
+  opacity: 0.9;
   pointer-events: none;
 }
 .exhibition-slab pre.vs-code-block > .vs-code-caret {
@@ -161,23 +175,28 @@ html.is-stage-show .slab-actions {
   right: 0.65rem;
   padding: 0.18rem 0.55rem;
   border-radius: 6px;
-  border: 1px solid var(--border-subtle);
-  background: var(--panel-bg);
-  color: var(--text-secondary);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(30, 41, 59, 0.85);
+  color: #94A3B8;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 .exhibition-slab pre.vs-code-block > .vs-code-copy-btn::after {
   content: attr(data-copy-label);
 }
-.exhibition-slab pre.vs-code-block > .vs-code-copy-btn:hover,
-.exhibition-slab pre.vs-code-block > .vs-code-copy-btn.is-copied {
-  color: var(--text-primary);
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn:hover {
+  color: #F8FAFC;
   border-color: var(--vs-c1);
+  background: rgba(51, 65, 85, 0.95);
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn.is-copied {
+  color: #34D399;
+  border-color: #34D399;
+  background: rgba(16, 185, 129, 0.18);
 }
 html.is-stage-show .exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
   display: none;
@@ -206,12 +225,15 @@ html.is-stage-show .exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
   padding: 0.22rem 0.65rem;
   border-radius: 9999px;
   border: 1px solid var(--vs-card-border);
-  background: color-mix(in srgb, var(--vs-card-bg) 88%, transparent);
+  background: color-mix(in oklab, var(--vs-card-bg) 88%, transparent);
   font-family: "JetBrains Mono", monospace;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--text-secondary);
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 .vs-cover-spec-pill::after {
   content: attr(data-spec-label);
@@ -230,13 +252,13 @@ html.is-stage-show .exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
 }
 .md-alert {
   --alert-c: #2563EB;
-  --alert-ink: color-mix(in srgb, var(--alert-c) 72%, #0F172A);
+  --alert-ink: color-mix(in oklab, var(--alert-c) 72%, #0F172A);
   --icon-alert: var(--icon-alert-note);
   margin: 1rem 0;
   padding: 0.85rem 1.1rem;
   border-left: 4px solid var(--alert-c);
   border-radius: 0 10px 10px 0;
-  background: color-mix(in srgb, var(--alert-c) 7%, transparent);
+  background: color-mix(in oklab, var(--alert-c) 7%, transparent);
   color: var(--text-secondary);
 }
 .md-alert-tip { --alert-c: #059669; --icon-alert: var(--icon-alert-tip); }
@@ -246,7 +268,7 @@ html.is-stage-show .exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
 body[data-appearance="dark"] .md-alert {
   --alert-c: #60A5FA;
   --alert-ink: var(--alert-c);
-  background: color-mix(in srgb, var(--alert-c) 10%, transparent);
+  background: color-mix(in oklab, var(--alert-c) 10%, transparent);
 }
 body[data-appearance="dark"] .md-alert-tip { --alert-c: #34D399; }
 body[data-appearance="dark"] .md-alert-important { --alert-c: #A78BFA; }
@@ -265,6 +287,9 @@ body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--alert-ink);
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 .md-alert-icon {
   flex: none;
@@ -307,7 +332,7 @@ body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
 .exhibition-slab .vs-gloss-row:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
 .exhibition-slab .vs-gloss-row:nth-child(4n + 4) { --vs-c: var(--vs-c4); }
 .exhibition-slab .vs-gloss-row:hover {
-  background: color-mix(in srgb, var(--vs-c) 6%, transparent);
+  background: color-mix(in oklab, var(--vs-c) 6%, transparent);
 }
 .exhibition-slab .vs-glossary dt {
   display: flex;
@@ -318,7 +343,7 @@ body[data-appearance="dark"] .md-alert-caution { --alert-c: #F87171; }
   font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.55;
-  color: color-mix(in srgb, var(--vs-c) 70%, var(--vs-tone));
+  color: color-mix(in oklab, var(--vs-c) 70%, var(--vs-tone));
   overflow-wrap: anywhere;
 }
 .exhibition-slab .vs-glossary dt::before {

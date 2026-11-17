@@ -159,6 +159,18 @@
   .exhibition-hero :is(.vs-cover-agenda-no, .vs-cover-agenda-title) {
     font-size: 9pt !important;
   }
+  /* モノクロ印刷・PDF でのカード・丸・コールアウトの境界線と視認性の補強 */
+  .exhibition-slab .vs-points > li {
+    border: 1px solid rgba(148, 163, 184, 0.45) !important;
+  }
+  .exhibition-slab .vs-steps > li::before {
+    border: 2px solid rgba(148, 163, 184, 0.6) !important;
+    box-shadow: none !important;
+  }
+  .md-alert {
+    border: 1px solid rgba(148, 163, 184, 0.4) !important;
+    border-left-width: 3.5px !important;
+  }
   .exhibition-slab :is(.vs-points > li, .vs-steps > li, .vs-gloss-row, tr, .exhibition-diagram-card, .md-alert, pre, .lucivo-math.has-math-plot) {
     break-inside: avoid;
   }

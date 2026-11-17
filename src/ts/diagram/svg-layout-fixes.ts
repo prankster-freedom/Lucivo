@@ -273,7 +273,7 @@ export function enhancePieChart(svg, isVisualMode, spec) {
       // 色見本に輪郭を付け、淡い色でも背景に溶けないようにする（#150）。輪郭は、塗りと同じ色相の濃い色
       const swatch = rect.style.fill || rect.getAttribute('fill');
       if (isVisualMode && swatch) {
-        rect.style.setProperty('stroke', `color-mix(in srgb, ${swatch} 72%, ${isDark ? '#FFFFFF' : '#1E293B'})`, 'important');
+        rect.style.setProperty('stroke', `color-mix(in oklab, ${swatch} 72%, ${isDark ? '#FFFFFF' : '#1E293B'})`, 'important');
         rect.style.setProperty('stroke-width', '1.5px', 'important');
       } else {
         rect.style.setProperty('stroke-width', '0', 'important');

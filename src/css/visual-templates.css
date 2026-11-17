@@ -97,7 +97,7 @@
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: color-mix(in srgb, var(--vs-c) 70%, var(--vs-tone));
+  color: color-mix(in oklab, var(--vs-c) 70%, var(--vs-tone));
 }
 .exhibition-slab .vs-points > li::after {
   content: "";
@@ -110,20 +110,20 @@
 }
 .exhibition-slab .vs-card-ornament {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 28px;
-  height: 28px;
+  top: 0;
+  right: 0;
+  width: 56px;
+  height: 56px;
   pointer-events: none;
   background-color: var(--vs-c);
-  opacity: 0.28;
+  opacity: 0.55;
   -webkit-mask: var(--motif-card-ornament) no-repeat center / contain;
   mask: var(--motif-card-ornament) no-repeat center / contain;
   transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .exhibition-slab .vs-points > li:hover .vs-card-ornament {
-  opacity: 0.52;
-  transform: scale(1.06);
+  opacity: 0.95;
+  transform: scale(1.05);
 }
 .exhibition-slab ul.vs-points.has-spotlight > li:not(.is-spotlight) {
   opacity: 0.48;
@@ -134,8 +134,8 @@
   box-shadow: 0 16px 32px -10px rgba(15, 23, 42, 0.24);
 }
 .exhibition-slab ul.vs-points > li.is-spotlight .vs-card-ornament {
-  opacity: 0.65;
-  transform: scale(1.1);
+  opacity: 0.95;
+  transform: scale(1.08);
 }
 .exhibition-slab .vs-point-title {
   display: block;
@@ -182,7 +182,7 @@
   background:
     radial-gradient(closest-side, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 40%, transparent 100%) right center / 14px 9px no-repeat,
     linear-gradient(90deg, transparent, var(--vs-glow) 60%, #FFFFFF) right center / var(--vs-comet) 3px no-repeat,
-    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--vs-glow) 70%, transparent), transparent) right center / calc(var(--vs-comet) * 0.8) 22px no-repeat;
+    radial-gradient(farthest-side at 100% 50%, color-mix(in oklab, var(--vs-glow) 70%, transparent), transparent) right center / calc(var(--vs-comet) * 0.8) 22px no-repeat;
   animation: vs-comet-run var(--vs-cycle) linear infinite;
 }
 .exhibition-slab .vs-steps > li {
@@ -232,7 +232,7 @@
   height: 2.5rem;
   margin-left: -1.25rem;
   border-radius: 9999px;
-  box-shadow: 0 0 0 2px var(--vs-glow), 0 0 16px 5px color-mix(in srgb, var(--vs-glow) 55%, transparent);
+  box-shadow: 0 0 0 2px var(--vs-glow), 0 0 16px 5px color-mix(in oklab, var(--vs-glow) 55%, transparent);
   opacity: 0;
   pointer-events: none;
   animation: vs-step-receive var(--vs-cycle) linear infinite;
@@ -286,7 +286,7 @@
   background:
     radial-gradient(closest-side, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 40%, transparent 100%) center bottom / 9px 14px no-repeat,
     linear-gradient(180deg, transparent, var(--vs-glow) 60%, #FFFFFF) center bottom / 3px var(--vs-comet) no-repeat,
-    radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--vs-glow) 70%, transparent), transparent) center bottom / 22px calc(var(--vs-comet) * 0.8) no-repeat;
+    radial-gradient(farthest-side at 50% 100%, color-mix(in oklab, var(--vs-glow) 70%, transparent), transparent) center bottom / 22px calc(var(--vs-comet) * 0.8) no-repeat;
   animation-name: vs-comet-run-vertical;
 }
 .exhibition-slab .vs-steps.is-vertical > li::after {
@@ -336,7 +336,7 @@
     background:
       radial-gradient(closest-side, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 40%, transparent 100%) center bottom / 9px 14px no-repeat,
       linear-gradient(180deg, transparent, var(--vs-glow) 60%, #FFFFFF) center bottom / 3px var(--vs-comet) no-repeat,
-      radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--vs-glow) 70%, transparent), transparent) center bottom / 22px calc(var(--vs-comet) * 0.8) no-repeat;
+      radial-gradient(farthest-side at 50% 100%, color-mix(in oklab, var(--vs-glow) 70%, transparent), transparent) center bottom / 22px calc(var(--vs-comet) * 0.8) no-repeat;
     animation-name: vs-comet-run-vertical;
   }
   .exhibition-slab .vs-steps > li::after {
@@ -408,6 +408,18 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--vs-sub-text, var(--text-muted));
+}
+/* ステートメント末尾の「止め」オーナメント（AST-114, DTP-VTPL-050） */
+.exhibition-slab blockquote.vs-quote::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 12px;
+  margin: 1.5rem auto 0;
+  background-color: var(--vs-c1);
+  opacity: 0.72;
+  -webkit-mask: var(--motif-quote-flourish) no-repeat center / contain;
+  mask: var(--motif-quote-flourish) no-repeat center / contain;
 }
 
 .exhibition-diagram-card {

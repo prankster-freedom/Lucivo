@@ -497,7 +497,7 @@ body[data-appearance="light"] .brand-mark-dark {
 }
 
 .pill-btn {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 9999px;
@@ -507,6 +507,9 @@ body[data-appearance="light"] .brand-mark-dark {
   cursor: pointer;
   border: none;
   background: transparent;
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 .pill-btn:hover {
   color: var(--text-primary);
@@ -518,7 +521,7 @@ body[data-appearance="light"] .brand-mark-dark {
 }
 
 .stage-mode-btn {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 9999px;
@@ -528,6 +531,9 @@ body[data-appearance="light"] .brand-mark-dark {
   cursor: pointer;
   border: none;
   background: transparent;
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 .stage-mode-btn:hover {
   color: var(--text-primary);

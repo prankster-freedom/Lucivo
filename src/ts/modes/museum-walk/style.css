@@ -166,9 +166,9 @@ html.is-museum-walk body { overflow: hidden; }
   box-shadow:
     0 48px 112px rgba(36, 30, 20, .16),
     inset 0 2px 0 rgba(255, 255, 255, .9),
-    inset 0 -6px 0 color-mix(in srgb, rgb(var(--tint)) 55%, #161922);
+    inset 0 -6px 0 color-mix(in oklab, rgb(var(--tint)) 55%, #161922);
 }
-#museum-walk .mw-fig-frame.is-light::before { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
+#museum-walk .mw-fig-frame.is-light::before { color: color-mix(in oklab, rgb(var(--tint)) 42%, #141720); }
 #museum-walk .mw-fig-frame.is-light span { border-top-color: rgba(24, 28, 36, .12); color: rgba(24, 28, 36, .86); }
 #museum-walk .mw-fig-layer img { position: absolute; display: block; }
 #museum-walk .mw-fig-layer.is-nodes img { filter: drop-shadow(0 24px 32px rgba(0, 0, 0, .45)); }
@@ -305,16 +305,16 @@ html.is-museum-walk body { overflow: hidden; }
 #museum-walk.is-light .mw-h3shadow { text-shadow: 0 22px 44px rgba(32, 28, 20, .24); }
 #museum-walk.is-light .mw-part strong { color: #0c0d11; }
 #museum-walk.is-light .mw-part code { background: rgba(24, 28, 36, .08); }
-#museum-walk.is-light .mw-part a { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
-#museum-walk.is-light .mw-bullet { border-left-color: color-mix(in srgb, rgb(var(--tint)) 45%, #161922); }
+#museum-walk.is-light .mw-part a { color: color-mix(in oklab, rgb(var(--tint)) 42%, #141720); }
+#museum-walk.is-light .mw-bullet { border-left-color: color-mix(in oklab, rgb(var(--tint)) 45%, #161922); }
 #museum-walk.is-light .mw-aside,
-#museum-walk.is-light .mw-number { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
-#museum-walk.is-light .mw-aside { border-left-color: color-mix(in srgb, rgb(var(--tint)) 50%, #141720); }
+#museum-walk.is-light .mw-number { color: color-mix(in oklab, rgb(var(--tint)) 42%, #141720); }
+#museum-walk.is-light .mw-aside { border-left-color: color-mix(in oklab, rgb(var(--tint)) 50%, #141720); }
 #museum-walk.is-light .mw-plate {
   background: rgba(255, 254, 250, .86); border-color: rgba(24, 28, 36, .16);
   box-shadow: 0 24px 64px rgba(36, 30, 20, .14);
 }
-#museum-walk.is-light .mw-plate th { color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720); }
+#museum-walk.is-light .mw-plate th { color: color-mix(in oklab, rgb(var(--tint)) 42%, #141720); }
 #museum-walk.is-light .mw-plate th,
 #museum-walk.is-light .mw-plate td { border-bottom-color: rgba(24, 28, 36, .1); }
 #museum-walk.is-light .mw-scrim {
@@ -326,7 +326,7 @@ html.is-museum-walk body { overflow: hidden; }
   box-shadow: 0 20px 64px rgba(36, 30, 20, .14), inset 0 1px 0 rgba(255, 255, 255, .85);
 }
 #museum-walk.is-light .mw-no {
-  color: color-mix(in srgb, rgb(var(--tint)) 42%, #141720);
+  color: color-mix(in oklab, rgb(var(--tint)) 42%, #141720);
   border-bottom-color: rgba(24, 28, 36, .24);
 }
 #museum-walk.is-light .mw-title {

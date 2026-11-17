@@ -183,13 +183,13 @@ html.is-stage-show .vs-points.is-building > li:not(.is-built) {
 }
 /* 手順は丸を不透明のまま沈める。li ごと透かすと、光が丸の上に透けて濁る */
 html.is-stage-show .vs-steps.is-building > li:not(.is-built) {
-  color: color-mix(in srgb, var(--text-primary) 24%, transparent);
+  color: color-mix(in oklab, var(--text-primary) 24%, transparent);
 }
 html.is-stage-show .vs-steps.is-building > li:not(.is-built) strong {
   color: inherit;
 }
 html.is-stage-show .vs-steps.is-building > li:not(.is-built)::before {
-  background: color-mix(in srgb, var(--vs-c) 32%, var(--vs-slab-bg));
+  background: color-mix(in oklab, var(--vs-c) 32%, var(--vs-slab-bg));
 }
 .stage-hud {
   display: none;

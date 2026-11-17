@@ -40,6 +40,7 @@ body[data-appearance="dark"] #visual-stage-container {
   --motif-flow-spark: url("data:image/svg+xml,%3Csvg id='flow-spark.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='10' stroke='black' stroke-width='1.25' stroke-opacity='0.35' stroke-dasharray='4 3'/%3E%3Cpath d='M12 3.5L13.6 9.4L19.5 11L13.6 12.6L12 18.5L10.4 12.6L4.5 11L10.4 9.4L12 3.5Z' fill='black' fill-opacity='0.85'/%3E%3C/svg%3E");
   --motif-rounded-caret: url("data:image/svg+xml,%3Csvg id='rounded-caret-glyph.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 24' fill='none'%3E%3Cpath d='M4 6L11 12L4 18' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='17' y='16.6' width='11' height='2.4' rx='1.2' fill='black' fill-opacity='0.45'/%3E%3Crect x='34' y='3' width='4' height='18' rx='2' fill='black'/%3E%3Crect x='31.5' y='0.5' width='9' height='23' rx='4.5' stroke='black' stroke-width='1' stroke-opacity='0.25'/%3E%3C/svg%3E");
   --motif-dot-matrix: url("data:image/svg+xml,%3Csvg id='dot-matrix-texture.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='6' cy='6' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='18' cy='6' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='6' cy='18' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='18' cy='18' r='1.3' fill='black' fill-opacity='0.38'/%3E%3C/svg%3E");
+  --motif-quote-flourish: url("data:image/svg+xml,%3Csvg id='quote-end-flourish.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12' fill='none'%3E%3Cline x1='2' y1='6' x2='15' y2='6' stroke='black' stroke-width='1' stroke-opacity='0.35' stroke-linecap='round'/%3E%3Ccircle cx='19' cy='6' r='1.2' fill='black' fill-opacity='0.55'/%3E%3Cpolygon points='24,2 28,6 24,10 20,6' stroke='black' stroke-width='1.35' stroke-linejoin='round' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='29' cy='6' r='1.2' fill='black' fill-opacity='0.55'/%3E%3Cline x1='33' y1='6' x2='46' y2='6' stroke='black' stroke-width='1' stroke-opacity='0.35' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 .vs-theme-shapes {
   --vs-glow: #0EA5B7;
@@ -128,8 +129,8 @@ body[data-appearance="dark"] .exhibition-hero.vs-cover {
   overflow: hidden;
   padding: clamp(2.5rem, 6vw, 4.25rem) clamp(1.5rem, 5vw, 3.5rem) clamp(2.25rem, 5vw, 3.5rem);
   background:
-    radial-gradient(60% 70% at 0% 0%, color-mix(in srgb, var(--vs-c1) 13%, transparent), transparent 70%),
-    radial-gradient(55% 65% at 100% 0%, color-mix(in srgb, var(--vs-c3) 13%, transparent), transparent 70%),
+    radial-gradient(60% 70% at 0% 0%, color-mix(in oklab, var(--vs-c1) 13%, transparent), transparent 70%),
+    radial-gradient(55% 65% at 100% 0%, color-mix(in oklab, var(--vs-c3) 13%, transparent), transparent 70%),
     var(--vs-slab-bg);
 }
 .vs-cover-eyebrow {
@@ -139,7 +140,7 @@ body[data-appearance="dark"] .exhibition-hero.vs-cover {
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--vs-c1) 70%, var(--vs-tone));
+  color: color-mix(in oklab, var(--vs-c1) 70%, var(--vs-tone));
 }
 .vs-cover-sep {
   display: inline-block;
@@ -205,7 +206,7 @@ body[data-appearance="dark"] .vs-cover-deck { color: #CBD5E1; }
 }
 .vs-cover-agenda-item:hover,
 .vs-cover-agenda-item:focus-visible {
-  background: color-mix(in srgb, var(--vs-c) 12%, transparent);
+  background: color-mix(in oklab, var(--vs-c) 12%, transparent);
   outline: none;
 }
 .vs-cover-agenda-no {
@@ -214,7 +215,10 @@ body[data-appearance="dark"] .vs-cover-deck { color: #CBD5E1; }
   font-size: 0.95rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--vs-c) 70%, var(--vs-tone));
+  color: color-mix(in oklab, var(--vs-c) 70%, var(--vs-tone));
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 .vs-cover-agenda-title {
   font-size: 0.875rem;
@@ -284,7 +288,7 @@ body[data-appearance="dark"] .vs-cover-deck { color: #CBD5E1; }
   transition: background-color 0.2s ease;
 }
 .exhibition-wrap tbody tr:hover {
-  background: color-mix(in srgb, var(--vs-c1) 7%, transparent);
+  background: color-mix(in oklab, var(--vs-c1) 7%, transparent);
 }
 .exhibition-wrap :is(th, td).vs-num {
   text-align: right;
@@ -377,6 +381,9 @@ body[data-appearance="dark"] .exhibition-slab {
   cursor: pointer;
   user-select: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+  text-box: trim-both cap alphabetic;
 }
 .exhibition-num-badge:hover {
   transform: translateY(-1px);
@@ -471,7 +478,7 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
   height: 7px;
   border-radius: 9999px;
   background: var(--vs-c1);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vs-c1) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--vs-c1) 18%, transparent);
 }
 .exhibition-slab ul:not(.vs-points):not(.vs-cover-agenda) ul > li:not(:has(> input[type="checkbox"]))::before {
   width: 6px;
@@ -509,12 +516,12 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
   font-family: 'Plus Jakarta Sans', 'JetBrains Mono', monospace;
   font-size: 0.72rem;
   font-weight: 800;
-  background: color-mix(in srgb, var(--vs-c1) 14%, transparent);
-  color: color-mix(in srgb, var(--vs-c1) 82%, var(--vs-tone));
+  background: color-mix(in oklab, var(--vs-c1) 14%, transparent);
+  color: color-mix(in oklab, var(--vs-c1) 82%, var(--vs-tone));
 }
 .exhibition-slab ol:not(.vs-steps):not(.vs-cover-agenda) ol > li::before {
-  background: color-mix(in srgb, var(--vs-c2) 16%, transparent);
-  color: color-mix(in srgb, var(--vs-c2) 82%, var(--vs-tone));
+  background: color-mix(in oklab, var(--vs-c2) 16%, transparent);
+  color: color-mix(in oklab, var(--vs-c2) 82%, var(--vs-tone));
 }
 .exhibition-slab li:has(> input[type="checkbox"]) {
   padding-left: 0;
@@ -537,7 +544,7 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
   height: 1.05rem;
   margin: 0.3em 0 0;
   border-radius: 5px;
-  border: 1.75px solid color-mix(in srgb, var(--vs-c1) 45%, var(--border-strong));
+  border: 1.75px solid color-mix(in oklab, var(--vs-c1) 45%, var(--border-strong));
   background: var(--vs-card-bg);
   position: relative;
 }
@@ -556,3 +563,52 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
+
+/* ==================== Forced Colors Mode（ハイコントラスト表示対応） ==================== */
+@media (forced-colors: active) {
+  /* mask-image で描画するベクターアイコン類をシステムカラーで維持 */
+  :is(.vs-hero-emblem, .vs-card-ornament, .vs-step-chevron, .vs-flow-spark, .vs-code-caret, .vs-cover-texture, .md-alert-icon, .md-tree-icon) {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
+  }
+  .exhibition-slab blockquote.vs-quote::before,
+  .exhibition-slab blockquote.vs-quote::after {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
+  }
+  /* 選択状態・アクティブ要素の輪郭明示 */
+  .pill-btn.is-active,
+  .stage-mode-btn.is-active,
+  .scale-menu-item.is-selected {
+    outline: 2px solid Highlight !important;
+    outline-offset: 1px;
+  }
+  .exhibition-slab .vs-points > li {
+    border: 1px solid CanvasText !important;
+  }
+  .exhibition-slab ul.vs-points > li.is-spotlight {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+  }
+  .exhibition-slab .vs-steps > li::before {
+    border: 2px solid CanvasText !important;
+  }
+  .exhibition-num-badge {
+    border: 1px solid CanvasText !important;
+  }
+  .md-alert {
+    border: 1px solid CanvasText !important;
+    border-left: 4px solid Highlight !important;
+  }
+  .exhibition-slab pre.vs-code-block {
+    outline: 1px solid CanvasText !important;
+  }
+  .exhibition-slab li > input[type="checkbox"]:checked {
+    border: 2px solid Highlight !important;
+    background-color: Highlight !important;
+  }
+  .exhibition-slab li > input[type="checkbox"]:checked::after {
+    border-color: HighlightText !important;
+  }
+}
+

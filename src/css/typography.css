@@ -8,6 +8,9 @@
   line-height: 1.75;
   color: var(--text-secondary);
 }
+.prose-doc :is(p, blockquote, li) {
+  text-wrap: pretty;
+}
 .prose-doc h1 {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 1.65rem;
@@ -265,7 +268,7 @@ body[data-appearance="dark"] :is(.prose-doc, .exhibition-slab) mark {
   display: none;
 }
 .editor-lock-btn {
-  font-size: 10px;
+  font-size: 0.625rem;
   padding: 1px 9px;
 }
 
@@ -337,6 +340,7 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-primary) !important;
+  text-wrap: balance;
 }
 
 .diagram-frame {
@@ -392,7 +396,7 @@ th {
    名前の列と注釈の列を grid でそろえる。行の間は詰め、縦線を途切れさせない */
 .md-tree {
   --tree-accent: var(--accent);
-  --tree-line: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  --tree-line: color-mix(in oklab, var(--text-muted) 55%, transparent);
   --tree-row: 1.75rem;
   --tree-step: 1.35rem;
   display: grid;
@@ -495,9 +499,9 @@ th {
 }
 /* Visualモードでは、フォルダの色をスタイルの 1 色目に合わせ、カードの面に置く（DTP-009） */
 .exhibition-slab .md-tree {
-  --tree-accent: color-mix(in srgb, var(--vs-c1, var(--accent)) 80%, var(--text-primary));
+  --tree-accent: color-mix(in oklab, var(--vs-c1, var(--accent)) 80%, var(--text-primary));
   border-color: var(--border-subtle);
-  background: color-mix(in srgb, var(--card-bg, var(--panel-bg)) 70%, var(--panel-sub));
+  background: color-mix(in oklab, var(--card-bg, var(--panel-bg)) 70%, var(--panel-sub));
   box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.45);
 }
 @media print {
@@ -589,7 +593,7 @@ sup.fn-ref a:hover {
   border-radius: 6px;
 }
 .lucivo-footnotes .fn-item:target {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
 }
 .lucivo-footnotes .fn-num {
   flex: none;

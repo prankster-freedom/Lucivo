@@ -28,7 +28,7 @@ svg .edgeLabel span {
 }
 svg span.edgeLabel:not(:empty) {
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
-  border: 1px solid color-mix(in srgb, var(--diag-edge, #94A3B8) 28%, transparent);
+  border: 1px solid color-mix(in oklab, var(--diag-edge, #94A3B8) 28%, transparent);
 }
 /* Mermaid 12 はラベルを .labelBkg と p で包む。背景が重なって十字形に見えないよう、span の 1 枚だけにする */
 svg span.edgeLabel {
@@ -101,7 +101,7 @@ html:not(.is-stage-show):not(.is-zoom-map) .exhibition-slab-split:not(.is-stacke
   display: none;
 }
 .scale-menu-item {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-align: left;
   white-space: nowrap;

@@ -463,10 +463,20 @@ function inspectTemplateLayout() {
   });
   // rgb() / rgba() / color(srgb …) を [r, g, b, a]（0〜255, 0〜1）にする
   const parse = c => {
+    if (!c) return null;
     let m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(c);
     if (m) return [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]];
-    m = /color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+))?\)/.exec(c);
-    if (m) return [m[1] * 255, m[2] * 255, m[3] * 255, m[4] === undefined ? 1 : +m[4]];
+    m = /color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)/.exec(c);
+    if (m) return [+m[1] * 255, +m[2] * 255, +m[3] * 255, m[4] === undefined ? 1 : +m[4]];
+    try {
+      const cvs = document.createElement('canvas');
+      cvs.width = cvs.height = 1;
+      const ctx = cvs.getContext('2d');
+      ctx.fillStyle = c;
+      ctx.fillRect(0, 0, 1, 1);
+      const d = ctx.getImageData(0, 0, 1, 1).data;
+      return [d[0], d[1], d[2], d[3] / 255];
+    } catch {}
     return null;
   };
   const over = (top, under) => top && under ? [0, 1, 2].map(i => top[i] * top[3] + under[i] * (1 - top[3])).concat(1) : null;
@@ -690,7 +700,9 @@ async function testVisualTemplates(browser) {
       },
       quote: bq ? {
         mask: /quote-watermark\.svg/.test(maskOf(bq, '::before')),
-        bg: isOpaque(cs(bq, '::before').backgroundColor)
+        bg: isOpaque(cs(bq, '::before').backgroundColor),
+        flourishMask: /quote-end-flourish\.svg/.test(maskOf(bq, '::after')),
+        flourishBg: isOpaque(cs(bq, '::after').backgroundColor)
       } : null
     };
   });
@@ -698,7 +710,7 @@ async function testVisualTemplates(browser) {
     && !!(motifs.leadSpark && motifs.leadSpark.mask && motifs.leadSpark.bg)
     && motifs.ornaments.count === 3 && motifs.ornaments.mask && motifs.ornaments.size && motifs.ornaments.bg
     && motifs.chevrons.firstHasNone && motifs.chevrons.count === 3 && motifs.chevrons.mask && motifs.chevrons.size && motifs.chevrons.bg
-    && !!(motifs.quote && motifs.quote.mask && motifs.quote.bg);
+    && !!(motifs.quote && motifs.quote.mask && motifs.quote.bg && motifs.quote.flourishMask && motifs.quote.flourishBg);
   record('TC-VTPL-012', motifsOk, JSON.stringify(motifs));
 
   // TC-VTPL-013 動的ステージ演出（スポットライト・ステージ集中）の動作確認（FR-017, DD-VTPL-015, DD-VTPL-025）
@@ -1252,7 +1264,9 @@ async function testCoverAndTables(browser) {
       pills,
       codeLang: pre ? pre.getAttribute('data-code-lang') : null,
       caretMask: /rounded-caret-glyph\.svg/.test(maskOf(caret)),
-      copyLabelBefore: copyBtn ? copyBtn.getAttribute('data-copy-label') : null
+      copyLabelBefore: copyBtn ? copyBtn.getAttribute('data-copy-label') : null,
+      preBg: pre ? getComputedStyle(pre).backgroundColor : null,
+      preColor: pre ? getComputedStyle(pre).color : null
     };
   });
   await page.click('#visual-stage-container .vs-code-copy-btn');
@@ -1268,6 +1282,7 @@ async function testCoverAndTables(browser) {
   const vtpl20Ok = vtpl20Before.textureMask
     && JSON.stringify(vtpl20Before.pills) === JSON.stringify([['author', 'Lucivo Design Team'], ['date', '2026-11-08'], ['stages', '5 STAGES'], ['figures', '1 FIGURE']])
     && vtpl20Before.codeLang === 'JS' && vtpl20Before.caretMask && vtpl20Before.copyLabelBefore === 'Copy'
+    && vtpl20Before.preBg === 'rgb(15, 23, 42)' && vtpl20Before.preColor === 'rgb(226, 232, 240)'
     && vtpl20After.copyLabelAfter === 'Copied' && vtpl20After.isCopied && /コードをクリップボードにコピー/.test(vtpl20After.toast);
   record('TC-VTPL-020', vtpl20Ok, JSON.stringify({ vtpl20Before, vtpl20After }));
 
