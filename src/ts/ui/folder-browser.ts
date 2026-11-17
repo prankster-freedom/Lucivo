@@ -547,6 +547,43 @@ export function setupAnimationToggle() {
   });
 }
 
+const AMBIENT_EFFECTS_KEY = 'lucivo:ambient-effects';
+
+export function isAmbientEffectsEnabled() {
+  try {
+    return localStorage.getItem(AMBIENT_EFFECTS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setAmbientEffectsEnabled(enabled: boolean) {
+  state.ambientEffectsEnabled = Boolean(enabled);
+  try {
+    localStorage.setItem(AMBIENT_EFFECTS_KEY, state.ambientEffectsEnabled ? '1' : '0');
+  } catch {
+    // ignore storage errors
+  }
+  document.documentElement.classList.toggle('has-ambient-effects', state.ambientEffectsEnabled);
+  document.querySelectorAll('#visual-stage-container .exhibition-wrap').forEach(el => {
+    el.classList.toggle('has-ambient-effects', state.ambientEffectsEnabled);
+  });
+}
+
+// Visualモードの背景・前景演出（半透明・すりガラス・水・光・炎・日光のグラデーション＆有機的揺らぎ）ON / OFF（FR-060, DTP-VTPL-096, #202）
+export function setupAmbientEffectsToggle() {
+  const initial = isAmbientEffectsEnabled();
+  state.ambientEffectsEnabled = initial;
+  document.documentElement.classList.toggle('has-ambient-effects', initial);
+  const toggle = document.getElementById('setting-ambient-effects') as HTMLInputElement | null;
+  if (!toggle) return;
+  toggle.checked = initial;
+  toggle.addEventListener('change', () => {
+    setAmbientEffectsEnabled(toggle.checked);
+    showToast(toggle.checked ? 'Visualモードの背景・前景演出: ON' : 'Visualモードの背景・前景演出: OFF');
+  });
+}
+
 // 起動時の URL パラメータ（?url=... / #url=...）から公開 Markdown を読み込む（FR-050, #78）
 export async function loadMarkdownFromUrlParam() {
   const rawUrl = extractMarkdownUrlFromLocation(window.location.search, window.location.hash);

@@ -446,6 +446,7 @@ export const state = {
   infographicStyle: 'shapes',
   showFrontMatter: false,
   signalLightsEnabled: true,
+  ambientEffectsEnabled: false,
   // 図の番号 → 矢印の形状（'smooth' / 'step' / 'straight'）。画面の表示の間だけ保持する（DD-EDGE-003）
   curveByIndex: new Map()
 };

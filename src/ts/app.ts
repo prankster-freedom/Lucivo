@@ -80,6 +80,7 @@ import {
   setupFolder,
   setupFrontMatterToggle,
   setupAnimationToggle,
+  setupAmbientEffectsToggle,
   loadMarkdownFromUrlParam
 } from './ui/folder-browser';
 
@@ -903,6 +904,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupLocalImages();
   setupFrontMatterToggle();
   setupAnimationToggle();
+  setupAmbientEffectsToggle();
   setupFormatter();
   setupMarkedMath();
   setupMarkedHeadings();

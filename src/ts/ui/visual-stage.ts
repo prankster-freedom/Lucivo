@@ -433,8 +433,9 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
   const heroHtml = heroTitle ? buildCoverHtml(heroTitle, coverMeta, agenda, totalFigures) : '';
 
   // 雛形・バッジ・4 色バーの配色は、スタイルのクラスが定義する --vs-c1〜4 から取る（DTP-VTPL-070）
+  const ambientClass = state.ambientEffectsEnabled ? ' has-ambient-effects' : '';
   return `
-    <div class="exhibition-wrap vs-theme-${state.infographicStyle}">
+    <div class="exhibition-wrap vs-theme-${state.infographicStyle}${ambientClass}">
       ${heroHtml}
       ${slabsHtml}
     </div>

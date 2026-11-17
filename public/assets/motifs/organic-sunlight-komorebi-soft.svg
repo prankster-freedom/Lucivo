@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" fill="none">
+  <!-- AST-144a: Organic Sunlight Komorebi Soft Blobs (irregular dappled light). Monochrome (currentColor). -->
+  <defs>
+    <filter id="komorebi-blur" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <g filter="url(#komorebi-blur)">
+    <path d="M54 36C78 24 106 42 98 68C90 94 52 96 38 74C24 52 30 48 54 36Z" fill="currentColor" fill-opacity="0.22"/>
+    <path d="M168 62C202 48 228 74 214 102C200 130 156 124 146 96C136 68 134 76 168 62Z" fill="currentColor" fill-opacity="0.18"/>
+    <path d="M286 28C318 16 352 44 338 78C324 112 274 104 264 74C254 44 254 40 286 28Z" fill="currentColor" fill-opacity="0.2"/>
+    <path d="M114 148C144 134 176 162 162 192C148 222 102 216 92 186C82 156 84 162 114 148Z" fill="currentColor" fill-opacity="0.16"/>
+    <path d="M294 138C330 124 366 156 348 188C330 220 278 210 268 178C258 146 258 152 294 138Z" fill="currentColor" fill-opacity="0.18"/>
+  </g>
+</svg>

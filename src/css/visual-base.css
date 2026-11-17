@@ -41,6 +41,12 @@ body[data-appearance="dark"] #visual-stage-container {
   --motif-rounded-caret: url("data:image/svg+xml,%3Csvg id='rounded-caret-glyph.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 24' fill='none'%3E%3Cpath d='M4 6L11 12L4 18' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='17' y='16.6' width='11' height='2.4' rx='1.2' fill='black' fill-opacity='0.45'/%3E%3Crect x='34' y='3' width='4' height='18' rx='2' fill='black'/%3E%3Crect x='31.5' y='0.5' width='9' height='23' rx='4.5' stroke='black' stroke-width='1' stroke-opacity='0.25'/%3E%3C/svg%3E");
   --motif-dot-matrix: url("data:image/svg+xml,%3Csvg id='dot-matrix-texture.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='6' cy='6' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='18' cy='6' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='6' cy='18' r='0.9' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='18' cy='18' r='1.3' fill='black' fill-opacity='0.38'/%3E%3C/svg%3E");
   --motif-quote-flourish: url("data:image/svg+xml,%3Csvg id='quote-end-flourish.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 12' fill='none'%3E%3Cline x1='2' y1='6' x2='15' y2='6' stroke='black' stroke-width='1' stroke-opacity='0.35' stroke-linecap='round'/%3E%3Ccircle cx='19' cy='6' r='1.2' fill='black' fill-opacity='0.55'/%3E%3Cpolygon points='24,2 28,6 24,10 20,6' stroke='black' stroke-width='1.35' stroke-linejoin='round' fill='black' fill-opacity='0.22'/%3E%3Ccircle cx='29' cy='6' r='1.2' fill='black' fill-opacity='0.55'/%3E%3Cline x1='33' y1='6' x2='46' y2='6' stroke='black' stroke-width='1' stroke-opacity='0.35' stroke-linecap='round'/%3E%3C/svg%3E");
+  --motif-ambient-frost: url("data:image/svg+xml,%3Csvg id='backdrop-frost-veil.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none'%3E%3Cdefs%3E%3ClinearGradient id='fg-veil' x1='0' y1='0' x2='400' y2='240' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='black' stop-opacity='0.22'/%3E%3Cstop offset='35%25' stop-color='black' stop-opacity='0.06'/%3E%3Cstop offset='50%25' stop-color='black' stop-opacity='0.18'/%3E%3Cstop offset='72%25' stop-color='black' stop-opacity='0.03'/%3E%3Cstop offset='100%25' stop-color='black' stop-opacity='0.12'/%3E%3C/linearGradient%3E%3ClinearGradient id='fg-edge' x1='0' y1='0' x2='400' y2='0' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='black' stop-opacity='0'/%3E%3Cstop offset='25%25' stop-color='black' stop-opacity='0.5'/%3E%3Cstop offset='75%25' stop-color='black' stop-opacity='0.2'/%3E%3Cstop offset='100%25' stop-color='black' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='240' rx='20' fill='url(%23fg-veil)'/%3E%3Cpath d='M0 0H260L90 240H0V0Z' fill='black' fill-opacity='0.06'/%3E%3Cline x1='20' y1='1.5' x2='380' y2='1.5' stroke='url(%23fg-edge)' stroke-width='1.5'/%3E%3C/svg%3E");
+  --motif-ambient-sheer: url("data:image/svg+xml,%3Csvg id='backdrop-light-sweep-foreground.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none'%3E%3Cdefs%3E%3ClinearGradient id='ls-sheer' x1='40' y1='0' x2='360' y2='240' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='black' stop-opacity='0'/%3E%3Cstop offset='32%25' stop-color='black' stop-opacity='0.06'/%3E%3Cstop offset='48%25' stop-color='black' stop-opacity='0.22'/%3E%3Cstop offset='62%25' stop-color='black' stop-opacity='0.06'/%3E%3Cstop offset='100%25' stop-color='black' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='240' fill='url(%23ls-sheer)'/%3E%3C/svg%3E");
+  --motif-ambient-light: url("data:image/svg+xml,%3Csvg id='organic-light-bleed.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none'%3E%3Cdefs%3E%3Cfilter id='light-bleed' x='-30%25' y='-30%25' width='160%25' height='160%25'%3E%3CfeGaussianBlur stdDeviation='24'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23light-bleed)'%3E%3Cpath d='M78 24C136 8 186 48 168 96C150 144 82 152 46 112C10 72 20 40 78 24Z' fill='black' fill-opacity='0.28'/%3E%3Cpath d='M268 78C334 52 384 102 362 156C340 210 252 204 226 154C200 104 202 104 268 78Z' fill='black' fill-opacity='0.22'/%3E%3C/g%3E%3C/svg%3E");
+  --motif-ambient-water: url("data:image/svg+xml,%3Csvg id='organic-water-undulation.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none'%3E%3Cdefs%3E%3Cfilter id='water-blur' x='-15%25' y='-15%25' width='130%25' height='130%25'%3E%3CfeGaussianBlur stdDeviation='6'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23water-blur)'%3E%3Cpath d='M-10 72C55 44 118 98 195 66C272 34 335 88 410 58' stroke='black' stroke-width='10' stroke-opacity='0.18' stroke-linecap='round'/%3E%3Cpath d='M-10 132C74 162 142 96 226 128C310 160 352 104 410 138' stroke='black' stroke-width='14' stroke-opacity='0.14' stroke-linecap='round'/%3E%3Cpath d='M-10 192C68 172 135 218 214 184C295 150 348 202 410 176' stroke='black' stroke-width='8' stroke-opacity='0.16' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+  --motif-ambient-flame: url("data:image/svg+xml,%3Csvg id='organic-flame-flicker.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none'%3E%3Cdefs%3E%3Cfilter id='flame-blur' x='-25%25' y='-25%25' width='150%25' height='150%25'%3E%3CfeGaussianBlur stdDeviation='16'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23flame-blur)'%3E%3Cpath d='M126 248C94 202 108 148 144 114C178 82 162 42 184 22C202 68 232 104 204 156C182 196 226 218 206 248Z' fill='black' fill-opacity='0.24'/%3E%3Cpath d='M242 248C224 208 248 164 276 138C302 114 290 78 308 62C322 98 342 132 318 176C296 216 322 224 304 248Z' fill='black' fill-opacity='0.18'/%3E%3C/g%3E%3C/svg%3E");
+  --motif-ambient-sunlight: url("data:image/svg+xml,%3Csvg id='organic-sunlight-komorebi-soft.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none'%3E%3Cdefs%3E%3Cfilter id='komorebi-blur' x='-25%25' y='-25%25' width='150%25' height='150%25'%3E%3CfeGaussianBlur stdDeviation='14'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23komorebi-blur)'%3E%3Cpath d='M54 36C78 24 106 42 98 68C90 94 52 96 38 74C24 52 30 48 54 36Z' fill='black' fill-opacity='0.22'/%3E%3Cpath d='M168 62C202 48 228 74 214 102C200 130 156 124 146 96C136 68 134 76 168 62Z' fill='black' fill-opacity='0.18'/%3E%3Cpath d='M286 28C318 16 352 44 338 78C324 112 274 104 264 74C254 44 254 40 286 28Z' fill='black' fill-opacity='0.2'/%3E%3Cpath d='M114 148C144 134 176 162 162 192C148 222 102 216 92 186C82 156 84 162 114 148Z' fill='black' fill-opacity='0.16'/%3E%3Cpath d='M294 138C330 124 366 156 348 188C330 220 278 210 268 178C258 146 258 152 294 138Z' fill='black' fill-opacity='0.18'/%3E%3C/g%3E%3C/svg%3E");
 }
 .vs-theme-shapes {
   --vs-glow: #0EA5B7;
@@ -562,8 +568,144 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
   background: color-mix(in oklab, var(--vs-c1) 4%, transparent);
 }
 
+/* ==================== アンビエント・グラデーション＆有機的揺らぎ演出（FR-060, DTP-VTPL-096, #202） ==================== */
+/* オプション ON 時（html.has-ambient-effects または .exhibition-wrap.has-ambient-effects）のみ適用（既定 OFF） */
+
+/* 1. 表紙（.exhibition-hero.vs-cover）: 4 色オーロラ光幕 ＋ 前景斜光シアー（AST-137, AST-139） */
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-hero.vs-cover,
+body[data-appearance="dark"] :is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-hero.vs-cover {
+  isolation: isolate;
+  background-color: var(--vs-slab-bg);
+  background-image:
+    radial-gradient(65% 75% at 8% 0%, color-mix(in oklab, var(--vs-c1) 18%, transparent), transparent 72%),
+    radial-gradient(60% 70% at 92% 0%, color-mix(in oklab, var(--vs-c3) 18%, transparent), transparent 72%),
+    radial-gradient(50% 60% at 50% 100%, color-mix(in oklab, var(--vs-c2) 10%, transparent), transparent 75%),
+    linear-gradient(125deg, color-mix(in oklab, var(--vs-c4) 8%, transparent) 0%, transparent 55%, color-mix(in oklab, var(--vs-c1) 6%, transparent) 100%);
+}
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-hero.vs-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(125deg, var(--vs-c1), var(--vs-c3));
+  opacity: 0.28;
+  mix-blend-mode: soft-light;
+  -webkit-mask: var(--motif-ambient-sheer) no-repeat center / cover;
+  mask: var(--motif-ambient-sheer) no-repeat center / cover;
+}
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-hero.vs-cover > :not(.vs-cover-texture) {
+  position: relative;
+  z-index: 1;
+}
+
+/* 2. 章スラブ（.exhibition-slab）: スタイル別・多層グラデーション＆有機的揺らぎ幕（AST-136〜144） */
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--vs-slab-bg);
+  background-image:
+    radial-gradient(55% 65% at 100% 0%, color-mix(in oklab, var(--vs-c1) 10%, transparent), transparent 70%),
+    radial-gradient(50% 60% at 0% 100%, color-mix(in oklab, var(--vs-c3) 8%, transparent), transparent 70%);
+}
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(135deg, var(--vs-c1), var(--vs-c3), var(--vs-c2));
+  opacity: 0.16;
+  -webkit-mask: var(--motif-ambient-light) no-repeat center / cover;
+  mask: var(--motif-ambient-light) no-repeat center / cover;
+}
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cards スタイル: 水・コースティクス揺らぎ（AST-136, AST-141） */
+:is(html.has-ambient-effects .vs-theme-cards, .exhibition-wrap.vs-theme-cards.has-ambient-effects) .exhibition-slab {
+  background-image:
+    radial-gradient(60% 70% at 85% 10%, color-mix(in oklab, var(--vs-c3) 11%, transparent), transparent 72%),
+    radial-gradient(55% 65% at 15% 95%, color-mix(in oklab, var(--vs-c4) 10%, transparent), transparent 72%);
+}
+:is(html.has-ambient-effects .vs-theme-cards, .exhibition-wrap.vs-theme-cards.has-ambient-effects) .exhibition-slab::before {
+  background: linear-gradient(160deg, var(--vs-c3), var(--vs-c4), var(--vs-c1));
+  opacity: 0.18;
+  -webkit-mask: var(--motif-ambient-water) no-repeat center / cover;
+  mask: var(--motif-ambient-water) no-repeat center / cover;
+}
+
+/* Circles スタイル: 炎・陽炎揺らぎ（AST-138, AST-143） */
+:is(html.has-ambient-effects .vs-theme-circles, .exhibition-wrap.vs-theme-circles.has-ambient-effects) .exhibition-slab {
+  background-image:
+    radial-gradient(65% 60% at 50% 100%, color-mix(in oklab, var(--vs-c1) 11%, transparent), transparent 72%),
+    radial-gradient(50% 55% at 95% 0%, color-mix(in oklab, var(--vs-c3) 10%, transparent), transparent 70%);
+}
+:is(html.has-ambient-effects .vs-theme-circles, .exhibition-wrap.vs-theme-circles.has-ambient-effects) .exhibition-slab::before {
+  background: linear-gradient(0deg, var(--vs-c1), var(--vs-c3), var(--vs-c2));
+  opacity: 0.18;
+  -webkit-mask: var(--motif-ambient-flame) no-repeat center / cover;
+  mask: var(--motif-ambient-flame) no-repeat center / cover;
+}
+
+/* Editorial スタイル: 日光・木漏れ日揺らぎ（AST-139, AST-144） */
+:is(html.has-ambient-effects .vs-theme-editorial, .exhibition-wrap.vs-theme-editorial.has-ambient-effects) .exhibition-slab {
+  background-image:
+    radial-gradient(60% 70% at 0% 0%, color-mix(in oklab, var(--vs-c3) 12%, transparent), transparent 72%),
+    radial-gradient(55% 65% at 100% 90%, color-mix(in oklab, var(--vs-c2) 9%, transparent), transparent 70%);
+}
+:is(html.has-ambient-effects .vs-theme-editorial, .exhibition-wrap.vs-theme-editorial.has-ambient-effects) .exhibition-slab::before {
+  background: linear-gradient(125deg, var(--vs-c3), var(--vs-c1), var(--vs-c2));
+  opacity: 0.2;
+  -webkit-mask: var(--motif-ambient-sunlight) no-repeat center / cover;
+  mask: var(--motif-ambient-sunlight) no-repeat center / cover;
+}
+
+/* 3. ステートメント型（blockquote.vs-quote）: すりガラス拡散＆光だまり（AST-135, AST-140） */
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab blockquote.vs-quote {
+  isolation: isolate;
+  border-radius: 18px;
+  padding: 3.25rem 1.75rem 1.25rem;
+  border-left: 0;
+  background-color: color-mix(in oklab, var(--vs-card-bg) 78%, transparent);
+  background-image:
+    radial-gradient(55% 70% at 50% 0%, color-mix(in oklab, var(--vs-c1) 14%, transparent), transparent 72%),
+    linear-gradient(135deg, color-mix(in oklab, #FFFFFF 18%, transparent) 0%, transparent 50%, color-mix(in oklab, var(--vs-c3) 8%, transparent) 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 12px 28px -10px color-mix(in oklab, var(--vs-c1) 18%, rgba(15, 23, 42, 0.12));
+}
+
+/* 4. 要点カード・注目カード（.vs-points > li, .vs-point-featured, .is-spotlight, .vs-compare-after）のすりガラス反射ベール（AST-135） */
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab .vs-points > li {
+  isolation: isolate;
+  background-image: linear-gradient(135deg, color-mix(in oklab, var(--vs-c) 9%, transparent) 0%, transparent 55%, color-mix(in oklab, var(--vs-c) 5%, transparent) 100%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab .vs-points > li.vs-point-featured {
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, transparent 45%, rgba(0, 0, 0, 0.12) 100%),
+    radial-gradient(80% 90% at 0% 0%, color-mix(in oklab, #FFFFFF 24%, var(--vs-c)), var(--vs-c));
+}
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab ul.vs-points > li.is-spotlight,
+:is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab .vs-points.vs-points-compare > li.vs-compare-after {
+  background-image:
+    radial-gradient(75% 85% at 15% 0%, color-mix(in oklab, var(--vs-c) 18%, transparent), transparent 70%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+}
+
 /* ==================== Forced Colors Mode（ハイコントラスト表示対応） ==================== */
 @media (forced-colors: active) {
+  :is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-hero.vs-cover::after,
+  :is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab::before {
+    display: none !important;
+  }
   /* mask-image で描画するベクターアイコン類をシステムカラーで維持 */
   :is(.vs-hero-emblem, .vs-card-ornament, .vs-step-chevron, .vs-flow-spark, .vs-code-caret, .vs-cover-texture, .md-alert-icon, .md-tree-icon) {
     forced-color-adjust: none;
