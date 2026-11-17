@@ -57,10 +57,15 @@
   /* 見出しだけが前のページに残らないよう、見出しの下に本文の数行分（--print-keep）が残らなければ、見出しごと次のページへ送る（DD-VTPL-135）。
      見出しの後ろに高さ --print-keep の透明な箱を置き、同じ量の負の余白で打ち消す。見出しは分けないため、箱ごと収まらないときに送られる。
      flex の見出しでは箱が横に並んで効かないため、印刷では block にする（左の飾りの線は inline-block のまま並ぶ） */
-  :is(.prose-doc :is(h1, h2, h3, h4), .exhibition-slab :is(h3, h4)) {
+  :is(.prose-doc :is(h1, h2, h3, h4), .exhibition-slab :is(h3, h4, h5, h6)) {
     --print-keep: 32mm;
     break-inside: avoid;
     break-after: avoid;
+  }
+  /* Visualモードは版面が低い（173mm）ため、ページの約 1/3（本文 7 行ほど）が残らなければ送る。
+     32mm（本文 3〜4 行）では、見出しと最初の数行だけがページの末尾に残った */
+  .exhibition-slab :is(h3, h4, h5, h6) {
+    --print-keep: 60mm;
   }
   .prose-doc h2 {
     display: block !important;
@@ -69,7 +74,7 @@
     vertical-align: -0.12em;
     margin-right: 0.5rem;
   }
-  :is(.prose-doc :is(h1, h2, h3, h4), .exhibition-slab :is(h3, h4))::after {
+  :is(.prose-doc :is(h1, h2, h3, h4), .exhibition-slab :is(h3, h4, h5, h6))::after {
     content: "";
     display: block;
     height: var(--print-keep);
@@ -85,7 +90,14 @@
   }
   /* Visualモード: 表紙と各スラブを 1 ページずつ。項目・図・表の行の途中では切らない（DD-VTPL-132） */
   /* 章を縦に流す flex のままだと、章の中の改ページの指定が効きにくいため、block にする */
+  /* 誌面の外側の上下の余白は、名前のない既定のページ（A4 縦）にあふれ、最後に白紙のページを足すため、印刷では消す */
+  #visual-stage-container {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
   .exhibition-wrap {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
     display: block !important;
     max-width: none;
     gap: 0;
@@ -102,6 +114,39 @@
   }
   .exhibition-slab :is(h2, h3, h4) {
     break-after: avoid;
+  }
+  /* 1 ページに収まる表は、途中で分けずに表ごと次のページへ送る（最初の数行だけが前のページに残らないように）。
+     1 ページに収まらない表は、ブラウザが行の境目で分け、見出しの行を次のページにも繰り返す（DD-VTPL-136） */
+  .exhibition-slab table {
+    break-inside: avoid;
+  }
+  .exhibition-slab thead {
+    display: table-header-group;
+  }
+  /* 表紙: 題名と目次を 1 ページに収める。画面の大きさのままだと、章の多い文書で目次だけが次のページへ送られる（DD-VTPL-136） */
+  .exhibition-wrap > .exhibition-hero {
+    padding: 8mm 10mm !important;
+    break-inside: avoid;
+  }
+  .exhibition-hero .vs-cover-title {
+    font-size: 22pt !important;
+    line-height: 1.25 !important;
+  }
+  .exhibition-hero .vs-cover-deck {
+    margin-top: 2mm !important;
+    font-size: 10.5pt !important;
+  }
+  .exhibition-hero .vs-cover-agenda {
+    margin-top: 5mm !important;
+    padding-top: 3mm !important;
+    column-gap: 6mm !important;
+  }
+  .exhibition-hero .vs-cover-agenda-item {
+    padding: 0.9mm 1.5mm !important;
+    gap: 2.5mm !important;
+  }
+  .exhibition-hero :is(.vs-cover-agenda-no, .vs-cover-agenda-title) {
+    font-size: 9pt !important;
   }
   .exhibition-slab :is(.vs-points > li, .vs-steps > li, .vs-gloss-row, tr, .exhibition-diagram-card, .md-alert, pre, .lucivo-math.has-math-plot) {
     break-inside: avoid;
