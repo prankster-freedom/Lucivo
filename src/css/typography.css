@@ -1,6 +1,13 @@
 /* ==========================================================================
    3. 通常モード（Split / Canvas / Code）組版
    ========================================================================== */
+/* Markdown 標準要素の素材（AST-115〜117）。assets/motifs/hr-prism-divider.svg・assets/icons/disclosure-chevron.svg・assets/icons/task-check.svg と同一のベクター定義。
+   file:// の CORS を避けるため data URI で持つ（DD-VTPL-024 と同じ理由）。mask で使い、色は background で塗る */
+:root {
+  --motif-hr-prism: url("data:image/svg+xml,%3Csvg id='hr-prism-divider.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 16' fill='none'%3E%3Cline x1='2' y1='8' x2='15' y2='8' stroke='black' stroke-width='1.25' stroke-opacity='0.4' stroke-linecap='round'/%3E%3Ccircle cx='18.5' cy='8' r='1.1' fill='black' fill-opacity='0.65'/%3E%3Cpolygon points='24,2.5 29.5,8 24,13.5 18.5,8' stroke='black' stroke-width='1.4' stroke-linejoin='round' fill='black' fill-opacity='0.16'/%3E%3Ccircle cx='24' cy='8' r='1.5' fill='black'/%3E%3Ccircle cx='29.5' cy='8' r='1.1' fill='black' fill-opacity='0.65'/%3E%3Cline x1='33' y1='8' x2='46' y2='8' stroke='black' stroke-width='1.25' stroke-opacity='0.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  --icon-disclosure: url("data:image/svg+xml,%3Csvg id='disclosure-chevron.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M6 3.5L10.5 8L6 12.5' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --icon-task-check: url("data:image/svg+xml,%3Csvg id='task-check.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.2L6.6 11.3L12.5 4.8' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
 .prose-doc {
   max-width: 54rem;
   margin: 0 auto;
@@ -107,9 +114,33 @@
   list-style-type: none;
   margin-left: -1.25rem;
 }
+/* タスクリストのチェックボックス。ブラウザ既定の見た目を消し、角丸の枠と AST-117 のチェックマーク（mask）で描く。
+   色は --check-c（高速モードは --accent、Visualモードは --vs-c1）。高速モードと Visualモードで同じ形にする（DD-MD-012） */
 :is(.prose-doc, .exhibition-slab) li > input[type="checkbox"] {
-  margin-right: 0.45rem;
-  vertical-align: -0.1em;
+  --check-c: var(--accent);
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0 0.5rem 0 0;
+  vertical-align: -0.2em;
+  border-radius: 5px;
+  border: 1.75px solid color-mix(in oklab, var(--check-c) 40%, var(--border-strong));
+  background: var(--panel-bg);
+}
+:is(.prose-doc, .exhibition-slab) li > input[type="checkbox"]:checked {
+  border-color: var(--check-c);
+  background: var(--check-c);
+}
+:is(.prose-doc, .exhibition-slab) li > input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: #FFFFFF;
+  -webkit-mask: var(--icon-task-check) center / 100% no-repeat;
+  mask: var(--icon-task-check) center / 100% no-repeat;
 }
 
 :is(.prose-doc, .exhibition-slab) a {
@@ -172,25 +203,97 @@
   text-align: right;
 }
 
+/* 水平線（DD-MD-018）。1px の直線をやめ、中央を空けて両端へ消えていく罫（--border-strong）と、中央のプリズムの飾り（AST-115）で区切る。
+   飾りの色は --hr-c（高速モードは --accent、Visualモードは --vs-c1） */
 :is(.prose-doc, .exhibition-slab) hr {
+  --hr-c: var(--accent);
+  /* 飾りの左右の細い罫（中心から 1.375rem）と外側の罫の間に、わずかな息継ぎ（約 0.3rem）を残す */
+  --hr-gap: 1.7rem;
+  position: relative;
+  height: 1rem;
+  margin: 1.75rem 0;
   border: 0;
-  border-top: 1px solid var(--border-strong);
-  margin: 1.5rem 0;
+  overflow: visible;
+  background: linear-gradient(90deg,
+      transparent 0,
+      var(--border-strong) 22%,
+      var(--border-strong) calc(50% - var(--hr-gap)),
+      transparent calc(50% - var(--hr-gap)),
+      transparent calc(50% + var(--hr-gap)),
+      var(--border-strong) calc(50% + var(--hr-gap)),
+      var(--border-strong) 78%,
+      transparent 100%) center / 100% 1px no-repeat;
+}
+:is(.prose-doc, .exhibition-slab) hr::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 3rem;
+  height: 1rem;
+  translate: -50% 0;
+  background: var(--hr-c);
+  -webkit-mask: var(--motif-hr-prism) center / contain no-repeat;
+  mask: var(--motif-hr-prism) center / contain no-repeat;
 }
 
+/* 折りたたみ（DD-MD-019）。ブラウザ既定の三角を消し、AST-116 のシェブロンを回して開閉を示す。
+   開閉は ::details-content の高さを auto まで動かす（interpolate-size）。非対応のブラウザと動きを減らす設定では即時に開閉する */
 :is(.prose-doc, .exhibition-slab) details {
+  --details-c: var(--accent);
   margin: 0.875rem 0;
-  padding: 0.5rem 0.9rem;
+  padding: 0.55rem 0.9rem;
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 :is(.prose-doc, .exhibition-slab) summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  list-style: none;
   cursor: pointer;
   font-weight: 600;
   color: var(--text-primary);
 }
+:is(.prose-doc, .exhibition-slab) summary::-webkit-details-marker {
+  display: none;
+}
+:is(.prose-doc, .exhibition-slab) summary::before {
+  content: "";
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  background: var(--details-c);
+  -webkit-mask: var(--icon-disclosure) center / contain no-repeat;
+  mask: var(--icon-disclosure) center / contain no-repeat;
+  transition: rotate 0.2s ease;
+}
+:is(.prose-doc, .exhibition-slab) summary:hover {
+  color: var(--details-c);
+}
+:is(.prose-doc, .exhibition-slab) details[open] > summary::before {
+  rotate: 90deg;
+}
 :is(.prose-doc, .exhibition-slab) details[open] > summary {
   margin-bottom: 0.5rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :is(.prose-doc, .exhibition-slab) details {
+    interpolate-size: allow-keywords;
+  }
+  :is(.prose-doc, .exhibition-slab) details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition: block-size 0.28s ease, content-visibility 0.28s allow-discrete;
+  }
+  :is(.prose-doc, .exhibition-slab) details[open]::details-content {
+    block-size: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.prose-doc, .exhibition-slab) summary::before {
+    transition: none;
+  }
 }
 :is(.prose-doc, .exhibition-slab) kbd {
   font-family: 'JetBrains Mono', monospace;

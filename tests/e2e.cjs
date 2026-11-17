@@ -83,7 +83,7 @@ const SUITES = [
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027'], fn: testFolder },
   // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
   { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
-  { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011'], fn: testMarkdownTypography },
+  { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011', 'TC-MD-022', 'TC-MD-023'], fn: testMarkdownTypography },
   { name: 'testLocalImages', tcPrefix: ['TC-MD-013', 'TC-MD-014', 'TC-MD-015'], fn: testLocalImages },
   { name: 'testTree', tcPrefix: ['TC-MD-017', 'TC-MD-018', 'TC-MD-019'], fn: testTree },
   { name: 'testMathRendering', tcPrefix: ['TC-MATH-'], fn: testMathRendering },

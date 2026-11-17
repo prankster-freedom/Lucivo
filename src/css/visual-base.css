@@ -543,32 +543,19 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
 .exhibition-slab li:has(> input[type="checkbox"])::before {
   content: none;
 }
+/* チェックボックスの形とチェックマークは typography.css の共通定義（DD-MD-012）。ここでは色と位置だけをスタイルに合わせる */
 .exhibition-slab li > input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  flex-shrink: 0;
-  width: 1.05rem;
-  height: 1.05rem;
+  --check-c: var(--vs-c1);
   margin: 0.3em 0 0;
-  border-radius: 5px;
-  border: 1.75px solid color-mix(in oklab, var(--vs-c1) 45%, var(--border-strong));
   background: var(--vs-card-bg);
-  position: relative;
 }
-.exhibition-slab li > input[type="checkbox"]:checked {
-  border-color: var(--vs-c1);
-  background: var(--vs-c1);
+/* 水平線の飾りと折りたたみのシェブロンも、スタイルのアクセント色（--vs-c1）にそろえる（DTP-VTPL-010） */
+.exhibition-slab hr {
+  --hr-c: var(--vs-c1);
 }
-.exhibition-slab li > input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  left: 0.29rem;
-  top: 0.1rem;
-  width: 0.28rem;
-  height: 0.54rem;
-  border: solid #FFFFFF;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.exhibition-slab details {
+  --details-c: color-mix(in oklab, var(--vs-c1) 82%, var(--vs-tone));
+  background: color-mix(in oklab, var(--vs-c1) 4%, transparent);
 }
 
 /* ==================== Forced Colors Mode（ハイコントラスト表示対応） ==================== */
@@ -610,12 +597,27 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
   .exhibition-slab pre.vs-code-block {
     outline: 1px solid CanvasText !important;
   }
-  .exhibition-slab li > input[type="checkbox"]:checked {
-    border: 2px solid Highlight !important;
+  /* タスクのチェックボックス・水平線・折りたたみ（DD-MD-012, 018, 019）。mask の図形をシステムカラーで塗る */
+  :is(.prose-doc, .exhibition-slab) li > input[type="checkbox"] {
+    forced-color-adjust: none;
+    border: 2px solid CanvasText !important;
+    background-color: Canvas !important;
+  }
+  :is(.prose-doc, .exhibition-slab) li > input[type="checkbox"]:checked {
+    border-color: Highlight !important;
     background-color: Highlight !important;
   }
-  .exhibition-slab li > input[type="checkbox"]:checked::after {
-    border-color: HighlightText !important;
+  :is(.prose-doc, .exhibition-slab) li > input[type="checkbox"]:checked::after {
+    background-color: HighlightText !important;
+  }
+  :is(.prose-doc, .exhibition-slab) hr {
+    forced-color-adjust: none;
+    background: linear-gradient(CanvasText, CanvasText) center / 100% 1px no-repeat !important;
+  }
+  :is(.prose-doc, .exhibition-slab) hr::after,
+  :is(.prose-doc, .exhibition-slab) summary::before {
+    forced-color-adjust: none;
+    background-color: CanvasText !important;
   }
 }
 

@@ -32,7 +32,7 @@ const {
 function inspectMarkdown(isVisual) {
   const root = document.querySelector(isVisual ? '#visual-stage-container' : '#standard-doc-container');
   const q = sel => root.querySelector(sel);
-  const cs = el => getComputedStyle(el);
+  const cs = (el, pseudo) => getComputedStyle(el, pseudo);
   const isTransparent = c => c === 'transparent' || /rgba\(.*,\s*0\)$/.test(c);
   // 要素の背後にある最も近い不透明な背景色
   const backdrop = el => {
@@ -97,9 +97,23 @@ function inspectMarkdown(isVisual) {
       const aligns = cells.map(c => [cs(c.th).textAlign, cs(c.td).textAlign]);
       return { ok: aligns[0].every(a => a === 'center') && aligns[1].every(a => a === 'right'), aligns };
     })(),
+    // 水平線は、両端へ消える罫（背景のグラデーション）と中央のプリズムの飾り（::after の mask、AST-115）で描く（DD-MD-018）
     hr: hr && (() => {
-      const s = cs(hr);
-      return { ok: px(s.borderTopWidth) >= 1 && s.borderTopStyle !== 'none' && s.borderTopColor !== backdrop(hr), color: s.borderTopColor, backdrop: backdrop(hr) };
+      const s = cs(hr), a = cs(hr, '::after');
+      const ok = px(s.borderTopWidth) === 0 && /linear-gradient/.test(s.backgroundImage) && /hr-prism-divider/.test(a.maskImage || a.webkitMaskImage)
+        && !isTransparent(a.backgroundColor) && a.backgroundColor !== backdrop(hr) && px(s.height) >= 12;
+      return { ok, bg: s.backgroundImage.slice(0, 40), ornament: a.backgroundColor, backdrop: backdrop(hr), height: s.height };
+    })(),
+    // タスクのチェックボックスは既定の見た目を消し、チェックしたものは AST-117 のマークを mask で描く（DD-MD-012）
+    task: (() => {
+      const boxes = Array.from(root.querySelectorAll(`${std}li > input[type="checkbox"]`));
+      const on = boxes.find(b => b.checked), off = boxes.find(b => !b.checked);
+      if (!on || !off) return { ok: false, count: boxes.length };
+      const so = cs(on), sf = cs(off), after = cs(on, '::after');
+      const ok = so.appearance === 'none' && sf.appearance === 'none' && px(sf.borderTopWidth) >= 1 && sf.borderTopColor !== backdrop(off)
+        && so.backgroundColor !== sf.backgroundColor && /task-check/.test(after.maskImage || after.webkitMaskImage)
+        && Math.abs(px(so.width) - px(so.height)) < 0.5;
+      return { ok, on: so.backgroundColor, off: sf.backgroundColor, mark: after.backgroundColor };
     })(),
     html: (() => {
       const present = { details: !!details, summary: !!summary, kbd: !!kbd, mark: !!mark, sub: !!sub, sup: !!sup };
@@ -107,8 +121,12 @@ function inspectMarkdown(isVisual) {
       const framed = el => px(cs(el).borderTopWidth) >= 1 && cs(el).borderTopColor !== backdrop(el);
       const m = cs(mark);
       const small = el => px(cs(el).fontSize) < px(cs(el.parentElement).fontSize);
-      const ok = framed(details) && framed(kbd) && !isTransparent(m.backgroundColor) && m.backgroundColor !== backdrop(mark) && small(sub) && small(sup);
-      return { ok, details: cs(details).borderTopColor, kbd: cs(kbd).borderTopColor, mark: m.backgroundColor };
+      // 折りたたみは既定の三角を消し、AST-116 のシェブロン（summary::before の mask）を出す（DD-MD-019）
+      const chevron = cs(summary, '::before');
+      const marker = cs(summary).listStyleType === 'none' && cs(summary).display === 'flex'
+        && /disclosure-chevron/.test(chevron.maskImage || chevron.webkitMaskImage) && !isTransparent(chevron.backgroundColor);
+      const ok = framed(details) && framed(kbd) && marker && !isTransparent(m.backgroundColor) && m.backgroundColor !== backdrop(mark) && small(sub) && small(sup);
+      return { ok, marker, details: cs(details).borderTopColor, kbd: cs(kbd).borderTopColor, mark: m.backgroundColor };
     })(),
     // 1〜7 章（最初の図の手前まで）の撮影範囲
     clip: (() => {
@@ -125,7 +143,7 @@ async function testMarkdownTypography(browser) {
   const page = await openApp(browser);
   await waitRendered(page);
   await loadSample(page);
-  const checks = { heading: 'TC-MD-001', list: 'TC-MD-002', link: 'TC-MD-003', code: 'TC-MD-004', blockquote: 'TC-MD-005', table: 'TC-MD-006', hr: 'TC-MD-007', html: 'TC-MD-008' };
+  const checks = { heading: 'TC-MD-001', list: 'TC-MD-002', link: 'TC-MD-003', code: 'TC-MD-004', blockquote: 'TC-MD-005', table: 'TC-MD-006', hr: 'TC-MD-007', html: 'TC-MD-008', task: 'TC-MD-022' };
   const byTc = {};
   for (const mode of MD_MODES) {
     await setMode(page, mode);
@@ -137,6 +155,29 @@ async function testMarkdownTypography(browser) {
     }
     await page.screenshot({ path: path.join(SHOT_DIR, `md-${tag}.png`), clip: res.clip });
   }
+  // TC-MD-023 折りたたみの開閉（DD-MD-019）。開くとシェブロンが 90 度回り、中身の高さが 0 から伸びる。動きを減らす設定では即時に開く
+  const toggleDetails = () => page.evaluate(async () => {
+    const d = document.querySelector('#visual-stage-container details');
+    const s = d.querySelector('summary');
+    d.open = false;
+    await new Promise(r => setTimeout(r, 400));
+    s.click();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const midHeight = d.getBoundingClientRect().height;
+    const anims = d.getAnimations({ subtree: true });
+    const running = anims.length;
+    await Promise.all(anims.map(a => a.finished.catch(() => null)));
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const res = { open: d.open, rotate: getComputedStyle(s, '::before').rotate, midHeight, endHeight: d.getBoundingClientRect().height, running, interp: getComputedStyle(d).interpolateSize };
+    d.open = false;
+    return res;
+  });
+  const motion = await toggleDetails();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const still = await toggleDetails();
+  await page.emulateMedia({ reducedMotion: null });
+  record('TC-MD-023', motion.open && motion.rotate === '90deg' && motion.running > 0 && motion.midHeight < motion.endHeight && motion.interp === 'allow-keywords'
+    && still.open && still.running === 0 && still.midHeight === still.endHeight, JSON.stringify({ motion, still }));
   for (const [tc, rows] of Object.entries(byTc)) {
     const failed = rows.filter(r => !r.ok);
     record(tc, failed.length === 0, failed.length ? JSON.stringify(failed) : `${rows.length} モード`);
