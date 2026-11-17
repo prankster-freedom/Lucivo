@@ -13,6 +13,7 @@ import { ALERT_LABELS, decorateAlerts } from './markdown/callouts';
 import { splitFrontMatter, highlightYamlLine, buildFrontMatterHtml } from './markdown/front-matter';
 import { scopeSvgIds } from './diagram/scope';
 import { setupDiagramPanZoom, findScrollParent, clearDiagramZoom, updatePannable, zoomDiagram } from './diagram/pan-zoom';
+import { scalePickerHtml, setScaleMode, bindScaleMenus, type ScaleAction } from './diagram/scale-mode';
 import {
   resolveModal,
   isModalOpen,
@@ -308,16 +309,9 @@ function bindViewportInteractions(container) {
       const frame = btn.closest(`#diagram-frame-${idx}`);
       if (!vp || !frame) return;
 
-      frame.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-
-      // Ctrl + ホイールで変えた倍率（DD-DIAG-071）は、Fit / 1:1 を選んだら解除する
+      // Ctrl + ホイールで変えた倍率（DD-DIAG-071）は、倍率を選んだら解除する
       clearDiagramZoom(vp);
-      if (action === 'scale-actual') {
-        vp.classList.add('is-actual-size');
-      } else {
-        vp.classList.remove('is-actual-size');
-      }
+      setScaleMode(vp, frame.querySelector('.scale-picker'), action as ScaleAction);
       updateSlabSplit(vp.closest('.exhibition-slab-split'));
       updatePannable(vp);
     };
@@ -352,7 +346,18 @@ function bindViewportInteractions(container) {
 
       const zoomCanvas = document.getElementById('zoom-canvas');
       zoomCanvas.innerHTML = svgEl.outerHTML;
+      // Expand の画面も、図のカードと同じ倍率の部品で切り替える。開いたときは Fit（DD-DIAG-045）
+      const zoomSvg = zoomCanvas.querySelector('svg');
+      const viewBox = zoomSvg && (zoomSvg as SVGSVGElement).viewBox && (zoomSvg as SVGSVGElement).viewBox.baseVal;
+      if (viewBox && viewBox.width && viewBox.height) {
+        zoomSvg.style.setProperty('--fit-aspect', (viewBox.width / viewBox.height).toFixed(4));
+        zoomSvg.style.setProperty('--natural-width', `${Math.ceil(viewBox.width)}px`);
+      }
+      setScaleMode(zoomCanvas, document.getElementById('zoom-scale-picker'), 'scale-fit');
       setModalOpen('zoom-modal', true);
+      const zoomViewport = document.getElementById('zoom-viewport');
+      zoomViewport.scrollTop = 0;
+      zoomViewport.scrollLeft = 0;
       if (state.isVisualMode && window.LucivoStage) LucivoStage.mountLights(zoomCanvas);
     };
   });
@@ -757,6 +762,17 @@ function setupEventListeners() {
 
   document.getElementById('btn-open-settings').onclick = () => setModalOpen('settings-modal', true);
   document.getElementById('btn-close-settings').onclick = () => setModalOpen('settings-modal', false);
+  // Expand の画面の倍率の部品（DD-DIAG-045）。部品は図のカードと同じ HTML を入れる
+  bindScaleMenus();
+  const zoomPicker = document.getElementById('zoom-scale-picker');
+  if (zoomPicker) {
+    zoomPicker.innerHTML = scalePickerHtml('');
+    zoomPicker.addEventListener('click', event => {
+      const btn = (event.target as Element).closest('.scale-btn');
+      if (!btn) return;
+      setScaleMode(document.getElementById('zoom-canvas'), zoomPicker, btn.getAttribute('data-action') as ScaleAction);
+    });
+  }
   document.getElementById('zoom-close-btn').onclick = () => {
     setModalOpen('zoom-modal', false);
     document.getElementById('zoom-canvas').innerHTML = '';

@@ -1,6 +1,8 @@
 /* ==========================================================================
    図のドラッグ移動と Ctrl + ホイールの拡大・縮小（FR-038, FR-039）
    ========================================================================== */
+import { clearScaleMode } from './scale-mode';
+
 export const DIAGRAM_VIEWPORT_SELECTOR = '.diagram-viewport, .exhibition-viewport';
 // 倍率は原寸（viewBox の幅）に対する比。下限は全体を見渡せる大きさ、上限は細部の確認に足りる大きさ（DD-DIAG-071）
 export const DIAGRAM_ZOOM_MIN = 0.25;
@@ -58,12 +60,11 @@ export function zoomDiagram(vp: HTMLElement, event: WheelEvent, onUpdateSplit?: 
   const fx = (event.clientX - before.left) / before.width;
   const fy = (event.clientY - before.top) / before.height;
 
-  vp.classList.remove('is-actual-size');
+  const frame = vp.closest('[id^="diagram-frame-"]');
+  clearScaleMode(vp, frame ? frame.querySelector('.scale-picker') : null);
   vp.classList.add('is-zoomed');
   vp.dataset.zoom = String(next);
   svg.style.setProperty('--zoom-width', `${(viewBox.width * next).toFixed(1)}px`);
-  const frame = vp.closest('[id^="diagram-frame-"]');
-  if (frame) frame.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('is-active'));
   
   if (onUpdateSplit) {
     onUpdateSplit(vp.closest('.exhibition-slab-split'));

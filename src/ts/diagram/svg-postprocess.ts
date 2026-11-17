@@ -2,6 +2,7 @@
 import { hexToRgba } from '../utils/color';
 import { escapeHtml } from '../utils/escape';
 import { scopeSvgIds } from './scope';
+import { scalePickerHtml } from './scale-mode';
 import {
   NODE_DECORATED_TYPES,
   CURVE_LABELS,
@@ -282,16 +283,13 @@ export function createDiagramCard(index, svgHtml, isRendering, isVisual, curve =
         </div>
         <div class="flex items-center gap-1">
           ${curvePicker}
-          <div class="pill-container mr-1.5">
-            <button type="button" data-action="scale-fit" data-index="${index}" class="scale-btn pill-btn is-active text-[10px]">Fit</button>
-            <button type="button" data-action="scale-actual" data-index="${index}" class="scale-btn pill-btn text-[10px]">1:1</button>
-          </div>
+          ${scalePickerHtml(index)}
           <button type="button" data-action="png" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">PNG</button>
           <button type="button" data-action="svg" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">SVG</button>
           <button type="button" data-action="zoom" data-index="${index}" class="text-[11px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer">Expand</button>
         </div>
       </div>
-      <div class="${viewportClass}" data-stage-index="${index}">
+      <div class="${viewportClass} is-scale-fit" data-stage-index="${index}">
         ${content}
       </div>
     </div>

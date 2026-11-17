@@ -46,6 +46,114 @@ svg .edgeLabel span:empty {
 }
 
 /* ==========================================================================
+   図の倍率（Fit / 1:n / n:1 / 100%。FR-005, DD-DIAG-045）
+   ========================================================================== */
+/* 図のカードの描画領域の高さ。プレビューの見えている高さから、ツールバーと図のカードの見出し・余白を除いた目安。
+   描画のときに大きさを測らないよう、画面の高さから決める（NFR-007）。1:n は、既定の規則（表示枠の幅に合わせる）のまま。
+   ステージ発表とズーミング・マップの間は使わない（どちらも、図や章の大きさを画面に合わせる仕組みを持つ） */
+:is(.diagram-viewport, .exhibition-viewport) {
+  --fit-area-height: max(16rem, calc(100dvh - 12rem));
+}
+/* Fit: 横に加えて、縦も描画領域に収める。文字の下限（applyReadableFit の min-width）は残す */
+html:not(.is-stage-show):not(.is-zoom-map) :is(.diagram-viewport, .exhibition-viewport).is-scale-fit:not(.is-zoomed) svg {
+  max-width: min(100%, var(--fit-max-width, 100%), calc(var(--fit-aspect, 100) * var(--fit-area-height))) !important;
+}
+/* 2 段組みの拡大の上限（DD-DIAG-044）と、Fit の高さの上限を両方かける */
+html:not(.is-stage-show):not(.is-zoom-map) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport.is-scale-fit:not(.is-zoomed) svg {
+  max-width: min(100%, var(--fit-max-width, 100%), max(var(--natural-width, 100%), calc(var(--fit-aspect, 100) * var(--split-fit-height, 30rem))), calc(var(--fit-aspect, 100) * var(--fit-area-height))) !important;
+}
+/* n:1: 縦を描画領域に合わせる。横にはみ出す図は、スクロール表示になる */
+html:not(.is-stage-show):not(.is-zoom-map) :is(.diagram-viewport, .exhibition-viewport).is-scale-height:not(.is-zoomed) svg {
+  width: calc(var(--fit-aspect, 1) * var(--fit-area-height)) !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
+/* n:1 と 100% は表示枠の幅に合わせないため、2 段組みの拡大の上限も外す */
+html:not(.is-stage-show):not(.is-zoom-map) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport.is-scale-height:not(.is-zoomed) svg {
+  max-width: none !important;
+}
+
+/* 倍率のプルダウン（n:1・100%）。開いたプルダウンが図の表示枠（光の層を持つ）の下に隠れないよう、見出しを手前に出す */
+:is(.exhibition-diagram-header, .diagram-frame-header) {
+  position: relative;
+  z-index: 6;
+}
+.scale-more {
+  position: relative;
+  display: inline-flex;
+}
+.scale-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 4.75rem;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.38);
+}
+.scale-menu[hidden] {
+  display: none;
+}
+.scale-menu-item {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.scale-menu-item:hover,
+.scale-menu-item:focus-visible {
+  color: var(--text-primary);
+  background: var(--control-bg);
+}
+.scale-menu-item.is-active {
+  color: var(--text-primary);
+  background: var(--control-active);
+  box-shadow: var(--control-shadow);
+}
+
+/* Expand の画面の倍率。描画領域は #zoom-viewport の内側（container-type: size で、余白を除いた幅と高さを cqw・cqh で使う）。
+   図のカードから写した図の、文字の下限（min-width）と拡大の上限（max-width）は使わない。
+   はみ出す図は左上から表示する（中央寄せは auto margin。justify-content: center は左側が見えなくなる。DD-DIAG-032） */
+#zoom-viewport {
+  container-type: size;
+}
+#zoom-canvas {
+  margin: auto;
+  flex-shrink: 0;
+}
+#zoom-canvas svg {
+  display: block;
+  height: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex-shrink: 0;
+}
+#zoom-canvas.is-scale-fit svg {
+  width: min(100cqw, calc(var(--fit-aspect, 1) * 100cqh)) !important;
+}
+#zoom-canvas.is-scale-width svg {
+  width: 100cqw !important;
+}
+#zoom-canvas.is-scale-height svg {
+  width: calc(var(--fit-aspect, 1) * 100cqh) !important;
+}
+#zoom-canvas.is-actual-size svg {
+  width: var(--natural-width, auto) !important;
+}
+
+/* ==========================================================================
    図のドラッグ移動と Ctrl + ホイールの拡大・縮小（FR-038, FR-039, DTP-007）
    ========================================================================== */
 /* --zoom-width: Ctrl + ホイールで決めた図の幅（app.js の zoomDiagram が設定。DD-DIAG-071） */
