@@ -83,7 +83,7 @@ html[data-visual-size="a4"] { --visual-page-width: 59.5rem; }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
-  font-feature-settings: "palt" 1, "kern" 1;
+  font-feature-settings: "kern" 1;
   -webkit-font-smoothing: antialiased;
   line-break: strict;
   background-color: var(--app-bg);

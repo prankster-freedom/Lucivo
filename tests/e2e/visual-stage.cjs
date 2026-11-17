@@ -1066,7 +1066,17 @@ async function testCoverAndTables(browser) {
   const rule = await page.evaluate(() => {
     const t = document.querySelector('#visual-stage-container table');
     const cls = n => Array.from(t.querySelectorAll(`tbody tr > :nth-child(${n})`)).map(c => [c.classList.contains('vs-num'), c.classList.contains('vs-label')]);
-    return { name: cls(1), value: cls(2), aligned: cls(3), mixed: cls(4), label: cls(5) };
+    const alignedCell = t.querySelector('tbody tr > :nth-child(3)');
+    const mixedCell = t.querySelector('tbody tr > :nth-child(4)');
+    return {
+      name: cls(1),
+      value: cls(2),
+      aligned: cls(3),
+      mixed: cls(4),
+      label: cls(5),
+      alignedTabular: /tabular-nums/.test(getComputedStyle(alignedCell).fontVariantNumeric),
+      mixedTabular: /tabular-nums/.test(getComputedStyle(mixedCell).fontVariantNumeric)
+    };
   });
   // 高速モードの表は変えない
   await page.click('#btn-mode-fast');
@@ -1081,6 +1091,7 @@ async function testCoverAndTables(browser) {
     && JSON.stringify(tableRule.numCols) === JSON.stringify([false, true, true, true, true])
     && tableRule.numAlign.every(a => a === 'right') && tableRule.tabular && +tableRule.firstColWeight >= 600
     && all(rule.name, 0, false) && all(rule.value, 0, true) && all(rule.aligned, 0, false) && all(rule.mixed, 0, false)
+    && rule.alignedTabular && rule.mixedTabular
     && all(rule.mixed, 1, true) && all(rule.label, 1, false)
     && fast.marked === 0 && /JetBrains Mono/.test(fast.thFont) && parseFloat(fast.tdLeft) >= 1;
   record('TC-VTPL-016', tableOk, JSON.stringify({ tableRule, rule, fast }));
@@ -1421,10 +1432,14 @@ async function testCoverAndTables(browser) {
   ].join('\n');
   await setDocument(page, detailsMd);
   const vtpl26 = await page.evaluate(() => {
+    const coverTitle = document.querySelector('#visual-stage-container .vs-cover-title');
     const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab');
     const h2 = slabs[0] ? slabs[0].querySelector('h2') : null;
     const h2Cs = h2 ? getComputedStyle(h2) : null;
+    const p = slabs[0] ? slabs[0].querySelector('p') : null;
+    const pCs = p ? getComputedStyle(p) : null;
     const fallbackUl = slabs[0] ? slabs[0].querySelector('ul') : null;
+    const li = fallbackUl ? fallbackUl.querySelector('li') : null;
     const listSlab = slabs[1];
     const cards = listSlab ? Array.from(listSlab.querySelectorAll('.vs-list-grid > .vs-list-card')) : [];
     const cardTops = cards.map(c => Math.round(c.getBoundingClientRect().top));
@@ -1434,6 +1449,11 @@ async function testCoverAndTables(browser) {
     return {
       wordBreak: h2Cs ? h2Cs.wordBreak : '',
       textWrap: h2Cs ? h2Cs.textWrap : '',
+      coverPalt: coverTitle ? /"palt"/.test(getComputedStyle(coverTitle).fontFeatureSettings) : false,
+      h2Palt: h2Cs ? /"palt"/.test(h2Cs.fontFeatureSettings) : false,
+      pPalt: pCs ? /"palt"/.test(pCs.fontFeatureSettings) : true,
+      pTextWrap: pCs ? pCs.textWrap : '',
+      liTextWrap: li ? getComputedStyle(li).textWrap : '',
       fallbackListStyle: fallbackUl ? getComputedStyle(fallbackUl).listStyleType : '',
       olListStyle: stdOl ? getComputedStyle(stdOl).listStyleType : '',
       chkAppearance: chk ? getComputedStyle(chk).appearance : '',
@@ -1442,6 +1462,8 @@ async function testCoverAndTables(browser) {
     };
   });
   const vtpl26Ok = vtpl26.wordBreak === 'auto-phrase' && vtpl26.textWrap === 'balance'
+    && vtpl26.coverPalt && vtpl26.h2Palt && !vtpl26.pPalt
+    && vtpl26.pTextWrap === 'pretty' && vtpl26.liTextWrap === 'pretty'
     && vtpl26.fallbackListStyle === 'none' && vtpl26.olListStyle === 'none'
     && vtpl26.chkAppearance === 'none' && vtpl26.cardCount === 3 && vtpl26.sameRow;
   record('TC-VTPL-026', vtpl26Ok, JSON.stringify(vtpl26));

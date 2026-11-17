@@ -154,6 +154,7 @@ body[data-appearance="dark"] .exhibition-hero.vs-cover {
   font-weight: 800;
   line-height: 1.25;
   letter-spacing: -0.01em;
+  font-feature-settings: "palt" 1, "kern" 1;
   color: var(--text-primary);
   text-wrap: balance;
   word-break: auto-phrase;
@@ -244,7 +245,7 @@ body[data-appearance="dark"] .vs-cover-deck { color: #CBD5E1; }
 }
 .exhibition-wrap table {
   font-size: 0.875rem;
-  font-variant-numeric: lining-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 .exhibition-wrap thead {
   background: transparent !important;
@@ -328,6 +329,7 @@ body[data-appearance="dark"] .exhibition-slab {
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: 0.02em;
+  font-feature-settings: "palt" 1, "kern" 1;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-subtle);
@@ -338,6 +340,10 @@ body[data-appearance="dark"] .exhibition-slab {
   word-break: auto-phrase;
   text-wrap: balance;
 }
+.exhibition-slab :is(p, li, dd),
+.exhibition-slab blockquote:not(.vs-quote) {
+  text-wrap: pretty;
+}
 
 /* 章の中の小見出し（h1・h3〜h6）のジャンプ率（DTP-004, #160）。本文 1 に対し h3 は 1.25、h4 は 1.1、h5・h6 は本文と同じ大きさのラベル調。
    上の余白を下の余白より大きくして、見出しが直後の本文に属することを示す。章の中の h1 は h3 と同じ扱いにする（章の題は h2）。
@@ -346,6 +352,7 @@ body[data-appearance="dark"] .exhibition-slab {
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.4;
+  font-feature-settings: "palt" 1, "kern" 1;
   margin-top: 2rem;
   margin-bottom: 0.6rem;
 }
