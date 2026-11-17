@@ -1569,6 +1569,133 @@ async function testCoverAndTables(browser) {
 
   record('TC-VTPL-030', vtpl30Ok, JSON.stringify({ vtpl30Visual, vtpl30Fast }));
 
+  // TC-VTPL-031 アンビエント・グラデーション＆有機的揺らぎ演出（FR-060, DD-VTPL-034, DD-VTPL-039, DTP-VTPL-096, #202）
+  const AMBIENT_TEST_MD = [
+    '---',
+    'title: Lucivo Ambient Stage Showcase',
+    'description: 半透明・すりガラス・水・光・炎・日光の多層グラデーションと有機的揺らぎ表現の検証',
+    'tags: [Ambient, Glass, Organic, Light]',
+    '---',
+    '',
+    '## 1. 要点カードと主役カードのガラス反射',
+    '',
+    '- **すりガラス拡散**: 柔らかな半透明ベールとエッジハイライトを重ねます',
+    '- ★ **主役カードの光彩**: 色ベタの主役カードに斜めガラスシアーと立体光彩を添えます',
+    '- **可読性の維持**: 文字のコントラスト比と印刷時の視認性を損ないません',
+    '',
+    '## 2. ステートメントと光だまり',
+    '',
+    '> 静かな紙面に、光と水と風の揺らぎを。',
+    '>',
+    '> — Lucivo Visual Stage',
+    ''
+  ].join('\n');
+
+  await page.click('#btn-visual-mode');
+  await selectVisualStyle(page, 'shapes');
+  await setDocument(page, AMBIENT_TEST_MD);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(250);
+
+  // 1) 初期状態（既定 OFF）の確認
+  const ambientDefaultOff = await page.evaluate(() => {
+    const chk = document.getElementById('setting-ambient-effects');
+    const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab');
+    const beforeContent = slab ? getComputedStyle(slab, '::before').content : '';
+    return {
+      checked: chk ? chk.checked : null,
+      htmlClass: document.documentElement.classList.contains('has-ambient-effects'),
+      wrapClass: wrap ? wrap.classList.contains('has-ambient-effects') : null,
+      slabBeforeNone: beforeContent === 'none' || beforeContent === '""' && parseFloat(getComputedStyle(slab, '::before').opacity) === 0
+    };
+  });
+
+  // 2) その他モーダルを開いて ON に切り替え
+  await page.click('#btn-open-settings');
+  await page.waitForTimeout(100);
+  await page.check('#setting-ambient-effects');
+  await page.click('#btn-close-settings');
+  await page.waitForTimeout(200);
+
+  const styleMasks = {};
+  for (const st of ['shapes', 'cards', 'circles', 'editorial']) {
+    await selectVisualStyle(page, st);
+    await page.waitForTimeout(150);
+    styleMasks[st] = await page.evaluate(() => {
+      const slab = document.querySelector('#visual-stage-container .exhibition-slab');
+      if (!slab) return '';
+      const s = getComputedStyle(slab, '::before');
+      return (s.maskImage && s.maskImage !== 'none' ? s.maskImage : s.webkitMaskImage) || '';
+    });
+    if (st === 'shapes' || st === 'editorial') {
+      await page.locator('#visual-stage-container .exhibition-wrap').screenshot({ path: path.join(SHOT_DIR, `vtpl-ambient-${st}-light.png`) });
+    }
+  }
+
+  await selectVisualStyle(page, 'shapes');
+  await page.waitForTimeout(150);
+  const ambientOnState = await page.evaluate(() => {
+    const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+    const hero = document.querySelector('#visual-stage-container .exhibition-hero.vs-cover');
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab');
+    const quote = document.querySelector('#visual-stage-container blockquote.vs-quote');
+    const heroAfter = hero ? getComputedStyle(hero, '::after') : null;
+    const heroMask = heroAfter ? ((heroAfter.maskImage && heroAfter.maskImage !== 'none' ? heroAfter.maskImage : heroAfter.webkitMaskImage) || '') : '';
+    const quoteCs = quote ? getComputedStyle(quote) : null;
+    const quoteFilter = quoteCs ? (quoteCs.backdropFilter || quoteCs.webkitBackdropFilter || '') : '';
+    return {
+      htmlClass: document.documentElement.classList.contains('has-ambient-effects'),
+      wrapClass: wrap ? wrap.classList.contains('has-ambient-effects') : false,
+      storage: localStorage.getItem('lucivo:ambient-effects'),
+      heroSheerMask: /backdrop-light-sweep-foreground\.svg/.test(heroMask),
+      heroBlend: heroAfter ? heroAfter.mixBlendMode : '',
+      slabIsolation: slab ? getComputedStyle(slab).isolation : '',
+      quoteBlur: /blur\(8px\)/.test(quoteFilter),
+      quoteBorderLeft: quoteCs ? parseFloat(quoteCs.borderLeftWidth) : -1
+    };
+  });
+
+  // Dark モードでのゲラ撮影
+  await setMode(page, { style: 'shapes', appearance: 'dark' });
+  await page.locator('#visual-stage-container .exhibition-wrap').screenshot({ path: path.join(SHOT_DIR, 'vtpl-ambient-shapes-dark.png') });
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+
+  // 3) OFF に戻して解除を確認
+  await page.click('#btn-open-settings');
+  await page.waitForTimeout(100);
+  await page.uncheck('#setting-ambient-effects');
+  await page.click('#btn-close-settings');
+  await page.waitForTimeout(150);
+
+  const ambientOffAfter = await page.evaluate(() => ({
+    htmlClass: document.documentElement.classList.contains('has-ambient-effects'),
+    wrapClass: document.querySelector('#visual-stage-container .exhibition-wrap')?.classList.contains('has-ambient-effects') || false,
+    storage: localStorage.getItem('lucivo:ambient-effects')
+  }));
+
+  const vtpl31Ok = ambientDefaultOff.checked === false
+    && !ambientDefaultOff.htmlClass
+    && !ambientDefaultOff.wrapClass
+    && ambientDefaultOff.slabBeforeNone
+    && ambientOnState.htmlClass
+    && ambientOnState.wrapClass
+    && ambientOnState.storage === '1'
+    && ambientOnState.heroSheerMask
+    && ambientOnState.heroBlend === 'soft-light'
+    && ambientOnState.slabIsolation === 'isolate'
+    && ambientOnState.quoteBlur
+    && ambientOnState.quoteBorderLeft === 0
+    && /organic-light-bleed\.svg/.test(styleMasks.shapes)
+    && /organic-water-undulation\.svg/.test(styleMasks.cards)
+    && /organic-flame-flicker\.svg/.test(styleMasks.circles)
+    && /organic-sunlight-komorebi-soft\.svg/.test(styleMasks.editorial)
+    && !ambientOffAfter.htmlClass
+    && !ambientOffAfter.wrapClass
+    && ambientOffAfter.storage === '0';
+
+  record('TC-VTPL-031', vtpl31Ok, JSON.stringify({ ambientDefaultOff, ambientOnState, styleMasks: Object.keys(styleMasks).reduce((a, k) => ({ ...a, [k]: /organic-[a-z-]+/.exec(styleMasks[k])?.[0] || '' }), {}), ambientOffAfter }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
