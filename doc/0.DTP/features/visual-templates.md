@@ -292,6 +292,28 @@ Visualモードでは、文書を章（`h2`）ごとのスラブに分ける。�
 
 手順の接続線と図の結線の上を流れる光は、シグナル・ライト（[stage-show.md](stage-show.md) の `DTP-LIGHT-010`〜`060`）に従う。
 
+## DTP-VTPL-096 アンビエント・グラデーション＆有機的揺らぎ演出（オプション切替）
+
+用途: Visualモードおよびステージ背景・前景に、**半透明・すりガラス・水・光・炎・日光**をテーマとした多層グラデーション（`in oklab` 補間）と有機的揺らぎベクター幕（`AST-135`〜`144`）を重ね、静的な紙面を損なわない範囲で空間の奥行きと質感を高める（`RGH-150`、`FR-060`）。
+
+- **オプション切替と既定値（OFF）**:
+  - 「その他（アプリ設定）」モーダル（`#settings-modal`）に「Visualモードの背景・前景演出」トグル（`#setting-ambient-effects`）を置き、**デフォルトは OFF（無効）** とする。
+  - ON に切り替えたとき（`html.has-ambient-effects` / `.exhibition-wrap.has-ambient-effects`）のみ、以下の背景・前景レイヤー演出を適用する。設定状態は `localStorage`（`lucivo:ambient-effects`）に保存・復元する。
+- **スタイル別の有機的揺らぎスラブ背景（`AST-136`〜`144`）**:
+  - 各スラブ（`.exhibition-slab`）に `isolation: isolate` を設定し、スタイル（`shapes` / `cards` / `circles` / `editorial`）の個性と配色（`--vs-c1`〜`--vs-c4`）に連動した多層 `in oklab` グラデーションおよび有機的揺らぎ SVG マスク（`::before` 背面に低不透明度 `0.14`〜`0.22` で配置）を敷く:
+    - **`shapes`（光・オーロラ：`AST-137`, `AST-142`）**: オーロラ光幕と不定形光ブロブのにじみ（`organic-light-bleed.svg`）。
+    - **`cards`（水・コースティクス：`AST-136`, `AST-141`）**: 水面集光グラデーションと不揃いな水面のうねり（`organic-water-undulation.svg`）。
+    - **`circles`（炎・陽炎：`AST-138`, `AST-143`）**: 下端から立ち上る温かな放射グロウと左右非対称の陽炎揺らぎ（`organic-flame-flicker.svg`）。
+    - **`editorial`（日光・木漏れ日：`AST-139`, `AST-144`）**: 紙テクスチャ（`AST-146`）の上に朝の差し込み斜光と柔らかな木漏れ日斑点ブラー（`organic-sunlight-komorebi-soft.svg`）。
+- **表紙（`.exhibition-hero.vs-cover`）の多層オーロラ＆前景斜光シアー（`AST-137`, `AST-139`）**:
+  - 4 色（`--vs-c1`〜`--vs-c4`）の `in oklab` 放射・斜光グラデーションを重層化し、前景（`::after`）に斜め光条シアー（`backdrop-light-sweep-foreground.svg`、`pointer-events: none`）を重ねて舞台の幕開けを演出する。
+- **ステートメント型（`blockquote.vs-quote`）と注目カードのすりガラス反射（`AST-135`, `AST-140`）**:
+  - ステートメント型パネルに半透明すりガラス面（`backdrop-filter: blur(8px)`、内側の微細なガラスエッジ光沢、すりガラス拡散グラデーション `backdrop-frost-veil.svg`）を適用する。
+  - 要点カードの主役カード（`.vs-point-featured`）、スポットライトカード（`.is-spotlight`）、比較 After カード（`.vs-compare-after`）に斜めガラス反射ベールと柔らかな環境光シャドウを重ねる。
+- **品質・アクセシビリティ・印刷時の配慮**:
+  - 本文・見出しのコントラスト比（WCAG 4.5:1 / 3:1）を損なわない低不透明度にとどめ、方向性を持たない常時ループアニメーション（`RGH-903`）は行わない。
+  - 印刷時（`@media print`）は `backdrop-filter: none`・`mix-blend-mode: normal` にフォールバックして PDF ラスタライズのにじみを防ぎ、Forced Colors Mode（`@media (forced-colors: active)`）では装飾グラデーションを無効化してハイコントラスト輪郭を守る。
+
 ## DTP-VTPL-100 表紙（カバー）
 
 用途: 文書の最初の 1 枚。展示パネルの扉・講演の表紙として、何の文書かを一目で伝え、章の地図を示す（`RGH-013`）。
