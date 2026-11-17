@@ -109,6 +109,15 @@
     box-shadow: none !important;
     border: 1px solid var(--vs-card-border);
   }
+  /* 1 ページに収まる表紙と章は、発表と同じくページの上下中央に置く（DTP-SHOW-020 にそろえる。DD-VTPL-137）。
+     章の枠を版面の高さいっぱい（173mm。端数で次のページにあふれないよう 1mm 引く）にし、中身を上下中央にそろえる。
+     版面より長い章は、枠が中身に合わせて伸びるため、これまでどおり上から流れる */
+  .exhibition-wrap > :is(.exhibition-hero, .exhibition-slab) {
+    min-height: 172mm;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+  }
   .exhibition-wrap > :first-child {
     break-before: auto;
   }
