@@ -372,8 +372,6 @@ function syncStageModeUi(isVisual) {
   document.getElementById('btn-mode-fast')?.classList.toggle('is-active', !isVisual);
   document.getElementById('btn-visual-mode')?.classList.toggle('is-active', isVisual);
   document.getElementById('style-bar')?.classList.toggle('is-hidden', !isVisual);
-  // 16:9 の印刷は Visualモードの章だけに効くため、Visualモードのときだけ出す（DD-VTPL-134）
-  document.querySelectorAll('.visual-only-item').forEach(item => { (item as HTMLElement).hidden = !isVisual; });
 }
 
 function setStageMode(isVisual) {

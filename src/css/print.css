@@ -1,8 +1,7 @@
 /* ==================== 印刷・PDF の配布資料（FR-036, DTP-VTPL-120, DD-VTPL-130〜132） ==================== */
 /* 高速モードは既定のページ（A4 縦）で流し、Visualモードの表紙とスラブは名前付きページに 1 枚ずつ置く。
-   Visualモードの版面は、A4 横（1.414:1）と 16:9 のどちらでも使いやすい 16:10 にそろえ、用紙との差は余白で吸収する（DD-VTPL-134）
-     A4 横  : 297 × 210mm、余白 上下 18.5mm・左右 10mm   → 版面 277 × 173mm
-     16:9   : 297 × 167.06mm、余白 上下 8mm・左右 27.75mm → 版面 241.5 × 151mm */
+   Visualモードの版面は、発表の既定（16:9）と PDF の既定（A4 横、1.414:1）のどちらにも使いやすい 16:10 にそろえ、
+   用紙との差は余白で吸収する（DD-VTPL-134）。A4 横 297 × 210mm、余白 上下 18.5mm・左右 10mm → 版面 277 × 173mm */
 @page {
   size: A4 portrait;
   margin: 14mm;
@@ -10,10 +9,6 @@
 @page lucivo-visual {
   size: A4 landscape;
   margin: 18.5mm 10mm;
-}
-@page lucivo-visual-wide {
-  size: 297mm 167.06mm;
-  margin: 8mm 27.75mm;
 }
 @media print {
   *,
@@ -102,9 +97,6 @@
     box-shadow: none !important;
     border: 1px solid var(--vs-card-border);
   }
-  html.is-print-wide .exhibition-wrap > * {
-    page: lucivo-visual-wide;
-  }
   .exhibition-wrap > :first-child {
     break-before: auto;
   }
@@ -137,14 +129,11 @@
     padding: 5mm !important;
     min-height: 0 !important;
   }
-  /* 図の高さの上限: 版面の高さ（A4 横 173mm、16:9 151mm）から、章の枠の余白（14mm）・章の見出し（約 18mm）・
+  /* 図の高さの上限: 版面の高さ（173mm）から、章の枠の余白（14mm）・章の見出し（約 18mm）・
      図のカードの札（約 12mm）・表示枠の余白（10mm）と、ゆとり（約 14mm）を引いた高さ。図は途中で分けられないため、
      これを超えると図だけが次のページへ送られ、見出しと札が前のページに残る */
   .exhibition-wrap [data-stage-index] > svg {
     max-height: 105mm !important;
-  }
-  html.is-print-wide .exhibition-wrap [data-stage-index] > svg {
-    max-height: 83mm !important;
   }
 }
 
