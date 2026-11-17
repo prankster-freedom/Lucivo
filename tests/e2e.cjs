@@ -96,7 +96,7 @@ const SUITES = [
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007', 'TC-SHOW-026'], fn: testStageShow, timeoutMs: 180000 },
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025'], fn: testStageOverviewPointer },
-  { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022'], fn: testCalloutsGlossaryPrint },
+  { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022', 'TC-VTPL-028'], fn: testCalloutsGlossaryPrint },
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
   { name: 'testSyntaxErrorCleanup', tcPrefix: ['TC-DIAG-025'], fn: testSyntaxErrorCleanup },

@@ -1575,6 +1575,49 @@ async function testCalloutsGlossaryPrint(browser) {
     && visualPdf.pages === 4 && visualPdf.landscape === true && fastPdf.pages >= 1 && fastPdf.landscape === false
     && printCalls.calls === 1 && printCalls.menuClosed;
   record('TC-VTPL-022', printOk, JSON.stringify({ printed, visualPdf, fastPdf, printCalls }));
+
+  // TC-VTPL-028 改ページ: 版面は 16:10（A4 横・16:9 は余白で合わせる）。図のある章も 1 ページに収まり、
+  // 見出しと札だけが前のページに残らない。見出しの下に数行分が残らなければ、見出しごと次のページへ送る（FR-036, DD-VTPL-134・135）
+  const wideItemFast = await page.evaluate(() => document.getElementById('menu-print-wide').hidden);
+  const tallFlow = ['```mermaid', 'flowchart TD', '  A[開始] --> B[手順 1] --> C[手順 2] --> D[手順 3] --> E[手順 4] --> F[手順 5] --> G[手順 6] --> H[終了]', '```'].join('\n');
+  const pagingMd = [1, 2, 3].map(n => `## 第 ${n} 章\n\n図の前の短い説明です。\n\n${tallFlow}\n`).join('\n')
+    + '\n## 第 4 章\n\n' + Array.from({ length: 6 }, (_, k) => `### 節 ${k + 1}\n\n` + '本文の段落です。'.repeat(40)).join('\n\n') + '\n';
+  // 高速モード: 見出しの後ろに、数行分の高さの透明な箱があり、同じ量の負の余白で打ち消す
+  await setDocument(page, pagingMd);
+  await page.emulateMedia({ media: 'print' });
+  const keep = await page.evaluate(() => {
+    const h = document.querySelector('#standard-doc-container h3');
+    const after = getComputedStyle(h, '::after');
+    return { height: parseFloat(after.height), marginBottom: parseFloat(after.marginBottom), breakInside: getComputedStyle(h).breakInside };
+  });
+  await page.emulateMedia({ media: null });
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const wideItemVisual = await page.evaluate(() => !document.getElementById('menu-print-wide').hidden);
+  const slabCount = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .exhibition-slab').length);
+  for (let i = 0; i < slabCount; i++) await scrollToSlab(page, i);
+  await page.waitForFunction(() => document.querySelectorAll('#visual-stage-container .exhibition-viewport > svg').length >= 3, null, { timeout: 30000 });
+  await waitRendered(page);
+  const pageBox = buffer => {
+    const box = /\/MediaBox\s*\[\s*[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(buffer.toString('latin1'));
+    return box ? +(parseFloat(box[1]) / parseFloat(box[2])).toFixed(3) : null;
+  };
+  const a4Buffer = await page.pdf({ preferCSSPageSize: true });
+  // 「印刷 / PDF として保存（16:9）…」は、印刷の間だけ 16:9 のページにする
+  await page.click('#btn-save-menu');
+  await page.click('#menu-print-wide');
+  const wideDuring = await page.evaluate(() => ({ calls: window.__printCalls, cls: document.documentElement.classList.contains('is-print-wide') }));
+  const wideBuffer = await page.pdf({ preferCSSPageSize: true });
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  const wideAfter = await page.evaluate(() => document.documentElement.classList.contains('is-print-wide'));
+  const a4 = { ...inspectPdf(a4Buffer), ratio: pageBox(a4Buffer) };
+  const wide = { ...inspectPdf(wideBuffer), ratio: pageBox(wideBuffer) };
+  // 図の 3 章は 1 章 1 ページ。長文の第 4 章だけが複数ページにまたがる
+  const pagingOk = wideItemFast && wideItemVisual
+    && Math.abs(keep.height - 32 * 96 / 25.4) < 1 && Math.abs(keep.marginBottom + keep.height) < 1 && keep.breakInside === 'avoid'
+    && slabCount === 4 && a4.ratio === 1.415 && Math.abs(wide.ratio - 16 / 9) < 0.01
+    && a4.pages >= 4 && wide.pages >= 4 && a4.pages <= 6 && wide.pages <= 7
+    && wideDuring.calls === 2 && wideDuring.cls && !wideAfter;
+  record('TC-VTPL-028', pagingOk, JSON.stringify({ wideItemFast, wideItemVisual, keep, slabCount, a4, wide, wideDuring, wideAfter }));
   await page.context().close();
 }
 
