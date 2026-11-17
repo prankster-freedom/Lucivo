@@ -1468,6 +1468,107 @@ async function testCoverAndTables(browser) {
     && vtpl26.chkAppearance === 'none' && vtpl26.cardCount === 3 && vtpl26.sameRow;
   record('TC-VTPL-026', vtpl26Ok, JSON.stringify(vtpl26));
 
+  // TC-VTPL-030 要点カード型の主役カード修飾（FR-059, DD-VTPL-038, DTP-VTPL-031, RGH-149）
+  const FEATURED_TEST_MD = [
+    '# 主役カード確認',
+    '',
+    '## 1. 単一主役カード',
+    '',
+    '- **軽快**: 高速モードはミリ秒単位でプレビューします',
+    '- ★ **展示品質**: Visualモードは大画面での講演に耐える品格を提供します',
+    '- **記法そのまま**: プレーンな Markdown だけで美しく組版されます',
+    '',
+    '## 2. 複数主役とKPI共存',
+    '',
+    '- **★ 第一主役**: 太字の中に記号を置いた指定',
+    '- ★ **99.9%**: 稼働率を誇るKPI主役カード',
+    '- ★ 第三主役: 太字のない通常の箇条書きの主役指定',
+    '- 通常項目: 主役ではない通常の脇役カード',
+    ''
+  ].join('\n');
+
+  await selectVisualStyle(page, 'shapes');
+  await setDocument(page, FEATURED_TEST_MD);
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(300);
+
+  const vtpl30Visual = await page.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab');
+    const s1 = slabs[0];
+    const s2 = slabs[1];
+    const s1Items = Array.from(s1.querySelectorAll('.vs-points > li'));
+    const s2Items = Array.from(s2.querySelectorAll('.vs-points > li'));
+
+    // スラブ1の判定
+    const s1Featured = s1Items.map(li => li.classList.contains('vs-point-featured'));
+    const s1TitleTexts = s1Items.map(li => {
+      const t = li.querySelector('.vs-point-title');
+      return t ? t.textContent.trim() : '';
+    });
+    const s1NoStarInText = s1Items.every(li => !/[★☆]/.test(li.textContent));
+    const s1FeaturedCs = s1Items[1] ? getComputedStyle(s1Items[1]) : null;
+    const s1FeaturedTitleCs = s1Items[1] ? getComputedStyle(s1Items[1].querySelector('.vs-point-title')) : null;
+
+    // スラブ2の判定
+    const s2Featured = s2Items.map(li => li.classList.contains('vs-point-featured'));
+    const s2Metric = s2Items.map(li => li.classList.contains('vs-metric-item'));
+    const s2NoStarInText = s2Items.every(li => !/[★☆]/.test(li.textContent));
+    const s2Texts = s2Items.map(li => li.textContent);
+    const s2KpiValueCs = s2Items[1] ? getComputedStyle(s2Items[1].querySelector('.vs-point-title.vs-metric-value')) : null;
+
+    return {
+      s1Count: s1Items.length,
+      s1Featured,
+      s1TitleTexts,
+      s1NoStarInText,
+      s1FeaturedColor: s1FeaturedCs ? s1FeaturedCs.color : '',
+      s1FeaturedTitleColor: s1FeaturedTitleCs ? s1FeaturedTitleCs.color : '',
+      s1FeaturedBg: s1FeaturedCs ? s1FeaturedCs.backgroundColor : '',
+      s2Count: s2Items.length,
+      s2Featured,
+      s2Metric,
+      s2NoStarInText,
+      s2Texts,
+      s2KpiValueColor: s2KpiValueCs ? s2KpiValueCs.color : ''
+    };
+  });
+
+  // ゲラ用スクリーンショット
+  const s1Locator = page.locator('#visual-stage-container .exhibition-slab').nth(0);
+  await s1Locator.screenshot({ path: path.join(SHOT_DIR, 'vtpl-featured-card.png') });
+  const s2Locator = page.locator('#visual-stage-container .exhibition-slab').nth(1);
+  await s2Locator.screenshot({ path: path.join(SHOT_DIR, 'vtpl-featured-multiple-kpi.png') });
+
+  // 高速モードでの検証
+  await page.click('#btn-mode-fast');
+  await waitRendered(page);
+  await page.waitForTimeout(200);
+  const vtpl30Fast = await page.evaluate(() => {
+    const featuredCount = document.querySelectorAll('.vs-point-featured').length;
+    const allText = document.getElementById('standard-doc-container').textContent;
+    const starMatches = allText.match(/[★☆]/g) || [];
+    return {
+      featuredCount,
+      starCount: starMatches.length
+    };
+  });
+
+  const vtpl30Ok = vtpl30Visual.s1Count === 3
+    && JSON.stringify(vtpl30Visual.s1Featured) === JSON.stringify([false, true, false])
+    && vtpl30Visual.s1TitleTexts[1] === '展示品質'
+    && vtpl30Visual.s1NoStarInText
+    && vtpl30Visual.s1FeaturedColor === 'rgb(255, 255, 255)'
+    && vtpl30Visual.s1FeaturedTitleColor === 'rgb(255, 255, 255)'
+    && vtpl30Visual.s2Count === 4
+    && JSON.stringify(vtpl30Visual.s2Featured) === JSON.stringify([true, true, true, false])
+    && vtpl30Visual.s2Metric[1] === true
+    && vtpl30Visual.s2NoStarInText
+    && vtpl30Visual.s2KpiValueColor === 'rgb(255, 255, 255)'
+    && vtpl30Fast.featuredCount === 0
+    && vtpl30Fast.starCount === 4;
+
+  record('TC-VTPL-030', vtpl30Ok, JSON.stringify({ vtpl30Visual, vtpl30Fast }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
