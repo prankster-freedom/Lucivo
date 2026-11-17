@@ -2,7 +2,8 @@
 import { hexToRgba, mixHex } from '../utils/color';
 import {
   THEMES,
-  VISUAL_STYLE_PALETTES,
+  getToneEntry,
+  getEffectiveVisualPalette,
   VISUAL_THEMES,
   VISUAL_THEMES_DARK,
   DEFAULT_CURVES,
@@ -14,6 +15,23 @@ import {
 } from '../ui/state';
 
 export function getThemeSpec() {
+  if (state.tone && state.tone !== 'default') {
+    const entry = getToneEntry(state.tone);
+    const t = state.appearance === 'dark' ? entry.dark : entry.light;
+    return {
+      name: entry.label,
+      canvasBg: t.canvasBg,
+      clusterBg: t.cardBg,
+      clusterBorder: t.edge,
+      nodeBg: t.canvasBg,
+      nodeStroke: t.c1,
+      nodeText: t.text,
+      edgeStroke: t.edge,
+      edgeLabelBg: t.canvasBg,
+      edgeLabelBorder: t.edge,
+      edgeLabelText: t.text
+    };
+  }
   const mode = THEMES[state.appearance] || THEMES.light;
   return mode[state.palette] || mode.cobalt;
 }
@@ -261,7 +279,7 @@ export function setupMermaid(isVisual = state.isVisualMode, curve = 'smooth', la
       ...(isVisual && /^\s*timeline\b/m.test(code) ? { fontSize: '17px' } : {}),
       // ジャーニーの登場人物の丸（actor0〜5）は、既定では蛍光の黄緑などになる。スタイルの 4 色（Light では少し沈めた色）にする
       ...(isVisual ? Object.fromEntries([0, 1, 2, 3, 4, 5].map(i => {
-        const palette = VISUAL_STYLE_PALETTES[state.infographicStyle] || VISUAL_STYLE_PALETTES.shapes;
+        const palette = getEffectiveVisualPalette(state.infographicStyle, state.appearance);
         return [`actor${i}`, mixHex(palette[(i + 2) % 4], '#1E293B', isDark ? 0 : 0.18)];
       })) : {})
     }

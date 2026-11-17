@@ -693,6 +693,37 @@ async function testStyleBar(browser) {
     && !backToFast.visual && !backToFast.barShown && backToFast.workspaceTop === fastStart.workspaceTop
     && byKey.visual && byKey.style === 'circles' && byKey.barShown && page.consoleErrors.length === 0,
   JSON.stringify({ fastStart, visual, styled, backToFast, byKey, errors: page.consoleErrors }));
+
+  // TC-DIAG-041 トーン刷新とその他メニュー化（#221）
+  await page.click('#btn-tone-menu');
+  const toneMenuInfo = await page.evaluate(() => {
+    const menu = document.getElementById('tone-menu');
+    const items = menu ? Array.from(menu.querySelectorAll('.tone-menu-item')) : [];
+    return {
+      opened: !!menu && !menu.classList.contains('hidden'),
+      itemCount: items.length,
+      swatchCount: document.querySelectorAll('#active-tone-swatches .tone-swatch-dot').length
+    };
+  });
+  await page.click('.tone-menu-item[data-tone-id="matcha-wagashi"]');
+  await waitRendered(page);
+  const afterTone = await page.evaluate(() => {
+    const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+    const c1 = wrap ? getComputedStyle(wrap).getPropertyValue('--vs-c1').trim().toLowerCase() : '';
+    const toneName = document.getElementById('active-tone-name')?.textContent?.trim() || '';
+    const settingsBtnText = document.getElementById('btn-open-settings')?.textContent?.trim() || '';
+    const oldPaletteCount = document.querySelectorAll('.palette-option-btn, #active-palette-name').length;
+    const hasFormatToggle = !!document.getElementById('setting-format-on-load');
+    return { c1, toneName, settingsBtnText, oldPaletteCount, hasFormatToggle };
+  });
+  // 既定のスタイル準拠に戻す
+  await page.click('#btn-tone-menu');
+  await page.click('.tone-menu-item[data-tone-id="default"]');
+  await waitRendered(page);
+  const diag41Ok = toneMenuInfo.opened && toneMenuInfo.itemCount === 8 && toneMenuInfo.swatchCount === 4
+    && afterTone.c1 === '#7d9763' && afterTone.toneName === '抹茶と和三盆'
+    && afterTone.settingsBtnText === 'その他' && afterTone.oldPaletteCount === 0 && afterTone.hasFormatToggle;
+  record('TC-DIAG-041', diag41Ok, JSON.stringify({ toneMenuInfo, afterTone }));
   await page.context().close();
 }
 

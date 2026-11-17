@@ -1,5 +1,5 @@
 import { hexToRgba } from '../utils/color';
-import { VISUAL_STYLE_PALETTES } from '../ui/state';
+import { getEffectiveVisualPalette, VISUAL_STYLE_PALETTES } from '../ui/state';
 import type { TexPlotSpec } from './plot-parser';
 
 /* ==========================================================================
@@ -288,7 +288,7 @@ export function renderMathPlotToDataUrl(
     sy: (y: number) => box.top + (y1 - y) / (y1 - y0) * ph,
     isDark: appearance === 'dark',
     isDisplay,
-    palette: MATH_PLOT_PALETTES[style] || MATH_PLOT_PALETTES.shapes
+    palette: getEffectiveVisualPalette(style, appearance)
   };
 
   const xTicks = spec.xPi ? plotPiTicks(x0, x1, isDisplay ? 9 : 5) : plotTicks(x0, x1, isDisplay ? 6 : 3);

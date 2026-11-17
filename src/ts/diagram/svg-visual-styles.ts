@@ -4,7 +4,7 @@ import {
   NODE_DECORATED_TYPES,
   CIRCLE_DARK_TEXT_FILLS,
   SEQUENCE_MATH_LIFT,
-  VISUAL_STYLE_PALETTES,
+  getEffectiveVisualPalette,
   LIGHT_SECTION_TEXT,
   state
 } from '../ui/state';
@@ -60,7 +60,7 @@ export function decorateVisualSvg(svg, diagramType) {
 // 中心の色は Mermaid では Git グラフと共通の変数（git0）から決まり、ノードが白いスタイルでは灰色になって主役に見えない。
 // 変数を変えると Git グラフの色も変わるため、描画後に中心だけを塗り直す（書き出しにも残るよう、要素のスタイルに書く）
 function decorateMindmapRoot(svg, styleMode) {
-  const base = (VISUAL_STYLE_PALETTES[styleMode] || VISUAL_STYLE_PALETTES.shapes)[0];
+  const base = getEffectiveVisualPalette(styleMode, state.appearance)[0];
   // 塗りが暗いスタイル（Circles の赤）では、文字を白にする
   const v = parseInt(base.slice(1), 16);
   const lin = c => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };

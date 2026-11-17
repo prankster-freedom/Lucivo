@@ -185,7 +185,9 @@ export function buildPlan(flow) {
 
   const span = edges.reduce((max, e) => Math.max(max, e.start + e.length / LIGHT.speed), 0);
   const pace = span > LIGHT.maxSpan ? LIGHT.maxSpan / span : 1;
-  const palette = (state.appearance === 'dark' ? LIGHT_COLORS_DARK : LIGHT_COLORS)[state.infographicStyle] || LIGHT_COLORS.shapes;
+  const palette = (typeof getEffectiveVisualPalette === 'function' && state.tone && state.tone !== 'default')
+    ? getEffectiveVisualPalette(state.infographicStyle, state.appearance)
+    : ((state.appearance === 'dark' ? LIGHT_COLORS_DARK : LIGHT_COLORS)[state.infographicStyle] || LIGHT_COLORS.shapes);
 
   const pulses = [];
   edges.forEach(e => {

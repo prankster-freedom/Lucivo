@@ -272,13 +272,95 @@ export const VISUAL_STYLE_PALETTES: Record<string, string[]> = {
   circles: ['#D45D53', '#7EA6BF', '#ECB674', '#7D9763'],
   editorial: ['#D68C8C', '#8FA876', '#C9A66B', '#8FA3B8']
 };
+
+// 採用カラートーン（AST-145 より選定、#221）。'default' はスタイル準拠（Visualモードは DTP-003、高速モードは Cobalt 相当）
+export interface ToneModeSpec {
+  c1: string;
+  c2: string;
+  c3: string;
+  c4: string;
+  canvasBg: string;
+  cardBg: string;
+  edge: string;
+  text: string;
+  glow: string;
+}
+export interface ColorToneSpec {
+  id: string;
+  label: string;
+  light: ToneModeSpec;
+  dark: ToneModeSpec;
+}
+export const COLOR_TONES: ColorToneSpec[] = [
+  {
+    id: 'default',
+    label: 'スタイル準拠',
+    light: { c1: '#2563EB', c2: '#0EA5E9', c3: '#10B981', c4: '#F59E0B', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#475569', text: '#0F172A', glow: '#38BDF8' },
+    dark: { c1: '#38BDF8', c2: '#818CF8', c3: '#34D399', c4: '#FBBF24', canvasBg: '#0F172A', cardBg: '#1E293B', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
+  },
+  {
+    id: 'cobalt-workshop',
+    label: '晴天の工作舎',
+    light: { c1: '#D42A44', c2: '#E0B414', c3: '#22A046', c4: '#2266CC', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#334155', text: '#0F172A', glow: '#38BDF8' },
+    dark: { c1: '#E8546B', c2: '#ECC63E', c3: '#45BD68', c4: '#4D8AE6', canvasBg: '#0F172A', cardBg: '#17223B', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
+  },
+  {
+    id: 'morning-window',
+    label: '朝の窓辺',
+    light: { c1: '#F3A7B0', c2: '#F6E08E', c3: '#A8DBB0', c4: '#A9C4EC', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#64748B', text: '#1E293B', glow: '#7DD3FC' },
+    dark: { c1: '#F5B7BF', c2: '#F8E7A6', c3: '#B8E3BF', c4: '#B9CFF0', canvasBg: '#121824', cardBg: '#1B2434', edge: '#94A3B8', text: '#F8FAFC', glow: '#BAE6FD' }
+  },
+  {
+    id: 'matcha-wagashi',
+    label: '抹茶と和三盆',
+    light: { c1: '#7D9763', c2: '#DFC69E', c3: '#C78A8B', c4: '#5E5448', canvasBg: '#FBF9F4', cardBg: '#F3EFE4', edge: '#635E52', text: '#24211B', glow: '#9CCB86' },
+    dark: { c1: '#99B37F', c2: '#EAD6B5', c3: '#DAA3A4', c4: '#8E8273', canvasBg: '#161813', cardBg: '#20241C', edge: '#9C9688', text: '#F4F1E8', glow: '#B8E0A4' }
+  },
+  {
+    id: 'nordic-frost',
+    label: '北欧の霜柱',
+    light: { c1: '#7EA6BF', c2: '#A5C7D9', c3: '#B2B8D6', c4: '#CBD5E1', canvasBg: '#F8FBFD', cardBg: '#EFF5F9', edge: '#647A8C', text: '#162330', glow: '#A5F3FC' },
+    dark: { c1: '#9EC1D6', c2: '#BDD9E8', c3: '#C8CDE6', c4: '#94A3B8', canvasBg: '#0F1722', cardBg: '#182332', edge: '#8FA6B8', text: '#F1F6FA', glow: '#CFFAFE' }
+  },
+  {
+    id: 'amber-sunset',
+    label: '琥珀の夕暮れ',
+    light: { c1: '#E89B3C', c2: '#E06A5A', c3: '#B84D6F', c4: '#6D597A', canvasBg: '#FFFBF7', cardBg: '#FAF2EA', edge: '#6B555B', text: '#291C20', glow: '#F59E0B' },
+    dark: { c1: '#F2AF5C', c2: '#EB8678', c3: '#D16F8E', c4: '#9680A6', canvasBg: '#1A1318', cardBg: '#261C23', edge: '#A68D94', text: '#FAF3EE', glow: '#FCD34D' }
+  },
+  {
+    id: 'midnight-library',
+    label: '夜を編む図書館',
+    light: { c1: '#6E2A35', c2: '#6E5C1F', c3: '#265A35', c4: '#26406A', canvasBg: '#F4F3F0', cardBg: '#EAE8E3', edge: '#3F4554', text: '#171A24', glow: '#D4AF37' },
+    dark: { c1: '#B85A68', c2: '#C2A64B', c3: '#549E6A', c4: '#5C82BF', canvasBg: '#0E1118', cardBg: '#171C28', edge: '#7D88A3', text: '#F3F1EB', glow: '#F3D56B' }
+  },
+  {
+    id: 'cyber-prism',
+    label: '分光プリズムと黒曜石',
+    light: { c1: '#0284C7', c2: '#DB2777', c3: '#7C3AED', c4: '#059669', canvasBg: '#F8FAFC', cardBg: '#EFF3F8', edge: '#475569', text: '#0F172A', glow: '#00F0FF' },
+    dark: { c1: '#38BDF8', c2: '#F472B6', c3: '#A78BFA', c4: '#34D399', canvasBg: '#090D16', cardBg: '#111827', edge: '#64748B', text: '#F8FAFC', glow: '#67E8F9' }
+  }
+];
+
+export function getToneEntry(toneId = state.tone): ColorToneSpec {
+  return COLOR_TONES.find(t => t.id === toneId) || COLOR_TONES[0];
+}
+
+export function getEffectiveVisualPalette(style: string, appearance = state.appearance): string[] {
+  if (state.tone && state.tone !== 'default') {
+    const mode = appearance === 'dark' ? getToneEntry().dark : getToneEntry().light;
+    return [mode.c1, mode.c2, mode.c3, mode.c4];
+  }
+  return VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
+}
+
 // Light の Visualモードの、マインドマップ・タイムラインなどの枝ごとの色（DD-DIAG-026, DTP-003）。
 // Mermaid の派生のままでは、色相を 30 度ずつ回した彩度の高い色（蛍光の黄緑など）になり、誌面の淡い調子から浮く。
 // スタイルの 4 色を白で薄めた塗り（3 段の濃さ）にして、トーンを誌面にそろえる。文字は濃い色、縁と下線は元の色を少し沈めた色
 const LIGHT_SECTION_TINTS = [0.42, 0.62, 0.28];
 export const LIGHT_SECTION_TEXT = '#1E293B';
 export function lightSectionScale(style: string) {
-  const palette = VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
+  const palette = getEffectiveVisualPalette(style, 'light');
   const vars = {};
   for (let i = 0; i < 12; i++) {
     const base = palette[i % 4];
@@ -293,7 +375,7 @@ export function lightSectionScale(style: string) {
 // Mermaid の派生のままでは、淡い主色から作った半透明の色になり、隣の扇や背景と見分けにくい。
 // スタイルの 4 色をそのまま（濃い側）先頭の 4 枚に当て、5 枚目以降は白・濃紺を混ぜた段にする。不透明で塗る
 export function lightPieScale(style: string) {
-  const palette = VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
+  const palette = getEffectiveVisualPalette(style, 'light');
   const vars = { pieOpacity: '1' };
   for (let i = 0; i < 12; i++) {
     const base = palette[i % 4];
@@ -305,7 +387,7 @@ export function lightPieScale(style: string) {
 // Light の Visualモードの 4 象限チャートの塗り（DD-DIAG-029, DTP-003）。Mermaid の派生のままでは、4 つの象限がほぼ同じ色になり、
 // 象限の違いが伝わらない。スタイルの 4 色を白で薄めた色を 1 象限ずつ当てる。点は濃紺で、象限の上でも見分けられる
 export function lightQuadrantScale(style: string) {
-  const palette = VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
+  const palette = getEffectiveVisualPalette(style, 'light');
   const vars = { quadrantPointFill: LIGHT_SECTION_TEXT, quadrantPointTextFill: LIGHT_SECTION_TEXT, quadrantTitleFill: LIGHT_SECTION_TEXT };
   // Mermaid の番号は、1: 右上、2: 左上、3: 左下、4: 右下
   [1, 2, 3, 4].forEach((n, i) => {
@@ -358,6 +440,7 @@ export const EMPTY_GUIDE_HTML = `
 export const state = {
   appearance: 'light',
   palette: 'cobalt',
+  tone: 'default',
   viewMode: 'split',
   isVisualMode: false,
   infographicStyle: 'shapes',

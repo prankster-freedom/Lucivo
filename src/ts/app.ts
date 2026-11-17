@@ -19,6 +19,9 @@ import {
   isModalOpen,
   setModalOpen,
   VISUAL_STYLE_KEYS,
+  COLOR_TONES,
+  getToneEntry,
+  getEffectiveVisualPalette,
   EMPTY_GUIDE_HTML,
   EXPORT_URLS,
   state,
@@ -95,7 +98,7 @@ function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
       const index = mermaidBlocks.length;
       const code = token.text.trim();
       const curve = getBlockCurve(index, code);
-      const hash = fnv1aHash(code + state.appearance + state.palette + (curve || '') + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std'));
+      const hash = fnv1aHash(code + state.appearance + state.palette + state.tone + (curve || '') + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std'));
       mermaidBlocks.push({ index, code, hash, curve });
       runtime.lastMermaidSources[index] = code;
       tokensToKeep.push({
@@ -139,6 +142,7 @@ function renderApp() {
     visContainer.innerHTML = isEmpty
       ? `<div class="exhibition-wrap"><section class="exhibition-slab">${EMPTY_GUIDE_HTML}</section></div>`
       : buildVisualStageHtml(cleanHtml, yaml);
+    applyToneToVisualStage(visContainer);
   } else {
     visContainer.classList.add('hidden');
     visContainer.innerHTML = '';
@@ -372,6 +376,65 @@ function syncStageModeUi(isVisual) {
   document.getElementById('btn-mode-fast')?.classList.toggle('is-active', !isVisual);
   document.getElementById('btn-visual-mode')?.classList.toggle('is-active', isVisual);
   document.getElementById('style-bar')?.classList.toggle('is-hidden', !isVisual);
+  if (!isVisual) setToneMenuOpen(false);
+}
+
+function applyToneToVisualStage(visContainer: Element | null) {
+  const wrap = visContainer?.querySelector('.exhibition-wrap') as HTMLElement | null;
+  if (!wrap) return;
+  if (state.tone && state.tone !== 'default') {
+    const entry = getToneEntry(state.tone);
+    const mode = state.appearance === 'dark' ? entry.dark : entry.light;
+    wrap.style.setProperty('--vs-c1', mode.c1);
+    wrap.style.setProperty('--vs-c2', mode.c2);
+    wrap.style.setProperty('--vs-c3', mode.c3);
+    wrap.style.setProperty('--vs-c4', mode.c4);
+    wrap.style.setProperty('--vs-glow', mode.glow);
+  } else {
+    ['--vs-c1', '--vs-c2', '--vs-c3', '--vs-c4', '--vs-glow'].forEach(v => wrap.style.removeProperty(v));
+  }
+}
+
+function renderSwatchDotsHtml(colors: string[]) {
+  return colors.slice(0, 4).map(c => `<span class="tone-swatch-dot" style="background:${c};"></span>`).join('');
+}
+
+function syncToneUi() {
+  const entry = getToneEntry(state.tone);
+  const labelEl = document.getElementById('active-tone-name');
+  if (labelEl) labelEl.textContent = entry.label;
+  const swatchEl = document.getElementById('active-tone-swatches');
+  if (swatchEl) {
+    const colors = getEffectiveVisualPalette(state.infographicStyle, state.appearance);
+    swatchEl.innerHTML = renderSwatchDotsHtml(colors);
+  }
+  document.querySelectorAll('#tone-menu .tone-menu-item').forEach(btn => {
+    const active = btn.getAttribute('data-tone-id') === state.tone;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+}
+
+function setToneMenuOpen(open: boolean) {
+  const btn = document.getElementById('btn-tone-menu');
+  const menu = document.getElementById('tone-menu');
+  if (!btn || !menu) return;
+  if (open) {
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = `${Math.round(rect.bottom + 6)}px`;
+    menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
+  }
+  menu.classList.toggle('hidden', !open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function selectTone(toneId: string) {
+  state.tone = toneId;
+  setToneMenuOpen(false);
+  syncToneUi();
+  setupMermaid();
+  renderApp();
+  showToast(`トーン: ${getToneEntry(toneId).label}`);
 }
 
 function setStageMode(isVisual) {
@@ -397,6 +460,7 @@ function selectInfographicStyle(style) {
     state.isVisualMode = true;
     syncStageModeUi(true);
   }
+  syncToneUi();
   renderApp();
   const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
   showToast(`スタイル適用: ${activeBtn ? activeBtn.textContent.trim() : style}`);
@@ -731,20 +795,41 @@ function setupEventListeners() {
     btn.onclick = () => selectInfographicStyle(btn.getAttribute('data-info-style'));
   });
 
-  document.querySelectorAll('.palette-option-btn').forEach((btn: any) => {
-    btn.onclick = () => {
-      const pal = btn.getAttribute('data-palette-set');
-      state.palette = pal;
-      document.querySelectorAll('.palette-option-btn').forEach(b => {
-        b.classList.toggle('is-active', b.getAttribute('data-palette-set') === pal);
-      });
-      const activeLabel = document.getElementById('active-palette-name');
-      if (activeLabel) activeLabel.textContent = pal.charAt(0).toUpperCase() + pal.slice(1);
-      setupMermaid();
-      renderApp();
-      showToast(`テーマ色: ${pal.toUpperCase()}`);
+  const toneBtn = document.getElementById('btn-tone-menu');
+  const toneMenu = document.getElementById('tone-menu');
+  if (toneMenu) {
+    toneMenu.innerHTML = COLOR_TONES.map(t => {
+      const cols = t.id === 'default'
+        ? getEffectiveVisualPalette(state.infographicStyle, state.appearance)
+        : [t.light.c1, t.light.c2, t.light.c3, t.light.c4];
+      return `<button type="button" role="menuitemradio" aria-checked="false" data-tone-id="${t.id}" class="tone-menu-item">`
+        + `<span class="tone-swatches" aria-hidden="true">${renderSwatchDotsHtml(cols)}</span>`
+        + `<span class="tone-menu-label">${escapeHtml(t.label)}</span>`
+        + `</button>`;
+    }).join('');
+    toneMenu.querySelectorAll('.tone-menu-item').forEach((item: any) => {
+      item.onclick = () => selectTone(item.getAttribute('data-tone-id'));
+    });
+  }
+  if (toneBtn && toneMenu) {
+    toneBtn.onclick = e => {
+      e.stopPropagation();
+      const willOpen = toneMenu.classList.contains('hidden');
+      setToneMenuOpen(willOpen);
     };
-  });
+    document.addEventListener('click', e => {
+      if (!toneMenu.classList.contains('hidden') && !toneMenu.contains(e.target as Node) && !toneBtn.contains(e.target as Node)) {
+        setToneMenuOpen(false);
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !toneMenu.classList.contains('hidden')) {
+        setToneMenuOpen(false);
+        toneBtn.focus();
+      }
+    });
+  }
+  syncToneUi();
 
   const btnTheme = document.getElementById('btn-theme-toggle');
   const iconSun = document.getElementById('icon-sun');
@@ -756,6 +841,7 @@ function setupEventListeners() {
     if (appFavicon) appFavicon.setAttribute('href', `./assets/logos/${state.appearance}/favicon.svg`);
     iconSun.classList.toggle('hidden', state.appearance === 'dark');
     iconMoon.classList.toggle('hidden', state.appearance !== 'dark');
+    syncToneUi();
     setupMermaid();
     renderApp();
   };
