@@ -1638,12 +1638,18 @@ async function testCalloutsGlossaryPrint(browser) {
   await page.emulateMedia({ media: 'print' });
   const sampleTables = await page.evaluate(() => Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab table'))
     .map(t => ({ rows: t.querySelectorAll('tbody > tr').length, breakInside: getComputedStyle(t).breakInside })));
+  // 1 ページに収まる表紙と章は、発表と同じくページの上下中央に置く（枠を版面の高さにし、中身を上下中央にそろえる。DD-VTPL-137）
+  const centered = await page.evaluate(() => ['.exhibition-hero', '.exhibition-slab'].map(sel => {
+    const cs = getComputedStyle(document.querySelector(`#visual-stage-container ${sel}`));
+    return { display: cs.display, justify: cs.justifyContent, minHeightMm: Math.round(parseFloat(cs.minHeight) * 25.4 / 96) };
+  }));
   await page.emulateMedia({ media: null });
   const samplePdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
   const sampleAgenda = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .vs-cover-agenda > li').length);
   const sampleOk = samplePdf.pages === 18 && samplePdf.landscape && sampleAgenda === 10
-    && JSON.stringify(sampleTables) === JSON.stringify([{ rows: 3, breakInside: 'avoid' }, { rows: 8, breakInside: 'avoid' }, { rows: 30, breakInside: 'auto' }]);
-  record('TC-VTPL-029', sampleOk, JSON.stringify({ samplePdf, sampleAgenda, sampleTables }));
+    && JSON.stringify(sampleTables) === JSON.stringify([{ rows: 3, breakInside: 'avoid' }, { rows: 8, breakInside: 'avoid' }, { rows: 30, breakInside: 'auto' }])
+    && centered.every(c => c.display === 'flex' && c.justify === 'center' && c.minHeightMm === 172);
+  record('TC-VTPL-029', sampleOk, JSON.stringify({ samplePdf, sampleAgenda, sampleTables, centered }));
   await page.context().close();
 }
 
