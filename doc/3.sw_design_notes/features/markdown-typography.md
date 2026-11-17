@@ -21,22 +21,23 @@ tags: ["Lucivo", "詳細設計", "Markdown", "CSS"]
 
 ## 2. 要素ごとの表示
 
-| ID        | 要素             | 表示                                                                              |
-| :-------- | :--------------- | :-------------------------------------------------------------------------------- |
-| DD-MD-010 | 見出し `h3` / `h4` / `h5`, `h6` | `h3`: 1.05rem・太さ 700・`--text-primary`。`h4`: 0.95rem・太さ 700・`--text-primary`。`h5`, `h6`: 0.875rem・太さ 700・`--text-muted`。上余白 1.25〜1.5rem、下余白 0.5rem |
-| DD-MD-011 | 箇条書き・番号付きリスト | `ul` は `disc`、入れ子は `circle`、さらに入れ子は `square`。`ol` は `decimal`。左余白 1.5rem で字下げする。記号・番号の色は `--text-muted` |
-| DD-MD-012 | タスクリスト     | チェックボックスを含む項目（`li:has(> input[type="checkbox"])`）は記号を出さず、チェックボックスを記号の位置に置く |
-| DD-MD-013 | リンク           | `--accent` の色、下線あり（下線との間隔 2px）。ポインターを重ねると下線を太くする |
-| DD-MD-014 | インラインコード | 等幅フォント（JetBrains Mono）・0.85em、背景 `--panel-sub`、枠 1px `--border-strong`、角丸 4px、色 `--text-primary` |
-| DD-MD-015 | コードブロック   | `pre` に背景 `--panel-sub`、枠 1px `--border-strong`、角丸 10px、内側余白、横スクロールを付ける。`pre code` は DD-MD-014 の背景・枠・余白を打ち消す |
-| DD-MD-016 | 引用             | 左線 4px `--border-strong`、左の内側余白 1rem、色 `--text-secondary`（Dark で `--text-muted` は背景とのコントラストが不足するため）。入れ子の引用も同じ表示で、さらに字下げされる。背景は付けない |
-| DD-MD-017 | 表の列の寄せ     | `th` / `td` の `align` 属性（Marked が出力する `left` / `center` / `right`）に合わせて `text-align` を指定する |
-| DD-MD-020 | 表の横幅収容と折り返し | `renderApp()` で `wrapTables(activeContainer)` を呼び、すべての `table` を `<div class="table-container">`（`width: 100%; max-width: 100%; overflow-x: auto;`）で包む。あわせて `th, td` の折り返しを `word-break: normal !important; overflow-wrap: break-word !important;`、セル内コード（`:is(th, td) code`）を `white-space: nowrap;` とし、識別子の途中改行を防ぎつつ多列の表をスラブ・文書の版面幅に収め、最小幅を下回る狭い画面では `.table-container` 内で横スクロールさせる |
-| DD-MD-018 | 水平線           | 上の枠線 1px `--border-strong`、上下の余白 1.5rem                                 |
-| DD-MD-019 | 標準の HTML 要素 | `details`: 枠 1px `--border-strong`・角丸 8px・内側余白。`summary`: 太さ 600・`--text-primary`・ポインター。`kbd`: 等幅フォント・枠 1px（下 2px）`--border-strong`・背景 `--panel-sub`。`mark`: Light は `#FDE68A`、Dark は `rgba(250, 204, 21, 0.35)` の背景に `--text-primary` の文字 |
+| ID        | 要素                                | 表示 |
+| :-------- | :---------------------------------- | :--- |
+| DD-MD-010 | 見出し `h3` / `h4` / `h5`, `h6`     | `h3`: 1.05rem・太さ 700・`--text-primary`。`h4`: 0.95rem・太さ 700・`--text-primary`。`h5`, `h6`: 0.875rem・太さ 700・`--text-muted`。上余白 1.25〜1.5rem、下余白 0.5rem |
+| DD-MD-011 | 箇条書き・番号付きリスト            | `ul` は `disc`、入れ子は `circle`、さらに入れ子は `square`。`ol` は `decimal`。左余白 1.5rem で字下げする。記号・番号の色は `--text-muted` |
+| DD-MD-012 | タスクリスト                        | チェックボックスを含む項目（`li:has(> input[type="checkbox"])`）は記号を出さず、チェックボックスを記号の位置に置く。チェックボックスは `appearance: none` で既定の見た目を消し、`1.05rem` 角・角丸 5px・枠 1.75px（`--check-c` を 40% 混ぜた `--border-strong`）で描く。チェックしたものは地と枠を `--check-c` にし、`::after` に白で `--icon-task-check`（`AST-117`、`assets/icons/task-check.svg` と同一の data URI）を `mask` で塗る。`--check-c` は高速モードが `--accent`、Visualモードが `--vs-c1` |
+| DD-MD-013 | リンク                              | `--accent` の色、下線あり（下線との間隔 2px）。ポインターを重ねると下線を太くする |
+| DD-MD-014 | インラインコード                    | 等幅フォント（JetBrains Mono）・0.85em、背景 `--panel-sub`、枠 1px `--border-strong`、角丸 4px、色 `--text-primary` |
+| DD-MD-015 | コードブロック                      | `pre` に背景 `--panel-sub`、枠 1px `--border-strong`、角丸 10px、内側余白、横スクロールを付ける。`pre code` は DD-MD-014 の背景・枠・余白を打ち消す |
+| DD-MD-016 | 引用                                | 左線 4px `--border-strong`、左の内側余白 1rem、色 `--text-secondary`（Dark で `--text-muted` は背景とのコントラストが不足するため）。入れ子の引用も同じ表示で、さらに字下げされる。背景は付けない |
+| DD-MD-017 | 表の列の寄せ                        | `th` / `td` の `align` 属性（Marked が出力する `left` / `center` / `right`）に合わせて `text-align` を指定する |
+| DD-MD-020 | 表の横幅収容と折り返し              | `renderApp()` で `wrapTables(activeContainer)` を呼び、すべての `table` を `<div class="table-container">`（`width: 100%; max-width: 100%; overflow-x: auto;`）で包む。あわせて `th, td` の折り返しを `word-break: normal !important; overflow-wrap: break-word !important;`、セル内コード（`:is(th, td) code`）を `white-space: nowrap;` とし、識別子の途中改行を防ぎつつ多列の表をスラブ・文書の版面幅に収め、最小幅を下回る狭い画面では `.table-container` 内で横スクロールさせる |
+| DD-MD-018 | 水平線                              | 枠線を消し、高さ 1rem・上下の余白 1.75rem。背景に、中央の幅 3.4rem を空けて両端へ透明に消える 1px の罫（`--border-strong` の `linear-gradient`）を引き、`::after`（幅 3rem・高さ 1rem、中央）に `--motif-hr-prism`（`AST-115`、`assets/motifs/hr-prism-divider.svg` と同一の data URI）を `mask` で置いて `--hr-c` で塗る。`--hr-c` は高速モードが `--accent`、Visualモードが `--vs-c1`。強制カラーモードでは、罫を `CanvasText` の 1px にし、飾りを `CanvasText` で塗る |
+| DD-MD-019 | 標準の HTML 要素                    | `details`: 枠 1px `--border-strong`・角丸 10px・内側余白。`summary`: 太さ 600・`--text-primary`・ポインター。`list-style: none` と `::-webkit-details-marker` の非表示で既定の三角を消し、`::before`（1rem 角）に `--icon-disclosure`（`AST-116`、`assets/icons/disclosure-chevron.svg` と同一の data URI）を `mask` で置いて `--details-c` で塗る。開くと `rotate: 90deg`（0.2s）。開閉は、`interpolate-size: allow-keywords` と `::details-content` の `block-size: 0 → auto`・`content-visibility`（`allow-discrete`）の 0.28s の遷移で動かす。`prefers-reduced-motion: reduce` と非対応のブラウザでは即時に開閉する。`--details-c` は高速モードが `--accent`、Visualモードが `--vs-c1` を文字色に寄せた色（地に `--vs-c1` を 4% 敷く）。`kbd`: 等幅フォント・枠 1px（下 2px）`--border-strong`・背景 `--panel-sub`。`mark`: Light は `#FDE68A`、Dark は `rgba(250, 204, 21, 0.35)` の背景に `--text-primary` の文字 |
 | DD-MD-021 | コールアウトの判定と組み替え（js/app.js） | `decorateAlerts(container)` は、サニタイズ後の DOM のすべての `blockquote` について、最初の子の `p` の最初のテキストノードが `ALERT_MARKER_RE`（`[!NOTE]`・`[!TIP]`・`[!IMPORTANT]`・`[!WARNING]`・`[!CAUTION]`、大文字・小文字を問わない、後ろは改行か終わり）に一致するものだけを、`div.md-alert.md-alert-<種類>`（`role="note"`）に置き換える。マーカーの文字（と直後の `br`）を消し、空になった最初の段落を消し、先頭に題の行 `p.md-alert-title`（アイコン `span.md-alert-icon` とラベル `Note` など）を置いて、引用の子をすべて移す。高速モードは `renderApp()` で `#standard-doc-container` に、Visualモードは `buildVisualStageHtml()` で雛形の判定の前に適用する |
 | DD-MD-022 | コールアウトの表示（css/style.css） | `.md-alert` は `--alert-c`（種類ごとの意味の色。Light: `#2563EB`・`#059669`・`#7C3AED`・`#D97706`・`#DC2626`、Dark: `#60A5FA`・`#34D399`・`#A78BFA`・`#FBBF24`・`#F87171`）を持ち、左線 4px `--alert-c`、背景は `--alert-c` を 7%（Dark は 10%）混ぜた色、角丸 `0 10px 10px 0`、色 `--text-secondary`。題の行は JetBrains Mono・0.72rem・700・字間 0.14em・`text-transform: uppercase`、色 `--alert-ink`（Light は `--alert-c` 72% に `#0F172A` を混ぜる、Dark は `--alert-c`）。アイコンは `:root` の `--icon-alert-*`（`assets/icons/alert-*.svg` と同一の data URI）を `mask` で読み込み、1.4em 角を `--alert-c` で塗る |
 
+- **背景（DD-MD-012・018・019、#197）**: 1px の直線・ブラウザ既定の三角・OS 既定のチェックボックスは、展示パネルの中で簡易ビューアーの部品に見える。素材は `mask` で使い、色を CSS の変数で塗るため、外観（Light / Dark）・パレット・Visualモードのスタイルに 1 つの素材で追従する。チェックマークを枠線の回転で描いていた Visualモードの描き方は、高速モードと形をそろえるために共通の `mask` の描き方へ移した。開閉の遷移を `::details-content` で書くのは、JavaScript で高さを測らずに済み、非対応のブラウザでは規則ごと無視されて即時の開閉に戻るため。
 - **背景（DD-MD-016）**: コールアウト（`DD-MD-022`）は、意味の色の左線と背景を持つ。引用は背景を付けず灰色の左線にして、コールアウトと見分けられるようにする。
 - **背景（DD-MD-021）**: Marked の拡張（トークナイザー）で引用の解析を変えず、標準の引用として解析した後の DOM を書き換える。Marked の版を上げても影響を受けにくく、判定は引用の最初の文字だけで済むため、入力のたびの描画（`NFR-006`）を重くしない。サニタイズの後に作る要素は、アプリが決めたクラスと文字だけを持つため、安全性（`NFR-003`）を損なわない。Visualモードで雛形の判定の前に置き換えるのは、`blockquote` のままだとコールアウトだけの章がステートメント型（`DTP-VTPL-050`）になるため。
 - **背景（DD-MD-022）**: ラベルは小さな太字のため、Light で意味の色をそのまま使うと琥珀（`#D97706`）などは白地とのコントラストが不足する。濃紺を混ぜて読みやすさを確保する。ラベルの文字を DOM で大文字にしないのは、コピーした文字が `NOTE` のように叫び調にならないようにするため。
