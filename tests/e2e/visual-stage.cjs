@@ -1625,6 +1625,25 @@ async function testCalloutsGlossaryPrint(browser) {
   const coverAgenda = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .vs-cover-agenda > li').length);
   const coverOk = coverAgenda === 15 && coverPdf.pages === 16 && Math.abs(visualKeep.height - 60 * 96 / 25.4) < 1 && tableBreak === 'avoid';
   record('TC-VTPL-028', pagingOk && coverOk, JSON.stringify({ keep, slabCount, a4, printItems, visualKeep, coverAgenda, coverPdf, tableBreak }));
+
+  // TC-VTPL-029 印刷・PDF の確認サンプル（samples/print-sample.md。受け入れテストと共用）を Visualモードの PDF にすると 18 ページ。
+  // 小見出しの送りが効かない、表紙の目次が送られる、白紙のページが付く、のどれでもページ数が変わる。
+  // 1 ページに収まる表（15 行以下）だけを分けない（FR-036, DD-VTPL-135・136）
+  const printSample = fs.readFileSync(path.join(APP_DIR, 'samples', 'print-sample.md'), 'utf8');
+  await setDocument(page, printSample);
+  const sampleSlabs = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .exhibition-slab').length);
+  for (let i = 0; i < sampleSlabs; i++) await scrollToSlab(page, i);
+  await page.waitForFunction(() => document.querySelectorAll('#visual-stage-container .exhibition-viewport > svg').length >= 1, null, { timeout: 30000 });
+  await waitRendered(page);
+  await page.emulateMedia({ media: 'print' });
+  const sampleTables = await page.evaluate(() => Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab table'))
+    .map(t => ({ rows: t.querySelectorAll('tbody > tr').length, breakInside: getComputedStyle(t).breakInside })));
+  await page.emulateMedia({ media: null });
+  const samplePdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
+  const sampleAgenda = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .vs-cover-agenda > li').length);
+  const sampleOk = samplePdf.pages === 18 && samplePdf.landscape && sampleAgenda === 10
+    && JSON.stringify(sampleTables) === JSON.stringify([{ rows: 3, breakInside: 'avoid' }, { rows: 8, breakInside: 'avoid' }, { rows: 30, breakInside: 'auto' }]);
+  record('TC-VTPL-029', sampleOk, JSON.stringify({ samplePdf, sampleAgenda, sampleTables }));
   await page.context().close();
 }
 
