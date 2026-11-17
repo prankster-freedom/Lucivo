@@ -1,12 +1,19 @@
 /* ==================== 印刷・PDF の配布資料（FR-036, DTP-VTPL-120, DD-VTPL-130〜132） ==================== */
-/* 高速モードは既定のページ（A4 縦）で流し、Visualモードの表紙とスラブは名前付きページ（A4 横）に 1 枚ずつ置く */
+/* 高速モードは既定のページ（A4 縦）で流し、Visualモードの表紙とスラブは名前付きページに 1 枚ずつ置く。
+   Visualモードの版面は、A4 横（1.414:1）と 16:9 のどちらでも使いやすい 16:10 にそろえ、用紙との差は余白で吸収する（DD-VTPL-134）
+     A4 横  : 297 × 210mm、余白 上下 18.5mm・左右 10mm   → 版面 277 × 173mm
+     16:9   : 297 × 167.06mm、余白 上下 8mm・左右 27.75mm → 版面 241.5 × 151mm */
 @page {
   size: A4 portrait;
   margin: 14mm;
 }
 @page lucivo-visual {
   size: A4 landscape;
-  margin: 10mm;
+  margin: 18.5mm 10mm;
+}
+@page lucivo-visual-wide {
+  size: 297mm 167.06mm;
+  margin: 8mm 27.75mm;
 }
 @media print {
   *,
@@ -52,19 +59,51 @@
   .prose-doc :is(h1, h2, h3, h4, h5, h6) {
     break-after: avoid;
   }
+  /* 見出しだけが前のページに残らないよう、見出しの下に本文の数行分（--print-keep）が残らなければ、見出しごと次のページへ送る（DD-VTPL-135）。
+     見出しの後ろに高さ --print-keep の透明な箱を置き、同じ量の負の余白で打ち消す。見出しは分けないため、箱ごと収まらないときに送られる。
+     flex の見出しでは箱が横に並んで効かないため、印刷では block にする（左の飾りの線は inline-block のまま並ぶ） */
+  :is(.prose-doc :is(h1, h2, h3, h4), .exhibition-slab :is(h3, h4)) {
+    --print-keep: 32mm;
+    break-inside: avoid;
+    break-after: avoid;
+  }
+  .prose-doc h2 {
+    display: block !important;
+  }
+  .prose-doc h2::before {
+    vertical-align: -0.12em;
+    margin-right: 0.5rem;
+  }
+  :is(.prose-doc :is(h1, h2, h3, h4), .exhibition-slab :is(h3, h4))::after {
+    content: "";
+    display: block;
+    height: var(--print-keep);
+    margin-bottom: calc(-1 * var(--print-keep));
+  }
+  /* 段落とリストの項目は、ページの末尾と先頭に 1〜2 行だけ残さない */
+  :is(.prose-doc, .exhibition-slab) :is(p, li) {
+    orphans: 3;
+    widows: 3;
+  }
   .prose-doc :is(pre, table, .md-alert, .diagram-frame, .front-matter) {
     break-inside: avoid;
   }
   /* Visualモード: 表紙と各スラブを 1 ページずつ。項目・図・表の行の途中では切らない（DD-VTPL-132） */
+  /* 章を縦に流す flex のままだと、章の中の改ページの指定が効きにくいため、block にする */
   .exhibition-wrap {
+    display: block !important;
     max-width: none;
     gap: 0;
   }
   .exhibition-wrap > * {
     page: lucivo-visual;
     break-before: page;
+    margin: 0 !important;
     box-shadow: none !important;
     border: 1px solid var(--vs-card-border);
+  }
+  html.is-print-wide .exhibition-wrap > * {
+    page: lucivo-visual-wide;
   }
   .exhibition-wrap > :first-child {
     break-before: auto;
@@ -90,9 +129,22 @@
   .prose-doc [data-stage-index] > svg {
     max-height: 200mm !important;
   }
-  /* A4 横の版面の高さ 190mm から、章の見出しと図のカードの枠を引いた高さ */
+  /* 章の枠と図の表示枠の余白は、画面の幅（vw）で決まる値をやめ、版面に合わせて詰める */
+  .exhibition-wrap > .exhibition-slab {
+    padding: 7mm 8mm !important;
+  }
+  .exhibition-wrap .exhibition-viewport {
+    padding: 5mm !important;
+    min-height: 0 !important;
+  }
+  /* 図の高さの上限: 版面の高さ（A4 横 173mm、16:9 151mm）から、章の枠の余白（14mm）・章の見出し（約 18mm）・
+     図のカードの札（約 12mm）・表示枠の余白（10mm）と、ゆとり（約 14mm）を引いた高さ。図は途中で分けられないため、
+     これを超えると図だけが次のページへ送られ、見出しと札が前のページに残る */
   .exhibition-wrap [data-stage-index] > svg {
-    max-height: 120mm !important;
+    max-height: 105mm !important;
+  }
+  html.is-print-wide .exhibition-wrap [data-stage-index] > svg {
+    max-height: 83mm !important;
   }
 }
 

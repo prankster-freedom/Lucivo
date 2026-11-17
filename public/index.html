@@ -61,6 +61,7 @@
           <div class="file-menu-divider" role="separator"></div>
           <button id="mobile-menu-save-markdown" type="button" role="menuitem" class="file-menu-item">Markdown を保存</button>
           <button id="mobile-menu-print" type="button" role="menuitem" class="file-menu-item">印刷 / PDF として保存…</button>
+          <button id="mobile-menu-print-wide" type="button" role="menuitem" class="file-menu-item visual-only-item" hidden>印刷 / PDF として保存（16:9）…</button>
         </div>
       </div>
 
@@ -97,7 +98,8 @@
         </button>
         <div id="save-menu" role="menu" class="file-menu hidden">
           <button id="btn-save-markdown" type="button" role="menuitem" class="file-menu-item" title="エディタの内容を Markdown ファイルとしてダウンロード">Markdown を保存（<span id="save-file-name">untitled.md</span>）</button>
-          <button id="menu-print" type="button" role="menuitem" class="file-menu-item">印刷 / PDF として保存…</button>
+          <button id="menu-print" type="button" role="menuitem" class="file-menu-item" title="高速モードは A4 縦、Visualモードは A4 横">印刷 / PDF として保存…</button>
+          <button id="menu-print-wide" type="button" role="menuitem" class="file-menu-item visual-only-item" hidden title="Visualモードの章を 16:9 のページに 1 枚ずつ">印刷 / PDF として保存（16:9）…</button>
         </div>
       </div>
     </div>

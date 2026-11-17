@@ -235,6 +235,7 @@ export function setupMobileMenus() {
   document.getElementById('mobile-menu-open-recent-folder')?.addEventListener('click', () => document.getElementById('menu-open-recent-folder')?.click());
   document.getElementById('mobile-menu-save-markdown')?.addEventListener('click', () => document.getElementById('btn-save-markdown')?.click());
   document.getElementById('mobile-menu-print')?.addEventListener('click', () => document.getElementById('menu-print')?.click());
+  document.getElementById('mobile-menu-print-wide')?.addEventListener('click', () => document.getElementById('menu-print-wide')?.click());
   document.querySelectorAll('[data-mobile-sample]').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('data-mobile-sample');
@@ -307,6 +308,14 @@ export function setupFileMenu() {
   });
   document.getElementById('menu-print').onclick = () => {
     closeHeaderMenus();
+    window.print();
+  };
+  // Visualモードの章を 16:9 のページで刷る（DD-VTPL-134）。印刷が終わったら A4 横に戻す
+  document.getElementById('menu-print-wide').onclick = () => {
+    closeHeaderMenus();
+    const root = document.documentElement;
+    root.classList.add('is-print-wide');
+    window.addEventListener('afterprint', () => root.classList.remove('is-print-wide'), { once: true });
     window.print();
   };
   document.getElementById('btn-save-markdown').onclick = () => {

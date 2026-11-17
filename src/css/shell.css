@@ -28,6 +28,9 @@
   letter-spacing: 0.05em;
   color: var(--text-muted);
 }
+.file-menu-item[hidden] {
+  display: none;
+}
 .file-menu-item {
   display: block;
   width: 100%;
