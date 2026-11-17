@@ -1606,7 +1606,25 @@ async function testCalloutsGlossaryPrint(browser) {
   // 図の 3 章は 1 章 1 ページ。長文の第 4 章だけが複数ページにまたがる
   const pagingOk = Math.abs(keep.height - 32 * 96 / 25.4) < 1 && Math.abs(keep.marginBottom + keep.height) < 1 && keep.breakInside === 'avoid'
     && slabCount === 4 && a4.ratio === 1.415 && a4.pages >= 4 && a4.pages <= 6 && printItems === 1;
-  record('TC-VTPL-028', pagingOk, JSON.stringify({ keep, slabCount, a4, printItems }));
+  // Visualモード: 章の中の小見出しは、ページの約 1/3（60mm）が残らなければ送る。1 ページに収まる表は途中で分けない
+  await page.emulateMedia({ media: 'print' });
+  const visualKeep = await page.evaluate(() => {
+    const h = document.querySelector('#visual-stage-container .exhibition-slab h3');
+    return { height: parseFloat(getComputedStyle(h, '::after').height) };
+  });
+  await page.emulateMedia({ media: null });
+  // 表紙: 目次の項目の多い表紙（目次に載る上限の 15 章）でも、題名と目次が 1 ページ目に収まる。15 章目は表のある章
+  const coverMd = '---\ntitle: 表紙と目次の確認\ndescription: 章の多い文書で、目次が表紙のページに収まることを確かめる\n---\n\n'
+    + Array.from({ length: 14 }, (_, k) => `## 第 ${k + 1} 章の少し長めの題名\n\n短い本文です。\n`).join('\n')
+    + '\n## 表のある章\n\n短い本文です。\n\n| 列 A | 列 B |\n| :-- | :-- |\n' + Array.from({ length: 8 }, (_, k) => `| 行 ${k + 1} | 値 ${k + 1} |`).join('\n') + '\n';
+  await setDocument(page, coverMd);
+  await page.emulateMedia({ media: 'print' });
+  const tableBreak = await page.evaluate(() => getComputedStyle(document.querySelector('#visual-stage-container .exhibition-slab table')).breakInside);
+  await page.emulateMedia({ media: null });
+  const coverPdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
+  const coverAgenda = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .vs-cover-agenda > li').length);
+  const coverOk = coverAgenda === 15 && coverPdf.pages === 16 && Math.abs(visualKeep.height - 60 * 96 / 25.4) < 1 && tableBreak === 'avoid';
+  record('TC-VTPL-028', pagingOk && coverOk, JSON.stringify({ keep, slabCount, a4, printItems, visualKeep, coverAgenda, coverPdf, tableBreak }));
   await page.context().close();
 }
 
