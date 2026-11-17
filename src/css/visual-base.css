@@ -208,7 +208,11 @@ body[data-appearance="dark"] .vs-cover-deck { color: #CBD5E1; }
 .vs-cover-agenda-item:hover,
 .vs-cover-agenda-item:focus-visible {
   background: color-mix(in oklab, var(--vs-c) 12%, transparent);
-  outline: none;
+}
+/* 目次の項目は、章の色（--vs-c）を文字色側に寄せた輪郭で示す（DTP-006） */
+.vs-cover-agenda-item:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--vs-c) 75%, var(--vs-tone));
+  outline-offset: 2px;
 }
 .vs-cover-agenda-no {
   flex: none;

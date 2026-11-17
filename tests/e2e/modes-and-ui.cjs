@@ -315,7 +315,81 @@ async function testOffline(browser) {
 
 // Markdown の整形（TC-FILE-036〜040、FR-053）。messy.md を開くと messy.expected.md になる
 
+// TC-UI-005 操作系のディテール（#200, DTP-006）。キーボードの輪郭・メニューの開き方・押下・選択色・スクロールバー
+async function testInteractionDetails(browser) {
+  const page = await openApp(browser);
+  await waitRendered(page);
+  await loadSample(page);
+  // 1. outline を消したまま代わりの輪郭を持たない :focus-visible の定義がない（境目のつまみは ::after のアクセントの線で示すため除く）
+  const bareFocus = await page.evaluate(() => {
+    const out = [];
+    const walk = rules => Array.from(rules).forEach(r => {
+      if (r.cssRules && !r.selectorText) walk(r.cssRules);
+      else if (r.selectorText && r.selectorText.includes(':focus-visible') && r.style.outlineStyle === 'none'
+        && !/split-resizer/.test(r.selectorText)) out.push(r.selectorText);
+    });
+    Array.from(document.styleSheets).forEach(s => { try { walk(s.cssRules); } catch (e) { /* 別オリジン */ } });
+    return out;
+  });
+  // 2. メニューを開くと、押したボタンの側から開く（不透明度と拡大の遷移）。キーボードで移った項目に内側の輪郭が出る
+  // 開いた直後の遷移を取りこぼさないよう、ボタンの処理と同じく hidden を外した同じタスクの中で調べる
+  const openMenu = () => page.evaluate(() => {
+    const m = document.getElementById('file-menu');
+    // 閉じた状態（display: none）のスタイルを確定させてから開く
+    m.classList.add('hidden');
+    void getComputedStyle(m).display;
+    m.classList.remove('hidden');
+    const props = m.getAnimations().map(a => a.transitionProperty);
+    return { props, origin: getComputedStyle(m).transformOrigin, right: getComputedStyle(document.getElementById('more-menu')).transformOrigin };
+  });
+  const menu = await openMenu();
+  // キーボードの操作の後に項目へ移ると :focus-visible になる
+  await page.keyboard.press('Shift');
+  await page.evaluate(() => document.getElementById('menu-open-markdown').focus());
+  const ring = await page.evaluate(() => {
+    const el = document.activeElement;
+    const s = getComputedStyle(el);
+    return { cls: el.className, visible: el.matches(':focus-visible'), style: s.outlineStyle, width: s.outlineWidth, offset: s.outlineOffset, color: s.outlineColor, accent: getComputedStyle(document.body).getPropertyValue('--accent').trim() };
+  });
+  const closeMenus = () => page.evaluate(() => document.querySelectorAll('.file-menu').forEach(m => m.classList.add('hidden')));
+  await closeMenus();
+  // 動きを減らす設定では、メニューは遷移なしで開く
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const stillProps = (await openMenu()).props.length;
+  await closeMenus();
+  await page.emulateMedia({ reducedMotion: null });
+  // 3. 押した瞬間にわずかに沈む
+  const pill = page.locator('.pill-btn').first();
+  const box = await pill.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  // 押した直後は遷移（0.15s）の途中のため、沈み切るのを待つ
+  await page.waitForTimeout(300);
+  const pressed = await pill.evaluate(el => getComputedStyle(el).scale);
+  await page.mouse.up();
+  // 4. 選択色とスクロールバー（高速モードと Visualモード）
+  const paint = mode => page.evaluate(m => {
+    const p = document.querySelector(m === 'visual' ? '#visual-stage-container .exhibition-slab p' : '#standard-doc-container p');
+    const sel = getComputedStyle(p, '::selection').backgroundColor;
+    return { sel, scrollbar: getComputedStyle(document.body).scrollbarColor, width: getComputedStyle(document.getElementById('preview-scroll')).scrollbarWidth };
+  }, mode);
+  await setMode(page, { style: 'std', appearance: 'light' });
+  const fast = await paint('std');
+  await setMode(page, { style: 'shapes', appearance: 'dark' });
+  const visual = await paint('visual');
+  const defaultBlue = /rgba?\(0, 120, 215|rgb\(51, 144, 255|rgb\(173, 214, 255/;
+  const ok = bareFocus.length === 0
+    && menu.props.includes('opacity') && menu.props.includes('scale') && /^0(%|px) 0(%|px)/.test(menu.origin) && /^100% 0(%|px)/.test(menu.right)
+    && /file-menu-item/.test(ring.cls) && ring.visible && ring.style === 'solid' && ring.width === '2px' && ring.offset === '-2px'
+    && stillProps === 0 && pressed === '0.97'
+    && !defaultBlue.test(fast.sel) && fast.sel !== visual.sel && /rgb\(131, 145, 166\)/.test(fast.scrollbar) && /rgb\(100, 116, 139\)/.test(visual.scrollbar)
+    && fast.width === 'thin' && page.consoleErrors.length === 0;
+  record('TC-UI-005', ok, JSON.stringify({ bareFocus, menu, ring, stillProps, pressed, fast, visual, errors: page.consoleErrors }));
+  await page.close();
+}
+
 module.exports = {
+  testInteractionDetails,
   testStartupAndCache,
   testResponsiveAndWebUi,
   testOffline

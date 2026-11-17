@@ -53,6 +53,7 @@ const {
 } = require('./e2e/stage-show.cjs');
 
 const {
+  testInteractionDetails,
   testStartupAndCache,
   testResponsiveAndWebUi,
   testOffline
@@ -105,7 +106,8 @@ const SUITES = [
   { name: 'testDiagramUserStyles', tcPrefix: ['TC-DIAG-030'], fn: testDiagramUserStyles },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
-  { name: 'testResponsiveAndWebUi', tcPrefix: ['TC-UI-'], fn: testResponsiveAndWebUi },
+  { name: 'testResponsiveAndWebUi', tcPrefix: ['TC-UI-001', 'TC-UI-002', 'TC-UI-003', 'TC-UI-004'], fn: testResponsiveAndWebUi },
+  { name: 'testInteractionDetails', tcPrefix: ['TC-UI-005'], fn: testInteractionDetails },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
 ];
 

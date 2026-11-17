@@ -47,7 +47,11 @@
 .file-menu-item:hover,
 .file-menu-item:focus-visible {
   background: var(--panel-sub);
-  outline: none;
+}
+/* 隣の項目に重ならないよう、輪郭は内側に引く（DTP-006） */
+.file-menu-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .file-menu-item:disabled {
   opacity: 0.45;
@@ -130,7 +134,10 @@
 .folder-pane-btn:focus-visible {
   background: var(--panel-bg);
   color: var(--text-primary);
-  outline: none;
+}
+.folder-pane-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
 }
 .folder-list {
   flex: 1;
@@ -184,7 +191,11 @@
 .folder-list-item:focus-visible {
   background: var(--panel-sub);
   color: var(--text-primary);
-  outline: none;
+}
+/* 一覧は横に切り取られるため、輪郭は内側に引く（DTP-006） */
+.folder-list-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 /* 開いているファイル。操作部の選択中と同じく、面の背景と濃い文字で示し、左にアクセントの線を引く（DTP-006, DTP-008） */
 .folder-list-item.is-current {
@@ -231,7 +242,10 @@
 .folder-rail:hover,
 .folder-rail:focus-visible {
   color: var(--accent);
-  outline: none;
+}
+.folder-rail:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 /* 狭い画面では、エディタの見出しに重ならないよう、左下に浮かぶ丸いボタンにする */
 @media (max-width: 1023.98px) {

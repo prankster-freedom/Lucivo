@@ -149,14 +149,73 @@
   background: var(--panel-bg);
   color: var(--text-primary);
 }
-
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+/* エディタは書いている間ずっとフォーカスを持つため、外側に広げず内側に細く出す（DTP-006） */
+#markdown-editor:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 70%, transparent);
+  outline-offset: -2px;
 }
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
-  border-radius: 9999px;
+
+/* ==================== 操作系のディテール（DTP-006） ==================== */
+/* キーボードで選んだ要素の輪郭。個別の定義がない要素の受け皿のため、詳細度 0（:where）で置く。
+   色は --accent（Light 5.2:1、Dark 9:1 で WCAG 1.4.11 の 3:1 を満たす） */
+:where(:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* 押した瞬間にわずかに沈ませ、押せたことを手に返す（各ボタンの transition: all で 0.15s ほどかけて戻る） */
+:is(.pill-btn, .stage-mode-btn, .header-icon-btn, .btn-check-update):active:not(:disabled) {
+  scale: 0.97;
+}
+/* メニューは押したボタンの側から開く。閉じるときは即時（閉じかけのメニューが押されないように） */
+.file-menu {
+  transform-origin: top left;
+  transition: opacity 0.16s ease, scale 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.file-menu-right {
+  transform-origin: top right;
+}
+@starting-style {
+  .file-menu {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .file-menu,
+  :is(.pill-btn, .stage-mode-btn, .header-icon-btn, .btn-check-update) {
+    transition: none;
+  }
+  :is(.pill-btn, .stage-mode-btn, .header-icon-btn, .btn-check-update):active:not(:disabled) {
+    scale: none;
+  }
+}
+
+/* 選択した文字の地。ブラウザ既定の青をやめ、パレット（--accent）に合わせる。Visualモードはスタイルの色（--vs-c1） */
+::selection {
+  background: color-mix(in oklab, var(--accent) 26%, transparent);
+}
+.exhibition-wrap ::selection {
+  background: color-mix(in oklab, var(--vs-c1) 34%, transparent);
+}
+
+/* スクロールバー。標準の scrollbar-color を優先し、非対応のブラウザだけ ::-webkit-scrollbar で描く。
+   つまみの色は --scrollbar-thumb（背景との差 3:1 以上） */
+:where(*) {
+  scrollbar-width: thin;
+}
+html,
+body {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
 }
 
 /* ==================== キーボードバッジ ==================== */
