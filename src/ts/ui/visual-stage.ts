@@ -90,6 +90,28 @@ export function applySlabTemplate(template, els) {
     // 「**題**: 説明」の項目は、太字を題として切り出し、区切りの : を消す（DTP-VTPL-030）
     const titles = [];
     items.forEach(li => {
+      // 主役カード（★/☆ で始まる項目）の判定と記号除去（FR-059, DD-VTPL-038, DTP-VTPL-031）
+      let isFeatured = false;
+      const initialHead = li.firstChild;
+      if (initialHead && initialHead.nodeType === Node.TEXT_NODE && /^\s*[★☆]\s*/.test(initialHead.textContent || '')) {
+        initialHead.textContent = (initialHead.textContent || '').replace(/^\s*[★☆]\s*/, '');
+        isFeatured = true;
+        if (initialHead.textContent === '') {
+          initialHead.remove();
+        }
+      } else if (initialHead && initialHead.nodeName === 'STRONG' && initialHead.firstChild && initialHead.firstChild.nodeType === Node.TEXT_NODE) {
+        if (/^\s*[★☆]\s*/.test(initialHead.firstChild.textContent || '')) {
+          initialHead.firstChild.textContent = (initialHead.firstChild.textContent || '').replace(/^\s*[★☆]\s*/, '');
+          isFeatured = true;
+          if (initialHead.firstChild.textContent === '') {
+            initialHead.firstChild.remove();
+          }
+        }
+      }
+      if (isFeatured) {
+        li.classList.add('vs-point-featured');
+      }
+
       const head = li.firstChild;
       const rest = head && head.nextSibling;
       if (head && head.nodeName === 'STRONG' && rest && rest.nodeType === 3 && /^\s*[:：]/.test(rest.textContent)) {
