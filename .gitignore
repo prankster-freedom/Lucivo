@@ -15,3 +15,5 @@ dist/
 # エディタのローカル設定
 .vscode/
 modern-web-guidance
+skills-lock.json
+
