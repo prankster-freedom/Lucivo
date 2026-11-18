@@ -371,6 +371,8 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
     heroTitle = h1.textContent;
     h1.remove();
   }
+  const printTitle = (heroTitle || '').replace(/[\r\n]+/g, ' ').trim();
+  document.documentElement.style.setProperty('--print-doc-title', JSON.stringify(printTitle));
 
   // 要素も文字もないスラブ（h1 の直後に h2 が続く文書で、h1 を除いた後に残る改行だけの部分）は出さない（DD-VTPL-002）
   const slabs = [];

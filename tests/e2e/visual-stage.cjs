@@ -1911,10 +1911,12 @@ async function testCalloutsGlossaryPrint(browser) {
   await page.emulateMedia({ media: null });
   const samplePdf = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
   const sampleAgenda = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .vs-cover-agenda > li').length);
+  const printTitleProp = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--print-doc-title').trim());
   const sampleOk = samplePdf.pages === 18 && samplePdf.landscape && sampleAgenda === 10
+    && printTitleProp.includes('印刷・PDF の確認サンプル')
     && JSON.stringify(sampleTables) === JSON.stringify([{ rows: 3, breakInside: 'avoid' }, { rows: 8, breakInside: 'avoid' }, { rows: 30, breakInside: 'auto' }])
     && centered.every(c => c.display === 'flex' && c.justify === 'center' && c.minHeightMm === 172);
-  record('TC-VTPL-029', sampleOk, JSON.stringify({ samplePdf, sampleAgenda, sampleTables, centered }));
+  record('TC-VTPL-029', sampleOk, JSON.stringify({ samplePdf, sampleAgenda, printTitleProp, sampleTables, centered }));
   await page.context().close();
 }
 

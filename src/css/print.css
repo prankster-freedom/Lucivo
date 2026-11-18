@@ -9,6 +9,29 @@
 @page lucivo-visual {
   size: A4 landscape;
   margin: 18.5mm 10mm;
+  @bottom-left {
+    content: var(--print-doc-title, "");
+    font-size: 8.5pt;
+    color: #64748b;
+    vertical-align: top;
+    padding-top: 3mm;
+  }
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-size: 8.5pt;
+    font-variant-numeric: tabular-nums;
+    color: #64748b;
+    vertical-align: top;
+    padding-top: 3mm;
+  }
+}
+@page :first {
+  @bottom-left {
+    content: none;
+  }
+  @bottom-right {
+    content: none;
+  }
 }
 @media print {
   *,
