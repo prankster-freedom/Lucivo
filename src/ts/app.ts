@@ -621,7 +621,9 @@ function measureEditorLineTop(editor: HTMLTextAreaElement, prefix: string) {
   mirror.style.tabSize = cs.tabSize;
   mirror.textContent = prefix;
   const marker = document.createElement('span');
-  marker.textContent = '\u200b';
+  marker.style.display = 'inline-block';
+  marker.style.width = '0';
+  marker.textContent = 'x';
   mirror.appendChild(marker);
   document.body.appendChild(mirror);
   const top = marker.offsetTop;
