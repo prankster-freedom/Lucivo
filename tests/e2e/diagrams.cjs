@@ -396,6 +396,56 @@ async function testEditFollow(browser) {
   record('TC-DIAG-023', /STAGE 13/.test(toSlab13.at || '') && withinSlab.scrollTop === 0 && /STAGE 14/.test(toSlab14.at || '')
     && /^6\./.test(inCodeBlock.at || '') && page.consoleErrors.length === 0,
   JSON.stringify({ toSlab13, withinSlab, toSlab14, inCodeBlock }));
+
+  // TC-DIAG-042 Split 表示の逆向き追従（プレビュー → エディタ）
+  await setDocument(page, md);
+  const reverseFast = await page.evaluate(async () => {
+    const editor = document.getElementById('markdown-editor');
+    const scroller = document.getElementById('preview-scroll');
+    editor.setSelectionRange(0, 0);
+    editor.scrollTop = 0;
+    const h12 = Array.from(document.querySelectorAll('#standard-doc-container h2')).find(h => h.textContent.includes('12.'));
+    const p12 = h12 ? h12.nextElementSibling : null;
+    if (!h12 || !p12) return { ok: false };
+    h12.scrollIntoView();
+    const previewTopBefore = Math.round(scroller.scrollTop);
+    p12.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(r => { setTimeout(r, 100); });
+    const caretPos = editor.selectionStart;
+    const expectedPos = editor.value.indexOf('## 12.');
+    const previewTopAfter = Math.round(scroller.scrollTop);
+    // ボタン操作では動かない
+    editor.setSelectionRange(0, 0);
+    const btn = document.querySelector('#standard-doc-container .diagram-controls button');
+    if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(r => { setTimeout(r, 50); });
+    const afterBtnPos = editor.selectionStart;
+    return { ok: caretPos === expectedPos && editor.scrollTop > 0 && previewTopAfter === previewTopBefore && afterBtnPos === 0, caretPos, expectedPos, editorScrollTop: Math.round(editor.scrollTop), previewTopBefore, previewTopAfter, afterBtnPos };
+  });
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await setDocument(page, showcaseMd);
+  const reverseVisual = await page.evaluate(async () => {
+    const editor = document.getElementById('markdown-editor');
+    editor.setSelectionRange(0, 0);
+    const slab14 = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="14"]');
+    const bodyEl = slab14 ? (slab14.querySelector('p') || slab14) : null;
+    if (!bodyEl) return { ok: false };
+    bodyEl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise(r => { setTimeout(r, 100); });
+    const caretPos = editor.selectionStart;
+    const expectedPos = editor.value.indexOf('## 14.');
+    return { ok: caretPos === expectedPos && editor.scrollTop > 0, caretPos, expectedPos, editorScrollTop: Math.round(editor.scrollTop) };
+  });
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  const reverseCanvas = await page.evaluate(() => {
+    const editor = document.getElementById('markdown-editor');
+    editor.setSelectionRange(0, 0);
+    const slab13 = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="13"]');
+    if (slab13) slab13.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    return editor.selectionStart === 0;
+  });
+  record('TC-DIAG-042', reverseFast.ok && reverseVisual.ok && reverseCanvas && page.consoleErrors.length === 0,
+    JSON.stringify({ reverseFast, reverseVisual, reverseCanvas }));
   await page.context().close();
 }
 

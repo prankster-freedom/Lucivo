@@ -597,6 +597,89 @@ function scheduleFollow() {
   if (!followFrame) followFrame = requestAnimationFrame(followEditorCaret);
 }
 
+// text 内の 0 始まり行番号 targetLine の先頭文字オフセットを返す
+function lineStartOffset(text: string, targetLine: number) {
+  let offset = 0;
+  for (let line = 0; line < targetLine; line++) {
+    const nl = text.indexOf('\n', offset);
+    if (nl === -1) return text.length;
+    offset = nl + 1;
+  }
+  return offset;
+}
+
+// textarea 内の prefix（先頭から対象行頭まで）の折り返しを考慮した上端 Y 座標を測る
+function measureEditorLineTop(editor: HTMLTextAreaElement, prefix: string) {
+  const cs = getComputedStyle(editor);
+  const mirror = document.createElement('div');
+  mirror.style.cssText = 'position:fixed;top:-9999px;left:-9999px;visibility:hidden;pointer-events:none;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;box-sizing:border-box;';
+  mirror.style.width = `${editor.clientWidth}px`;
+  mirror.style.font = cs.font;
+  mirror.style.lineHeight = cs.lineHeight;
+  mirror.style.letterSpacing = cs.letterSpacing;
+  mirror.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+  mirror.style.tabSize = cs.tabSize;
+  mirror.textContent = prefix;
+  const marker = document.createElement('span');
+  marker.textContent = '\u200b';
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  const top = marker.offsetTop;
+  mirror.remove();
+  return top;
+}
+
+// プレビューのクリック位置に対応する見出しへエディタを合わせる（FR-037 逆向き追従、DD-DIAG-065）
+function followPreviewClick(e: MouseEvent) {
+  if (state.viewMode !== 'split' || document.documentElement.classList.contains('is-stage-show')) return;
+  const sel = window.getSelection();
+  if (sel && !sel.isCollapsed && sel.toString().length > 0) return;
+  const targetEl = e.target as HTMLElement | null;
+  if (!targetEl || targetEl.closest('a, button, summary, input, select, textarea, .diagram-controls')) return;
+
+  let headingEl: HTMLElement | null = null;
+  const slab = state.isVisualMode ? targetEl.closest('.exhibition-slab') : null;
+  if (slab) {
+    headingEl = slab.querySelector('[data-src-line]') as HTMLElement | null;
+  } else {
+    headingEl = targetEl.closest('[data-src-line]') as HTMLElement | null;
+    if (!headingEl && followIndex.length > 0) {
+      let low = 0;
+      let high = followIndex.length - 1;
+      while (low <= high) {
+        const mid = (low + high) >>> 1;
+        const el = followIndex[mid].el;
+        const isBeforeOrSame = el === targetEl || el.contains(targetEl)
+          || (el.compareDocumentPosition(targetEl) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+        if (isBeforeOrSame) {
+          headingEl = el;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+    }
+  }
+
+  const targetLine = headingEl ? Number(headingEl.dataset.srcLine) : 0;
+  const key = headingEl ? (headingEl.dataset.srcLine || 'top') : 'top';
+  const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement;
+  const text = editor.value;
+  const offset = lineStartOffset(text, targetLine);
+  const lineTop = measureEditorLineTop(editor, text.slice(0, offset));
+
+  // エディタ移動によるプレビューへの呼び返しを防ぐ
+  runtime.followedKey = key;
+  caretState.line = targetLine;
+  caretState.pos = offset;
+  caretState.length = text.length;
+  caretState.dirty = false;
+
+  editor.focus({ preventScroll: true });
+  editor.setSelectionRange(offset, offset);
+  editor.scrollTo({ top: Math.max(0, lineTop - 16), behavior: scrollBehavior() });
+}
+
 let lastNavTargetTop = null;
 let lastNavTime = 0;
 
@@ -858,6 +941,7 @@ function setupEventListeners() {
   });
   editor.addEventListener('click', scheduleFollow);
   editor.addEventListener('keyup', scheduleFollow);
+  document.getElementById('preview-scroll')?.addEventListener('click', followPreviewClick);
 
   setupViewModeControls();
 

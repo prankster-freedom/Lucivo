@@ -201,11 +201,12 @@ Mermaid 12 は既定の見た目・レイアウト・余白が 10 系と異な�
 
 ## 7. Split 表示の編集位置への追従（`FR-037`）
 
-| ID          | 項目                   | 設計 |
-| :---------- | :--------------------- | :--- |
-| DD-DIAG-060 | 見出しの元の行         | `renderApp()` は、フロントマターの行数（`countLinesBefore(rawMarkdown, rawMarkdown.length - body.length)`）から始め、Marked の最上位のトークンごとに `raw` の改行を数えて進め、`heading` のトークンに `srcLine`（0 始まりの元の行番号）を付ける。`setupMarkedHeadings()` で登録した `renderer.heading` が、`srcLine` を `data-src-line` 属性として出力する（DOMPurify は `data-*` 属性を残す） |
-| DD-DIAG-061 | 追従の契機と間引き     | エディタの `click`・`keyup`・`input` と、エディタにフォーカスがあるときの `renderApp()` の終わりで `scheduleFollow()` を呼ぶ。`requestAnimationFrame` で 1 フレームに 1 回の `followEditorCaret()` にまとめる。`state.viewMode` が `split` 以外のとき、ステージ発表中（`html.is-stage-show`）は何もしない |
-| DD-DIAG-062 | 送り先と送り直しの判定 | 描画のたびに表示中のコンテナの `[data-src-line]` から見出しの行番号と要素の一覧を 1 回だけ作る（`rebuildFollowIndex()`）。`followEditorCaret()` は、前回のカーソル位置からの差分だけで改行を数えてカーソルの行を求め（文書が変わったときは数え直す、`getCaretLine()`）、一覧を二分探索してその行以前で最後の見出しを選ぶ（`findFollowTarget()`）。Visualモードは見出しを含むスラブ（`.exhibition-slab`）を送り先とし、スラブの最初の見出しの行を区間の鍵にする。鍵（なければ `'top'`）が前回（`followedKey`）と同じなら送らない。違えば `#preview-scroll` を送り先の上端が表示枠の上端から 16px（`PREVIEW_SCROLL_MARGIN`）の位置へスクロールする（`previewScrollTopOf()`、動きを減らす設定では即座に）。ファイルを読み込んだら鍵を消す |
+| ID          | 項目                                  | 設計 |
+| :---------- | :------------------------------------ | :--- |
+| DD-DIAG-060 | 見出しの元の行                        | `renderApp()` は、フロントマターの行数（`countLinesBefore(rawMarkdown, rawMarkdown.length - body.length)`）から始め、Marked の最上位のトークンごとに `raw` の改行を数えて進め、`heading` のトークンに `srcLine`（0 始まりの元の行番号）を付ける。`setupMarkedHeadings()` で登録した `renderer.heading` が、`srcLine` を `data-src-line` 属性として出力する（DOMPurify は `data-*` 属性を残す） |
+| DD-DIAG-061 | 追従の契機と間引き                    | エディタの `click`・`keyup`・`input` と、エディタにフォーカスがあるときの `renderApp()` の終わりで `scheduleFollow()` を呼ぶ。`requestAnimationFrame` で 1 フレームに 1 回の `followEditorCaret()` にまとめる。`state.viewMode` が `split` 以外のとき、ステージ発表中（`html.is-stage-show`）は何もしない |
+| DD-DIAG-062 | 送り先と送り直しの判定                | 描画のたびに表示中のコンテナの `[data-src-line]` から見出しの行番号と要素の一覧を 1 回だけ作る（`rebuildFollowIndex()`）。`followEditorCaret()` は、前回のカーソル位置からの差分だけで改行を数えてカーソルの行を求め（文書が変わったときは数え直す、`getCaretLine()`）、一覧を二分探索してその行以前で最後の見出しを選ぶ（`findFollowTarget()`）。Visualモードは見出しを含むスラブ（`.exhibition-slab`）を送り先とし、スラブの最初の見出しの行を区間の鍵にする。鍵（なければ `'top'`）が前回（`followedKey`）と同じなら送らない。違えば `#preview-scroll` を送り先の上端が表示枠の上端から 16px（`PREVIEW_SCROLL_MARGIN`）の位置へスクロールする（`previewScrollTopOf()`、動きを減らす設定では即座に）。ファイルを読み込んだら鍵を消す |
+| DD-DIAG-065 | 逆向きの追従（プレビュー → エディタ） | `#preview-scroll` の `click` で `followPreviewClick()` を呼ぶ。`Split` 以外・ステージ発表中・文字選択中・`a, button, summary, input, select, textarea, .diagram-controls` 等の操作要素のクリック時は何もしない。クリック対象（またはその前の最も近い `followIndex` の見出し、Visualモードではスラブ内の最初の見出し）の `srcLine` を求め、エディタ内の該当行の先頭文字オフセットへカーソルを移し、ミラー要素で算出した行位置の上端（16px 余白）へ `editor.scrollTop` を合わせる。あわせて `runtime.followedKey` をその鍵に更新し、エディタ→プレビューの呼び返しを防ぐ |
 
 - **背景（DD-DIAG-060）**: 最上位のトークンの `raw` をつなげると本文に一致するため、改行を数えるだけで元の行がわかる。構文解析の結果を使うので、コードブロックの中の `#` を見出しと誤らない。入れ子の見出し（引用の中の `#` など）は `srcLine` を持たず、追従の対象にしない。
 - **背景（DD-DIAG-061）**: カーソルの行を求める処理は改行を数えるだけで、レイアウトを読まない。入力のたびの描画は 250ms の間引きのまま変わらないため、高速モードの軽快さ（`NFR-006`）を損なわない。入力で見出しを書き足した直後は、描画が終わるまで新しい見出しの要素がないため、描画の後にもう一度区間を引く。
