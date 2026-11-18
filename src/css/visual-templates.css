@@ -477,3 +477,32 @@
   box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.12);
   border: 1px solid rgba(148, 163, 184, 0.25);
 }
+
+/* ==================== 本文が長い標準章の 2 段組み（FR-061, DD-VTPL-048, #233） ==================== */
+/* 広い画面（1600px 以上）かつプレビュー領域に十分な幅があるとき（@container min-width: 56rem）のみ 2 段にする。
+   スマホ幅・Split の狭幅・ステージ発表（is-stage-show）・印刷（@media print）では 1 段のまま */
+@media screen and (min-width: 1600px) {
+  @container (min-width: 56rem) {
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body {
+      column-count: 2;
+      column-gap: 2.5rem;
+      column-rule: 1px solid var(--border-subtle);
+    }
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body > :first-child {
+      margin-top: 0;
+    }
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body > :last-child {
+      margin-bottom: 0;
+    }
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(p, blockquote, .md-alert, li) {
+      break-inside: avoid;
+    }
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(h1, h3, h4, h5, h6) {
+      break-inside: avoid;
+      break-after: avoid;
+    }
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(pre, .exhibition-diagram-card, .lucivo-slot, .table-container, .lucivo-math.is-block-plot, .lucivo-math:has(.katex-display)) {
+      column-span: all;
+    }
+  }
+}

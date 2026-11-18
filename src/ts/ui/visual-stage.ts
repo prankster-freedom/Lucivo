@@ -212,6 +212,25 @@ export function applySlabTemplate(template, els) {
   }
 }
 
+// 本文が長い標準章を広い画面で 2 段組みにする判定とラッパー生成（FR-061, DD-VTPL-048, #233）
+export function shouldUseTwoColumnProse(els) {
+  if (els.length >= 2 && els.every(el => el.tagName === 'UL' || el.tagName === 'OL')) return false;
+  const paragraphs = els.filter(el => el.tagName === 'P');
+  if (paragraphs.length < 2) return false;
+  const proseChars = els
+    .filter(el => el.tagName === 'P' || el.tagName === 'BLOCKQUOTE' || el.tagName === 'UL' || el.tagName === 'OL')
+    .reduce((sum, el) => sum + el.textContent.trim().length, 0);
+  return proseChars >= 400;
+}
+
+function wrapTwoColumnProse(wrapper, h2) {
+  const bodyNodes = Array.from(wrapper.children).filter(el => el !== h2 && !el.classList.contains('front-matter'));
+  if (bodyNodes.length === 0) return;
+  const colWrap = document.createElement('div');
+  colWrap.className = 'vs-two-col-body';
+  bodyNodes[0].before(colWrap);
+  bodyNodes.forEach(node => colWrap.appendChild(node));
+}
 
 export const COVER_LIMITS = { agenda: [3, 15], tags: 4 };
 
@@ -449,7 +468,12 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
     } else {
       const template = detectSlabTemplate(proseEls, slots.length);
       applySlabTemplate(template, proseEls);
-      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}"${stageAttr}>${wrapper.innerHTML}${footnotesHtml}${actionsHtml}</section>`;
+      const isLongProse = template === 'standard' && shouldUseTwoColumnProse(proseEls);
+      if (isLongProse) {
+        wrapTwoColumnProse(wrapper, h2);
+      }
+      const longProseClass = isLongProse ? ' vs-long-prose' : '';
+      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}${longProseClass}"${stageAttr}>${wrapper.innerHTML}${footnotesHtml}${actionsHtml}</section>`;
     }
   });
 

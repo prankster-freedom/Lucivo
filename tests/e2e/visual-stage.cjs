@@ -1765,6 +1765,70 @@ async function testCoverAndTables(browser) {
     && badgeFastCount === 0;
   record('TC-VTPL-033', badgeOk, JSON.stringify({ badgeLight: { count: badgeLight.badges.length, noteHasBadge: badgeLight.noteHasBadge, sample: badgeLight.badges[0] }, badgeDarkSample: badgeDark.badges[0], badgeFastCount }));
 
+  // TC-VTPL-034 長い標準章の 2 段組み（FR-061, DD-VTPL-049, #233）
+  const longPara = 'これは本文が長い標準章の段組み表示を検証するための日本語の段落です。広い画面では 2 段組みに切り替えて 1 行を短くし、左右の視線移動を減らして読みやすくします。'.repeat(2);
+  const twoColMd = [
+    '# 2 段組みのテスト',
+    '',
+    '## 第 1 章 長文の章',
+    '',
+    longPara,
+    '',
+    longPara,
+    '',
+    '```js',
+    'const twoColumns = true;',
+    '```',
+    '',
+    longPara,
+    '',
+    longPara,
+    '',
+    '## 第 2 章 短い章',
+    '',
+    '短い導入の段落です。',
+    '',
+    'もう一つの短い段落です。'
+  ].join('\n');
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await setDocument(page, twoColMd);
+  const readTwoCol = () => page.evaluate(() => {
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab'));
+    const body = slabs[0]?.querySelector('.vs-two-col-body');
+    const pre = body?.querySelector('pre');
+    return {
+      longHasClass: slabs[0]?.classList.contains('vs-long-prose') ?? false,
+      shortHasClass: slabs[1]?.classList.contains('vs-long-prose') ?? false,
+      hasBody: !!body,
+      columnCount: body ? getComputedStyle(body).columnCount : null,
+      preColumnSpan: pre ? getComputedStyle(pre).columnSpan : null
+    };
+  });
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(200);
+  const twoColWideCanvas = await readTwoCol();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(200);
+  const twoColNarrowCanvas = await readTwoCol();
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  await page.waitForTimeout(200);
+  const twoColWideSplit = await readTwoCol();
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.emulateMedia({ media: 'print' });
+  const twoColPrint = await readTwoCol();
+  await page.emulateMedia({ media: null });
+  await setMode(page, { style: 'std', appearance: 'light' });
+  const twoColFastCount = await page.evaluate(() => document.querySelectorAll('#standard-doc-container .vs-two-col-body').length);
+  const twoColOk = twoColWideCanvas.longHasClass && !twoColWideCanvas.shortHasClass && twoColWideCanvas.hasBody
+    && twoColWideCanvas.columnCount === '2' && twoColWideCanvas.preColumnSpan === 'all'
+    && twoColNarrowCanvas.columnCount === 'auto'
+    && twoColWideSplit.columnCount === 'auto'
+    && twoColPrint.columnCount === 'auto'
+    && twoColFastCount === 0;
+  record('TC-VTPL-034', twoColOk, JSON.stringify({ twoColWideCanvas, twoColNarrowCanvas, twoColWideSplit, twoColPrint, twoColFastCount }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
