@@ -289,9 +289,7 @@ export function createDiagramCard(index, svgHtml, isRendering, isVisual, curve =
           <button type="button" data-action="zoom" data-index="${index}" class="text-[11px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer">Expand</button>
         </div>
       </div>
-      <div class="${viewportClass} is-scale-fit" data-stage-index="${index}">
-        ${content}
-      </div>
+      <div class="${viewportClass} is-scale-fit" data-stage-index="${index}">${content}</div>
     </div>
   `;
 }

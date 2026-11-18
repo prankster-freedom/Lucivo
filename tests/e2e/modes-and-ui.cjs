@@ -226,6 +226,66 @@ async function testStartupAndCache(browser) {
   record('TC-PERF-006', cvScreen.hasClass && cvScreen.firstCv === 'visible' && cvScreen.laterCv === 'auto'
     && Boolean(cvScreen.laterCis && cvScreen.laterCis !== 'none') && cvPrint === 'visible' && !cvShort,
     JSON.stringify({ cvScreen, cvPrint, cvShort }));
+
+  // TC-PERF-007 高速モードの差分ブロック再描画: 未変更 DOM を保持し、全体再描画と innerHTML が一致する（#235）
+  const sampleMd = fs.readFileSync(SAMPLE, 'utf8');
+  await page.evaluate(md => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = md;
+    renderApp();
+  }, sampleMd);
+  await waitRendered(page);
+  const incResult = await page.evaluate(() => {
+    const editor = document.getElementById('markdown-editor');
+    const root = document.getElementById('standard-doc-container');
+    const figBefore = root.querySelector('.diagram-frame');
+    const tblBefore = root.querySelector('.table-container');
+    const mathBefore = root.querySelector('.lucivo-math');
+    const headings = root.querySelectorAll('h2[data-src-line]');
+    const lastH2Before = headings[headings.length - 1];
+    const lastLineBefore = Number(lastH2Before?.dataset.srcLine || 0);
+
+    // 先頭側の 1 段落に 1 行追記して差分再描画
+    const targetText = '## 1. 見出しと段落\n';
+    const edited = editor.value.replace(targetText, `${targetText}\n差分再描画テストの追記行です。\n`);
+    editor.value = edited;
+    const tPatch = performance.now();
+    renderApp();
+    const patchMs = performance.now() - tPatch;
+
+    const figAfter = root.querySelector('.diagram-frame');
+    const tblAfter = root.querySelector('.table-container');
+    const mathAfter = root.querySelector('.lucivo-math');
+    const headingsAfter = root.querySelectorAll('h2[data-src-line]');
+    const lastH2After = headingsAfter[headingsAfter.length - 1];
+    const lastLineAfter = Number(lastH2After?.dataset.srcLine || 0);
+    const patchHtml = root.innerHTML;
+    const hasEditedText = root.textContent.includes('差分再描画テストの追記行です。');
+
+    // 空文書を経由して差分キャッシュを破棄し、同じ編集後文書を全体再描画して DOM 一致を確認
+    editor.value = '';
+    renderApp();
+    editor.value = edited;
+    const tFull = performance.now();
+    renderApp();
+    const fullMs = performance.now() - tFull;
+    const fullHtml = root.innerHTML;
+
+    return {
+      sameFig: figBefore !== null && figBefore === figAfter,
+      sameTbl: tblBefore !== null && tblBefore === tblAfter,
+      sameMath: mathBefore !== null && mathBefore === mathAfter,
+      sameLastH2: lastH2Before !== null && lastH2Before === lastH2After,
+      lineDelta: lastLineAfter - lastLineBefore,
+      hasEditedText,
+      htmlExactMatch: patchHtml === fullHtml,
+      patchMs: +patchMs.toFixed(1),
+      fullMs: +fullMs.toFixed(1)
+    };
+  });
+  record('TC-PERF-007', incResult.sameFig && incResult.sameTbl && incResult.sameMath && incResult.sameLastH2
+    && incResult.lineDelta === 2 && incResult.hasEditedText && incResult.htmlExactMatch,
+    JSON.stringify(incResult));
   if (page.consoleErrors.length) record('TC-PERF-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }

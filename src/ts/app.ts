@@ -84,15 +84,63 @@ import {
   loadMarkdownFromUrlParam
 } from './ui/folder-browser';
 
+const VOID_HTML_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'
+]);
+
+// 生の HTML トークン内の開きタグと閉じタグの差分を数える（<details> 等の複数トークン跨ぎを検出するため）
+function htmlTagBalance(html: string): number {
+  const cleaned = html.replace(/<!--[\s\S]*?-->/g, '');
+  let delta = 0;
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)(\s[^<>]*)?(\/?)>/g;
+  let m: RegExpExecArray | null;
+  while ((m = tagRe.exec(cleaned)) !== null) {
+    const isClose = m[1] === '/';
+    const tag = m[2].toLowerCase();
+    const isSelfClosing = m[4] === '/';
+    if (isSelfClosing || VOID_HTML_TAGS.has(tag)) continue;
+    delta += isClose ? -1 : 1;
+  }
+  return delta;
+}
+
+interface StdBlockGroup {
+  stableKey: string;
+  matchKey: string;
+  tokens: any[];
+  headingLines: number[];
+  isFrontMatter?: boolean;
+  html?: string;
+}
+
+interface StdBlockEntry {
+  key: string;
+  nodes: ChildNode[];
+  headingLines: number[];
+}
+
+interface StdRenderCache {
+  envKey: string;
+  linksSig: string;
+  mermaidCount: number;
+  blocks: StdBlockEntry[];
+}
+
+let prevStdCache: StdRenderCache | null = null;
+let stdPendingGeneration = 0;
+let lastRenderMs = 30;
+
 function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
   resetFootnotes();
-  const parsed = marked.lexer(body);
+  const parsed: any = marked.lexer(body);
   const mermaidBlocks: any[] = [];
   runtime.lastMermaidSources = [];
   const tokensToKeep: any[] = [];
   let srcLine = countLinesBefore(rawMarkdown, rawMarkdown.length - body.length);
+  let hasFootnotes = false;
 
   parsed.forEach((token: any) => {
+    if (token.type === 'footnoteDef') hasFootnotes = true;
     if (token.type === 'heading') token.srcLine = srcLine;
     srcLine += countLinesBefore(token.raw, token.raw.length);
     if (token.type === 'code' && (token.lang || '').trim().toLowerCase() === 'mermaid') {
@@ -105,31 +153,169 @@ function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
       tokensToKeep.push({
         type: 'html',
         raw: `<div class="lucivo-slot" data-slot="${index}"></div>`,
-        text: `<div class="lucivo-slot" data-slot="${index}"></div>`
+        text: `<div class="lucivo-slot" data-slot="${index}"></div>`,
+        __mermaid: { index, hash, curve }
       });
     } else {
-      tokensToKeep.push(treeTokenFor(token) || token);
+      const treeTok = treeTokenFor(token);
+      if (treeTok) {
+        (treeTok as any).__isTree = true;
+        tokensToKeep.push(treeTok);
+      } else {
+        tokensToKeep.push(token);
+      }
     }
   });
   // 脚注の番号と一覧を決める。Visualモードは章ごと、高速モードは文書の末尾に置く（FR-057）
-  return { mermaidBlocks, tokensToKeep: applyFootnotes(tokensToKeep, state.isVisualMode) };
+  return {
+    mermaidBlocks,
+    tokensToKeep: applyFootnotes(tokensToKeep, state.isVisualMode),
+    links: parsed.links || {},
+    hasFootnotes
+  };
+}
+
+// 最上位トークン列を独立に差し替え可能なブロック単位へまとめる（<details> 等で HTML タグが複数トークンにまたがる場合は 1 グループに統合）
+function buildStdBlockGroups(
+  tokensToKeep: any[],
+  frontMatterHtml: string,
+  generation: number
+): StdBlockGroup[] | null {
+  const groups: StdBlockGroup[] = [];
+  if (frontMatterHtml) {
+    const fk = `fm:${frontMatterHtml}`;
+    groups.push({ stableKey: fk, matchKey: fk, tokens: [], headingLines: [], isFrontMatter: true, html: frontMatterHtml });
+  }
+  let buf: any[] = [];
+  let stableParts: string[] = [];
+  let matchParts: string[] = [];
+  let headingLines: number[] = [];
+  let htmlDepth = 0;
+
+  const flush = () => {
+    if (buf.length === 0) return;
+    groups.push({
+      stableKey: stableParts.join('\n|BLK|\n'),
+      matchKey: matchParts.join('\n|BLK|\n'),
+      tokens: buf,
+      headingLines
+    });
+    buf = [];
+    stableParts = [];
+    matchParts = [];
+    headingLines = [];
+  };
+
+  for (const token of tokensToKeep) {
+    if (token.type === 'space' && htmlDepth === 0) continue;
+    buf.push(token);
+    if (token.type === 'heading' && Number.isInteger(token.srcLine)) {
+      headingLines.push(token.srcLine);
+      const part = `h:${token.depth}:${token.raw}`;
+      stableParts.push(part);
+      matchParts.push(part);
+    } else if (token.__mermaid) {
+      const m = token.__mermaid;
+      const cacheKey = `${m.hash}-std`;
+      const stable = `m:${m.index}:${m.hash}:${m.curve || ''}`;
+      stableParts.push(stable);
+      // svgCache から消えた図は未変更スキップさせず再描画対象にする（保存は安定キーで行う）
+      matchParts.push(svgCache.has(cacheKey) ? stable : `miss:${generation}:${m.index}`);
+    } else {
+      const part = `${token.type}:${token.raw}`;
+      stableParts.push(part);
+      matchParts.push(part);
+    }
+    if (token.type === 'html' && !token.__mermaid && !token.__isTree) {
+      htmlDepth += htmlTagBalance(token.raw || '');
+      if (htmlDepth < 0) return null;
+    }
+    if (htmlDepth === 0) flush();
+  }
+  if (htmlDepth !== 0) return null;
+  flush();
+  return groups;
+}
+
+function renderGroupSliceHtml(groups: StdBlockGroup[], links: Record<string, any>, sepAttrValue: string): string {
+  const sep = `<span data-lucivo-blk-sep="${sepAttrValue}"></span>`;
+  return groups.map(g => {
+    if (g.isFrontMatter) return g.html || '';
+    const slice: any = [...g.tokens];
+    slice.links = links;
+    return marked.parser(slice);
+  }).join(sep);
+}
+
+function applyStandardScopePostProcess(
+  scope: HTMLElement,
+  mermaidBlocks: any[],
+  dirtyBlocks: any[],
+  cachedKeys: Map<number, string>
+) {
+  decorateAlerts(scope);
+  wrapTables(scope);
+  if (window.katex) renderMath(scope);
+  if (window.LucivoEmoji) renderEmoji(scope);
+  const slots = scope.querySelectorAll('.lucivo-slot');
+  slots.forEach(slot => {
+    const idx = parseInt(slot.getAttribute('data-slot'), 10);
+    const block = mermaidBlocks[idx];
+    if (!block) return;
+    const cacheKey = `${block.hash}-std`;
+    if (svgCache.has(cacheKey)) {
+      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, false, block.curve);
+      cachedKeys.set(idx, cacheKey);
+    } else {
+      slot.outerHTML = createDiagramCard(idx, '', true, false, block.curve);
+      dirtyBlocks.push({ ...block, modeTag: 'std', cacheKey });
+    }
+  });
+}
+
+// セパレータ要素でコンテナ直下の子ノード列をグループ単位に分割し、セパレータを除去する
+function splitContainerNodesBySep(container: HTMLElement, groupCount: number, sepAttrValue: string): ChildNode[][] {
+  const buckets: ChildNode[][] = Array.from({ length: groupCount }, () => []);
+  let idx = 0;
+  const children = Array.from(container.childNodes);
+  for (const node of children) {
+    if (node.nodeType === 1 && (node as HTMLElement).getAttribute('data-lucivo-blk-sep') === sepAttrValue) {
+      node.remove();
+      if (idx + 1 < groupCount) idx++;
+    } else {
+      buckets[idx].push(node);
+    }
+  }
+  return buckets;
+}
+
+function updateGroupHeadingLines(entry: StdBlockEntry, nextLines: number[]) {
+  if (entry.headingLines.length === nextLines.length && entry.headingLines.every((v, i) => v === nextLines[i])) return;
+  let k = 0;
+  for (const node of entry.nodes) {
+    if (node.nodeType !== 1) continue;
+    const el = node as HTMLElement;
+    if (el.hasAttribute('data-src-line')) {
+      if (k < nextLines.length) el.dataset.srcLine = String(nextLines[k++]);
+    } else {
+      el.querySelectorAll('[data-src-line]').forEach(h => {
+        if (k < nextLines.length) (h as HTMLElement).dataset.srcLine = String(nextLines[k++]);
+      });
+    }
+  }
+  entry.headingLines = nextLines;
 }
 
 function renderApp() {
+  const t0 = performance.now();
   const rawMarkdown = (document.getElementById('markdown-editor') as HTMLTextAreaElement).value;
   if (!isInputRender) caretState.dirty = true;
   isInputRender = false;
   // フロントマターは Marked に渡さない。渡すと先頭の --- が水平線、YAML が段落になる（DD-FM-001）
   const { yaml, body } = splitFrontMatter(rawMarkdown);
-  const { mermaidBlocks, tokensToKeep } = parseMarkdownAndMermaidSlots(rawMarkdown, body);
+  const { mermaidBlocks, tokensToKeep, links, hasFootnotes } = parseMarkdownAndMermaidSlots(rawMarkdown, body);
 
   const frontMatterHtml = yaml !== null && state.showFrontMatter ? buildFrontMatterHtml(yaml) : '';
-  const rawHtml = frontMatterHtml + marked.parser(tokensToKeep);
-  const cleanHtml = DOMPurify.sanitize(rawHtml, {
-    ADD_TAGS: ['div', 'span', 'strong', 'small'],
-    ADD_ATTR: ['class', 'data-slot', 'style']
-  });
-
   const stdContainer = document.getElementById('standard-doc-container');
   const visContainer = document.getElementById('visual-stage-container');
   const stdWrapper = document.getElementById('standard-doc-wrapper');
@@ -138,63 +324,200 @@ function renderApp() {
   const isEmpty = rawMarkdown.trim() === '';
   if (window.LucivoStage) LucivoStage.resetLights();
 
-  if (isVisual) {
-    stdWrapper.classList.add('hidden');
-    stdContainer.innerHTML = '';
-    visContainer.classList.remove('hidden');
-    visContainer.innerHTML = isEmpty
-      ? `<div class="exhibition-wrap"><section class="exhibition-slab">${EMPTY_GUIDE_HTML}</section></div>`
-      : buildVisualStageHtml(cleanHtml, yaml);
-    applyToneToVisualStage(visContainer);
-  } else {
-    visContainer.classList.add('hidden');
-    visContainer.innerHTML = '';
-    stdWrapper.classList.remove('hidden');
-    stdContainer.innerHTML = isEmpty ? EMPTY_GUIDE_HTML : cleanHtml;
-    decorateAlerts(stdContainer);
-    // 長い文書（200 ブロック以上）のみ画面外ブロックのレイアウト・描画を省く（#238）
-    stdContainer.classList.toggle('has-content-visibility', !isEmpty && stdContainer.children.length >= 200);
-  }
-
+  const dirtyBlocks: any[] = [];
+  const cachedKeys = new Map<number, string>();
   const activeContainer = isVisual ? visContainer : stdContainer;
-  if (isEmpty) applyUpdateCheckState(activeContainer);
-  wrapTables(activeContainer);
-  resolveFolderImages(activeContainer);
-  renderMath(activeContainer);
-  renderEmoji(activeContainer);
-  const slots = activeContainer.querySelectorAll('.lucivo-slot');
   const modeTag = isVisual ? `vis-${state.infographicStyle}` : 'std';
 
-  const dirtyBlocks = [];
-  const cachedKeys = new Map();
+  // 高速モードの差分ブロック再描画（#235, DD-DIAG-083）
+  let usedIncremental = false;
+  if (!isVisual && !isEmpty && !hasFootnotes) {
+    const groups = buildStdBlockGroups(tokensToKeep, frontMatterHtml, generation);
+    if (groups) {
+      const envKey = `${state.appearance}|${state.palette}|${state.tone}|${state.infographicStyle}|${runtime.openedFolder ? 'f' : ''}`;
+      const linksSig = JSON.stringify(links);
+      const canPatch = Boolean(
+        prevStdCache
+        && stdPendingGeneration === 0
+        && prevStdCache.envKey === envKey
+        && prevStdCache.linksSig === linksSig
+        && prevStdCache.mermaidCount === mermaidBlocks.length
+        && prevStdCache.blocks.every(b => b.nodes.every(n => n.parentNode === stdContainer))
+      );
 
-  slots.forEach(slot => {
-    const idx = parseInt(slot.getAttribute('data-slot'), 10);
-    const block = mermaidBlocks[idx];
-    if (!block) return;
-    const cacheKey = `${block.hash}-${modeTag}`;
-    if (svgCache.has(cacheKey)) {
-      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, isVisual, block.curve);
-      cachedKeys.set(idx, cacheKey);
-    } else {
-      slot.outerHTML = createDiagramCard(idx, '', true, isVisual, block.curve);
-      dirtyBlocks.push({ ...block, modeTag, cacheKey });
+      visContainer.classList.add('hidden');
+      visContainer.innerHTML = '';
+      stdWrapper.classList.remove('hidden');
+
+      if (canPatch && prevStdCache) {
+        const prev = prevStdCache.blocks;
+        let prefix = 0;
+        const minLen = Math.min(prev.length, groups.length);
+        while (prefix < minLen && prev[prefix].key === groups[prefix].matchKey) prefix++;
+        let suffix = 0;
+        while (
+          suffix < minLen - prefix
+          && prev[prev.length - 1 - suffix].key === groups[groups.length - 1 - suffix].matchKey
+        ) {
+          suffix++;
+        }
+
+        const removedStart = prefix;
+        const removedEnd = prev.length - suffix;
+        const addedStart = prefix;
+        const addedEnd = groups.length - suffix;
+
+        // 差し替え位置の基準ノード（後続未変更グループの先頭ノード）を先に求める
+        let anchorNode: ChildNode | null = null;
+        for (let i = removedEnd; i < prev.length && !anchorNode; i++) {
+          if (prev[i].nodes.length > 0) anchorNode = prev[i].nodes[0];
+        }
+
+        // 変更区間の旧ノードを除去
+        for (let i = removedStart; i < removedEnd; i++) {
+          prev[i].nodes.forEach(n => n.remove());
+        }
+
+        // 変更区間のみ HTML 化・サニタイズ・後処理を行って挿入
+        const addedEntries: StdBlockEntry[] = [];
+        if (addedStart < addedEnd) {
+          const sliceGroups = groups.slice(addedStart, addedEnd);
+          const sepAttr = `b${generation}`;
+          const sliceRaw = renderGroupSliceHtml(sliceGroups, links, sepAttr);
+          const sliceClean = DOMPurify.sanitize(sliceRaw, {
+            ADD_TAGS: ['div', 'span', 'strong', 'small'],
+            ADD_ATTR: ['class', 'data-slot', 'style']
+          });
+          const tmp = document.createElement('div');
+          tmp.innerHTML = sliceClean;
+          applyStandardScopePostProcess(tmp, mermaidBlocks, dirtyBlocks, cachedKeys);
+          bindViewportInteractions(tmp, stdContainer);
+          const buckets = splitContainerNodesBySep(tmp, sliceGroups.length, sepAttr);
+          const frag = document.createDocumentFragment();
+          sliceGroups.forEach((g, idx) => {
+            buckets[idx].forEach(n => frag.appendChild(n));
+            addedEntries.push({ key: g.stableKey, nodes: buckets[idx], headingLines: g.headingLines });
+          });
+          stdContainer.insertBefore(frag, anchorNode);
+        }
+
+        // 未変更グループ（prefix / suffix）の見出し行番号だけを更新し、キャッシュ配列を再構築
+        const nextBlocks: StdBlockEntry[] = [];
+        for (let i = 0; i < prefix; i++) {
+          updateGroupHeadingLines(prev[i], groups[i].headingLines);
+          nextBlocks.push(prev[i]);
+        }
+        nextBlocks.push(...addedEntries);
+        for (let i = 0; i < suffix; i++) {
+          const entry = prev[removedEnd + i];
+          updateGroupHeadingLines(entry, groups[addedEnd + i].headingLines);
+          nextBlocks.push(entry);
+        }
+        prevStdCache = { envKey, linksSig, mermaidCount: mermaidBlocks.length, blocks: nextBlocks };
+        stdContainer.classList.toggle('has-content-visibility', stdContainer.children.length >= 200);
+        // 接続後に非同期解決系（ローカル画像・未読込 KaTeX/絵文字）を実行
+        resolveFolderImages(stdContainer);
+        if (!window.katex) renderMath(stdContainer);
+        if (!window.LucivoEmoji) renderEmoji(stdContainer);
+        cachedKeys.forEach((cacheKey, idx) => {
+          applyReadableFit(stdContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
+        });
+        usedIncremental = true;
+      } else {
+        // 初回または全体フォールバック時もセパレータ付き 1 回 sanitize でグループ境界を記録する
+        const sepAttr = `b${generation}`;
+        const rawHtml = renderGroupSliceHtml(groups, links, sepAttr);
+        const cleanHtml = DOMPurify.sanitize(rawHtml, {
+          ADD_TAGS: ['div', 'span', 'strong', 'small'],
+          ADD_ATTR: ['class', 'data-slot', 'style']
+        });
+        stdContainer.innerHTML = cleanHtml;
+        applyStandardScopePostProcess(stdContainer, mermaidBlocks, dirtyBlocks, cachedKeys);
+        const buckets = splitContainerNodesBySep(stdContainer, groups.length, sepAttr);
+        prevStdCache = {
+          envKey,
+          linksSig,
+          mermaidCount: mermaidBlocks.length,
+          blocks: groups.map((g, idx) => ({ key: g.stableKey, nodes: buckets[idx], headingLines: g.headingLines }))
+        };
+        stdContainer.classList.toggle('has-content-visibility', stdContainer.children.length >= 200);
+        resolveFolderImages(stdContainer);
+        if (!window.katex) renderMath(stdContainer);
+        if (!window.LucivoEmoji) renderEmoji(stdContainer);
+        cachedKeys.forEach((cacheKey, idx) => {
+          applyReadableFit(stdContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
+        });
+        bindViewportInteractions(stdContainer);
+        usedIncremental = true;
+      }
     }
-  });
+  }
 
-  cachedKeys.forEach((cacheKey, idx) => {
-    applyReadableFit(activeContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
-  });
+  if (!usedIncremental) {
+    prevStdCache = null;
+    const rawHtml = frontMatterHtml + marked.parser(tokensToKeep);
+    const cleanHtml = DOMPurify.sanitize(rawHtml, {
+      ADD_TAGS: ['div', 'span', 'strong', 'small'],
+      ADD_ATTR: ['class', 'data-slot', 'style']
+    });
+
+    if (isVisual) {
+      stdWrapper.classList.add('hidden');
+      stdContainer.innerHTML = '';
+      visContainer.classList.remove('hidden');
+      visContainer.innerHTML = isEmpty
+        ? `<div class="exhibition-wrap"><section class="exhibition-slab">${EMPTY_GUIDE_HTML}</section></div>`
+        : buildVisualStageHtml(cleanHtml, yaml);
+      applyToneToVisualStage(visContainer);
+    } else {
+      visContainer.classList.add('hidden');
+      visContainer.innerHTML = '';
+      stdWrapper.classList.remove('hidden');
+      stdContainer.innerHTML = isEmpty ? EMPTY_GUIDE_HTML : cleanHtml;
+      decorateAlerts(stdContainer);
+      // 長い文書（200 ブロック以上）のみ画面外ブロックのレイアウト・描画を省く（#238）
+      stdContainer.classList.toggle('has-content-visibility', !isEmpty && stdContainer.children.length >= 200);
+    }
+
+    if (isEmpty) applyUpdateCheckState(activeContainer);
+    wrapTables(activeContainer);
+    resolveFolderImages(activeContainer);
+    renderMath(activeContainer);
+    renderEmoji(activeContainer);
+    const slots = activeContainer.querySelectorAll('.lucivo-slot');
+
+    slots.forEach(slot => {
+      const idx = parseInt(slot.getAttribute('data-slot'), 10);
+      const block = mermaidBlocks[idx];
+      if (!block) return;
+      const cacheKey = `${block.hash}-${modeTag}`;
+      if (svgCache.has(cacheKey)) {
+        slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, isVisual, block.curve);
+        cachedKeys.set(idx, cacheKey);
+      } else {
+        slot.outerHTML = createDiagramCard(idx, '', true, isVisual, block.curve);
+        dirtyBlocks.push({ ...block, modeTag, cacheKey });
+      }
+    });
+
+    cachedKeys.forEach((cacheKey, idx) => {
+      applyReadableFit(activeContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
+    });
+    bindViewportInteractions(activeContainer);
+  }
+
   rebuildFollowIndex(activeContainer);
-  bindViewportInteractions(activeContainer);
   mountStage(activeContainer);
   if (document.activeElement && document.activeElement.id === 'markdown-editor') scheduleFollow();
 
   if (dirtyBlocks.length > 0) {
+    stdPendingGeneration = isVisual ? 0 : generation;
     processDirtyBlocks(dirtyBlocks, { container: activeContainer, generation, isVisual });
   } else {
+    stdPendingGeneration = 0;
     updateStatus(`• ${mermaidBlocks.length}/${mermaidBlocks.length} Diagrams Ready`, 'success');
   }
+  lastRenderMs = performance.now() - t0;
 }
 
 // Visualモードの図に舞台演出を取り付ける。読み込みを待つ間に DOM が作り直された場合は何もしない
@@ -257,6 +580,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
       const vp = target.container.querySelector(`[data-stage-index="${block.index}"]`);
       if (vp) vp.innerHTML = '<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">Mermaid を読み込めませんでした（ネットワークの接続を確認してください）</div>';
     });
+    if (stdPendingGeneration === target.generation) stdPendingGeneration = 0;
     updateStatus('• Mermaid Unavailable', 'warning');
     return;
   }
@@ -310,6 +634,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
     }
   }
 
+  if (stdPendingGeneration === target.generation) stdPendingGeneration = 0;
   updateStatus(`• All Diagrams Verified`, 'success');
 }
 
@@ -347,21 +672,21 @@ function downloadDiagramPng(svgEl: SVGElement, idx: string) {
   image.src = blobURL;
 }
 
-// container: 表示中のコンテナ。非表示側の図を操作しないよう、探索範囲を限定する
-function bindViewportInteractions(container) {
+// scope: 新規にバインドする範囲、rootContainer: 表示中の全体コンテナ
+function bindViewportInteractions(scope, rootContainer = scope) {
   // 矢印の形状を選ぶと、その図だけキャッシュのキーが変わり、描き直される（DD-EDGE-011）
-  container.querySelectorAll('.edge-curve-btn').forEach(btn => {
+  scope.querySelectorAll('.edge-curve-btn').forEach(btn => {
     btn.onclick = () => {
       state.curveByIndex.set(parseInt(btn.getAttribute('data-index'), 10), btn.getAttribute('data-curve'));
       renderApp();
     };
   });
 
-  container.querySelectorAll('.scale-btn').forEach(btn => {
+  scope.querySelectorAll('.scale-btn').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
       const action = btn.getAttribute('data-action');
-      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
+      const vp = rootContainer.querySelector(`[data-stage-index="${idx}"]`);
       const frame = btn.closest(`#diagram-frame-${idx}`);
       if (!vp || !frame) return;
 
@@ -373,10 +698,10 @@ function bindViewportInteractions(container) {
     };
   });
 
-  container.querySelectorAll('[data-action="svg"]').forEach(btn => {
+  scope.querySelectorAll('[data-action="svg"]').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
-      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
+      const vp = rootContainer.querySelector(`[data-stage-index="${idx}"]`);
       const svgEl = vp && vp.querySelector('svg');
       if (!svgEl) return;
       downloadBlob(svgEl.outerHTML, `diagram-0${parseInt(idx, 10) + 1}.svg`, 'image/svg+xml');
@@ -384,19 +709,19 @@ function bindViewportInteractions(container) {
     };
   });
 
-  container.querySelectorAll('[data-action="png"]').forEach(btn => {
+  scope.querySelectorAll('[data-action="png"]').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
-      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
+      const vp = rootContainer.querySelector(`[data-stage-index="${idx}"]`);
       const svgEl = vp && vp.querySelector('svg');
       if (svgEl) downloadDiagramPng(svgEl, idx);
     };
   });
 
-  container.querySelectorAll('[data-action="zoom"]').forEach(btn => {
+  scope.querySelectorAll('[data-action="zoom"]').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
-      const vp = container.querySelector(`[data-stage-index="${idx}"]`);
+      const vp = rootContainer.querySelector(`[data-stage-index="${idx}"]`);
       const svgEl = vp && vp.querySelector('svg');
       if (!svgEl) return;
 
@@ -995,10 +1320,11 @@ function setupEventListeners() {
     }
     pendingEdit = null;
     clearTimeout(runtime.renderDebounceTimer);
+    const debounceMs = Math.min(250, Math.max(120, Math.round(lastRenderMs * 4)));
     runtime.renderDebounceTimer = setTimeout(() => {
       isInputRender = true;
       renderApp();
-    }, 250);
+    }, debounceMs);
     scheduleFollow();
   });
   editor.addEventListener('click', scheduleFollow);
