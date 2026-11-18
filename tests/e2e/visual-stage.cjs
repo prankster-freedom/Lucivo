@@ -1728,6 +1728,43 @@ async function testCoverAndTables(browser) {
     && wmDark.opacity > wmLight.opacity && wmDark.opacity <= 0.12);
   record('TC-VTPL-032', wmOk, JSON.stringify({ wmLight, wmDark }));
 
+  // TC-VTPL-033 表の評価記号バッジ化（#215）
+  const badgeMd = [
+    '# 比較表', '',
+    '## 機能比較', '',
+    '| 項目 | A案 | B案 | C案 |',
+    '| :--- | :-: | :-: | :--- |',
+    '| 速度 | ○ | × | △ |',
+    '| 安定 | ◎ | ✓ | ✗ |',
+    '| 備考 | ○（注記あり） | そのまま | — |'
+  ].join('\n');
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await setDocument(page, badgeMd);
+  const readBadges = () => page.evaluate(() => {
+    const badges = Array.from(document.querySelectorAll('#visual-stage-container .vs-symbol-badge')).map(el => ({
+      text: el.textContent,
+      kind: el.getAttribute('data-vs-badge'),
+      radius: parseFloat(getComputedStyle(el).borderRadius),
+      bg: getComputedStyle(el).backgroundColor,
+      color: getComputedStyle(el).color
+    }));
+    const noteCell = Array.from(document.querySelectorAll('#visual-stage-container td')).find(td => td.textContent.includes('注記あり'));
+    return { badges, noteHasBadge: Boolean(noteCell && noteCell.querySelector('.vs-symbol-badge')) };
+  });
+  const badgeLight = await readBadges();
+  await setMode(page, { style: 'shapes', appearance: 'dark' });
+  const badgeDark = await readBadges();
+  await setMode(page, { style: 'std', appearance: 'light' });
+  const badgeFastCount = await page.evaluate(() => document.querySelectorAll('#standard-doc-container .vs-symbol-badge').length);
+  const badgeOk = badgeLight.badges.length === 6
+    && badgeLight.badges.map(b => `${b.text}:${b.kind}`).join(',') === '○:good,×:bad,△:warn,◎:good,✓:good,✗:bad'
+    && badgeLight.badges.every(b => b.radius >= 999)
+    && !badgeLight.noteHasBadge
+    && badgeDark.badges.length === 6
+    && badgeDark.badges[0].bg !== badgeLight.badges[0].bg
+    && badgeFastCount === 0;
+  record('TC-VTPL-033', badgeOk, JSON.stringify({ badgeLight: { count: badgeLight.badges.length, noteHasBadge: badgeLight.noteHasBadge, sample: badgeLight.badges[0] }, badgeDarkSample: badgeDark.badges[0], badgeFastCount }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }

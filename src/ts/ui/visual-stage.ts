@@ -321,6 +321,29 @@ export function markTableColumns(table) {
       cells.forEach(cell => cell.classList.add('vs-label'));
     }
   }
+  decorateSymbolBadges(table);
+}
+
+const SYMBOL_BADGE_MAP: Record<string, string> = {
+  '◎': 'good', '○': 'good', '〇': 'good', '✓': 'good', '✔': 'good',
+  '△': 'warn', '▲': 'warn',
+  '×': 'bad', '✕': 'bad', '✗': 'bad', '✘': 'bad'
+};
+
+// セル内が評価記号 1 文字だけのとき、色付きバッジに置き換える（文字自体は残し、検索・コピー・色覚多様性を保つ）
+function decorateSymbolBadges(table: HTMLTableElement) {
+  table.querySelectorAll('tbody td').forEach(td => {
+    if (td.childElementCount > 0) return;
+    const sym = (td.textContent || '').trim();
+    const kind = SYMBOL_BADGE_MAP[sym];
+    if (!kind) return;
+    const span = document.createElement('span');
+    span.className = 'vs-symbol-badge';
+    span.setAttribute('data-vs-badge', kind);
+    span.textContent = sym;
+    td.textContent = '';
+    td.appendChild(span);
+  });
 }
 
 // Visualモードのコードブロックに言語ラベル・丸端キャレット（AST-109）・ワンクリック Copy ボタンを付与する（FR-031, DD-VTPL-038）
