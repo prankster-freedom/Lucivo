@@ -66,6 +66,51 @@ async function testStartupAndCache(browser) {
   });
   record('TC-PERF-002', timing.before.fit >= 18 && timing.before.math >= 5 && timing.after.fit === timing.before.fit && timing.after.math === timing.before.math && timing.getComputedStyleCalls === 0,
     JSON.stringify(timing));
+
+  // TC-PERF-003 長い文書の追従は描画時に作った見出し一覧を引き、入力・移動ごとに querySelectorAll をやり直さない
+  const longMd = Array.from({ length: 200 }, (_, i) => `## ${i + 1}. 見出し ${i + 1}\n\n${'本文行\n'.repeat(18)}`).join('\n');
+  await page.evaluate(md => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = md;
+    renderApp();
+  }, longMd);
+  await waitRendered(page);
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  const followPerf = await page.evaluate(async () => {
+    const editor = document.getElementById('markdown-editor');
+    const scroller = document.getElementById('preview-scroll');
+    const container = document.getElementById('standard-doc-container');
+    let qsaCalls = 0;
+    const origQsa = container.querySelectorAll.bind(container);
+    container.querySelectorAll = function (sel) {
+      if (sel === '[data-src-line]') qsaCalls++;
+      return origQsa(sel);
+    };
+    const pos150 = editor.value.indexOf('## 150.');
+    const pos199 = editor.value.indexOf('## 199.');
+    editor.focus();
+    const t0 = performance.now();
+    editor.setSelectionRange(pos150 + 3, pos150 + 3);
+    editor.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }));
+    await new Promise(r => { requestAnimationFrame(() => requestAnimationFrame(r)); });
+    const at150 = Math.round(scroller.scrollTop);
+    // 同じ見出し区間のまま 1 文字入力・BackSpace をシミュレート（250ms の再描画待ち前）
+    const editPos = pos150 + 12;
+    editor.setSelectionRange(editPos, editPos);
+    editor.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'a', bubbles: true }));
+    editor.value = editor.value.slice(0, editPos) + 'a' + editor.value.slice(editPos);
+    editor.setSelectionRange(editPos + 1, editPos + 1);
+    editor.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: 'a', bubbles: true }));
+    await new Promise(r => { requestAnimationFrame(() => requestAnimationFrame(r)); });
+    editor.setSelectionRange(pos199 + 3, pos199 + 3);
+    editor.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }));
+    await new Promise(r => { requestAnimationFrame(() => requestAnimationFrame(r)); });
+    const ms = performance.now() - t0;
+    const at199 = Math.round(scroller.scrollTop);
+    container.querySelectorAll = origQsa;
+    return { qsaCalls, at150, at199, followMs: +ms.toFixed(1) };
+  });
+  record('TC-PERF-003', followPerf.qsaCalls === 0 && followPerf.at150 > 0 && followPerf.at199 > followPerf.at150, JSON.stringify(followPerf));
   if (page.consoleErrors.length) record('TC-PERF-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }

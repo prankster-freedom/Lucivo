@@ -117,6 +117,8 @@ function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
 
 function renderApp() {
   const rawMarkdown = (document.getElementById('markdown-editor') as HTMLTextAreaElement).value;
+  if (!isInputRender) caretState.dirty = true;
+  isInputRender = false;
   // フロントマターは Marked に渡さない。渡すと先頭の --- が水平線、YAML が段落になる（DD-FM-001）
   const { yaml, body } = splitFrontMatter(rawMarkdown);
   const { mermaidBlocks, tokensToKeep } = parseMarkdownAndMermaidSlots(rawMarkdown, body);
@@ -181,6 +183,7 @@ function renderApp() {
   cachedKeys.forEach((cacheKey, idx) => {
     applyReadableFit(activeContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
   });
+  rebuildFollowIndex(activeContainer);
   bindViewportInteractions(activeContainer);
   mountStage(activeContainer);
   if (document.activeElement && document.activeElement.id === 'markdown-editor') scheduleFollow();
@@ -503,35 +506,87 @@ export function previewScrollTopOf(el, scroller, scrollerRect = scroller.getBoun
    ========================================================================== */
 // 最後に送った見出しの行（'top' はプレビューの先頭）。同じ区間の中では送り直さない
 let followFrame = 0;
+let isInputRender = false;
+let followIndex: { line: number; el: HTMLElement }[] = [];
+const caretState = { pos: 0, line: 0, length: -1, dirty: true };
+let pendingEdit: { type: string; start: number; deletedNewlines: number } | null = null;
 
 // text の先頭から end までにある改行の数（= end の位置の 0 始まりの行番号）
-function countLinesBefore(text, end) {
+function countLinesBefore(text: string, end: number) {
+  return countLinesBetween(text, 0, end);
+}
+
+// text の [start, end) の範囲にある改行の数を数える
+function countLinesBetween(text: string, start: number, end: number) {
   let count = 0;
-  for (let i = text.indexOf('\n'); i !== -1 && i < end; i = text.indexOf('\n', i + 1)) count++;
+  for (let i = text.indexOf('\n', start); i !== -1 && i < end; i = text.indexOf('\n', i + 1)) count++;
   return count;
 }
 
-// カーソルの行以前で最後の見出し（data-src-line は文書の順に並ぶ）。なければ null
-function findFollowTarget(container, caretLine) {
-  let target = null;
-  for (const el of container.querySelectorAll('[data-src-line]')) {
-    if (Number(el.dataset.srcLine) > caretLine) break;
-    target = el;
+// 描画したコンテナから見出しの一覧（行番号と要素）を 1 回だけ作る
+function rebuildFollowIndex(container: HTMLElement | null) {
+  if (!container) {
+    followIndex = [];
+    return;
   }
-  return target;
+  followIndex = Array.from(container.querySelectorAll('[data-src-line]')).map(el => ({
+    line: Number((el as HTMLElement).dataset.srcLine),
+    el: el as HTMLElement
+  }));
+}
+
+// caretState の位置を targetPos まで差分移動して行番号を更新する
+function moveCaretLine(text: string, targetPos: number) {
+  if (targetPos > caretState.pos) {
+    caretState.line += countLinesBetween(text, caretState.pos, targetPos);
+  } else if (targetPos < caretState.pos) {
+    caretState.line -= countLinesBetween(text, targetPos, caretState.pos);
+  }
+  caretState.pos = targetPos;
+}
+
+// 前回のカーソル位置からの差分だけ改行を数えて、現在の 0 始まり行番号を返す
+function getCaretLine(editor: HTMLTextAreaElement) {
+  const text = editor.value;
+  const pos = editor.selectionStart ?? 0;
+  if (caretState.dirty || caretState.length !== text.length) {
+    caretState.line = countLinesBefore(text, pos);
+    caretState.pos = pos;
+    caretState.length = text.length;
+    caretState.dirty = false;
+    return caretState.line;
+  }
+  moveCaretLine(text, pos);
+  return caretState.line;
+}
+
+// カーソルの行以前で最後の見出しを二分探索で引く（followIndex は文書の順に並ぶ）。なければ null
+function findFollowTarget(caretLine: number) {
+  let low = 0;
+  let high = followIndex.length - 1;
+  let result: HTMLElement | null = null;
+  while (low <= high) {
+    const mid = (low + high) >>> 1;
+    if (followIndex[mid].line <= caretLine) {
+      result = followIndex[mid].el;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return result;
 }
 
 function followEditorCaret() {
   followFrame = 0;
   if (state.viewMode !== 'split' || document.documentElement.classList.contains('is-stage-show')) return;
-  const editor = document.getElementById('markdown-editor');
+  const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement;
   const scroller = document.getElementById('preview-scroll');
-  const container = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
-  const target = findFollowTarget(container, countLinesBefore(editor.value, editor.selectionStart));
+  const target = findFollowTarget(getCaretLine(editor));
   // Visualモードは章（スラブ）の上端へ送る。章の中の小見出しの間を動いても、同じ章なら送り直さない
   const anchor = target && state.isVisualMode ? (target.closest('.exhibition-slab') || target) : target;
   const keyEl = anchor && anchor !== target ? (anchor.querySelector('[data-src-line]') || target) : target;
-  const key = keyEl ? keyEl.dataset.srcLine : 'top';
+  const key = keyEl ? (keyEl as HTMLElement).dataset.srcLine : 'top';
   if (key === runtime.followedKey) return;
   runtime.followedKey = key;
   scroller.scrollTo({ top: anchor ? previewScrollTopOf(anchor, scroller) : 0, behavior: scrollBehavior() });
@@ -764,9 +819,41 @@ function setupViewModeControls() {
 
 function setupEventListeners() {
   const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement;
-  editor.addEventListener('input', () => {
+  editor.addEventListener('beforeinput', (e: InputEvent) => {
+    pendingEdit = null;
+    if (e.isComposing || caretState.dirty || editor.value.length !== caretState.length) return;
+    const start = editor.selectionStart ?? 0;
+    const end = editor.selectionEnd ?? 0;
+    if (start !== end) return;
+    if (e.inputType === 'insertText' || e.inputType === 'insertLineBreak') {
+      moveCaretLine(editor.value, start);
+      pendingEdit = { type: e.inputType, start, deletedNewlines: 0 };
+    } else if (e.inputType === 'deleteContentBackward' && start > 0) {
+      moveCaretLine(editor.value, start);
+      pendingEdit = { type: e.inputType, start, deletedNewlines: editor.value[start - 1] === '\n' ? 1 : 0 };
+    }
+  });
+  editor.addEventListener('input', (e: Event) => {
+    const ie = e as InputEvent;
+    if (pendingEdit && !ie.isComposing && ie.inputType === pendingEdit.type) {
+      if (pendingEdit.type === 'insertText' && typeof ie.data === 'string') {
+        caretState.line += countLinesBetween(ie.data, 0, ie.data.length);
+      } else if (pendingEdit.type === 'insertLineBreak') {
+        caretState.line += 1;
+      } else if (pendingEdit.type === 'deleteContentBackward') {
+        caretState.line -= pendingEdit.deletedNewlines;
+      }
+      caretState.pos = editor.selectionStart ?? pendingEdit.start;
+      caretState.length = editor.value.length;
+    } else {
+      caretState.dirty = true;
+    }
+    pendingEdit = null;
     clearTimeout(runtime.renderDebounceTimer);
-    runtime.renderDebounceTimer = setTimeout(renderApp, 250);
+    runtime.renderDebounceTimer = setTimeout(() => {
+      isInputRender = true;
+      renderApp();
+    }, 250);
     scheduleFollow();
   });
   editor.addEventListener('click', scheduleFollow);
