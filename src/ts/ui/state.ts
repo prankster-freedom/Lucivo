@@ -451,10 +451,41 @@ export const state = {
   curveByIndex: new Map()
 };
 
-export const svgCache = new Map();
-export const lkgCache = new Map();
+// 図のキャッシュ上限。18 図のサンプルで主要モードを切り替えても溢れない件数とする
+export const DIAGRAM_CACHE_LIMIT = 200;
+
+// 上限件数を超えたら最も長く使われていない項目を捨てる LRU キャッシュ
+export class LruCache<K = string, V = any> extends Map<K, V> {
+  private readonly maxSize: number;
+
+  constructor(maxSize: number) {
+    super();
+    this.maxSize = maxSize;
+  }
+
+  get(key: K): V | undefined {
+    if (!super.has(key)) return undefined;
+    const value = super.get(key) as V;
+    super.delete(key);
+    super.set(key, value);
+    return value;
+  }
+
+  set(key: K, value: V): this {
+    if (super.has(key)) {
+      super.delete(key);
+    } else if (this.size >= this.maxSize) {
+      const oldestKey = this.keys().next().value;
+      if (oldestKey !== undefined) super.delete(oldestKey);
+    }
+    return super.set(key, value);
+  }
+}
+
+export const svgCache = new LruCache(DIAGRAM_CACHE_LIMIT);
+export const lkgCache = new LruCache(DIAGRAM_CACHE_LIMIT);
 // Fit の下限・上限の計算結果（描画結果のキャッシュのキー → { minWidth, maxWidth }）と、数式の描画結果
-export const fitCache = new Map();
+export const fitCache = new LruCache(DIAGRAM_CACHE_LIMIT);
 export const mathCache = new Map();
 
 // 図・数式がない文書では読み込まないライブラリ。名前 → 読み込みの Promise（true: 読み込めた）

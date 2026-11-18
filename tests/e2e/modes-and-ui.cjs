@@ -111,6 +111,29 @@ async function testStartupAndCache(browser) {
     return { qsaCalls, at150, at199, followMs: +ms.toFixed(1) };
   });
   record('TC-PERF-003', followPerf.qsaCalls === 0 && followPerf.at150 > 0 && followPerf.at199 > followPerf.at150, JSON.stringify(followPerf));
+
+  // TC-PERF-004 図のキャッシュが上限（200件）を超えず、最近使った項目が残る（LRU）
+  const cacheLimit = await page.evaluate(() => {
+    svgCache.clear();
+    fitCache.clear();
+    for (let i = 0; i < 205; i++) {
+      svgCache.set(`k-${i}`, `<svg>${i}</svg>`);
+      fitCache.set(`k-${i}`, { minWidth: i, maxWidth: i + 10 });
+      if (i === 100) {
+        svgCache.get('k-0');
+        fitCache.get('k-0');
+      }
+    }
+    return {
+      svgSize: svgCache.size,
+      fitSize: fitCache.size,
+      keptHot: svgCache.has('k-0') && fitCache.has('k-0'),
+      evictedOld: !svgCache.has('k-1') && !fitCache.has('k-1'),
+      keptLatest: svgCache.has('k-204') && fitCache.has('k-204')
+    };
+  });
+  record('TC-PERF-004', cacheLimit.svgSize === 200 && cacheLimit.fitSize === 200 && cacheLimit.keptHot && cacheLimit.evictedOld && cacheLimit.keptLatest,
+    JSON.stringify(cacheLimit));
   if (page.consoleErrors.length) record('TC-PERF-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }
