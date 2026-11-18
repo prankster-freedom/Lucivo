@@ -206,6 +206,41 @@ function mountStage(container) {
   });
 }
 
+// 長いタスクを分割してブラウザへ制御を返し、入力・スクロールの応答性を保つ（#236）
+function yieldToMain(): Promise<void> {
+  const sched = (window as any).scheduler;
+  if (sched && typeof sched.yield === 'function') {
+    return sched.yield();
+  }
+  return new Promise(resolve => setTimeout(resolve, 0));
+}
+
+// 残りの未描画ブロックから、現在の表示領域に最も近い 1 件の配列インデックスを返す（可視領域内を最優先）
+function pickNextDirtyBlockIndex(remaining: any[], container: HTMLElement, scroller: HTMLElement | null) {
+  if (remaining.length <= 1 || !scroller) return 0;
+  const vp = scroller.getBoundingClientRect();
+  const vpTop = Math.max(vp.top, 0);
+  const vpBottom = Math.min(vp.bottom, window.innerHeight || vp.bottom);
+  if (vpBottom <= vpTop) return 0;
+  const vpCenter = (vpTop + vpBottom) / 2;
+  let bestIdx = 0;
+  let bestInView = false;
+  let bestDist = Infinity;
+  for (let i = 0; i < remaining.length; i++) {
+    const el = container.querySelector(`[data-stage-index="${remaining[i].index}"]`);
+    if (!el) continue;
+    const rect = el.getBoundingClientRect();
+    const inView = rect.bottom >= vpTop && rect.top <= vpBottom;
+    const dist = inView ? Math.max(0, rect.top - vpTop) : Math.abs((rect.top + rect.bottom) / 2 - vpCenter);
+    if ((inView && !bestInView) || (inView === bestInView && dist < bestDist)) {
+      bestIdx = i;
+      bestInView = inView;
+      bestDist = dist;
+    }
+  }
+  return bestIdx;
+}
+
 // target: 描画開始時の表示先コンテナ・描画世代・モード。
 // 描画中にモード切替や再描画が起きた場合（世代が変わった場合）は、古い描画結果を捨てる
 async function processDirtyBlocks(dirtyBlocks, target) {
@@ -224,18 +259,25 @@ async function processDirtyBlocks(dirtyBlocks, target) {
     return;
   }
 
-  for (const block of dirtyBlocks) {
+  const scroller = document.getElementById('preview-scroll');
+  const remaining = [...dirtyBlocks];
+
+  while (remaining.length > 0) {
     if (isStale()) return;
+    const nextIdx = pickNextDirtyBlockIndex(remaining, target.container, scroller);
+    const [block] = remaining.splice(nextIdx, 1);
     const renderId = `mermaid-render-${block.index}-${Date.now()}`;
     const lkgKey = `${block.index}-${block.modeTag}`;
     const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
     try {
-      setupMermaid(target.isVisual, block.curve || 'smooth', getMermaidLayout(block.code, block.curve), block.code);
-      const { svg } = await mermaid.render(renderId, prepareMermaidSource(block.code));
-      if (isStale()) return;
-      const finalSvg = postProcessSvg(svg, target.isVisual);
-
-      svgCache.set(block.cacheKey, finalSvg);
+      let finalSvg = svgCache.get(block.cacheKey);
+      if (!finalSvg) {
+        setupMermaid(target.isVisual, block.curve || 'smooth', getMermaidLayout(block.code, block.curve), block.code);
+        const { svg } = await mermaid.render(renderId, prepareMermaidSource(block.code));
+        if (isStale()) return;
+        finalSvg = postProcessSvg(svg, target.isVisual);
+        svgCache.set(block.cacheKey, finalSvg);
+      }
       lkgCache.set(lkgKey, finalSvg);
 
       if (stageViewport) {
@@ -259,6 +301,10 @@ async function processDirtyBlocks(dirtyBlocks, target) {
           stageViewport.innerHTML = `<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">構文エラー: 正しいMermaid記法を入力してください</div>`;
         }
       }
+    }
+    if (remaining.length > 0) {
+      await yieldToMain();
+      if (isStale()) return;
     }
   }
 

@@ -134,6 +134,61 @@ async function testStartupAndCache(browser) {
   });
   record('TC-PERF-004', cacheLimit.svgSize === 200 && cacheLimit.fitSize === 200 && cacheLimit.keptHot && cacheLimit.evictedOld && cacheLimit.keptLatest,
     JSON.stringify(cacheLimit));
+
+  // TC-PERF-005 可視領域の図を優先し、図と図の間でメインスレッドへ制御を返す（#236）
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const multiDiagramMd = Array.from({ length: 10 }, (_, i) => [
+    `## ${i + 1}. 図セクション ${i + 1}`, '',
+    '説明文のダミー段落です。画面の高さを十分に超える長さにするための本文です。\n\n'.repeat(10),
+    '```mermaid',
+    `flowchart LR`,
+    `  A${i}[開始${i}] --> B${i}[処理${i}] --> C${i}[完了${i}]`,
+    '```', ''
+  ].join('\n')).join('\n');
+  await page.evaluate(md => {
+    const editor = document.getElementById('markdown-editor');
+    editor.blur();
+    editor.value = md;
+    renderApp();
+  }, multiDiagramMd);
+  await waitRendered(page);
+  const asyncOrder = await page.evaluate(async () => {
+    const scroller = document.getElementById('preview-scroll');
+    // 末尾へスクロールした状態でキャッシュを空にし、再描画の順番と割り込みを測る
+    scroller.scrollTop = scroller.scrollHeight;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    svgCache.clear();
+    const order = [];
+    let yieldsObserved = 0;
+    const origRender = mermaid.render.bind(mermaid);
+    mermaid.render = async function (id, src) {
+      const m = /^mermaid-render-(\d+)-/.exec(id);
+      if (m) order.push(Number(m[1]));
+      setTimeout(() => { yieldsObserved++; }, 0);
+      return origRender(id, src);
+    };
+    renderApp();
+    // すべて描き終えるまで待つ
+    const start = performance.now();
+    while (order.length < 10 && performance.now() - start < 15000) {
+      await new Promise(r => setTimeout(r, 30));
+    }
+    mermaid.render = origRender;
+    // 描画途中にモードを切り替えても古い描画結果が残らないことを確認
+    svgCache.clear();
+    renderApp();
+    await new Promise(r => setTimeout(r, 10));
+    document.getElementById('btn-visual-mode').click();
+    const start2 = performance.now();
+    while (document.querySelectorAll('#visual-stage-container [data-stage-index] > svg').length < 10 && performance.now() - start2 < 15000) {
+      await new Promise(r => setTimeout(r, 50));
+    }
+    const visSvgs = document.querySelectorAll('#visual-stage-container [data-stage-index] > svg').length;
+    const stdChildren = document.getElementById('standard-doc-container').children.length;
+    return { order, first: order[0], yieldsObserved, visSvgs, stdChildren };
+  });
+  record('TC-PERF-005', asyncOrder.order.length === 10 && asyncOrder.first >= 7 && asyncOrder.yieldsObserved >= 1 && asyncOrder.visSvgs === 10 && asyncOrder.stdChildren === 0,
+    JSON.stringify(asyncOrder));
   if (page.consoleErrors.length) record('TC-PERF-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }
