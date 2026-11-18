@@ -1872,7 +1872,7 @@ async function testCalloutsGlossaryPrint(browser) {
   record('TC-VTPL-021', glossaryOk, JSON.stringify({ glossaryWide, glossaryNarrow, glossaryPhone }));
 
   // TC-VTPL-022 印刷: 刷らないものを隠し、Visualモードは表紙と章を A4 横に 1 ページずつ、高速モードは A4 縦で刷る
-  const printMd = '---\ntitle: 印刷の確認\n---\n# 印刷の確認\n\n## 第 1 章\n\n短い導入の文です。\n\n## 第 2 章\n\n- **A**: 一つ目\n- **B**: 二つ目\n\n## 第 3 章\n\n```js\nconst a = 1;\n```\n';
+  const printMd = '---\ntitle: 印刷の確認\n---\n# 印刷の確認\n\n## 第 1 章\n\n短い導入の文です。\n\n## 第 2 章\n\n- **A**: 一つ目\n- **B**: 二つ目\n\n## 第 3 章\n\n```js\nconst a = 1;\n```\n\n## 第 4 章\n\n1. 手順 1\n2. 手順 2\n3. 手順 3\n';
   await setDocument(page, printMd);
   // スポットライトを当てた状態から刷る。印刷の直前（beforeprint）に減光を外す
   await page.click('.vs-tpl-points li');
@@ -1883,6 +1883,8 @@ async function testCalloutsGlossaryPrint(browser) {
     // 祖先で隠したものも含めて、描画される箱があるか
     const shown = sel => { const el = document.querySelector(sel); return !!el && el.getClientRects().length > 0; };
     const wrapChildren = Array.from(document.querySelectorAll('.exhibition-wrap > *'));
+    const stepsEl = document.querySelector('.exhibition-slab .vs-steps');
+    const stepLiEl = document.querySelector('.exhibition-slab .vs-steps > li');
     return {
       hidden: ['header', '#pane-editor', '#telemetry-pill', '.slab-actions', '.vs-code-copy-btn'].filter(shown),
       preview: shown('#visual-stage-container'),
@@ -1890,7 +1892,9 @@ async function testCalloutsGlossaryPrint(browser) {
       breaks: wrapChildren.map(el => getComputedStyle(el).breakBefore),
       scrollOverflow: cs('#preview-scroll').overflowY,
       animation: cs('.exhibition-slab').animationName,
-      dimmed: document.querySelectorAll('.has-spotlight, .is-spotlight').length
+      dimmed: document.querySelectorAll('.has-spotlight, .is-spotlight').length,
+      stepsGlowDisplay: stepsEl ? getComputedStyle(stepsEl, '::after').display : null,
+      stepItemGlowDisplay: stepLiEl ? getComputedStyle(stepLiEl, '::after').display : null
     };
   });
   // media を null に戻す。'screen' を指定したままだと page.pdf() も画面の CSS で出力される
@@ -1904,9 +1908,10 @@ async function testCalloutsGlossaryPrint(browser) {
   await page.click('#menu-print');
   const printCalls = await page.evaluate(() => ({ calls: window.__printCalls, menuClosed: document.getElementById('save-menu').classList.contains('hidden') }));
   const printOk = printed.hidden.length === 0 && printed.preview && JSON.stringify(printed.pageNames) === '["lucivo-visual"]'
-    && JSON.stringify(printed.breaks) === JSON.stringify(['auto', 'page', 'page', 'page']) && printed.scrollOverflow === 'visible'
+    && JSON.stringify(printed.breaks) === JSON.stringify(['auto', 'page', 'page', 'page', 'page']) && printed.scrollOverflow === 'visible'
     && printed.animation === 'none' && printed.dimmed === 0
-    && visualPdf.pages === 4 && visualPdf.landscape === true && fastPdf.pages >= 1 && fastPdf.landscape === false
+    && printed.stepsGlowDisplay === 'none' && printed.stepItemGlowDisplay === 'none'
+    && visualPdf.pages === 5 && visualPdf.landscape === true && fastPdf.pages >= 1 && fastPdf.landscape === false
     && printCalls.calls === 1 && printCalls.menuClosed;
   record('TC-VTPL-022', printOk, JSON.stringify({ printed, visualPdf, fastPdf, printCalls }));
 

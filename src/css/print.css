@@ -64,6 +64,8 @@
   .vs-code-copy-btn,
   .vs-endcard,
   .signal-light-canvas,
+  .exhibition-slab .vs-steps::after,
+  .exhibition-slab .vs-steps > li::after,
   :is(.diagram-frame-header, .exhibition-diagram-header) :is(button, .pill-container) {
     display: none !important;
   }
