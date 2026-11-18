@@ -1696,6 +1696,38 @@ async function testCoverAndTables(browser) {
 
   record('TC-VTPL-031', vtpl31Ok, JSON.stringify({ ambientDefaultOff, ambientOnState, styleMasks: Object.keys(styleMasks).reduce((a, k) => ({ ...a, [k]: /organic-[a-z-]+/.exec(styleMasks[k])?.[0] || '' }), {}), ambientOffAfter }));
 
+  // TC-VTPL-032 章番号の透かしあしらい（#217）
+  const readWatermark = () => page.evaluate(() => {
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no]');
+    const cs = slab ? getComputedStyle(slab, '::after') : null;
+    const h2 = slab ? slab.querySelector('h2') : null;
+    return cs ? {
+      no: slab.getAttribute('data-stage-no'),
+      content: cs.content,
+      position: cs.position,
+      zIndex: cs.zIndex,
+      h2ZIndex: h2 ? getComputedStyle(h2).zIndex : null,
+      pointerEvents: cs.pointerEvents,
+      userSelect: cs.userSelect,
+      fontSize: parseFloat(cs.fontSize),
+      opacity: parseFloat(cs.opacity)
+    } : null;
+  });
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const wmLight = await readWatermark();
+  await setMode(page, { style: 'shapes', appearance: 'dark' });
+  const wmDark = await readWatermark();
+  const wmOk = Boolean(wmLight && wmDark
+    && wmLight.content.includes(wmLight.no)
+    && wmLight.position === 'absolute'
+    && wmLight.zIndex === '0'
+    && wmLight.pointerEvents === 'none'
+    && wmLight.userSelect === 'none'
+    && wmLight.fontSize >= 72
+    && wmLight.opacity > 0.03 && wmLight.opacity <= 0.1
+    && wmDark.opacity > wmLight.opacity && wmDark.opacity <= 0.12);
+  record('TC-VTPL-032', wmOk, JSON.stringify({ wmLight, wmDark }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
