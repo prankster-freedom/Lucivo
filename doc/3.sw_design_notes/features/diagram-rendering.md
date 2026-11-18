@@ -247,7 +247,8 @@ Mermaid 12 は既定の見た目・レイアウト・余白が 10 系と異な�
 
 ## 11. 可視領域優先・非同期図描画（`NFR-006`、#236）
 
-| ID          | 項目                       | 設計 |
-| :---------- | :------------------------- | :--- |
-| DD-DIAG-080 | 表示領域に近い図の優先描画 | `processDirtyBlocks()` は未描画ブロックの配列から、毎図の描画前に `#preview-scroll` の表示領域と交差している図（上から順）、次いで表示領域の中心に近い図を選んで描画する（`pickNextDirtyBlockIndex()`）。途中でスクロールされても次の 1 図から新しい可視領域が優先される |
-| DD-DIAG-081 | メインスレッドへの譲歩     | 図を 1 つ描くごとに `yieldToMain()`（`scheduler.yield()`、未対応ブラウザは `setTimeout(0)`）でブラウザへ制御を返し、長いタスクを分割して入力・スクロールを止めない。譲歩の前後で描画世代（`isStale()`）を検査し、再描画・モード切替が起きたら古い描画を中断する |
+| ID          | 項目                             | 設計 |
+| :---------- | :------------------------------- | :--- |
+| DD-DIAG-080 | 表示領域に近い図の優先描画       | `processDirtyBlocks()` は未描画ブロックの配列から、毎図の描画前に `#preview-scroll` の表示領域と交差している図（上から順）、次いで表示領域の中心に近い図を選んで描画する（`pickNextDirtyBlockIndex()`）。途中でスクロールされても次の 1 図から新しい可視領域が優先される |
+| DD-DIAG-081 | メインスレッドへの譲歩           | 図を 1 つ描くごとに `yieldToMain()`（`scheduler.yield()`、未対応ブラウザは `setTimeout(0)`）でブラウザへ制御を返し、長いタスクを分割して入力・スクロールを止めない。譲歩の前後で描画世代（`isStale()`）を検査し、再描画・モード切替が起きたら古い描画を中断する |
+| DD-DIAG-082 | 画面外ブロックの描画省略（#238） | 高速モードで直下の要素が 200 ブロック以上の長い文書のみ `#standard-doc-container` に `.has-content-visibility` を付与し、初期表示領域（先頭 24 要素）を除く `:nth-child(n+25)` に `content-visibility: auto` と `contain-intrinsic-size: auto none auto <高さ>`（通常 80px・表/コード 200px・図 360px）を適用する。印刷時（`@media print`）は `content-visibility: visible !important` に戻し、Split 追従時は実高さ確定後に 1 フレーム補正を行う |

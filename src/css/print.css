@@ -75,6 +75,10 @@
     border: 0 !important;
     box-shadow: none !important;
   }
+  .prose-doc > * {
+    content-visibility: visible !important;
+    contain-intrinsic-size: none !important;
+  }
   .prose-doc :is(h1, h2, h3, h4, h5, h6) {
     break-after: avoid;
   }

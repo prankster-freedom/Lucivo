@@ -15,6 +15,18 @@
   line-height: 1.75;
   color: var(--text-secondary);
 }
+/* 長い文書（200 ブロック以上）で初期ビューポート外のブロックのレイアウトと描画を省く（#238, NFR-006）。
+   先頭 24 ブロックは初期表示のため除外し、仮の高さ（auto 付きで実高さを記憶）でスクロールの飛びを防ぐ */
+.prose-doc.has-content-visibility > :nth-child(n+25) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 80px;
+}
+.prose-doc.has-content-visibility > :is(pre, .table-container):nth-child(n+25) {
+  contain-intrinsic-size: auto none auto 200px;
+}
+.prose-doc.has-content-visibility > .diagram-frame:nth-child(n+25) {
+  contain-intrinsic-size: auto none auto 360px;
+}
 .prose-doc :is(p, blockquote, li) {
   text-wrap: pretty;
 }

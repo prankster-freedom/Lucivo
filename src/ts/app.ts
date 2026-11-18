@@ -152,6 +152,8 @@ function renderApp() {
     stdWrapper.classList.remove('hidden');
     stdContainer.innerHTML = isEmpty ? EMPTY_GUIDE_HTML : cleanHtml;
     decorateAlerts(stdContainer);
+    // 長い文書（200 ブロック以上）のみ画面外ブロックのレイアウト・描画を省く（#238）
+    stdContainer.classList.toggle('has-content-visibility', !isEmpty && stdContainer.children.length >= 200);
   }
 
   const activeContainer = isVisual ? visContainer : stdContainer;
@@ -635,7 +637,19 @@ function followEditorCaret() {
   const key = keyEl ? (keyEl as HTMLElement).dataset.srcLine : 'top';
   if (key === runtime.followedKey) return;
   runtime.followedKey = key;
-  scroller.scrollTo({ top: anchor ? previewScrollTopOf(anchor, scroller) : 0, behavior: scrollBehavior() });
+  const behavior = scrollBehavior();
+  scroller.scrollTo({ top: anchor ? previewScrollTopOf(anchor, scroller) : 0, behavior });
+  // content-visibility: auto 有効時はスクロール直後に実高さが確定してずれるため、1 フレーム後に微調整する（#238）
+  if (anchor && !state.isVisualMode && document.getElementById('standard-doc-container')?.classList.contains('has-content-visibility')) {
+    const expectedKey = key;
+    requestAnimationFrame(() => {
+      if (runtime.followedKey !== expectedKey || !anchor.isConnected) return;
+      const targetTop = previewScrollTopOf(anchor, scroller);
+      if (Math.abs(scroller.scrollTop - targetTop) > 4) {
+        scroller.scrollTo({ top: targetTop, behavior: 'auto' });
+      }
+    });
+  }
 }
 
 // カーソルの移動・入力のたびに呼ぶ。スクロールは表示更新 1 回にまとめる

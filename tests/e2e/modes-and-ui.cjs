@@ -68,6 +68,7 @@ async function testStartupAndCache(browser) {
     JSON.stringify(timing));
 
   // TC-PERF-003 長い文書の追従は描画時に作った見出し一覧を引き、入力・移動ごとに querySelectorAll をやり直さない
+  await page.setViewportSize({ width: 1280, height: 800 });
   const longMd = Array.from({ length: 200 }, (_, i) => `## ${i + 1}. 見出し ${i + 1}\n\n${'本文行\n'.repeat(18)}`).join('\n');
   await page.evaluate(md => {
     const editor = document.getElementById('markdown-editor');
@@ -189,6 +190,42 @@ async function testStartupAndCache(browser) {
   });
   record('TC-PERF-005', asyncOrder.order.length === 10 && asyncOrder.first >= 7 && asyncOrder.yieldsObserved >= 1 && asyncOrder.visSvgs === 10 && asyncOrder.stdChildren === 0,
     JSON.stringify(asyncOrder));
+
+  // TC-PERF-006 長い文書で画面外ブロックのレイアウトと描画を省き、印刷時は解除する（#238）
+  await setMode(page, { style: 'std', appearance: 'light' });
+  await page.evaluate(md => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = md;
+    renderApp();
+  }, longMd);
+  await waitRendered(page);
+  const cvScreen = await page.evaluate(() => {
+    const root = document.getElementById('standard-doc-container');
+    const first = root.children[0];
+    const later = root.children[30];
+    return {
+      hasClass: root.classList.contains('has-content-visibility'),
+      firstCv: first ? getComputedStyle(first).contentVisibility : null,
+      laterCv: later ? getComputedStyle(later).contentVisibility : null,
+      laterCis: later ? getComputedStyle(later).containIntrinsicBlockSize : null
+    };
+  });
+  await page.emulateMedia({ media: 'print' });
+  const cvPrint = await page.evaluate(() => {
+    const later = document.getElementById('standard-doc-container').children[30];
+    return later ? getComputedStyle(later).contentVisibility : null;
+  });
+  await page.emulateMedia({ media: null });
+  await page.evaluate(() => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = '# 短い文書\n\n段落 1\n\n段落 2';
+    renderApp();
+  });
+  await waitRendered(page);
+  const cvShort = await page.evaluate(() => document.getElementById('standard-doc-container').classList.contains('has-content-visibility'));
+  record('TC-PERF-006', cvScreen.hasClass && cvScreen.firstCv === 'visible' && cvScreen.laterCv === 'auto'
+    && Boolean(cvScreen.laterCis && cvScreen.laterCis !== 'none') && cvPrint === 'visible' && !cvShort,
+    JSON.stringify({ cvScreen, cvPrint, cvShort }));
   if (page.consoleErrors.length) record('TC-PERF-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.close();
 }
