@@ -486,3 +486,35 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
 #shortcut-modal {
   z-index: 80;
 }
+
+/* ステージ発表の最終シーン（エンドカード、#212）: 通常表示では隠し、発表中のみ表示する */
+.exhibition-wrap > .vs-endcard {
+  display: none;
+}
+html.is-stage-show .exhibition-wrap > .vs-endcard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 1.1rem;
+  min-height: min(68vh, 32rem);
+}
+.vs-endcard-closing {
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.vs-endcard-meta {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+.vs-endcard-url {
+  font-size: 0.95rem;
+  color: var(--vs-c1);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  word-break: break-all;
+}

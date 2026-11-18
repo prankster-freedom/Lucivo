@@ -62,6 +62,7 @@
   #pane-preview > :not(#preview-scroll),
   .slab-actions,
   .vs-code-copy-btn,
+  .vs-endcard,
   .signal-light-canvas,
   :is(.diagram-frame-header, .exhibition-diagram-header) :is(button, .pill-container) {
     display: none !important;

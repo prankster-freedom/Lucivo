@@ -215,10 +215,10 @@ export function applySlabTemplate(template, els) {
 
 export const COVER_LIMITS = { agenda: [3, 15], tags: 4 };
 
-// 表紙に使うフロントマターの値（title / description / tags / author / date）を取り出す。
+// 表紙とエンドカードに使うフロントマターの値（title / description / tags / author / date / closing / url）を取り出す。
 // YAML の完全な解析はしない。先頭の列から始まるキーだけを見て、入れ子のキーは読まない（DD-VTPL-040）
 export function readCoverMeta(yaml) {
-  const meta = { title: '', description: '', tags: [], author: '', date: '' };
+  const meta = { title: '', description: '', tags: [], author: '', date: '', closing: '', url: '' };
   if (!yaml) return meta;
   const lines = yaml.split(/\r?\n/);
   const scalar = v => {
@@ -226,7 +226,7 @@ export function readCoverMeta(yaml) {
     return q ? q[2].trim() : v.replace(/\s+#.*$/, '').trim();
   };
   for (let i = 0; i < lines.length; i++) {
-    const m = /^(title|description|tags|author|date)[ \t]*:[ \t]*(.*)$/.exec(lines[i]);
+    const m = /^(title|description|tags|author|date|closing|url)[ \t]*:[ \t]*(.*)$/.exec(lines[i]);
     if (!m) continue;
     const [, key, raw] = m;
     // 続く字下げの行（ブロックの値・リスト）を集める
@@ -244,7 +244,7 @@ export function readCoverMeta(yaml) {
         meta.tags = block.filter(l => l.startsWith('-')).map(l => scalar(l.replace(/^-\s*/, '')));
       }
       meta.tags = meta.tags.filter(Boolean).slice(0, COVER_LIMITS.tags);
-    } else if (key === 'author' || key === 'date') {
+    } else if (key === 'author' || key === 'date' || key === 'closing' || key === 'url') {
       // 入れ子のマップ（author:\n  title: ...）は読まず、単一スカラー値のみ採用する（FR-032）
       if (value && !/^[>|][+-]?$/.test(value)) meta[key] = scalar(value);
     } else {
@@ -456,6 +456,7 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
   // 見出しの文字（textContent）はエスケープしてから埋め込む。そのまま入れると、見出しに書いた
   // &lt;img …&gt; などが HTML として解釈される（NFR-003）
   const heroHtml = heroTitle ? buildCoverHtml(heroTitle, coverMeta, agenda, totalFigures) : '';
+  const endCardHtml = buildEndCardHtml(heroTitle, coverMeta);
 
   // 雛形・バッジ・4 色バーの配色は、スタイルのクラスが定義する --vs-c1〜4 から取る（DTP-VTPL-070）
   const ambientClass = state.ambientEffectsEnabled ? ' has-ambient-effects' : '';
@@ -463,8 +464,35 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
     <div class="exhibition-wrap vs-theme-${state.infographicStyle}${ambientClass}">
       ${heroHtml}
       ${slabsHtml}
+      ${endCardHtml}
     </div>
   `;
+}
+
+// ステージ発表の最終シーン（エンドカード）。closing または url があるときだけ出力する（#212）
+function buildEndCardHtml(heroTitle: string, meta: { author: string; closing: string; url: string }) {
+  if (!meta.closing && !meta.url) return '';
+  const closingHtml = meta.closing ? `<p class="vs-endcard-closing font-display">${escapeHtml(meta.closing)}</p>` : '';
+  const metaParts = [heroTitle, meta.author].filter(Boolean).map(escapeHtml);
+  const metaHtml = metaParts.length ? `<p class="vs-endcard-meta">${metaParts.join(' ／ ')}</p>` : '';
+  let urlHtml = '';
+  if (meta.url) {
+    const safeUrl = /^(?:https?:\/\/|mailto:)/i.test(meta.url);
+    urlHtml = safeUrl
+      ? `<a class="vs-endcard-url" href="${escapeHtml(meta.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(meta.url)}</a>`
+      : `<span class="vs-endcard-url">${escapeHtml(meta.url)}</span>`;
+  }
+  return `
+      <section class="exhibition-slab vs-endcard" aria-label="エンドカード">
+        <span class="vs-cover-texture" aria-hidden="true"></span>
+        <div class="exhibition-hero-top">
+          <span class="exhibition-hero-emblem" aria-hidden="true"></span>
+          <div class="four-color-bar"><span></span><span></span><span></span><span></span></div>
+        </div>
+        ${closingHtml}
+        ${metaHtml}
+        ${urlHtml}
+      </section>`;
 }
 
 /* ==========================================================================

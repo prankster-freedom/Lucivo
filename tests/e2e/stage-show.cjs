@@ -573,6 +573,54 @@ async function testStageShow(browser) {
   }
   await page.keyboard.press('Escape');
 
+  // TC-SHOW-027 ステージ発表のエンドカード（#212）
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const endCardMd = [
+    '---',
+    'title: 夜を編む図書館',
+    'author: ひかりのしおり',
+    'closing: ありがとうございました',
+    'url: https://example.com/',
+    '---',
+    '# 夜を編む図書館', '',
+    '## 第 1 章', '',
+    '本文です。'
+  ].join('\n');
+  await setDocument(page, endCardMd);
+  const endCardNormal = await page.evaluate(() => {
+    const el = document.querySelector('#visual-stage-container .vs-endcard');
+    return { exists: Boolean(el), display: el ? getComputedStyle(el).display : null };
+  });
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => document.documentElement.classList.contains('is-stage-show'));
+  await page.keyboard.press('End');
+  await page.waitForTimeout(300);
+  const endCardShow = await page.evaluate(() => {
+    const st = LucivoStage.showState();
+    const el = document.querySelector('#visual-stage-container .vs-endcard.is-scene');
+    const link = el ? el.querySelector('a.vs-endcard-url') : null;
+    return {
+      scenes: st.scenes,
+      index: st.index,
+      display: el ? getComputedStyle(el).display : null,
+      closing: el ? el.querySelector('.vs-endcard-closing')?.textContent : null,
+      meta: el ? el.querySelector('.vs-endcard-meta')?.textContent : null,
+      href: link ? link.getAttribute('href') : null
+    };
+  });
+  await page.keyboard.press('Escape');
+  // 不正なスキームの URL はリンク化しない
+  await setDocument(page, endCardMd.replace('https://example.com/', 'javascript:alert(1)'));
+  const unsafeLinkCount = await page.evaluate(() => document.querySelectorAll('#visual-stage-container a.vs-endcard-url').length);
+  const endCardOk = endCardNormal.exists && endCardNormal.display === 'none'
+    && endCardShow.scenes === 3 && endCardShow.index === 2
+    && endCardShow.display === 'flex'
+    && endCardShow.closing === 'ありがとうございました'
+    && endCardShow.meta === '夜を編む図書館 ／ ひかりのしおり'
+    && endCardShow.href === 'https://example.com/'
+    && unsafeLinkCount === 0;
+  record('TC-SHOW-027', endCardOk, JSON.stringify({ endCardNormal, endCardShow, unsafeLinkCount }));
+
   if (page.consoleErrors.length) record('TC-SHOW-CONSOLE', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
