@@ -57,6 +57,10 @@ import {
   clearVisualStageSpotlight,
   setupVisualStageInteractions
 } from './ui/slab-export';
+import {
+  linkSplitTerms,
+  setupSplitTermLinks
+} from './ui/split-term-links';
 import { ensureStyleFont } from './ui/style-fonts';
 import {
   decorateCodeBlocks,
@@ -1035,6 +1039,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
         stageViewport.innerHTML = finalSvg;
         applyReadableFit(stageViewport.querySelector(':scope > svg'), block.cacheKey);
         mountStage(stageViewport);
+        if (target.isVisual) linkSplitTerms(stageViewport.closest('.exhibition-slab-split'));
       }
     } catch (err) {
       // Mermaid が描画のために body に置いた一時的な要素が残っていれば消す（DD-DIAG-064）
@@ -1047,6 +1052,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
           stageViewport.innerHTML = fallback;
           applyReadableFit(stageViewport.querySelector(':scope > svg'));
           mountStage(stageViewport);
+          if (target.isVisual) linkSplitTerms(stageViewport.closest('.exhibition-slab-split'));
           showToast('構文エラーのため直前の正常状態を表示');
         } else {
           stageViewport.innerHTML = `<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">構文エラー: 正しいMermaid記法を入力してください</div>`;
@@ -1923,6 +1929,7 @@ runtime.renderApp = renderApp;
 window.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   setupVisualStageInteractions();
+  setupSplitTermLinks();
   setupKeyboardShortcuts();
   setupFileMenu();
   setupFileDrop();

@@ -597,6 +597,21 @@ html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-vie
 .exhibition-slab-split.is-stacked > .exhibition-slab-body {
   grid-template-columns: minmax(0, 1fr);
 }
+/* 解説＋図版型の語とノードの光連動（#213, DTP-VTPL-060）: 普段は印を出さず、指を置いたときだけ双方を光らせる */
+.exhibition-slab-split .vs-term-link {
+  border-radius: 4px;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+.exhibition-slab-split .vs-term-link.is-term-lit {
+  background: color-mix(in oklab, var(--vs-c1) 20%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--vs-c1) 28%, transparent), 0 0 14px color-mix(in oklab, var(--vs-c1) 35%, transparent);
+}
+.exhibition-slab-split [data-term-node] {
+  transition: filter 0.18s ease;
+}
+.exhibition-slab-split [data-term-node].is-term-lit {
+  filter: drop-shadow(0 0 8px var(--vs-c1)) drop-shadow(0 0 18px color-mix(in oklab, var(--vs-c1) 70%, transparent));
+}
 @media (max-width: 767px) {
   .exhibition-slab-split > .exhibition-slab-body {
     grid-template-columns: minmax(0, 1fr);
