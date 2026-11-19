@@ -336,6 +336,89 @@ async function testPerfOptimizations(browser) {
     JSON.stringify({ wideState, narrowState })
   );
   await page.close();
+
+  // TC-PERF-010 (#253): 画面外の手順型アニメーションを停止し、画面内に入ったら再開する
+  const p10 = await openApp(browser);
+  await p10.setViewportSize({ width: 1280, height: 700 });
+  await selectVisualStyle(p10, 'shapes');
+  const stepsMd = [
+    '# 手順アニメーション停止テスト',
+    '',
+    ...Array.from({ length: 12 }, (_, i) => [
+      `## ${i + 1}. 章 ${i + 1}`,
+      '',
+      '解説の段落です。十分な高さを確保して画面外に押し出します。',
+      '',
+      '1. 手順 A: 入力',
+      '2. 手順 B: 処理',
+      '3. 手順 C: 出力',
+      ''
+    ].join('\n'))
+  ].join('\n');
+  await p10.evaluate(text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, stepsMd);
+  await p10.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+  // 表紙の下にある最初のスラブを画面内にスクロールしてから初期状態を測る
+  await p10.evaluate(() => {
+    const lists = document.querySelectorAll('#visual-stage-container .vs-steps');
+    lists[0].scrollIntoView({ block: 'center' });
+  });
+  await p10.waitForTimeout(250);
+
+  const initialSteps = await p10.evaluate(() => {
+    const lists = Array.from(document.querySelectorAll('#visual-stage-container .vs-steps'));
+    const first = lists[0];
+    const last = lists[lists.length - 1];
+    const stateOf = el => ({
+      offscreen: el.classList.contains('is-offscreen'),
+      cometPlay: getComputedStyle(el, '::after').animationPlayState,
+      stepPlay: getComputedStyle(el.querySelector('li'), '::after').animationPlayState,
+      chevronPlay: el.querySelector('.vs-step-chevron') ? getComputedStyle(el.querySelector('.vs-step-chevron')).animationPlayState : null
+    });
+    return { count: lists.length, first: stateOf(first), last: stateOf(last) };
+  });
+
+  // 末尾の手順を画面内にスクロールする
+  await p10.evaluate(() => {
+    const lists = document.querySelectorAll('#visual-stage-container .vs-steps');
+    lists[lists.length - 1].scrollIntoView({ block: 'center' });
+  });
+  await p10.waitForTimeout(250);
+
+  const afterScrollSteps = await p10.evaluate(() => {
+    const lists = Array.from(document.querySelectorAll('#visual-stage-container .vs-steps'));
+    const first = lists[0];
+    const last = lists[lists.length - 1];
+    const stateOf = el => ({
+      offscreen: el.classList.contains('is-offscreen'),
+      cometPlay: getComputedStyle(el, '::after').animationPlayState,
+      stepPlay: getComputedStyle(el.querySelector('li'), '::after').animationPlayState,
+      chevronPlay: el.querySelector('.vs-step-chevron') ? getComputedStyle(el.querySelector('.vs-step-chevron')).animationPlayState : null
+    });
+    return { first: stateOf(first), last: stateOf(last) };
+  });
+
+  record('TC-PERF-010',
+    initialSteps.count === 12 &&
+    !initialSteps.first.offscreen &&
+    initialSteps.first.cometPlay === 'running' &&
+    initialSteps.last.offscreen &&
+    initialSteps.last.cometPlay === 'paused' &&
+    initialSteps.last.stepPlay === 'paused' &&
+    initialSteps.last.chevronPlay === 'paused' &&
+    afterScrollSteps.first.offscreen &&
+    afterScrollSteps.first.cometPlay === 'paused' &&
+    !afterScrollSteps.last.offscreen &&
+    afterScrollSteps.last.cometPlay === 'running' &&
+    afterScrollSteps.last.stepPlay === 'running' &&
+    afterScrollSteps.last.chevronPlay === 'running',
+    JSON.stringify({ initialSteps, afterScrollSteps })
+  );
+  await p10.close();
 }
 
 module.exports = { testPerfBudget, testPerfOptimizations };

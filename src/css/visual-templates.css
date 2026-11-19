@@ -312,6 +312,12 @@
   transform: translateX(-50%) scale(1.14);
   box-shadow: 0 0 0 5px var(--vs-slab-bg), 0 6px 16px -2px rgba(15, 23, 42, 0.28);
 }
+/* 画面外の章にある手順アニメーションを止め、画面内に入ったときだけ再生する（#253） */
+.exhibition-slab .vs-steps.is-offscreen::after,
+.exhibition-slab .vs-steps.is-offscreen > li::after,
+.exhibition-slab .vs-steps.is-offscreen .vs-step-chevron {
+  animation-play-state: paused;
+}
 .exhibition-slab ol.vs-steps.is-vertical {
   grid-template-columns: 1fr;
   gap: 0.9rem;

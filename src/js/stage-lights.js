@@ -55,6 +55,12 @@ const visibilityObserver = new IntersectionObserver(entries => {
   });
 }, { threshold: 0.08 });
 
+const stepVisibilityObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    entry.target.classList.toggle('is-offscreen', !entry.isIntersecting);
+  });
+}, { threshold: 0.01 });
+
 const resizeObserver = new ResizeObserver(entries => {
   entries.forEach(entry => {
     const flow = flows.get(entry.target);
@@ -383,6 +389,10 @@ export function mountLights(root) {
     resizeObserver.observe(svg);
     resizeObserver.observe(host);
   });
+  // 手順型の CSS 繰り返しアニメーションも、画面外では止めて負荷を抑える（#253）
+  root.querySelectorAll('.exhibition-slab .vs-steps').forEach(steps => {
+    stepVisibilityObserver.observe(steps);
+  });
 }
 
 // 再描画で図の DOM が作り直される前に呼ぶ
@@ -394,6 +404,7 @@ export function resetLights() {
   activeFlows.clear();
   flows.clear();
   visibilityObserver.disconnect();
+  stepVisibilityObserver.disconnect();
   resizeObserver.disconnect();
 }
 
