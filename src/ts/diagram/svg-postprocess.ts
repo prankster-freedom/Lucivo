@@ -100,7 +100,12 @@ export function applyReadableFit(svg, cacheKey) {
   svg.style.setProperty('--natural-width', `${fit.naturalWidth}px`);
   // 2 段組みで、拡大を図の高さで抑えるための縦横比（幅 ÷ 高さ。DD-DIAG-044）
   if (viewBox.height) svg.style.setProperty('--fit-aspect', (viewBox.width / viewBox.height).toFixed(4));
-  updateSlabSplit(svg.closest('.exhibition-slab-split'));
+  const splitSlab = svg.closest('.exhibition-slab-split');
+  // 印刷（A4 横 16:10 版面）の右 7 カラム幅（約 440px）に収まらない横長の図だけ 1 段組みにする（#261, DD-VTPL-139）
+  if (splitSlab) {
+    splitSlab.toggleAttribute('data-print-stacked', fit.minWidth > 440);
+  }
+  updateSlabSplit(splitSlab);
 }
 
 // 2 段組みスラブで、右カラムの表示枠より図が広い場合、または 1:1（実寸）表示に切り替えた場合は 1 段組み（is-stacked）に切り替える（FR-015, DD-DIAG-042）

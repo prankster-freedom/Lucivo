@@ -242,5 +242,65 @@
   .exhibition-wrap [data-stage-index] > svg {
     max-height: 105mm !important;
   }
+  /* 解説＋図版型（split）: 画面が Split 表示で .is-stacked が付いていても、A4 横版面の 2 段に収まる標準図
+     （data-print-stacked なし）は左右 2 段組みで刷り 1 ページに収める（#261, DD-VTPL-139） */
+  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body {
+    grid-template-columns: minmax(68mm, 5fr) minmax(0, 7fr) !important;
+    gap: 7mm !important;
+  }
+  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::before,
+  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::after {
+    content: "";
+    flex: 1 1 0;
+  }
+  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::before {
+    max-height: 45mm;
+  }
+  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-figure > .exhibition-diagram-card {
+    margin: 0 !important;
+  }
+  /* 横に大きい図（data-print-stacked）は全幅 1 段組みのまま、上の解説文のぶん図の高さ上限を詰めて 1 ページに収める */
+  .exhibition-slab-split[data-print-stacked] > .exhibition-slab-body {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .exhibition-slab-split[data-print-stacked] [data-stage-index] > svg {
+    max-height: 90mm !important;
+  }
+  /* 項目数の多いリスト・カード・手順が版面（173mm）をわずかに超えて 1 項目だけ次ページへはみ出すのを防ぐ（#261, DD-VTPL-139）。
+     zoom や事前の位置計測を使わず、CSS の :has() で項目数に応じて段階的に文字と余白を詰める */
+  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(5)) {
+    font-size: 0.92rem !important;
+  }
+  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(5)) > li {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+    line-height: 1.52 !important;
+  }
+  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(8)) {
+    font-size: 0.88rem !important;
+  }
+  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(8)) > li {
+    margin-top: 0.18rem !important;
+    margin-bottom: 0.18rem !important;
+    line-height: 1.45 !important;
+  }
+  .exhibition-slab ul.vs-points:has(> li:nth-child(5)) {
+    gap: 0.75rem !important;
+  }
+  .exhibition-slab ul.vs-points:has(> li:nth-child(5)) > li {
+    padding: 0.95rem 1.05rem !important;
+  }
+  .exhibition-slab ol.vs-steps.is-vertical:has(> li:nth-child(6)) {
+    gap: 0.65rem !important;
+  }
+  .exhibition-slab ol.vs-steps.is-vertical:has(> li:nth-child(6)) > li {
+    font-size: 0.93rem !important;
+    line-height: 1.5 !important;
+  }
 }
 
