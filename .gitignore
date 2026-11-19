@@ -8,6 +8,7 @@ work/
 /public/css/style.css
 /public/css/modes/
 /public/samples/samples-data.js
+/public/vendor/style-fonts/
 
 # スタンドアロン版のビルド出力（tools/build-app.cjs --channel standalone）
 dist/

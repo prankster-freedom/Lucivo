@@ -20,7 +20,25 @@ const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const OUT_DIR = channel === 'standalone' ? path.join(ROOT_DIR, 'dist') : PUBLIC_DIR;
 // ビルドの出力（コミットしない。doc/2.ARCHITECTURE.md 4.14 ARC-PUB-001）の public/ からの相対パス（POSIX 区切り）。
 // standalone は、これ以外のファイル（コミットするファイル）だけを public/ から写し、出力は dist/ にビルドで作る
-const BUILD_OUTPUTS = ['js', 'css/style.css', 'css/modes', 'samples/samples-data.js'];
+const BUILD_OUTPUTS = ['js', 'css/style.css', 'css/modes', 'samples/samples-data.js', 'vendor/style-fonts'];
+
+// Web 版専用のスタイル別見出し書体（#218, DTP-004）。配布サイズを抑えるため standalone（dist/・ZIP）には含めない
+const STYLE_FONT_SPECS = [
+  {
+    id: 'circles',
+    pkg: '@fontsource/m-plus-rounded-1c',
+    cssFile: '800.css',
+    family: 'M PLUS Rounded 1c',
+    weightRange: '700 800'
+  },
+  {
+    id: 'editorial',
+    pkg: '@fontsource-variable/noto-serif-jp',
+    cssFile: 'wght.css',
+    family: 'Noto Serif JP',
+    weightRange: null
+  }
+];
 
 // 発表モードの登録表（doc/2.ARCHITECTURE.md 4.16 ARC-MODE-001）。配布先で絞る（ARC-MODE-002）:
 // web は全部、standalone は stage: "all"（スタンドアロン版にも展開したもの）だけ。ビルドするモードも、本体に埋め込む表も、この絞った表で決める
@@ -68,10 +86,62 @@ function cleanModeOutputs() {
   fs.rmSync(path.join(OUT_DIR, 'css', 'modes'), { recursive: true, force: true });
 }
 
+// Web 版専用のスタイル別見出し書体を public/vendor/style-fonts/ へ生成する（#218）。
+// パッケージの版が変わっていなければコピーを省略してビルド時間を保つ
+function buildStyleFonts() {
+  const modulesDir = path.join(ROOT_DIR, 'node_modules');
+  const outDir = path.join(OUT_DIR, 'vendor', 'style-fonts');
+  const filesDir = path.join(outDir, 'files');
+  const stampPath = path.join(outDir, '.stamp');
+
+  const stamp = STYLE_FONT_SPECS.map(spec => {
+    const pkgJson = JSON.parse(fs.readFileSync(path.join(modulesDir, spec.pkg, 'package.json'), 'utf8'));
+    return `${spec.id}:${spec.pkg}@${pkgJson.version}:${spec.cssFile}:${spec.weightRange || ''}`;
+  }).join('|') + '|v1';
+
+  const allCssExist = STYLE_FONT_SPECS.every(spec => fs.existsSync(path.join(outDir, `${spec.id}.css`)));
+  if (allCssExist && fs.existsSync(stampPath) && fs.readFileSync(stampPath, 'utf8').trim() === stamp) {
+    return;
+  }
+
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(filesDir, { recursive: true });
+
+  const notices = [];
+  for (const spec of STYLE_FONT_SPECS) {
+    const pkgDir = path.join(modulesDir, spec.pkg);
+    const pkgJson = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
+    let css = fs.readFileSync(path.join(pkgDir, spec.cssFile), 'utf8');
+    // woff2 のみ配信し、古い woff フォールバック参照を除く
+    css = css.replace(/,\s*url\(\.\/files\/[^)]+\.woff\)\s*format\('woff'\)/g, '');
+    css = css.replace(/font-family:\s*'[^']+';/g, `font-family: '${spec.family}';`);
+    if (spec.weightRange) {
+      css = css.replace(/font-weight:\s*\d+;/g, `font-weight: ${spec.weightRange};`);
+    }
+    for (const [, name] of css.matchAll(/url\(\.\/files\/([^)]+\.woff2)\)/g)) {
+      fs.copyFileSync(path.join(pkgDir, 'files', name), path.join(filesDir, name));
+    }
+    fs.writeFileSync(path.join(outDir, `${spec.id}.css`), css, 'utf8');
+
+    const licenseFile = fs.readdirSync(pkgDir).find(f => /^LICENSE/i.test(f));
+    if (licenseFile) {
+      const body = fs.readFileSync(path.join(pkgDir, licenseFile), 'utf8').trim();
+      notices.push(`${'='.repeat(72)}\n${spec.pkg} ${pkgJson.version}\n${'='.repeat(72)}\n\n${body}\n`);
+    }
+  }
+  fs.writeFileSync(
+    path.join(outDir, 'THIRD_PARTY_LICENSES.txt'),
+    `Lucivo Web 版のスタイル別見出し書体に同梱している第三者フォントのライセンスです。\n\n${notices.join('\n')}`,
+    'utf8'
+  );
+  fs.writeFileSync(stampPath, stamp + '\n', 'utf8');
+}
+
 async function build() {
   const start = Date.now();
   console.log(`Building app (${channel}, ${isProd ? 'production' : 'development'})...`);
   if (channel === 'standalone') copyPublicToStandalone();
+  else buildStyleFonts();
   cleanModeOutputs();
 
   const commonJsOptions = {
@@ -93,7 +163,9 @@ async function build() {
       define: {
         __LUCIVO_VERSION__: JSON.stringify(appVersion),
         // この配布先で発表のドロップダウンに出すモード（stage は配布先で決まったあとは要らない）
-        __LUCIVO_PRESENT_MODES__: JSON.stringify(MODES.map(({ id, label }) => ({ id, label })))
+        __LUCIVO_PRESENT_MODES__: JSON.stringify(MODES.map(({ id, label }) => ({ id, label }))),
+        // Web 版のみスタイル別の見出し書体を遅延読み込みする（#218）
+        __LUCIVO_STYLE_FONTS__: JSON.stringify(channel === 'web')
       }
     }),
     ...STAGE_MODE_ENTRIES.map(({ entry, outfile }) =>

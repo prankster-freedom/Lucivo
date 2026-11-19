@@ -57,6 +57,7 @@ import {
   clearVisualStageSpotlight,
   setupVisualStageInteractions
 } from './ui/slab-export';
+import { ensureStyleFont } from './ui/style-fonts';
 import {
   decorateCodeBlocks,
   buildSingleVisualSlabHtml,
@@ -1268,6 +1269,7 @@ function setStageMode(isVisual) {
     showToast('高速モードに戻りました');
   }
   renderApp();
+  if (isVisual) void ensureStyleFont(state.infographicStyle);
 }
 
 function selectInfographicStyle(style) {
@@ -1283,6 +1285,7 @@ function selectInfographicStyle(style) {
   }
   syncToneUi();
   renderApp();
+  void ensureStyleFont(style);
   const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
   showToast(`スタイル適用: ${activeBtn ? activeBtn.textContent.trim() : style}`);
 }

@@ -33,6 +33,10 @@ body[data-appearance="dark"] #visual-stage-container {
   --vs-card-bg: #F8FAFC;
   --vs-card-border: #E2E8F0;
   --vs-glow: #EA6A47;
+  /* スタイル別見出し書体（声色。DTP-004, DD-VTPL-035, #218）。本文・図は共通のまま変えない */
+  --vs-heading-font: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  --vs-heading-weight: 800;
+  --vs-heading-tracking: 0.015em;
   --motif-hero-prism: url("data:image/svg+xml,%3Csvg id='hero-prism.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Cpolygon points='16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5' stroke='black' stroke-width='2' fill='black' fill-opacity='0.12'/%3E%3Cpolygon points='16,6 25,16 16,26 7,16' stroke='black' stroke-width='1.75' fill='black' fill-opacity='0.28'/%3E%3Ccircle cx='16' cy='16' r='2.75' fill='black'/%3E%3Cline x1='16' y1='2' x2='16' y2='6' stroke='black' stroke-width='1.5'/%3E%3Cline x1='16' y1='26' x2='16' y2='30' stroke='black' stroke-width='1.5'/%3E%3Cline x1='3' y1='9.5' x2='7' y2='16' stroke='black' stroke-width='1.25' stroke-opacity='0.6'/%3E%3Cline x1='29' y1='9.5' x2='25' y2='16' stroke='black' stroke-width='1.25' stroke-opacity='0.6'/%3E%3C/svg%3E");
   --motif-quote-watermark: url("data:image/svg+xml,%3Csvg id='quote-watermark.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 44' fill='none'%3E%3Ccircle cx='32' cy='22' r='20' stroke='black' stroke-width='1.25' stroke-opacity='0.22' stroke-dasharray='3 3'/%3E%3Ccircle cx='32' cy='22' r='14' stroke='black' stroke-width='1' stroke-opacity='0.15'/%3E%3Cpath d='M27.5 13L19.5 22.5H25.5L22.5 31H15.5L18.5 21.5L23.5 13H27.5Z' fill='black'/%3E%3Cpath d='M44.5 13L36.5 22.5H42.5L39.5 31H32.5L35.5 21.5L40.5 13H44.5Z' fill='black' fill-opacity='0.82'/%3E%3C/svg%3E");
   --motif-card-ornament: url("data:image/svg+xml,%3Csvg id='card-corner-ornament.svg' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cpath d='M64 0H20L64 44V0Z' fill='black' fill-opacity='0.18'/%3E%3Cpath d='M64 0H38L64 26V0Z' fill='black' fill-opacity='0.26'/%3E%3Cpath d='M12 0L64 52' stroke='black' stroke-width='1.25' stroke-opacity='0.35'/%3E%3Cpath d='M28 0L64 36' stroke='black' stroke-width='1' stroke-opacity='0.25'/%3E%3Ccircle cx='48' cy='16' r='2.2' fill='black' fill-opacity='0.45'/%3E%3C/svg%3E");
@@ -63,6 +67,14 @@ html.is-stage-show .exhibition-wrap.has-content-visibility > .exhibition-slab {
   --vs-c3: #6CC4C9;
   --vs-c4: #9CCB86;
   --vs-c2: #EBB453;
+  --vs-heading-font: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+  --vs-heading-weight: 800;
+  --vs-heading-tracking: 0.015em;
+}
+.vs-theme-cards {
+  --vs-heading-font: 'Inter', 'Noto Sans JP', sans-serif;
+  --vs-heading-weight: 700;
+  --vs-heading-tracking: -0.015em;
 }
 .vs-theme-circles {
   --vs-glow: #E0483D;
@@ -70,6 +82,11 @@ html.is-stage-show .exhibition-wrap.has-content-visibility > .exhibition-slab {
   --vs-c2: #7EA6BF;
   --vs-c3: #ECB674;
   --vs-c4: #7D9763;
+  --vs-heading-weight: 800;
+  --vs-heading-tracking: 0.025em;
+}
+html.has-style-font-circles .vs-theme-circles {
+  --vs-heading-font: 'M PLUS Rounded 1c', 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
 }
 .vs-theme-editorial {
   --vs-glow: #C95F5F;
@@ -77,6 +94,11 @@ html.is-stage-show .exhibition-wrap.has-content-visibility > .exhibition-slab {
   --vs-c2: #8FA876;
   --vs-c3: #C9A66B;
   --vs-c4: #8FA3B8;
+  --vs-heading-weight: 700;
+  --vs-heading-tracking: 0.04em;
+}
+html.has-style-font-editorial .vs-theme-editorial {
+  --vs-heading-font: 'Noto Serif JP', Georgia, serif;
 }
 body[data-appearance="dark"] .exhibition-wrap {
   --vs-tone: #FFFFFF;
@@ -191,10 +213,11 @@ body[data-appearance="dark"] .exhibition-hero.vs-cover {
 .vs-cover-title {
   max-width: 46rem;
   margin: 0.75rem auto 0;
+  font-family: var(--vs-heading-font, 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif);
   font-size: clamp(1.75rem, 3.6vw, 2.6rem);
-  font-weight: 800;
+  font-weight: var(--vs-heading-weight, 800);
   line-height: 1.25;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--vs-heading-tracking, -0.01em);
   font-feature-settings: "palt" 1, "kern" 1;
   color: var(--text-primary);
   text-wrap: balance;
@@ -442,10 +465,10 @@ body[data-appearance="dark"] .exhibition-slab {
 }
 
 .exhibition-slab h2 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--vs-heading-font, 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif);
   font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-weight: var(--vs-heading-weight, 800);
+  letter-spacing: var(--vs-heading-tracking, 0.02em);
   font-feature-settings: "palt" 1, "kern" 1;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
@@ -466,19 +489,23 @@ body[data-appearance="dark"] .exhibition-slab {
    上の余白を下の余白より大きくして、見出しが直後の本文に属することを示す。章の中の h1 は h3 と同じ扱いにする（章の題は h2）。
    通常モード（.prose-doc）は変えないため、Visualモードのスラブに限る */
 .exhibition-wrap .exhibition-slab :is(h1, h3) {
+  font-family: var(--vs-heading-font, 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif);
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: var(--vs-heading-weight, 800);
   line-height: 1.4;
+  letter-spacing: var(--vs-heading-tracking, 0);
   font-feature-settings: "palt" 1, "kern" 1;
   margin-top: 2rem;
   margin-bottom: 0.6rem;
 }
 .exhibition-wrap .exhibition-slab h4 {
+  font-family: var(--vs-heading-font, 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif);
   font-size: 1.1rem;
   margin-top: 1.6rem;
   margin-bottom: 0.45rem;
 }
 .exhibition-wrap .exhibition-slab :is(h5, h6) {
+  font-family: var(--vs-heading-font, 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif);
   font-size: 1rem;
   letter-spacing: 0.04em;
   margin-top: 1.4rem;
