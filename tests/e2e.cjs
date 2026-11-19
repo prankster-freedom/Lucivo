@@ -59,6 +59,8 @@ const {
   testOffline
 } = require('./e2e/modes-and-ui.cjs');
 
+const { testPerfBudget } = require('./e2e/perf-budget.cjs');
+
 // 発表モードのテスト（tests/e2e/modes/<id>.cjs）は、フォルダから自動で集める（doc/2.ARCHITECTURE.md 4.16 ARC-MODE-008）。
 // 共通の品質の関門（present-modes.cjs。ARC-MODE-007）は、登録表の全モードを回す
 const MODES_TEST_DIR = path.join(__dirname, 'e2e', 'modes');
@@ -105,7 +107,8 @@ const SUITES = [
   { name: 'testNodeLabelWrap', tcPrefix: ['TC-DIAG-037'], fn: testNodeLabelWrap },
   { name: 'testDiagramUserStyles', tcPrefix: ['TC-DIAG-030'], fn: testDiagramUserStyles },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
-  { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-'], fn: testStartupAndCache },
+  { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-', 'TC-PERF-001', 'TC-PERF-002', 'TC-PERF-003', 'TC-PERF-004', 'TC-PERF-005', 'TC-PERF-006', 'TC-PERF-007'], fn: testStartupAndCache },
+  { name: 'testPerfBudget', tcPrefix: ['TC-PERF-008'], fn: testPerfBudget, timeoutMs: 120000 },
   { name: 'testResponsiveAndWebUi', tcPrefix: ['TC-UI-001', 'TC-UI-002', 'TC-UI-003', 'TC-UI-004'], fn: testResponsiveAndWebUi },
   { name: 'testInteractionDetails', tcPrefix: ['TC-UI-005'], fn: testInteractionDetails },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }

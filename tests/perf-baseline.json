@@ -1,0 +1,14 @@
+{
+  "note": "Performance budget baseline (#256). Updated with initial measured medians; replace with CI baseline after merge if needed.",
+  "fastOpenMs": 2536.4,
+  "visualOpenShapesMs": 1691.5,
+  "visualOpenCardsMs": 1757.3,
+  "visualOpenCirclesMs": 2085.9,
+  "visualOpenEditorialMs": 2019.8,
+  "fastInputMs": 9.6,
+  "visualInputMs": 86.7,
+  "fastScrollLongTaskCount": 0,
+  "fastScrollLongTaskMs": 0,
+  "visualScrollLongTaskCount": 0,
+  "visualScrollLongTaskMs": 0
+}

@@ -1,0 +1,258 @@
+/**
+ * 性能の予算（#256）を E2E で測るスイート（TC-PERF-008）。
+ * - 高速モード / Visualモード（4 スタイル）の開く時間
+ * - 長文での 1 文字入力から表示反映までの時間
+ * - 長文スクロール中の長いタスク（50ms 以上）の数と合計時間
+ * 計測結果は work/test/perf-budget.json に書き出し、tests/perf-baseline.json と比較する。
+ */
+const path = require('path');
+const fs = require('fs');
+const {
+  ROOT_DIR,
+  APP_DIR,
+  OUT_DIR,
+  VISUAL_STYLES,
+  record,
+  openApp,
+  selectVisualStyle
+} = require('./helpers.cjs');
+
+const BASELINE_PATH = path.join(ROOT_DIR, 'tests', 'perf-baseline.json');
+const BUDGET_OUT_PATH = path.join(OUT_DIR, 'perf-budget.json');
+
+function median(values) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1
+    ? sorted[mid]
+    : +((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1);
+}
+
+function buildLongPerfDoc(chapters = 40) {
+  const parts = ['# 性能計測用長文ドキュメント\n'];
+  for (let i = 1; i <= chapters; i++) {
+    parts.push(`## ${i}. 第 ${i} 章のテーマ\n`);
+    parts.push(`これは第 ${i} 章の解説文です。十分な文字数と段落構造を持たせて、レイアウトと再描画の負荷を計測します。\n`);
+    if (i % 4 === 1) {
+      parts.push('- 要点 1: 構造を保つ\n- 要点 2: 描画を軽く保つ\n- 要点 3: 見た目を崩さない\n');
+    } else if (i % 4 === 2) {
+      parts.push('1. 手順 A: 入力を受け取る\n2. 手順 B: 差分を計算する\n3. 手順 C: 画面を更新する\n');
+    } else if (i % 4 === 3) {
+      parts.push(`\`\`\`mermaid\nflowchart LR\n  A${i}[開始] --> B${i}[処理]\n  B${i} --> C${i}[完了]\n\`\`\`\n`);
+    } else {
+      parts.push(`> 第 ${i} 章のステートメント: 品質と軽快さを両立します。\n`);
+    }
+  }
+  return parts.join('\n');
+}
+
+async function measureOpenTime(browser, mdText, { visualStyle = null } = {}) {
+  const page = await openApp(browser);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  if (visualStyle) {
+    await selectVisualStyle(page, visualStyle);
+  }
+  const ms = await page.evaluate(async text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    const t0 = performance.now();
+    renderApp();
+    // 図や非同期描画の完了（telemetry-status が Rendering でなくなる）＋次フレームまで待つ
+    await new Promise(resolve => {
+      const check = () => {
+        const status = document.getElementById('telemetry-status')?.textContent || '';
+        if (!/Rendering/.test(status)) {
+          requestAnimationFrame(() => resolve());
+          return;
+        }
+        setTimeout(check, 16);
+      };
+      check();
+    });
+    return +(performance.now() - t0).toFixed(1);
+  }, mdText);
+  const errors = [...page.consoleErrors];
+  await page.close();
+  return { ms, errors };
+}
+
+async function measureInputAndScroll(browser, longMd, { visualStyle = null, runs = 3 } = {}) {
+  const page = await openApp(browser);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  if (visualStyle) {
+    await selectVisualStyle(page, visualStyle);
+  }
+
+  // 初回表示を完了させる
+  await page.evaluate(text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, longMd);
+  await page.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+  await page.waitForTimeout(200);
+
+  // 1 文字入力から表示反映までの時間を複数回計測
+  const inputRuns = [];
+  for (let i = 0; i < runs; i++) {
+    const ms = await page.evaluate(async idx => {
+      const editor = document.getElementById('markdown-editor');
+      const marker = '## 20. 第 20 章のテーマ';
+      const pos = editor.value.indexOf(marker);
+      if (pos >= 0) {
+        const before = editor.value.slice(0, pos + marker.length);
+        const after = editor.value.slice(pos + marker.length);
+        editor.value = `${before}${idx % 2 === 0 ? '!' : ''}${after.replace(/^!/, '')}`;
+      }
+      const t0 = performance.now();
+      renderApp();
+      await new Promise(resolve => {
+        const check = () => {
+          const status = document.getElementById('telemetry-status')?.textContent || '';
+          if (!/Rendering/.test(status)) {
+            requestAnimationFrame(() => resolve());
+            return;
+          }
+          setTimeout(check, 8);
+        };
+        check();
+      });
+      return +(performance.now() - t0).toFixed(1);
+    }, i);
+    inputRuns.push(ms);
+    await page.waitForTimeout(50);
+  }
+
+  // スクロール中の長いタスク（50ms 以上）を計測
+  const scrollMetrics = await page.evaluate(async () => {
+    const scroller = document.getElementById('preview-scroll');
+    const longTasks = [];
+    let observer = null;
+    if (typeof PerformanceObserver === 'function') {
+      try {
+        observer = new PerformanceObserver(list => {
+          for (const entry of list.getEntries()) {
+            longTasks.push(entry.duration);
+          }
+        });
+        observer.observe({ type: 'longtask', buffered: false });
+      } catch (_) {
+        observer = null;
+      }
+    }
+
+    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const steps = 10;
+    for (let s = 1; s <= steps; s++) {
+      scroller.scrollTop = Math.round((maxScroll * s) / steps);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }
+    await new Promise(r => setTimeout(r, 100));
+    if (observer) observer.disconnect();
+
+    const totalMs = +longTasks.reduce((a, b) => a + b, 0).toFixed(1);
+    return {
+      count: longTasks.length,
+      totalMs,
+      maxMs: longTasks.length ? +Math.max(...longTasks).toFixed(1) : 0
+    };
+  });
+
+  const errors = [...page.consoleErrors];
+  await page.close();
+  return { inputRuns, inputMedianMs: median(inputRuns), scroll: scrollMetrics, errors };
+}
+
+async function testPerfBudget(browser) {
+  const notationMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'notation_sample.md'), 'utf8');
+  const visualMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
+  const longMd = buildLongPerfDoc(40);
+  const allErrors = [];
+
+  // 1. 高速モード: 開く時間（3 回の中央値）
+  const fastOpenRuns = [];
+  for (let i = 0; i < 3; i++) {
+    const r = await measureOpenTime(browser, notationMd);
+    fastOpenRuns.push(r.ms);
+    allErrors.push(...r.errors);
+  }
+
+  // 2. Visualモード 4 スタイル: 開く時間（各スタイル 2 回計測の中央値、代表 shapes は 3 回）
+  const visualOpen = {};
+  for (const style of VISUAL_STYLES) {
+    const n = style === 'shapes' ? 3 : 2;
+    const runs = [];
+    for (let i = 0; i < n; i++) {
+      const r = await measureOpenTime(browser, visualMd, { visualStyle: style });
+      runs.push(r.ms);
+      allErrors.push(...r.errors);
+    }
+    visualOpen[style] = { medianMs: median(runs), runs };
+  }
+
+  // 3. 高速モード長文: 1 文字入力反映 & スクロール Long Task
+  const fastLong = await measureInputAndScroll(browser, longMd, { runs: 3 });
+  allErrors.push(...fastLong.errors);
+
+  // 4. Visualモード長文（shapes）: 1 文字入力反映 & スクロール Long Task
+  const visualLong = await measureInputAndScroll(browser, longMd, { visualStyle: 'shapes', runs: 3 });
+  allErrors.push(...visualLong.errors);
+
+  const metrics = {
+    fastOpenMs: median(fastOpenRuns),
+    visualOpenShapesMs: visualOpen.shapes.medianMs,
+    visualOpenCardsMs: visualOpen.cards.medianMs,
+    visualOpenCirclesMs: visualOpen.circles.medianMs,
+    visualOpenEditorialMs: visualOpen.editorial.medianMs,
+    fastInputMs: fastLong.inputMedianMs,
+    visualInputMs: visualLong.inputMedianMs,
+    fastScrollLongTaskCount: fastLong.scroll.count,
+    fastScrollLongTaskMs: fastLong.scroll.totalMs,
+    visualScrollLongTaskCount: visualLong.scroll.count,
+    visualScrollLongTaskMs: visualLong.scroll.totalMs
+  };
+
+  let baseline = null;
+  if (fs.existsSync(BASELINE_PATH)) {
+    try {
+      baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+    } catch (_) {
+      baseline = null;
+    }
+  }
+
+  const comparisons = {};
+  for (const [key, value] of Object.entries(metrics)) {
+    const baseVal = baseline && typeof baseline[key] === 'number' ? baseline[key] : null;
+    const delta = baseVal !== null ? +(value - baseVal).toFixed(1) : null;
+    const pct = baseVal !== null && baseVal > 0 ? +(((value - baseVal) / baseVal) * 100).toFixed(1) : null;
+    comparisons[key] = { current: value, baseline: baseVal, delta, pct };
+  }
+
+  const report = {
+    measuredAt: new Date().toISOString(),
+    metrics,
+    comparisons,
+    details: {
+      fastOpenRuns,
+      visualOpen,
+      fastInputRuns: fastLong.inputRuns,
+      visualInputRuns: visualLong.inputRuns,
+      fastScroll: fastLong.scroll,
+      visualScroll: visualLong.scroll
+    }
+  };
+
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.writeFileSync(BUDGET_OUT_PATH, JSON.stringify(report, null, 2));
+
+  const validMetrics = Object.values(metrics).every(v => typeof v === 'number' && Number.isFinite(v) && v >= 0);
+  record('TC-PERF-008', validMetrics && allErrors.length === 0, JSON.stringify(metrics));
+  if (allErrors.length) record('TC-PERF-BUDGET-CONSOLE', false, JSON.stringify(allErrors));
+}
+
+module.exports = { testPerfBudget };
