@@ -1960,6 +1960,113 @@ async function testCoverAndTables(browser) {
   record('TC-VTPL-035', toneResults.length === 16 && toneBad.length === 0 && darkSlabSet.size >= 5,
     JSON.stringify(toneBad.length ? { toneBad, darkSlabs: darkSlabSet.size } : { checked: toneResults.length, minStepAcrossAll: Math.min(...toneResults.map(r => r.minStepRatio)), minBadgeAcrossAll: Math.min(...toneResults.map(r => r.badgeRatio)), minChevronAcrossAll: Math.min(...toneResults.map(r => r.chevronRatio)), darkSlabs: darkSlabSet.size }));
 
+  // TC-VTPL-036 スタイル別見出し書体（声色）の切替と配布先出し分け（#218, DTP-004, DD-VTPL-035）
+  // 1) スタンドアロン版（dist/）: 書体ファイルを含めず、スタイル切替でも style-fonts 読み込みやエラーが起きない
+  const standaloneNoFontDir = !fs.existsSync(path.join(APP_DIR, 'vendor', 'style-fonts'));
+  await setMode(page, { style: 'circles', appearance: 'light' });
+  await setMode(page, { style: 'editorial', appearance: 'light' });
+  const standaloneLinks = await page.evaluate(() => document.querySelectorAll('link[data-style-font-href]').length);
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+
+  // 2) Web 版（public/）: 初期表示で style-fonts を読み込まず、Circles / Editorial 選択時に遅延読み込みして見出しのみ声色を替える
+  const fontServer = await startWebServer();
+  let webFontCheck = null;
+  try {
+    const webCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const webPage = await webCtx.newPage();
+    const styleFontRequests = [];
+    const webErrors = [];
+    webPage.on('request', req => {
+      if (req.url().includes('/vendor/style-fonts/')) styleFontRequests.push(req.url().split('/vendor/style-fonts/')[1]);
+    });
+    webPage.on('console', m => { if (m.type() === 'error') webErrors.push(m.text().slice(0, 200)); });
+    webPage.on('pageerror', e => webErrors.push('pageerror: ' + e.message));
+
+    await webPage.goto(fontServer.url);
+    await webPage.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
+    const VOICE_MD = [
+      '---',
+      'title: スタイル別見出し書体の声色サンプル',
+      'description: 4 つのスタイルの人物像に合わせた見出しの声色と、共通本文の読みやすさを確認します。',
+      'tags: [Typography, Voice, Persona]',
+      '---',
+      '',
+      '# スタイル別見出し書体の声色サンプル',
+      '',
+      '## 第 1 章 見出しの声色と本文の調和',
+      '',
+      '本文はすべてのスタイルで読みやすい共通書体のまま保ち、表紙の題名・章見出し・小見出しだけ人物像に合わせて切り替えます。',
+      '',
+      '### 小見出し（h3）の見え方',
+      '',
+      '見出しと本文の対比によって、各スタイルの個性が自然に際立ちます。'
+    ].join('\n');
+    await setMode(webPage, { style: 'shapes', appearance: 'light' });
+    await setDocument(webPage, VOICE_MD);
+    await webPage.click('.view-mode-btn[data-view-mode="canvas"]');
+    await webPage.waitForTimeout(200);
+
+    const initialRequests = styleFontRequests.length;
+    const readVoice = () => webPage.evaluate(() => {
+      const cover = document.querySelector('#visual-stage-container .vs-cover-title');
+      const h2 = document.querySelector('#visual-stage-container .exhibition-slab h2');
+      const h3 = document.querySelector('#visual-stage-container .exhibition-slab h3');
+      const p = document.querySelector('#visual-stage-container .exhibition-slab p');
+      return {
+        coverFont: cover ? getComputedStyle(cover).fontFamily : '',
+        coverWeight: cover ? getComputedStyle(cover).fontWeight : '',
+        h2Font: h2 ? getComputedStyle(h2).fontFamily : '',
+        h2Weight: h2 ? getComputedStyle(h2).fontWeight : '',
+        h3Font: h3 ? getComputedStyle(h3).fontFamily : '',
+        bodyFont: p ? getComputedStyle(p).fontFamily : '',
+        hasCircles: document.documentElement.classList.contains('has-style-font-circles'),
+        hasEditorial: document.documentElement.classList.contains('has-style-font-editorial'),
+        circlesLoaded: document.fonts ? document.fonts.check('800 16px "M PLUS Rounded 1c"', '見出し') : false,
+        editorialLoaded: document.fonts ? document.fonts.check('700 16px "Noto Serif JP"', '見出し') : false
+      };
+    });
+
+    const voices = {};
+    for (const st of ['shapes', 'cards', 'circles', 'editorial']) {
+      await selectVisualStyle(webPage, st);
+      if (st === 'circles') {
+        await webPage.waitForFunction(() => document.documentElement.classList.contains('has-style-font-circles'), null, { timeout: 10000 });
+      } else if (st === 'editorial') {
+        await webPage.waitForFunction(() => document.documentElement.classList.contains('has-style-font-editorial'), null, { timeout: 10000 });
+      }
+      await webPage.waitForTimeout(150);
+      voices[st] = await readVoice();
+      await webPage.locator('#visual-stage-container .exhibition-wrap').screenshot({ path: path.join(SHOT_DIR, `vtpl-heading-font-${st}.png`) });
+    }
+    webFontCheck = { initialRequests, totalStyleFontRequests: styleFontRequests.length, voices, webErrors };
+    await webCtx.close();
+  } finally {
+    await fontServer.close();
+  }
+
+  const vtpl36Ok = standaloneNoFontDir
+    && standaloneLinks === 0
+    && webFontCheck
+    && webFontCheck.initialRequests === 0
+    && webFontCheck.totalStyleFontRequests >= 4
+    && webFontCheck.webErrors.length === 0
+    && /Plus Jakarta Sans/.test(webFontCheck.voices.shapes.h2Font)
+    && webFontCheck.voices.shapes.h2Weight === '800'
+    && /Inter/.test(webFontCheck.voices.cards.h2Font)
+    && webFontCheck.voices.cards.h2Weight === '700'
+    && /M PLUS Rounded 1c/.test(webFontCheck.voices.circles.coverFont)
+    && /M PLUS Rounded 1c/.test(webFontCheck.voices.circles.h2Font)
+    && /M PLUS Rounded 1c/.test(webFontCheck.voices.circles.h3Font)
+    && webFontCheck.voices.circles.circlesLoaded
+    && /Noto Serif JP/.test(webFontCheck.voices.editorial.coverFont)
+    && /Noto Serif JP/.test(webFontCheck.voices.editorial.h2Font)
+    && /Noto Serif JP/.test(webFontCheck.voices.editorial.h3Font)
+    && webFontCheck.voices.editorial.editorialLoaded
+    && ['shapes', 'cards', 'circles', 'editorial'].every(st =>
+      !/M PLUS Rounded 1c|Noto Serif JP/.test(webFontCheck.voices[st].bodyFont)
+    );
+  record('TC-VTPL-036', vtpl36Ok, JSON.stringify({ standaloneNoFontDir, standaloneLinks, webFontCheck }));
+
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 }
@@ -2186,6 +2293,76 @@ async function testCalloutsGlossaryPrint(browser) {
     && JSON.stringify(sampleTables) === JSON.stringify([{ rows: 3, breakInside: 'avoid' }, { rows: 8, breakInside: 'avoid' }, { rows: 30, breakInside: 'auto' }])
     && centered.every(c => c.display === 'flex' && c.justify === 'center' && c.minHeightMm === 172);
   record('TC-VTPL-029', sampleOk, JSON.stringify({ samplePdf, sampleAgenda, printTitleProp, sampleTables, centered }));
+
+  // TC-VTPL-037 印刷の 1 ページ収容（#261, FR-036, DD-VTPL-139）:
+  // visual-sample.md を狭幅の Split 表示（1060x800、画面上は STAGE 09 が .is-stacked になる条件）から刷っても、
+  // STAGE 05（7項目標準リスト）と STAGE 09（解説＋図版型）がそれぞれ 1 ページに収まり、Canvas 表示と同じ 25 ページになること。
+  // 横長図の STAGE 10 は印刷でも全幅 1 段組みを維持する。
+  await page.click('.view-mode-btn[data-view-mode="split"]');
+  await page.setViewportSize({ width: 1060, height: 800 });
+  const visualSampleMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
+  await setDocument(page, visualSampleMd);
+  const vsSlabs = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .exhibition-slab').length);
+  for (let i = 0; i < vsSlabs; i++) await scrollToSlab(page, i);
+  await page.waitForFunction(() => document.querySelectorAll('#visual-stage-container .exhibition-viewport > svg').length >= 5, null, { timeout: 30000 });
+  await waitRendered(page);
+
+  const splitScreenState = await page.evaluate(() => {
+    const s9 = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="09"]');
+    const s10 = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="10"]');
+    return {
+      s9ScreenStacked: s9 ? s9.classList.contains('is-stacked') : false,
+      s9PrintStacked: s9 ? s9.hasAttribute('data-print-stacked') : null,
+      s10PrintStacked: s10 ? s10.hasAttribute('data-print-stacked') : null
+    };
+  });
+
+  await page.setViewportSize({ width: 1047, height: 654 });
+  await page.emulateMedia({ media: 'print' });
+  const printFitMetrics = await page.evaluate(() => {
+    const pxToMm = px => +(px * 25.4 / 96).toFixed(1);
+    const measureMm = sel => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const prev = el.style.minHeight;
+      el.style.minHeight = '0';
+      const mm = pxToMm(el.getBoundingClientRect().height);
+      el.style.minHeight = prev;
+      return mm;
+    };
+    const s9Body = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="09"] .exhibition-slab-body');
+    const s10Body = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="10"] .exhibition-slab-body');
+    return {
+      stage05Mm: measureMm('#visual-stage-container .exhibition-slab[data-stage-no="05"]'),
+      stage09Mm: measureMm('#visual-stage-container .exhibition-slab[data-stage-no="09"]'),
+      stage10Mm: measureMm('#visual-stage-container .exhibition-slab[data-stage-no="10"]'),
+      s9Cols: s9Body ? getComputedStyle(s9Body).gridTemplateColumns.split(/\s+/).length : 0,
+      s10Cols: s10Body ? getComputedStyle(s10Body).gridTemplateColumns.split(/\s+/).length : 0
+    };
+  });
+  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="05"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage05.png') });
+  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="09"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage09.png') });
+  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="10"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage10.png') });
+  await page.emulateMedia({ media: null });
+
+  const vsPdfSplit = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
+  await page.setViewportSize({ width: 1366, height: 800 });
+  await page.click('.view-mode-btn[data-view-mode="canvas"]');
+  await page.waitForTimeout(200);
+  const vsPdfCanvas = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
+
+  const vtpl37Ok = splitScreenState.s9ScreenStacked === true
+    && splitScreenState.s9PrintStacked === false
+    && splitScreenState.s10PrintStacked === true
+    && printFitMetrics.stage05Mm !== null && printFitMetrics.stage05Mm <= 173
+    && printFitMetrics.stage09Mm !== null && printFitMetrics.stage09Mm <= 173
+    && printFitMetrics.stage10Mm !== null && printFitMetrics.stage10Mm <= 173
+    && printFitMetrics.s9Cols === 2
+    && printFitMetrics.s10Cols === 1
+    && vsPdfSplit.pages === 25 && vsPdfSplit.landscape === true
+    && vsPdfCanvas.pages === 25 && vsPdfCanvas.landscape === true;
+  record('TC-VTPL-037', vtpl37Ok, JSON.stringify({ splitScreenState, printFitMetrics, vsPdfSplit, vsPdfCanvas }));
+
   await page.context().close();
 }
 
