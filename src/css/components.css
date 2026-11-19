@@ -141,7 +141,7 @@
 }
 
 #markdown-editor {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   line-height: 1.65;
   tab-size: 2;
   resize: none;

@@ -19,6 +19,7 @@ const SCRIPTS = [
 const FONTS = [
   ['inter', 'Inter'],
   ['jetbrains-mono', 'JetBrains Mono'],
+  ['m-plus-1-code', 'M PLUS 1 Code'],
   ['noto-sans-jp', 'Noto Sans JP'],
   ['plus-jakarta-sans', 'Plus Jakarta Sans']
 ];

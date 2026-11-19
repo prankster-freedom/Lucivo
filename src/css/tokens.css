@@ -33,6 +33,8 @@ body[data-appearance="light"] {
   --diag-node-text: #0F172A;
   --diag-edge: #475569;
 
+  /* 日本語を含むコード・エディタ用の 1:2 等幅フォント */
+  --font-mono: 'M PLUS 1 Code', 'JetBrains Mono', monospace;
   /* Visual モードの誌面幅（将来の A4 / レター切り替え用） */
   --visual-page-width: 62rem;
   /* 発表モードのアスペクト比（将来の 16:9 / 16:10 / 4:3 切り替え用） */
