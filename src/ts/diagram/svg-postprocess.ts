@@ -3,6 +3,7 @@ import { hexToRgba } from '../utils/color';
 import { escapeHtml } from '../utils/escape';
 import { scopeSvgIds } from './scope';
 import { scalePickerHtml } from './scale-mode';
+import { fitTwoColMath } from '../markdown/math-and-headings';
 import {
   NODE_DECORATED_TYPES,
   CURVE_LABELS,
@@ -127,26 +128,27 @@ export function updateAllSlabSplits(container) {
     if (!vp || !vp.querySelector(':scope > svg')) return;
     targets.push({ slab, vp, actualSize: vp.classList.contains('is-actual-size'), needStack: false });
   });
-  if (!targets.length) return;
-
-  // 一括 Write: 1:1 表示でないスラブの is-stacked をまとめて外してから計測する
-  for (const item of targets) {
-    if (!item.actualSize) {
-      item.slab.classList.remove('is-stacked');
+  if (targets.length) {
+    // 一括 Write: 1:1 表示でないスラブの is-stacked をまとめて外してから計測する
+    for (const item of targets) {
+      if (!item.actualSize) {
+        item.slab.classList.remove('is-stacked');
+      }
+    }
+    // 一括 Read: すべてのスラブの幅をまとめて読み、強制レイアウトを 1 回に抑える
+    for (const item of targets) {
+      item.needStack = item.actualSize || item.vp.scrollWidth > item.vp.clientWidth + 1;
+    }
+    // 一括 Write: 判定結果をまとめて反映する
+    for (const item of targets) {
+      if (item.needStack) {
+        item.slab.classList.add('is-stacked');
+      } else {
+        item.slab.classList.remove('is-stacked');
+      }
     }
   }
-  // 一括 Read: すべてのスラブの幅をまとめて読み、強制レイアウトを 1 回に抑える
-  for (const item of targets) {
-    item.needStack = item.actualSize || item.vp.scrollWidth > item.vp.clientWidth + 1;
-  }
-  // 一括 Write: 判定結果をまとめて反映する
-  for (const item of targets) {
-    if (item.needStack) {
-      item.slab.classList.add('is-stacked');
-    } else {
-      item.slab.classList.remove('is-stacked');
-    }
-  }
+  fitTwoColMath(container);
 }
 
 // path の d（絶対座標）が囲む範囲。曲線の制御点も含むので、わずかに大きくなることがある

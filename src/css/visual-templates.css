@@ -513,8 +513,10 @@
       break-inside: avoid;
       break-after: avoid;
     }
-    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(pre, .exhibition-diagram-card, .lucivo-slot, .table-container, .lucivo-math.is-block-plot, .lucivo-math:has(.katex-display)) {
-      column-span: all;
+    /* pre・図・表・ブロック数式も段の中に収め、前後の段の流れを分断しない（#263） */
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(pre, .exhibition-diagram-card, .lucivo-slot, .table-container, .lucivo-math) {
+      break-inside: avoid;
+      max-width: 100%;
     }
   }
 }

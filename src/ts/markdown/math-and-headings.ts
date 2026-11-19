@@ -97,6 +97,32 @@ export function renderMath(container) {
       el.innerHTML = katexHtml;
     }
   });
+  fitTwoColMath(container);
+}
+
+// 2 段組み内のブロック数式が段幅を超えるとき、文字を縮小して段内に収める（#263）
+export function fitTwoColMath(container: HTMLElement | null): void {
+  if (!container) return;
+  const targets = container.querySelectorAll('.vs-two-col-body .lucivo-math[data-display="true"]');
+  if (targets.length === 0) return;
+  const items: { box: HTMLElement; formula: HTMLElement; ratio: number }[] = [];
+  targets.forEach(node => {
+    const el = node as HTMLElement;
+    const box = (el.querySelector('.vs-math-formula') || el) as HTMLElement;
+    const formula = (box.querySelector('.katex-display > .katex') || box.querySelector('.katex')) as HTMLElement | null;
+    if (formula) items.push({ box, formula, ratio: 1 });
+  });
+  if (items.length === 0) return;
+  // 一括 Reset → 一括 Read → 一括 Write で強制レイアウトを 1 回に抑える
+  for (const item of items) item.formula.style.fontSize = '';
+  for (const item of items) {
+    const bw = item.box.clientWidth;
+    const nw = item.formula.scrollWidth;
+    if (bw > 0 && nw > bw) item.ratio = Math.max(0.5, (bw - 2) / nw);
+  }
+  for (const item of items) {
+    if (item.ratio < 1) item.formula.style.fontSize = `${(item.ratio * 100).toFixed(2)}%`;
+  }
 }
 
 /* ==========================================================================
