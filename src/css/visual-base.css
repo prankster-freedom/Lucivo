@@ -5,11 +5,11 @@
   width: 100%;
   min-height: 100%;
   padding: clamp(1rem, 3vw, 2.5rem);
-  background: #F4F5F7;
+  background: var(--vs-stage-bg, #F4F5F7);
   color: #1E293B;
 }
 body[data-appearance="dark"] #visual-stage-container {
-  background: #0B0F19;
+  background: var(--vs-stage-bg, #0B101B);
   color: #F8FAFC;
 }
 
@@ -80,29 +80,54 @@ html.is-stage-show .exhibition-wrap.has-content-visibility > .exhibition-slab {
 }
 body[data-appearance="dark"] .exhibition-wrap {
   --vs-tone: #FFFFFF;
-  --vs-slab-bg: #1E293B;
-  --vs-card-bg: rgba(15, 23, 42, 0.45);
+  --vs-slab-bg: #161F30;
+  --vs-card-bg: rgba(11, 16, 27, 0.56);
   --vs-card-border: #334155;
-  /* Dark の --border-strong・--text-muted はスラブの背景（#1E293B）に近く、線と出典が沈むため明るくする */
-  --vs-line: #64748B;
-  --vs-sub-text: #94A3B8;
+  /* Dark の --border-strong・--text-muted はスラブの背景に近く、線と出典が沈むため明るくする（#260） */
+  --vs-line: #7589A6;
+  --vs-sub-text: #9FB1C8;
 }
-body[data-appearance="dark"] .exhibition-wrap.vs-theme-cards { --vs-glow: #FF9D80; }
-body[data-appearance="dark"] .exhibition-wrap.vs-theme-shapes { --vs-glow: #4FD8E8; }
-body[data-appearance="dark"] .exhibition-wrap.vs-theme-circles { --vs-glow: #FF8A7A; }
-body[data-appearance="dark"] .exhibition-wrap.vs-theme-editorial { --vs-glow: #F0A6A6; }
+/* Dark 外観のスタイル別パレット: 暗い背景で色あせない鮮明な発色を独立定義する（#260） */
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-cards {
+  --vs-glow: #FF9D80;
+  --vs-c1: #FF9472;
+  --vs-c2: #FFC857;
+  --vs-c3: #96B0FF;
+  --vs-c4: #56DDD0;
+}
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-shapes {
+  --vs-glow: #4FD8E8;
+  --vs-c1: #FF8C6B;
+  --vs-c2: #FFC44D;
+  --vs-c3: #4ADCEB;
+  --vs-c4: #7FE07E;
+}
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-circles {
+  --vs-glow: #FF8A7A;
+  --vs-c1: #FF7D70;
+  --vs-c2: #7AC4F5;
+  --vs-c3: #FFC166;
+  --vs-c4: #9CD868;
+}
+body[data-appearance="dark"] .exhibition-wrap.vs-theme-editorial {
+  --vs-glow: #F0A6A6;
+  --vs-c1: #F09B9B;
+  --vs-c2: #A9CF87;
+  --vs-c3: #E6BE6E;
+  --vs-c4: #9CC0E6;
+}
 
 .exhibition-hero {
   border-radius: 20px;
   padding: 2rem 1.5rem;
   text-align: center;
-  background: #FFFFFF;
+  background: var(--vs-slab-bg, #FFFFFF);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--vs-card-border, #E2E8F0);
 }
 body[data-appearance="dark"] .exhibition-hero {
-  background: #1E293B;
-  border-color: #334155;
+  background: var(--vs-slab-bg, #161F30);
+  border-color: var(--vs-card-border, #334155);
 }
 .exhibition-hero-top {
   display: inline-flex;
@@ -374,9 +399,9 @@ body[data-appearance="dark"] .exhibition-wrap .vs-symbol-badge[data-vs-badge="ba
   max-width: 100%;
   border-radius: 22px;
   padding: clamp(1.25rem, 3vw, 2rem);
-  background: #FFFFFF;
+  background: var(--vs-slab-bg, #FFFFFF);
   box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.08);
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--vs-card-border, #E2E8F0);
   transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 .exhibition-slab > * {
@@ -405,8 +430,8 @@ body[data-appearance="dark"] .exhibition-slab[data-stage-no]::after {
   opacity: 0.075;
 }
 body[data-appearance="dark"] .exhibition-slab {
-  background: #1E293B;
-  border-color: #334155;
+  background: var(--vs-slab-bg, #161F30);
+  border-color: var(--vs-card-border, #334155);
 }
 .exhibition-wrap.has-stage-focus > .exhibition-slab:not(.is-stage-focused) {
   opacity: 0.42;
@@ -476,7 +501,7 @@ body[data-appearance="dark"] .exhibition-slab {
   font-size: 0.75rem;
   font-weight: 800;
   background: var(--vs-c1);
-  color: #FFFFFF;
+  color: var(--vs-c1-ink, #FFFFFF);
   cursor: pointer;
   user-select: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;

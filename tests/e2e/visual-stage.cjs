@@ -1257,7 +1257,31 @@ async function testCoverAndTables(browser) {
     && headingScale.h5 >= 1 && headingScale.h6 >= 1 && headingScale.h3SpaceAbove > headingScale.h3SpaceBelow * 2 && headingScale.h4SpaceAbove > headingScale.h4SpaceBelow * 2,
   JSON.stringify(headingScale));
 
-  // TC-VTPL-020 コード・ショーケース（FR-031）と表紙スペックバッジ・ドットマトリクス透かし（FR-032）
+  // TC-VTPL-020 コード・ショーケース（FR-031, #262）と表紙スペックバッジ・ドットマトリクス透かし（FR-032）
+  const readCodeBlockColors = () => page.evaluate(() => {
+    const pre = document.querySelector('#visual-stage-container .exhibition-slab pre.vs-code-block');
+    const code = pre && pre.querySelector('code');
+    const toRgb = str => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 1;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 1, 1);
+      ctx.fillStyle = str;
+      ctx.fillRect(0, 0, 1, 1);
+      return Array.from(ctx.getImageData(0, 0, 1, 1).data.slice(0, 3));
+    };
+    const lum = ([r, g, b]) => [r, g, b].map(v => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+    const bgStr = pre ? getComputedStyle(pre).backgroundColor : '';
+    const fgStr = code ? getComputedStyle(code).color : '';
+    const bgLum = bgStr ? lum(toRgb(bgStr)) : -1;
+    const fgLum = fgStr ? lum(toRgb(fgStr)) : -1;
+    const ratio = bgLum >= 0 && fgLum >= 0 ? (Math.max(bgLum, fgLum) + 0.05) / (Math.min(bgLum, fgLum) + 0.05) : 0;
+    return { preBg: bgStr, preColor: fgStr, bgLum: +bgLum.toFixed(3), ratio: +ratio.toFixed(2) };
+  });
   const vtpl20Before = await page.evaluate(() => {
     const hero = document.querySelector('#visual-stage-container .exhibition-hero.vs-cover');
     const texture = hero && hero.querySelector('.vs-cover-texture');
@@ -1275,11 +1299,15 @@ async function testCoverAndTables(browser) {
       pills,
       codeLang: pre ? pre.getAttribute('data-code-lang') : null,
       caretMask: /rounded-caret-glyph\.svg/.test(maskOf(caret)),
-      copyLabelBefore: copyBtn ? copyBtn.getAttribute('data-copy-label') : null,
-      preBg: pre ? getComputedStyle(pre).backgroundColor : null,
-      preColor: pre ? getComputedStyle(pre).color : null
+      copyLabelBefore: copyBtn ? copyBtn.getAttribute('data-copy-label') : null
     };
   });
+  const vtpl20LightCode = await readCodeBlockColors();
+  // Dark 外観では暗色コンソール枠を維持することを確認（#262）
+  await setMode(page, { style: 'shapes', appearance: 'dark' });
+  const vtpl20DarkCode = await readCodeBlockColors();
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+
   await page.click('#visual-stage-container .vs-code-copy-btn');
   await page.waitForTimeout(150);
   const vtpl20After = await page.evaluate(() => {
@@ -1293,9 +1321,10 @@ async function testCoverAndTables(browser) {
   const vtpl20Ok = vtpl20Before.textureMask
     && JSON.stringify(vtpl20Before.pills) === JSON.stringify([['author', 'Lucivo Design Team'], ['date', '2026-11-08'], ['stages', '5 STAGES'], ['figures', '1 FIGURE']])
     && vtpl20Before.codeLang === 'JS' && vtpl20Before.caretMask && vtpl20Before.copyLabelBefore === 'Copy'
-    && vtpl20Before.preBg === 'rgb(15, 23, 42)' && vtpl20Before.preColor === 'rgb(226, 232, 240)'
+    && vtpl20LightCode.bgLum > 0.7 && vtpl20LightCode.ratio >= 7
+    && vtpl20DarkCode.preBg === 'rgb(15, 23, 42)' && vtpl20DarkCode.preColor === 'rgb(226, 232, 240)'
     && vtpl20After.copyLabelAfter === 'Copied' && vtpl20After.isCopied && /コードをクリップボードにコピー/.test(vtpl20After.toast);
-  record('TC-VTPL-020', vtpl20Ok, JSON.stringify({ vtpl20Before, vtpl20After }));
+  record('TC-VTPL-020', vtpl20Ok, JSON.stringify({ vtpl20Before, vtpl20LightCode, vtpl20DarkCode, vtpl20After }));
 
   // TC-VTPL-025 数式の補足グラフとラスター画像変換（FR-048, DD-VTPL-140〜144）
   const MATH_PLOT_TEST_MD = [
@@ -1829,6 +1858,107 @@ async function testCoverAndTables(browser) {
     && twoColPrint.columnCount === 'auto'
     && twoColFastCount === 0;
   record('TC-VTPL-034', twoColOk, JSON.stringify({ twoColWideCanvas, twoColNarrowCanvas, twoColWideSplit, twoColPrint, twoColFastCount }));
+
+  // TC-VTPL-035 全トーン × Light / Dark の手順型視認性（#258）と Dark 背景・トーン調和（#260）
+  const TONE_CHECK_MD = [
+    '# トーンと外観の視認性テスト',
+    '',
+    '## 1. 手順型（横並びフロー）',
+    '',
+    '1. 企画: 方向性を決める',
+    '2. 設計: 配色を組み合わせる',
+    '3. 実装: 画面へ反映する',
+    '4. 校正: 視認性を確かめる',
+    '',
+    '## 2. 解説＋図版とコード',
+    '',
+    '背景と図・バッジ・コード枠の調和を確認します。',
+    '',
+    '```mermaid',
+    'flowchart LR',
+    '  A[入力] --> B{判定}',
+    '  B -->|OK| C[完了]',
+    '```',
+    '',
+    '```js',
+    'const tone = "checked";',
+    '```'
+  ].join('\n');
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await setDocument(page, TONE_CHECK_MD);
+  const toneIds = ['default', 'cobalt-workshop', 'morning-window', 'matcha-wagashi', 'nordic-frost', 'amber-sunset', 'midnight-library', 'cyber-prism'];
+  const toneResults = [];
+  const shotTargets = new Set(['midnight-library:light', 'amber-sunset:light', 'matcha-wagashi:light', 'default:dark', 'midnight-library:dark', 'amber-sunset:dark', 'matcha-wagashi:dark', 'default:light']);
+  for (const appearance of ['light', 'dark']) {
+    await setMode(page, { style: 'shapes', appearance });
+    for (const tid of toneIds) {
+      await page.evaluate(id => {
+        const btn = document.querySelector(`#tone-menu .tone-menu-item[data-tone-id="${id}"]`);
+        if (btn) btn.click();
+      }, tid);
+      await waitRendered(page);
+      const metrics = await page.evaluate(() => {
+        const toRgb = (str, base = '#FFFFFF') => {
+          const c = document.createElement('canvas');
+          c.width = c.height = 1;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = base;
+          ctx.fillRect(0, 0, 1, 1);
+          ctx.fillStyle = str;
+          ctx.fillRect(0, 0, 1, 1);
+          return Array.from(ctx.getImageData(0, 0, 1, 1).data.slice(0, 3));
+        };
+        const lum = ([r, g, b]) => [r, g, b].map(v => {
+          const s = v / 255;
+          return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+        }).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+        const ratio = (a, b) => {
+          const l1 = lum(a), l2 = lum(b);
+          return +(((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)).toFixed(2));
+        };
+        const slab = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="01"]');
+        const slabBg = getComputedStyle(slab).backgroundColor;
+        const slabRgb = toRgb(slabBg);
+        const items = Array.from(slab.querySelectorAll('.vs-steps > li'));
+        const stepNumRatios = items.map(li => {
+          const cs = getComputedStyle(li, '::before');
+          return ratio(toRgb(cs.color, cs.backgroundColor), toRgb(cs.backgroundColor, slabBg));
+        });
+        const chevron = slab.querySelector('.vs-step-chevron');
+        const chevronCs = chevron ? getComputedStyle(chevron) : null;
+        const cometCs = getComputedStyle(slab.querySelector('.vs-steps'), '::after');
+        const badge = slab.querySelector('.exhibition-num-badge');
+        const badgeCs = badge ? getComputedStyle(badge) : null;
+        const badgeRatio = badgeCs ? ratio(toRgb(badgeCs.color, badgeCs.backgroundColor), toRgb(badgeCs.backgroundColor, slabBg)) : 0;
+        const chevronRatio = chevronCs ? ratio(toRgb(chevronCs.backgroundColor, slabBg), slabRgb) : 0;
+        return {
+          slabBg,
+          stepNumRatios,
+          minStepRatio: Math.min(...stepNumRatios),
+          badgeRatio,
+          chevronZ: chevronCs ? Number(chevronCs.zIndex) : 0,
+          cometZ: Number(cometCs.zIndex || 0),
+          chevronRatio
+        };
+      });
+      if (shotTargets.has(`${tid}:${appearance}`)) {
+        await page.locator('#visual-stage-container .exhibition-wrap').screenshot({ path: path.join(SHOT_DIR, `vtpl-tone-${tid}-${appearance}.png`) });
+      }
+      toneResults.push({ tone: tid, appearance, ...metrics });
+    }
+  }
+  // トーンを default に戻す
+  await page.evaluate(() => {
+    const btn = document.querySelector('#tone-menu .tone-menu-item[data-tone-id="default"]');
+    if (btn) btn.click();
+  });
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  const darkSlabSet = new Set(toneResults.filter(r => r.appearance === 'dark' && r.tone !== 'default').map(r => r.slabBg));
+  const toneBad = toneResults.filter(r =>
+    r.minStepRatio < 4.5 || r.badgeRatio < 4.5 || r.chevronZ <= r.cometZ || r.chevronRatio < 2.2
+  );
+  record('TC-VTPL-035', toneResults.length === 16 && toneBad.length === 0 && darkSlabSet.size >= 5,
+    JSON.stringify(toneBad.length ? { toneBad, darkSlabs: darkSlabSet.size } : { checked: toneResults.length, minStepAcrossAll: Math.min(...toneResults.map(r => r.minStepRatio)), minBadgeAcrossAll: Math.min(...toneResults.map(r => r.badgeRatio)), minChevronAcrossAll: Math.min(...toneResults.map(r => r.chevronRatio)), darkSlabs: darkSlabSet.size }));
 
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();

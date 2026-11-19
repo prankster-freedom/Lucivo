@@ -296,51 +296,58 @@ export const COLOR_TONES: ColorToneSpec[] = [
     id: 'default',
     label: 'スタイル準拠',
     light: { c1: '#2563EB', c2: '#0EA5E9', c3: '#10B981', c4: '#F59E0B', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#475569', text: '#0F172A', glow: '#38BDF8' },
-    dark: { c1: '#38BDF8', c2: '#818CF8', c3: '#34D399', c4: '#FBBF24', canvasBg: '#0F172A', cardBg: '#1E293B', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
+    dark: { c1: '#38BDF8', c2: '#818CF8', c3: '#34D399', c4: '#FBBF24', canvasBg: '#0B101B', cardBg: '#161F30', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
   },
   {
     id: 'cobalt-workshop',
     label: '晴天の工作舎',
-    light: { c1: '#D42A44', c2: '#E0B414', c3: '#22A046', c4: '#2266CC', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#334155', text: '#0F172A', glow: '#38BDF8' },
-    dark: { c1: '#E8546B', c2: '#ECC63E', c3: '#45BD68', c4: '#4D8AE6', canvasBg: '#0F172A', cardBg: '#17223B', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
+    light: { c1: '#D42A44', c2: '#D99B00', c3: '#198038', c4: '#2266CC', canvasBg: '#F4F7FB', cardBg: '#FFFFFF', edge: '#334155', text: '#0F172A', glow: '#38BDF8' },
+    dark: { c1: '#FF5C77', c2: '#FFD147', c3: '#4ADE80', c4: '#60A5FA', canvasBg: '#0B1220', cardBg: '#131E33', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
   },
   {
     id: 'morning-window',
     label: '朝の窓辺',
-    light: { c1: '#F3A7B0', c2: '#F6E08E', c3: '#A8DBB0', c4: '#A9C4EC', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#64748B', text: '#1E293B', glow: '#7DD3FC' },
-    dark: { c1: '#F5B7BF', c2: '#F8E7A6', c3: '#B8E3BF', c4: '#B9CFF0', canvasBg: '#121824', cardBg: '#1B2434', edge: '#94A3B8', text: '#F8FAFC', glow: '#BAE6FD' }
+    light: { c1: '#E57A89', c2: '#D9AE38', c3: '#5CB874', c4: '#6898DC', canvasBg: '#F8FAFC', cardBg: '#FFFFFF', edge: '#5A6D82', text: '#1E293B', glow: '#60A5FA' },
+    dark: { c1: '#FF9EAA', c2: '#FFE066', c3: '#7EE89C', c4: '#8CC0FF', canvasBg: '#101622', cardBg: '#192233', edge: '#9BB0C9', text: '#F8FAFC', glow: '#BAE6FD' }
   },
   {
     id: 'matcha-wagashi',
     label: '抹茶と和三盆',
-    light: { c1: '#7D9763', c2: '#DFC69E', c3: '#C78A8B', c4: '#5E5448', canvasBg: '#FBF9F4', cardBg: '#F3EFE4', edge: '#635E52', text: '#24211B', glow: '#9CCB86' },
-    dark: { c1: '#99B37F', c2: '#EAD6B5', c3: '#DAA3A4', c4: '#8E8273', canvasBg: '#161813', cardBg: '#20241C', edge: '#9C9688', text: '#F4F1E8', glow: '#B8E0A4' }
+    light: { c1: '#6D8C50', c2: '#C49A5C', c3: '#C27477', c4: '#6B5B4B', canvasBg: '#F4F1E8', cardBg: '#FBF9F4', edge: '#5E584B', text: '#24211B', glow: '#84B558' },
+    dark: { c1: '#A3D175', c2: '#F2C97D', c3: '#F0989B', c4: '#C2AD94', canvasBg: '#121610', cardBg: '#1B2118', edge: '#A4A090', text: '#F4F1E8', glow: '#C2EB96' }
   },
   {
     id: 'nordic-frost',
     label: '北欧の霜柱',
-    light: { c1: '#7EA6BF', c2: '#A5C7D9', c3: '#B2B8D6', c4: '#CBD5E1', canvasBg: '#F8FBFD', cardBg: '#EFF5F9', edge: '#647A8C', text: '#162330', glow: '#A5F3FC' },
-    dark: { c1: '#9EC1D6', c2: '#BDD9E8', c3: '#C8CDE6', c4: '#94A3B8', canvasBg: '#0F1722', cardBg: '#182332', edge: '#8FA6B8', text: '#F1F6FA', glow: '#CFFAFE' }
+    light: { c1: '#4D8BB0', c2: '#5BA3C2', c3: '#7A86B8', c4: '#556D85', canvasBg: '#F0F6FA', cardBg: '#FAFDFE', edge: '#536A7D', text: '#162330', glow: '#38BDF8' },
+    dark: { c1: '#70C4F0', c2: '#8EE0F8', c3: '#B4BEFA', c4: '#A2C0D9', canvasBg: '#0B131E', cardBg: '#142030', edge: '#93AEC4', text: '#F1F6FA', glow: '#A5F3FC' }
   },
   {
     id: 'amber-sunset',
     label: '琥珀の夕暮れ',
-    light: { c1: '#E89B3C', c2: '#E06A5A', c3: '#B84D6F', c4: '#6D597A', canvasBg: '#FFFBF7', cardBg: '#FAF2EA', edge: '#6B555B', text: '#291C20', glow: '#F59E0B' },
-    dark: { c1: '#F2AF5C', c2: '#EB8678', c3: '#D16F8E', c4: '#9680A6', canvasBg: '#1A1318', cardBg: '#261C23', edge: '#A68D94', text: '#FAF3EE', glow: '#FCD34D' }
+    light: { c1: '#D9821E', c2: '#D95A4A', c3: '#B54269', c4: '#7A548C', canvasBg: '#FAF3EB', cardBg: '#FFFBF7', edge: '#6B525A', text: '#291C20', glow: '#F59E0B' },
+    dark: { c1: '#FFB347', c2: '#FF7D6B', c3: '#F2729C', c4: '#C292DB', canvasBg: '#181016', cardBg: '#241821', edge: '#B0929D', text: '#FAF3EE', glow: '#FCD34D' }
   },
   {
     id: 'midnight-library',
     label: '夜を編む図書館',
-    light: { c1: '#6E2A35', c2: '#6E5C1F', c3: '#265A35', c4: '#26406A', canvasBg: '#F4F3F0', cardBg: '#EAE8E3', edge: '#3F4554', text: '#171A24', glow: '#D4AF37' },
-    dark: { c1: '#B85A68', c2: '#C2A64B', c3: '#549E6A', c4: '#5C82BF', canvasBg: '#0E1118', cardBg: '#171C28', edge: '#7D88A3', text: '#F3F1EB', glow: '#F3D56B' }
+    light: { c1: '#8F2D3E', c2: '#8F7018', c3: '#266E40', c4: '#2A4E85', canvasBg: '#ECEAE4', cardBg: '#F7F5F0', edge: '#3F4657', text: '#171A24', glow: '#D4A528' },
+    dark: { c1: '#F07185', c2: '#F2C957', c3: '#5CD685', c4: '#78A8F5', canvasBg: '#0C101A', cardBg: '#151C2C', edge: '#8C9AB8', text: '#F3F1EB', glow: '#FFE073' }
   },
   {
     id: 'cyber-prism',
     label: '分光プリズムと黒曜石',
-    light: { c1: '#0284C7', c2: '#DB2777', c3: '#7C3AED', c4: '#059669', canvasBg: '#F8FAFC', cardBg: '#EFF3F8', edge: '#475569', text: '#0F172A', glow: '#00F0FF' },
-    dark: { c1: '#38BDF8', c2: '#F472B6', c3: '#A78BFA', c4: '#34D399', canvasBg: '#090D16', cardBg: '#111827', edge: '#64748B', text: '#F8FAFC', glow: '#67E8F9' }
+    light: { c1: '#0369A1', c2: '#DB2777', c3: '#7C3AED', c4: '#059669', canvasBg: '#F1F5F9', cardBg: '#FFFFFF', edge: '#475569', text: '#0F172A', glow: '#06B6D4' },
+    dark: { c1: '#38BDF8', c2: '#F472B6', c3: '#B494FF', c4: '#34D399', canvasBg: '#080C16', cardBg: '#111829', edge: '#8193B0', text: '#F8FAFC', glow: '#67E8F9' }
   }
 ];
+
+export const VISUAL_STYLE_PALETTES_DARK: Record<string, string[]> = {
+  shapes: ['#FF8C6B', '#FFC44D', '#4ADCEB', '#7FE07E'],
+  cards: ['#FF9472', '#FFC857', '#96B0FF', '#56DDD0'],
+  circles: ['#FF7D70', '#7AC4F5', '#FFC166', '#9CD868'],
+  editorial: ['#F09B9B', '#A9CF87', '#E6BE6E', '#9CC0E6']
+};
 
 export function getToneEntry(toneId = state.tone): ColorToneSpec {
   return COLOR_TONES.find(t => t.id === toneId) || COLOR_TONES[0];
@@ -350,6 +357,9 @@ export function getEffectiveVisualPalette(style: string, appearance = state.appe
   if (state.tone && state.tone !== 'default') {
     const mode = appearance === 'dark' ? getToneEntry().dark : getToneEntry().light;
     return [mode.c1, mode.c2, mode.c3, mode.c4];
+  }
+  if (appearance === 'dark') {
+    return VISUAL_STYLE_PALETTES_DARK[style] || VISUAL_STYLE_PALETTES_DARK.shapes;
   }
   return VISUAL_STYLE_PALETTES[style] || VISUAL_STYLE_PALETTES.shapes;
 }

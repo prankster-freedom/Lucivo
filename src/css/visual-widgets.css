@@ -132,17 +132,18 @@ html.is-stage-show .slab-actions {
   background: linear-gradient(90deg, var(--vs-c1), var(--vs-c3));
 }
 
-/* ==================== コード・ショーケース（FR-031, DTP-VTPL-038） ==================== */
+/* ==================== コード・ショーケース（FR-031, DTP-VTPL-038, #262） ==================== */
+/* Light 外観: 明るい紙面とトーンに調和するライトパネル配色 */
 .exhibition-slab pre.vs-code-block {
   position: relative;
   padding-top: 2.45rem !important;
-  background-color: #0F172A !important;
-  color: #E2E8F0 !important;
-  border: 1px solid rgba(148, 163, 184, 0.22) !important;
-  box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.35) !important;
+  background-color: color-mix(in oklab, var(--vs-c1) 5%, var(--vs-card-bg)) !important;
+  color: #1E293B !important;
+  border: 1px solid color-mix(in oklab, var(--vs-c1) 24%, var(--vs-card-border)) !important;
+  box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.08) !important;
 }
 .exhibition-slab pre.vs-code-block code {
-  color: #E2E8F0 !important;
+  color: #1E293B !important;
   background: transparent !important;
 }
 .exhibition-slab pre.vs-code-block::before {
@@ -154,8 +155,8 @@ html.is-stage-show .slab-actions {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #94A3B8;
-  opacity: 0.9;
+  color: #475569;
+  opacity: 0.92;
   pointer-events: none;
 }
 .exhibition-slab pre.vs-code-block > .vs-code-caret {
@@ -165,7 +166,7 @@ html.is-stage-show .slab-actions {
   width: 1.2rem;
   height: 0.65rem;
   pointer-events: none;
-  background-color: var(--vs-c1);
+  background-color: color-mix(in oklab, var(--vs-c1) 82%, var(--vs-tone));
   -webkit-mask: var(--motif-rounded-caret) no-repeat center / contain;
   mask: var(--motif-rounded-caret) no-repeat center / contain;
 }
@@ -175,9 +176,9 @@ html.is-stage-show .slab-actions {
   right: 0.65rem;
   padding: 0.18rem 0.55rem;
   border-radius: 6px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(30, 41, 59, 0.85);
-  color: #94A3B8;
+  border: 1px solid var(--vs-card-border);
+  background: rgba(255, 255, 255, 0.88);
+  color: #475569;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
   font-weight: 600;
@@ -189,11 +190,42 @@ html.is-stage-show .slab-actions {
   content: attr(data-copy-label);
 }
 .exhibition-slab pre.vs-code-block > .vs-code-copy-btn:hover {
+  color: #0F172A;
+  border-color: var(--vs-c1);
+  background: #FFFFFF;
+}
+.exhibition-slab pre.vs-code-block > .vs-code-copy-btn.is-copied {
+  color: #059669;
+  border-color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+}
+/* Dark 外観・ステージ発表: 暗色の舞台に映える暗色コンソール枠を維持（#262） */
+:is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block {
+  background-color: #0F172A !important;
+  color: #E2E8F0 !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.35) !important;
+}
+:is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block code {
+  color: #E2E8F0 !important;
+}
+:is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block::before {
+  color: #94A3B8;
+}
+:is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block > .vs-code-caret {
+  background-color: var(--vs-c1);
+}
+:is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block > .vs-code-copy-btn {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(30, 41, 59, 0.85);
+  color: #94A3B8;
+}
+:is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block > .vs-code-copy-btn:hover {
   color: #F8FAFC;
   border-color: var(--vs-c1);
   background: rgba(51, 65, 85, 0.95);
 }
-.exhibition-slab pre.vs-code-block > .vs-code-copy-btn.is-copied {
+:is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block > .vs-code-copy-btn.is-copied {
   color: #34D399;
   border-color: #34D399;
   background: rgba(16, 185, 129, 0.18);

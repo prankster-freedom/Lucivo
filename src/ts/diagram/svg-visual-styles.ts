@@ -89,47 +89,57 @@ export function addVisualDefs(svg) {
 
 
   const uid = Math.random().toString(36).slice(2, 7);
+  const isDark = state.appearance === 'dark';
+  // Dark 外観やカスタムトーン選択時に図のノード色が背景に沈まないよう、鮮明なグラデーションを選択する（#260）
+  const gAmber = isDark ? ['#F59E0B', '#FDE047'] : ['#E89B27', '#F7D05C'];
+  const gAqua = isDark ? ['#22D3EE', '#A5F3FC'] : ['#73E8F4', '#DAEDFA'];
+  const gCoral = isDark ? ['#FB7185', '#FDA4AF'] : ['#E87C6C', '#F6CBC3'];
+  const gLime = isDark ? ['#4ADE80', '#BEF264'] : ['#8CEE97', '#CEF65B'];
+  const capCoral = isDark ? ['#F08060', '#FFA388'] : ['#E29578', '#ECAC94'];
+  const capGold = isDark ? ['#F0B429', '#FFD466'] : ['#E5AD35', '#F3C868'];
+  const capViolet = isDark ? ['#8CA6F8', '#B4C6FF'] : ['#9AAEE4', '#BAC7EC'];
+  const capTeal = isDark ? ['#45C4C0', '#7AE0DC'] : ['#64ADB0', '#88C4C6'];
 
   defs.insertAdjacentHTML('beforeend', `
     <filter id="vis-soft-shadow-${uid}" x="-30%" y="-30%" width="160%" height="170%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5.5" flood-color="#0F172A" flood-opacity="0.16" />
+      <feDropShadow dx="0" dy="6" stdDeviation="5.5" flood-color="#0F172A" flood-opacity="${isDark ? '0.32' : '0.16'}" />
     </filter>
     <filter id="vis-card-shadow-${uid}" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.14" />
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="${isDark ? '0.28' : '0.14'}" />
     </filter>
 
     <linearGradient id="vis-g-amber-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#E89B27" />
-      <stop offset="100%" stop-color="#F7D05C" />
+      <stop offset="0%" stop-color="${gAmber[0]}" />
+      <stop offset="100%" stop-color="${gAmber[1]}" />
     </linearGradient>
     <linearGradient id="vis-g-aqua-${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#73E8F4" />
-      <stop offset="100%" stop-color="#DAEDFA" />
+      <stop offset="0%" stop-color="${gAqua[0]}" />
+      <stop offset="100%" stop-color="${gAqua[1]}" />
     </linearGradient>
     <linearGradient id="vis-g-coral-${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#E87C6C" />
-      <stop offset="100%" stop-color="#F6CBC3" />
+      <stop offset="0%" stop-color="${gCoral[0]}" />
+      <stop offset="100%" stop-color="${gCoral[1]}" />
     </linearGradient>
     <linearGradient id="vis-g-lime-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#8CEE97" />
-      <stop offset="100%" stop-color="#CEF65B" />
+      <stop offset="0%" stop-color="${gLime[0]}" />
+      <stop offset="100%" stop-color="${gLime[1]}" />
     </linearGradient>
 
     <linearGradient id="vis-cap-coral-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#E29578" />
-      <stop offset="100%" stop-color="#ECAC94" />
+      <stop offset="0%" stop-color="${capCoral[0]}" />
+      <stop offset="100%" stop-color="${capCoral[1]}" />
     </linearGradient>
     <linearGradient id="vis-cap-gold-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#E5AD35" />
-      <stop offset="100%" stop-color="#F3C868" />
+      <stop offset="0%" stop-color="${capGold[0]}" />
+      <stop offset="100%" stop-color="${capGold[1]}" />
     </linearGradient>
     <linearGradient id="vis-cap-violet-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#9AAEE4" />
-      <stop offset="100%" stop-color="#BAC7EC" />
+      <stop offset="0%" stop-color="${capViolet[0]}" />
+      <stop offset="100%" stop-color="${capViolet[1]}" />
     </linearGradient>
     <linearGradient id="vis-cap-teal-${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#64ADB0" />
-      <stop offset="100%" stop-color="#88C4C6" />
+      <stop offset="0%" stop-color="${capTeal[0]}" />
+      <stop offset="100%" stop-color="${capTeal[1]}" />
     </linearGradient>
   `);
   return uid;

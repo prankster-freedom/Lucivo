@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { escapeHtml } from './utils/escape';
-import { hexToRgba } from './utils/color';
+import { hexToRgba, mixHex, pickContrastInk } from './utils/color';
 import { fnv1aHash } from './utils/hash';
 import { downloadBlob } from './utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
@@ -1182,18 +1182,37 @@ function syncStageModeUi(isVisual) {
 }
 
 function applyToneToVisualStage(visContainer: Element | null) {
+  const containerEl = visContainer as HTMLElement | null;
   const wrap = visContainer?.querySelector('.exhibition-wrap') as HTMLElement | null;
-  if (!wrap) return;
+  if (!wrap || !containerEl) return;
+  const palette = getEffectiveVisualPalette(state.infographicStyle, state.appearance);
+  // 各アクセント色（c1〜c4）上の文字色を WCAG コントラスト比に基づいて自動設定する（#258, #260）
+  palette.slice(0, 4).forEach((hex, idx) => {
+    wrap.style.setProperty(`--vs-c${idx + 1}-ink`, pickContrastInk(hex));
+  });
   if (state.tone && state.tone !== 'default') {
     const entry = getToneEntry(state.tone);
-    const mode = state.appearance === 'dark' ? entry.dark : entry.light;
+    const isDark = state.appearance === 'dark';
+    const mode = isDark ? entry.dark : entry.light;
+    containerEl.style.setProperty('--vs-stage-bg', mode.canvasBg);
     wrap.style.setProperty('--vs-c1', mode.c1);
     wrap.style.setProperty('--vs-c2', mode.c2);
     wrap.style.setProperty('--vs-c3', mode.c3);
     wrap.style.setProperty('--vs-c4', mode.c4);
     wrap.style.setProperty('--vs-glow', mode.glow);
+    wrap.style.setProperty('--vs-slab-bg', mode.cardBg);
+    wrap.style.setProperty(
+      '--vs-card-bg',
+      isDark ? mixHex(mode.cardBg, mode.canvasBg, 0.35) : mixHex(mode.cardBg, '#FFFFFF', 0.4)
+    );
+    wrap.style.setProperty('--vs-card-border', hexToRgba(mode.edge, isDark ? 0.42 : 0.24));
+    wrap.style.setProperty('--vs-line', mode.edge);
   } else {
-    ['--vs-c1', '--vs-c2', '--vs-c3', '--vs-c4', '--vs-glow'].forEach(v => wrap.style.removeProperty(v));
+    containerEl.style.removeProperty('--vs-stage-bg');
+    [
+      '--vs-c1', '--vs-c2', '--vs-c3', '--vs-c4', '--vs-glow',
+      '--vs-slab-bg', '--vs-card-bg', '--vs-card-border', '--vs-line'
+    ].forEach(v => wrap.style.removeProperty(v));
   }
 }
 
