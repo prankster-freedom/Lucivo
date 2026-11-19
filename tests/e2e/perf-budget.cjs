@@ -499,6 +499,144 @@ async function testPerfOptimizations(browser) {
     JSON.stringify(shadowResults)
   );
   await p12.close();
+
+  // TC-PERF-013 (#251): Visualモードの章単位差分組み直し（DOM 保持・全体描画との完全一致）と content-visibility
+  const p13 = await openApp(browser);
+  await p13.setViewportSize({ width: 1280, height: 800 });
+  await selectVisualStyle(p13, 'shapes');
+  const visualSampleMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
+  await p13.evaluate(text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, visualSampleMd);
+  await p13.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+  await p13.waitForTimeout(250);
+
+  const visInc = await p13.evaluate(() => {
+    const stripRuntimeLights = root => {
+      const clone = root.cloneNode(true);
+      clone.querySelectorAll('.signal-light-canvas').forEach(c => c.remove());
+      clone.querySelectorAll('.has-signal-light').forEach(el => el.classList.remove('has-signal-light'));
+      clone.querySelectorAll('.is-offscreen').forEach(el => el.classList.remove('is-offscreen'));
+      return clone.innerHTML;
+    };
+    const root = document.getElementById('visual-stage-container');
+    const heroBefore = root.querySelector('.exhibition-hero');
+    const slabsBefore = Array.from(root.querySelectorAll('.exhibition-slab[data-stage-no]'));
+    const firstSlabBefore = slabsBefore[0];
+    const lastSlabBefore = slabsBefore[slabsBefore.length - 1];
+    const lastH2Before = lastSlabBefore?.querySelector('h2[data-src-line]');
+    const lastLineBefore = Number(lastH2Before?.dataset.srcLine || 0);
+
+    const editor = document.getElementById('markdown-editor');
+    const marker = '## 3.';
+    const idx = editor.value.indexOf(marker);
+    const lineEnd = editor.value.indexOf('\n', idx);
+    const edited = `${editor.value.slice(0, lineEnd)}\n\nVisual 差分組み直しテストの追記行です。\n${editor.value.slice(lineEnd)}`;
+    editor.value = edited;
+    const tPatch = performance.now();
+    renderApp();
+    const patchMs = performance.now() - tPatch;
+
+    const heroAfter = root.querySelector('.exhibition-hero');
+    const slabsAfter = Array.from(root.querySelectorAll('.exhibition-slab[data-stage-no]'));
+    const firstSlabAfter = slabsAfter[0];
+    const lastSlabAfter = slabsAfter[slabsAfter.length - 1];
+    const lastH2After = lastSlabAfter?.querySelector('h2[data-src-line]');
+    const lastLineAfter = Number(lastH2After?.dataset.srcLine || 0);
+    const patchHtml = stripRuntimeLights(root);
+    const hasEditedText = root.textContent.includes('Visual 差分組み直しテストの追記行です。');
+
+    // 空文書でキャッシュ破棄し、全体組み直しした DOM と比較
+    editor.value = '';
+    renderApp();
+    editor.value = edited;
+    const tFull = performance.now();
+    renderApp();
+    const fullMs = performance.now() - tFull;
+    const fullHtml = stripRuntimeLights(root);
+
+    return {
+      sameHero: heroBefore !== null && heroBefore === heroAfter,
+      sameFirstSlab: firstSlabBefore !== null && firstSlabBefore === firstSlabAfter,
+      sameLastSlab: lastSlabBefore !== null && lastSlabBefore === lastSlabAfter,
+      lineDelta: lastLineAfter - lastLineBefore,
+      hasEditedText,
+      htmlExactMatch: patchHtml === fullHtml,
+      patchMs: +patchMs.toFixed(1),
+      fullMs: +fullMs.toFixed(1)
+    };
+  });
+
+  // 長文（25 章）での content-visibility: auto 適用と印刷・ステージ発表での解除を確認
+  const longVisMd = [
+    '# 長文 Visual テスト',
+    '',
+    ...Array.from({ length: 25 }, (_, i) => `## ${i + 1}. 章 ${i + 1}\n\n本文の段落 ${i + 1} です。\n`)
+  ].join('\n');
+  await p13.evaluate(text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, longVisMd);
+  await p13.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+  const cvScreen = await p13.evaluate(() => {
+    const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+    const slabs = wrap ? Array.from(wrap.querySelectorAll(':scope > .exhibition-slab')) : [];
+    const firstCs = slabs[0] ? getComputedStyle(slabs[0]) : null;
+    const laterCs = slabs[10] ? getComputedStyle(slabs[10]) : null;
+    return {
+      hasClass: Boolean(wrap && wrap.classList.contains('has-content-visibility')),
+      firstCv: firstCs ? firstCs.contentVisibility : null,
+      laterCv: laterCs ? laterCs.contentVisibility : null,
+      laterIntrinsic: laterCs ? laterCs.containIntrinsicBlockSize : null
+    };
+  });
+
+  await p13.emulateMedia({ media: 'print' });
+  const cvPrint = await p13.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-wrap > .exhibition-slab');
+    return slabs[10] ? getComputedStyle(slabs[10]).contentVisibility : null;
+  });
+  await p13.emulateMedia({ media: 'screen' });
+
+  const cvStageShow = await p13.evaluate(() => {
+    document.documentElement.classList.add('is-stage-show');
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-wrap > .exhibition-slab');
+    const cv = slabs[10] ? getComputedStyle(slabs[10]).contentVisibility : null;
+    document.documentElement.classList.remove('is-stage-show');
+    return cv;
+  });
+
+  // 短い文書では has-content-visibility が付かないこと
+  await p13.evaluate(() => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = '# 短い文書\n\n## 1. 章 1\n\n本文です。\n';
+    renderApp();
+  });
+  const shortHasCv = await p13.evaluate(() =>
+    Boolean(document.querySelector('#visual-stage-container .exhibition-wrap.has-content-visibility'))
+  );
+
+  record('TC-PERF-013',
+    visInc.sameHero &&
+    visInc.sameFirstSlab &&
+    visInc.sameLastSlab &&
+    visInc.lineDelta === 3 &&
+    visInc.hasEditedText &&
+    visInc.htmlExactMatch &&
+    cvScreen.hasClass &&
+    cvScreen.firstCv === 'visible' &&
+    cvScreen.laterCv === 'auto' &&
+    cvPrint === 'visible' &&
+    cvStageShow === 'visible' &&
+    !shortHasCv,
+    JSON.stringify({ visInc, cvScreen, cvPrint, cvStageShow, shortHasCv })
+  );
+  await p13.close();
 }
 
 module.exports = { testPerfBudget, testPerfOptimizations };

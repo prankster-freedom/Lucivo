@@ -244,7 +244,15 @@ export function setupVisualStageInteractions() {
     const agendaItem = event.target.closest('.vs-cover-agenda-item');
     if (agendaItem) {
       const slab = visContainer.querySelector(`.exhibition-slab[data-stage-no="${agendaItem.dataset.stageTarget}"]`);
-      if (slab) slab.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+      if (slab) {
+        slab.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+        // content-visibility: auto 有効時はスクロール直後に実高さが確定してずれるため、1 フレーム後に微調整する（#251）
+        if (visContainer.querySelector('.exhibition-wrap.has-content-visibility')) {
+          requestAnimationFrame(() => {
+            if (slab.isConnected) slab.scrollIntoView({ behavior: 'auto', block: 'start' });
+          });
+        }
+      }
       return;
     }
 

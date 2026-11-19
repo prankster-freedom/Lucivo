@@ -59,6 +59,8 @@ import {
 } from './ui/slab-export';
 import {
   decorateCodeBlocks,
+  buildSingleVisualSlabHtml,
+  buildVisualHeroAndEndCard,
   buildVisualStageHtml
 } from './ui/visual-stage';
 import {
@@ -128,6 +130,37 @@ interface StdRenderCache {
 
 let prevStdCache: StdRenderCache | null = null;
 let stdPendingGeneration = 0;
+
+interface VisSlabGroup {
+  stableKey: string;
+  matchKey: string;
+  tokens: any[];
+  headingLines: number[];
+  stageNo: number | null;
+  frontMatterHtml: string;
+  stripFirstH1: boolean;
+}
+
+interface VisSlabEntry {
+  key: string;
+  el: HTMLElement | null;
+  headingLines: number[];
+}
+
+interface VisRenderCache {
+  envKey: string;
+  linksSig: string;
+  mermaidCount: number;
+  wrap: HTMLElement;
+  heroKey: string;
+  heroEl: HTMLElement | null;
+  endCardKey: string;
+  endCardEl: HTMLElement | null;
+  slabs: VisSlabEntry[];
+}
+
+let prevVisCache: VisRenderCache | null = null;
+let visPendingGeneration = 0;
 let lastRenderMs = 30;
 
 function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
@@ -306,6 +339,184 @@ function updateGroupHeadingLines(entry: StdBlockEntry, nextLines: number[]) {
   entry.headingLines = nextLines;
 }
 
+// 1 見出しトークンから描画後のプレーンテキストを取り出す（buildVisualStageHtml と完全一致させるため）
+function headingTokenText(token: any, links: Record<string, any>): string {
+  const slice: any = [token];
+  slice.links = links;
+  const clean = DOMPurify.sanitize(marked.parser(slice), {
+    ADD_TAGS: ['div', 'span', 'strong', 'small'],
+    ADD_ATTR: ['class', 'data-slot', 'style']
+  });
+  const tmp = document.createElement('div');
+  tmp.innerHTML = clean;
+  return tmp.textContent || '';
+}
+
+// Visualモード用に最上位トークン列を章（H2 区切り）単位のスラブグループへ分割する（#251）
+function buildVisSlabGroups(
+  tokensToKeep: any[],
+  frontMatterHtml: string,
+  links: Record<string, any>,
+  generation: number,
+  modeTag: string
+): { groups: VisSlabGroup[]; h1Title: string; agenda: { no: string; title: string }[] } | null {
+  const groups: VisSlabGroup[] = [];
+  const agenda: { no: string; title: string }[] = [];
+  let h1Title = '';
+  let seenFirstH1 = false;
+  let sectionCounter = 0;
+  let htmlDepth = 0;
+
+  let curTokens: any[] = [];
+  let curStable: string[] = [];
+  let curMatch: string[] = [];
+  let curLines: number[] = [];
+  let curStageNo: number | null = null;
+  let curFrontMatter = frontMatterHtml;
+  let curStripFirstH1 = false;
+  let isFirstGroup = true;
+
+  const flush = () => {
+    if (curTokens.length === 0 && !curFrontMatter) return;
+    const prefixKey = `st:${curStageNo ?? 0}|h1:${curStripFirstH1 ? 1 : 0}|fm:${curFrontMatter}`;
+    groups.push({
+      stableKey: `${prefixKey}\n|SLAB|\n${curStable.join('\n|T|\n')}`,
+      matchKey: `${prefixKey}\n|SLAB|\n${curMatch.join('\n|T|\n')}`,
+      tokens: curTokens,
+      headingLines: curLines,
+      stageNo: curStageNo,
+      frontMatterHtml: curFrontMatter,
+      stripFirstH1: curStripFirstH1
+    });
+    curTokens = [];
+    curStable = [];
+    curMatch = [];
+    curLines = [];
+    curStageNo = null;
+    curFrontMatter = '';
+    curStripFirstH1 = false;
+    isFirstGroup = false;
+  };
+
+  for (const token of tokensToKeep) {
+    if (token.type === 'html' && !token.__mermaid && !token.__isTree) {
+      // 生 HTML 内に見出しが含まれる場合は DOM 分割とずれうるため全体描画へフォールバック
+      if (/<h[12]\b/i.test(token.raw || '')) return null;
+      htmlDepth += htmlTagBalance(token.raw || '');
+      if (htmlDepth < 0) return null;
+    }
+
+    if (htmlDepth === 0 && token.type === 'heading' && token.depth === 2) {
+      flush();
+      sectionCounter++;
+      curStageNo = sectionCounter;
+      const numStr = String(sectionCounter).padStart(2, '0');
+      const rawTitle = headingTokenText(token, links).replace(/^\d+\.\s*/, '');
+      agenda.push({ no: numStr, title: rawTitle });
+    }
+
+    if (token.type === 'space' && htmlDepth === 0 && curTokens.length === 0 && !curFrontMatter) {
+      continue;
+    }
+
+    let isStrippedH1 = false;
+    if (htmlDepth === 0 && token.type === 'heading' && token.depth === 1 && !seenFirstH1) {
+      if (!isFirstGroup || curStageNo !== null) return null;
+      seenFirstH1 = true;
+      curStripFirstH1 = true;
+      isStrippedH1 = true;
+      h1Title = headingTokenText(token, links);
+    }
+
+    curTokens.push(token);
+    if (token.type === 'heading' && Number.isInteger(token.srcLine)) {
+      if (!isStrippedH1) curLines.push(token.srcLine);
+      const part = `h:${token.depth}:${token.raw}`;
+      curStable.push(part);
+      curMatch.push(part);
+    } else if (token.__mermaid) {
+      const m = token.__mermaid;
+      const cacheKey = `${m.hash}-${modeTag}`;
+      const stable = `m:${m.index}:${m.hash}:${m.curve || ''}`;
+      curStable.push(stable);
+      curMatch.push(svgCache.has(cacheKey) ? stable : `miss:${generation}:${m.index}`);
+    } else {
+      const part = `${token.type}:${token.raw}`;
+      curStable.push(part);
+      curMatch.push(part);
+    }
+  }
+
+  if (htmlDepth !== 0) return null;
+  flush();
+  return { groups, h1Title, agenda };
+}
+
+function renderVisualSlabElement(
+  group: VisSlabGroup,
+  links: Record<string, any>,
+  mermaidBlocks: any[],
+  dirtyBlocks: any[],
+  cachedKeys: Map<number, string>,
+  modeTag: string,
+  visContainer: HTMLElement
+): HTMLElement | null {
+  const slice: any = [...group.tokens];
+  slice.links = links;
+  const rawHtml = (group.frontMatterHtml || '') + marked.parser(slice);
+  const cleanHtml = DOMPurify.sanitize(rawHtml, {
+    ADD_TAGS: ['div', 'span', 'strong', 'small'],
+    ADD_ATTR: ['class', 'data-slot', 'style']
+  });
+  const slabHtml = buildSingleVisualSlabHtml(cleanHtml, group.stageNo, group.stripFirstH1);
+  if (!slabHtml) return null;
+
+  const holder = document.createElement('div');
+  holder.innerHTML = slabHtml;
+  const slabEl = holder.firstElementChild as HTMLElement | null;
+  if (!slabEl) return null;
+
+  wrapTables(slabEl);
+  if (window.katex) renderMath(slabEl);
+  if (window.LucivoEmoji) renderEmoji(slabEl);
+  const slots = slabEl.querySelectorAll('.lucivo-slot');
+  slots.forEach(slot => {
+    const idx = parseInt(slot.getAttribute('data-slot'), 10);
+    const block = mermaidBlocks[idx];
+    if (!block) return;
+    const cacheKey = `${block.hash}-${modeTag}`;
+    if (svgCache.has(cacheKey)) {
+      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, true, block.curve);
+      cachedKeys.set(idx, cacheKey);
+    } else {
+      slot.outerHTML = createDiagramCard(idx, '', true, true, block.curve);
+      dirtyBlocks.push({ ...block, modeTag, cacheKey });
+    }
+  });
+  bindViewportInteractions(slabEl, visContainer);
+  return slabEl;
+}
+
+function updateVisualSlabHeadingLines(entry: VisSlabEntry, nextLines: number[]) {
+  if (!entry.el) {
+    entry.headingLines = nextLines;
+    return;
+  }
+  if (entry.headingLines.length === nextLines.length && entry.headingLines.every((v, i) => v === nextLines[i])) return;
+  let k = 0;
+  entry.el.querySelectorAll('[data-src-line]').forEach(h => {
+    if (k < nextLines.length) (h as HTMLElement).dataset.srcLine = String(nextLines[k++]);
+  });
+  entry.headingLines = nextLines;
+}
+
+function htmlToSingleElement(html: string): HTMLElement | null {
+  if (!html) return null;
+  const holder = document.createElement('div');
+  holder.innerHTML = html.trim();
+  return holder.firstElementChild as HTMLElement | null;
+}
+
 function renderApp() {
   const t0 = performance.now();
   const rawMarkdown = (document.getElementById('markdown-editor') as HTMLTextAreaElement).value;
@@ -322,7 +533,6 @@ function renderApp() {
   const isVisual = state.isVisualMode;
   const generation = ++runtime.renderGeneration;
   const isEmpty = rawMarkdown.trim() === '';
-  if (window.LucivoStage) LucivoStage.resetLights();
 
   const dirtyBlocks: any[] = [];
   const cachedKeys = new Map<number, string>();
@@ -331,7 +541,12 @@ function renderApp() {
 
   // 高速モードの差分ブロック再描画（#235, DD-DIAG-083）
   let usedIncremental = false;
+  let visualPatchedScopes: HTMLElement[] | null = null;
+
   if (!isVisual && !isEmpty && !hasFootnotes) {
+    prevVisCache = null;
+    visPendingGeneration = 0;
+    if (window.LucivoStage) LucivoStage.resetLights();
     const groups = buildStdBlockGroups(tokensToKeep, frontMatterHtml, generation);
     if (groups) {
       const envKey = `${state.appearance}|${state.palette}|${state.tone}|${state.infographicStyle}|${runtime.openedFolder ? 'f' : ''}`;
@@ -453,8 +668,207 @@ function renderApp() {
     }
   }
 
+  // Visualモードの章（スラブ）単位の差分組み直しと content-visibility（#251）
+  if (isVisual && !isEmpty && !hasFootnotes) {
+    prevStdCache = null;
+    stdPendingGeneration = 0;
+    const visPlan = buildVisSlabGroups(tokensToKeep, frontMatterHtml, links, generation, modeTag);
+    if (visPlan) {
+      const { groups, h1Title, agenda } = visPlan;
+      const envKey = `${state.appearance}|${state.palette}|${state.tone}|${state.infographicStyle}|${state.ambientEffectsEnabled ? 1 : 0}|${state.showFrontMatter ? 1 : 0}|${runtime.openedFolder ? 'f' : ''}|${runtime.currentFileName}`;
+      const linksSig = JSON.stringify(links);
+      const { heroHtml, endCardHtml } = buildVisualHeroAndEndCard(h1Title, yaml, agenda, mermaidBlocks.length);
+      const heroKey = heroHtml;
+      const endCardKey = endCardHtml;
+      const canPatchVis = Boolean(
+        prevVisCache
+        && visPendingGeneration === 0
+        && prevVisCache.envKey === envKey
+        && prevVisCache.linksSig === linksSig
+        && prevVisCache.mermaidCount === mermaidBlocks.length
+        && prevVisCache.wrap.parentNode === visContainer
+        && (!prevVisCache.heroEl || prevVisCache.heroEl.parentNode === prevVisCache.wrap)
+        && (!prevVisCache.endCardEl || prevVisCache.endCardEl.parentNode === prevVisCache.wrap)
+        && prevVisCache.slabs.every(s => !s.el || s.el.parentNode === prevVisCache.wrap)
+      );
+
+      stdWrapper.classList.add('hidden');
+      stdContainer.innerHTML = '';
+      visContainer.classList.remove('hidden');
+
+      if (canPatchVis && prevVisCache) {
+        const wrap = prevVisCache.wrap;
+        const prev = prevVisCache.slabs;
+        let heroEl = prevVisCache.heroEl;
+        let endCardEl = prevVisCache.endCardEl;
+
+        // 1. 表紙（hero）の差分更新
+        if (prevVisCache.heroKey !== heroKey) {
+          const nextHero = htmlToSingleElement(heroHtml);
+          if (heroEl && nextHero) {
+            heroEl.replaceWith(nextHero);
+          } else if (heroEl && !nextHero) {
+            heroEl.remove();
+          } else if (!heroEl && nextHero) {
+            wrap.insertBefore(nextHero, wrap.firstChild);
+          }
+          heroEl = nextHero;
+        }
+
+        // 2. スラブ列の prefix / suffix マッチング
+        let prefix = 0;
+        const minLen = Math.min(prev.length, groups.length);
+        while (prefix < minLen && prev[prefix].key === groups[prefix].matchKey) prefix++;
+        let suffix = 0;
+        while (
+          suffix < minLen - prefix
+          && prev[prev.length - 1 - suffix].key === groups[groups.length - 1 - suffix].matchKey
+        ) {
+          suffix++;
+        }
+
+        const removedStart = prefix;
+        const removedEnd = prev.length - suffix;
+        const addedStart = prefix;
+        const addedEnd = groups.length - suffix;
+
+        // 差し替え位置の基準ノード（後続未変更スラブ、なければエンドカード）
+        let anchorNode: ChildNode | null = null;
+        for (let i = removedEnd; i < prev.length && !anchorNode; i++) {
+          if (prev[i].el) anchorNode = prev[i].el;
+        }
+        if (!anchorNode && endCardEl) anchorNode = endCardEl;
+
+        // 変更区間の旧スラブのみライト解除＆DOM 除去
+        for (let i = removedStart; i < removedEnd; i++) {
+          const oldEl = prev[i].el;
+          if (oldEl) {
+            if (window.LucivoStage && typeof LucivoStage.unmountLights === 'function') {
+              LucivoStage.unmountLights(oldEl);
+            }
+            oldEl.remove();
+          }
+        }
+
+        // 変更区間のスラブのみ組み立てて挿入
+        const addedEntries: VisSlabEntry[] = [];
+        const insertedEls: HTMLElement[] = [];
+        if (addedStart < addedEnd) {
+          const frag = document.createDocumentFragment();
+          for (let i = addedStart; i < addedEnd; i++) {
+            const g = groups[i];
+            const el = renderVisualSlabElement(g, links, mermaidBlocks, dirtyBlocks, cachedKeys, modeTag, visContainer);
+            if (el) {
+              frag.appendChild(el);
+              insertedEls.push(el);
+            }
+            addedEntries.push({ key: g.stableKey, el, headingLines: g.headingLines });
+          }
+          wrap.insertBefore(frag, anchorNode);
+        }
+
+        // 3. エンドカードの差分更新
+        if (prevVisCache.endCardKey !== endCardKey) {
+          const nextEnd = htmlToSingleElement(endCardHtml);
+          if (endCardEl && nextEnd) {
+            endCardEl.replaceWith(nextEnd);
+          } else if (endCardEl && !nextEnd) {
+            endCardEl.remove();
+          } else if (!endCardEl && nextEnd) {
+            wrap.appendChild(nextEnd);
+          }
+          endCardEl = nextEnd;
+        }
+
+        // 4. 未変更スラブの行番号更新とキャッシュ再構築
+        const nextSlabs: VisSlabEntry[] = [];
+        for (let i = 0; i < prefix; i++) {
+          updateVisualSlabHeadingLines(prev[i], groups[i].headingLines);
+          nextSlabs.push(prev[i]);
+        }
+        nextSlabs.push(...addedEntries);
+        for (let i = 0; i < suffix; i++) {
+          const entry = prev[removedEnd + i];
+          updateVisualSlabHeadingLines(entry, groups[addedEnd + i].headingLines);
+          nextSlabs.push(entry);
+        }
+
+        prevVisCache = {
+          envKey,
+          linksSig,
+          mermaidCount: mermaidBlocks.length,
+          wrap,
+          heroKey,
+          heroEl,
+          endCardKey,
+          endCardEl,
+          slabs: nextSlabs
+        };
+
+        wrap.classList.toggle('has-content-visibility', wrap.querySelectorAll(':scope > .exhibition-slab').length >= 20);
+        // 接続後に非同期解決系と Fit を追加スラブに対してのみ実行
+        insertedEls.forEach(el => {
+          resolveFolderImages(el);
+          if (!window.katex) renderMath(el);
+          if (!window.LucivoEmoji) renderEmoji(el);
+        });
+        cachedKeys.forEach((cacheKey, idx) => {
+          applyReadableFit(visContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
+        });
+        visualPatchedScopes = insertedEls;
+        usedIncremental = true;
+      } else {
+        // Visual 初回または環境変更時: スラブ単位で組み上げてキャッシュを構築
+        if (window.LucivoStage) LucivoStage.resetLights();
+        const ambientClass = state.ambientEffectsEnabled ? ' has-ambient-effects' : '';
+        const wrap = document.createElement('div');
+        wrap.className = `exhibition-wrap vs-theme-${state.infographicStyle}${ambientClass}`;
+
+        const heroEl = htmlToSingleElement(heroHtml);
+        if (heroEl) wrap.appendChild(heroEl);
+
+        const slabEntries: VisSlabEntry[] = [];
+        groups.forEach(g => {
+          const el = renderVisualSlabElement(g, links, mermaidBlocks, dirtyBlocks, cachedKeys, modeTag, visContainer);
+          if (el) wrap.appendChild(el);
+          slabEntries.push({ key: g.stableKey, el, headingLines: g.headingLines });
+        });
+
+        const endCardEl = htmlToSingleElement(endCardHtml);
+        if (endCardEl) wrap.appendChild(endCardEl);
+
+        visContainer.innerHTML = '';
+        visContainer.appendChild(wrap);
+        applyToneToVisualStage(visContainer);
+        wrap.classList.toggle('has-content-visibility', wrap.querySelectorAll(':scope > .exhibition-slab').length >= 20);
+
+        prevVisCache = {
+          envKey,
+          linksSig,
+          mermaidCount: mermaidBlocks.length,
+          wrap,
+          heroKey,
+          heroEl,
+          endCardKey,
+          endCardEl,
+          slabs: slabEntries
+        };
+
+        resolveFolderImages(visContainer);
+        if (!window.katex) renderMath(visContainer);
+        if (!window.LucivoEmoji) renderEmoji(visContainer);
+        cachedKeys.forEach((cacheKey, idx) => {
+          applyReadableFit(visContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
+        });
+        usedIncremental = true;
+      }
+    }
+  }
+
   if (!usedIncremental) {
     prevStdCache = null;
+    prevVisCache = null;
+    if (window.LucivoStage) LucivoStage.resetLights();
     const rawHtml = frontMatterHtml + marked.parser(tokensToKeep);
     const cleanHtml = DOMPurify.sanitize(rawHtml, {
       ADD_TAGS: ['div', 'span', 'strong', 'small'],
@@ -469,6 +883,10 @@ function renderApp() {
         ? `<div class="exhibition-wrap"><section class="exhibition-slab">${EMPTY_GUIDE_HTML}</section></div>`
         : buildVisualStageHtml(cleanHtml, yaml);
       applyToneToVisualStage(visContainer);
+      const wrap = visContainer.querySelector('.exhibition-wrap');
+      if (wrap) {
+        wrap.classList.toggle('has-content-visibility', !isEmpty && wrap.querySelectorAll(':scope > .exhibition-slab').length >= 20);
+      }
     } else {
       visContainer.classList.add('hidden');
       visContainer.innerHTML = '';
@@ -507,14 +925,20 @@ function renderApp() {
   }
 
   rebuildFollowIndex(activeContainer);
-  mountStage(activeContainer);
+  if (visualPatchedScopes !== null) {
+    visualPatchedScopes.forEach(scope => mountStage(scope));
+  } else {
+    mountStage(activeContainer);
+  }
   if (document.activeElement && document.activeElement.id === 'markdown-editor') scheduleFollow();
 
   if (dirtyBlocks.length > 0) {
     stdPendingGeneration = isVisual ? 0 : generation;
+    visPendingGeneration = isVisual ? generation : 0;
     processDirtyBlocks(dirtyBlocks, { container: activeContainer, generation, isVisual });
   } else {
     stdPendingGeneration = 0;
+    visPendingGeneration = 0;
     updateStatus(`• ${mermaidBlocks.length}/${mermaidBlocks.length} Diagrams Ready`, 'success');
   }
   lastRenderMs = performance.now() - t0;
@@ -581,6 +1005,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
       if (vp) vp.innerHTML = '<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">Mermaid を読み込めませんでした（ネットワークの接続を確認してください）</div>';
     });
     if (stdPendingGeneration === target.generation) stdPendingGeneration = 0;
+    if (visPendingGeneration === target.generation) visPendingGeneration = 0;
     updateStatus('• Mermaid Unavailable', 'warning');
     return;
   }
@@ -635,6 +1060,7 @@ async function processDirtyBlocks(dirtyBlocks, target) {
   }
 
   if (stdPendingGeneration === target.generation) stdPendingGeneration = 0;
+  if (visPendingGeneration === target.generation) visPendingGeneration = 0;
   updateStatus(`• All Diagrams Verified`, 'success');
 }
 
@@ -964,8 +1390,11 @@ function followEditorCaret() {
   runtime.followedKey = key;
   const behavior = scrollBehavior();
   scroller.scrollTo({ top: anchor ? previewScrollTopOf(anchor, scroller) : 0, behavior });
-  // content-visibility: auto 有効時はスクロール直後に実高さが確定してずれるため、1 フレーム後に微調整する（#238）
-  if (anchor && !state.isVisualMode && document.getElementById('standard-doc-container')?.classList.contains('has-content-visibility')) {
+  // content-visibility: auto 有効時はスクロール直後に実高さが確定してずれるため、1 フレーム後に微調整する（#238, #251）
+  const hasCv = state.isVisualMode
+    ? Boolean(document.querySelector('#visual-stage-container .exhibition-wrap.has-content-visibility'))
+    : Boolean(document.getElementById('standard-doc-container')?.classList.contains('has-content-visibility'));
+  if (anchor && hasCv) {
     const expectedKey = key;
     requestAnimationFrame(() => {
       if (runtime.followedKey !== expectedKey || !anchor.isConnected) return;
@@ -1090,19 +1519,22 @@ function scrollSection(direction) {
   const positions = elements.map(el => previewScrollTopOf(el, scroller, scrollerRect));
 
   let nextTop = null;
+  let nextEl = null;
   if (direction > 0) {
     if (currentTop >= maxScroll - 2) return;
     // 先頭付近（scrollTop <= 16）で最初の章が画面上端付近（<= 64px）にある場合は、すでに1章目を表示中とみなして2章目へ進む
-    nextTop = positions.find((pos, idx) =>
+    const foundIdx = positions.findIndex((pos, idx) =>
       pos > currentTop + 8 && !(idx === 0 && currentTop <= 16 && pos <= 64 && positions.length > 1)
     );
-    if (nextTop !== undefined && nextTop !== null) {
-      nextTop = Math.min(maxScroll, nextTop);
+    if (foundIdx !== -1) {
+      nextTop = Math.min(maxScroll, positions[foundIdx]);
+      nextEl = elements[foundIdx];
     }
   } else {
     for (let i = positions.length - 1; i >= 0; i--) {
       if (positions[i] < currentTop - 8) {
         nextTop = positions[i];
+        nextEl = elements[i];
         break;
       }
     }
@@ -1116,6 +1548,17 @@ function scrollSection(direction) {
     lastNavTargetTop = nextTop;
     lastNavTime = now;
     scroller.scrollTo({ top: nextTop, behavior: scrollBehavior() });
+    if (nextEl && state.isVisualMode && document.querySelector('#visual-stage-container .exhibition-wrap.has-content-visibility')) {
+      const expectedTime = now;
+      requestAnimationFrame(() => {
+        if (lastNavTime !== expectedTime || !nextEl.isConnected) return;
+        const correctedTop = Math.min(Math.max(0, scroller.scrollHeight - scroller.clientHeight), previewScrollTopOf(nextEl, scroller));
+        if (Math.abs(scroller.scrollTop - correctedTop) > 4) {
+          lastNavTargetTop = correctedTop;
+          scroller.scrollTo({ top: correctedTop, behavior: 'auto' });
+        }
+      });
+    }
   }
 }
 

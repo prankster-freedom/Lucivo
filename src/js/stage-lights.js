@@ -408,6 +408,36 @@ export function resetLights() {
   resizeObserver.disconnect();
 }
 
+// 差分組み直しで差し替える章（スラブ）だけのライト・オブザーバを解除する（#251）
+export function unmountLights(root) {
+  if (!root) return;
+  const hosts = [];
+  if (root.classList && root.classList.contains('exhibition-viewport')) hosts.push(root);
+  if (root.querySelectorAll) {
+    root.querySelectorAll('.exhibition-viewport').forEach(h => hosts.push(h));
+  }
+  hosts.forEach(host => {
+    const flow = flows.get(host);
+    if (flow) {
+      stopFlow(flow);
+      flows.delete(host);
+      flows.delete(flow.svg);
+      visibilityObserver.unobserve(host);
+      resizeObserver.unobserve(flow.svg);
+      resizeObserver.unobserve(host);
+    }
+  });
+  if (root.querySelectorAll) {
+    root.querySelectorAll('.vs-steps').forEach(steps => {
+      stepVisibilityObserver.unobserve(steps);
+    });
+  }
+  if (activeFlows.size === 0 && frameId) {
+    cancelAnimationFrame(frameId);
+    frameId = 0;
+  }
+}
+
 export function suspendLights(suspend, activeScene) {
   lightsSuspended = suspend;
   if (suspend || !lightsEnabled) {

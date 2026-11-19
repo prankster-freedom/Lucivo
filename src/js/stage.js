@@ -7,6 +7,7 @@ import {
   buildPlan,
   prefersReducedMotion,
   mountLights,
+  unmountLights,
   resetLights,
   suspendLights,
   clearLightsSuspendedFlag,
@@ -511,6 +512,7 @@ function mount(container) {
 window.LucivoStage = {
   mount,
   mountLights,
+  unmountLights,
   resetLights,
   enterShow,
   exitShow,

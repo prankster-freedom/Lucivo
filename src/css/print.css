@@ -77,7 +77,8 @@
     border: 0 !important;
     box-shadow: none !important;
   }
-  .prose-doc > * {
+  .prose-doc > *,
+  .exhibition-wrap > .exhibition-slab {
     content-visibility: visible !important;
     contain-intrinsic-size: none !important;
   }

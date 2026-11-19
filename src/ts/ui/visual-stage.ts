@@ -396,6 +396,78 @@ export function decorateCodeBlocks(container) {
   });
 }
 
+// 単一のスラブ（章）ノード列を <section class="exhibition-slab ..."> の HTML に組み上げる共通関数（#251 で全体・差分共通化）
+function buildVisualSlabSection(nodes, stageNo) {
+  const wrapper = document.createElement('div');
+  nodes.forEach(n => wrapper.appendChild(n.cloneNode(true)));
+  // 脚注の一覧は章の末尾に小さく置く。雛形の判定には入れない（FR-057）
+  const footnotesEl = wrapper.querySelector(':scope > .lucivo-footnotes');
+  const footnotesHtml = footnotesEl ? footnotesEl.outerHTML : '';
+  if (footnotesEl) footnotesEl.remove();
+  const h2 = wrapper.querySelector('h2');
+  let agendaItem = null;
+  let stageAttr = '';
+  if (h2 && stageNo !== null && stageNo !== undefined) {
+    const numStr = String(stageNo).padStart(2, '0');
+    const rawTitle = h2.textContent.replace(/^\d+\.\s*/, '');
+    h2.innerHTML = `<span class="exhibition-num-badge">STAGE ${numStr}</span><span>${escapeHtml(rawTitle)}</span>`;
+    agendaItem = { no: numStr, title: rawTitle };
+    stageAttr = ` data-stage-no="${numStr}"`;
+  }
+  const slots = wrapper.querySelectorAll('.lucivo-slot');
+  const children = Array.from(wrapper.children);
+  const proseEls = children.filter(el => el !== h2 && !el.classList.contains('front-matter') && !el.classList.contains('lucivo-slot') && !el.querySelector('.lucivo-slot'));
+  const hasComplexBlock = proseEls.some(el => /^(H[3-6]|TABLE|PRE)$/.test(el.tagName) || el.querySelector('table, pre'));
+  const actionsHtml = buildSlabActionsHtml();
+  let html = '';
+  if (slots.length === 1 && proseEls.length >= 1 && !hasComplexBlock) {
+    const fm = wrapper.querySelector(':scope > .front-matter');
+    const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
+    // 解説が短い文章だけのときは、リード型と同じ組み方にして、図と釣り合わせる（DTP-VTPL-060, DD-DIAG-044, #146）
+    const proseInner = proseEls.map(el => el.outerHTML).join('');
+    const proseHtml = isLeadProse(proseEls) ? `<div class="vs-lead">${proseInner}</div>` : proseInner;
+    const headHtml = `${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
+    html = `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div>${footnotesHtml}${actionsHtml}</section>`;
+  } else {
+    const template = detectSlabTemplate(proseEls, slots.length);
+    applySlabTemplate(template, proseEls);
+    const isLongProse = template === 'standard' && shouldUseTwoColumnProse(proseEls);
+    if (isLongProse) {
+      wrapTwoColumnProse(wrapper, h2);
+    }
+    const longProseClass = isLongProse ? ' vs-long-prose' : '';
+    html = `<section class="exhibition-slab vs-tpl-${template}${longProseClass}"${stageAttr}>${wrapper.innerHTML}${footnotesHtml}${actionsHtml}</section>`;
+  }
+  return { html, agendaItem };
+}
+
+// 差分組み直し用: 1 章分のサニタイズ済み HTML を単一スラブ HTML に変換する（#251）
+export function buildSingleVisualSlabHtml(cleanSlabHtml, stageNo, stripFirstH1 = false) {
+  const temp = document.createElement('div');
+  temp.innerHTML = cleanSlabHtml;
+  temp.querySelectorAll('table').forEach(markTableColumns);
+  decorateCodeBlocks(temp);
+  decorateAlerts(temp);
+  if (stripFirstH1) {
+    const h1 = temp.querySelector('h1');
+    if (h1) h1.remove();
+  }
+  const nodes = Array.from(temp.childNodes);
+  if (!nodes.some(n => n.nodeType === 1 || n.textContent.trim())) return '';
+  return buildVisualSlabSection(nodes, stageNo).html;
+}
+
+// 差分組み直し用: 表紙・エンドカードの HTML と印刷用タイトルを生成する（#251）
+export function buildVisualHeroAndEndCard(heroTitle, yaml, agenda, totalFigures) {
+  const coverMeta = readCoverMeta(yaml);
+  const resolvedTitle = heroTitle || coverMeta.title || (runtime.currentFileName !== 'untitled.md' ? runtime.currentFileName.replace(/\.[^.]+$/, '') : '');
+  const printTitle = (resolvedTitle || '').replace(/[\r\n]+/g, ' ').trim();
+  document.documentElement.style.setProperty('--print-doc-title', JSON.stringify(printTitle));
+  const heroHtml = resolvedTitle ? buildCoverHtml(resolvedTitle, coverMeta, agenda, totalFigures) : '';
+  const endCardHtml = buildEndCardHtml(resolvedTitle, coverMeta);
+  return { resolvedTitle, heroHtml, endCardHtml };
+}
+
 export function buildVisualStageHtml(cleanHtml, yaml) {
   const temp = document.createElement('div');
   temp.innerHTML = cleanHtml;
@@ -406,15 +478,12 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
   const totalFigures = temp.querySelectorAll('.lucivo-slot').length;
 
   // 題名は h1、フロントマターの title、読み込んだファイル名の順に探す。どれもなければヒーローを出さない（DD-VTPL-040）
-  const coverMeta = readCoverMeta(yaml);
-  let heroTitle = coverMeta.title || (runtime.currentFileName !== 'untitled.md' ? runtime.currentFileName.replace(/\.[^.]+$/, '') : '');
   const h1 = temp.querySelector('h1');
+  let h1Title = '';
   if (h1) {
-    heroTitle = h1.textContent;
+    h1Title = h1.textContent;
     h1.remove();
   }
-  const printTitle = (heroTitle || '').replace(/[\r\n]+/g, ' ').trim();
-  document.documentElement.style.setProperty('--print-doc-title', JSON.stringify(printTitle));
 
   // 要素も文字もないスラブ（h1 の直後に h2 が続く文書で、h1 を除いた後に残る改行だけの部分）は出さない（DD-VTPL-002）
   const slabs = [];
@@ -437,50 +506,16 @@ export function buildVisualStageHtml(cleanHtml, yaml) {
   const agenda = [];
 
   slabs.forEach((nodes) => {
-    const wrapper = document.createElement('div');
-    nodes.forEach(n => wrapper.appendChild(n.cloneNode(true)));
-    // 脚注の一覧は章の末尾に小さく置く。雛形の判定には入れない（FR-057）
-    const footnotesEl = wrapper.querySelector(':scope > .lucivo-footnotes');
-    const footnotesHtml = footnotesEl ? footnotesEl.outerHTML : '';
-    if (footnotesEl) footnotesEl.remove();
-    const h2 = wrapper.querySelector('h2');
-    if (h2) {
-      sectionCounter++;
-      const numStr = String(sectionCounter).padStart(2, '0');
-      const rawTitle = h2.textContent.replace(/^\d+\.\s*/, '');
-      h2.innerHTML = `<span class="exhibition-num-badge">STAGE ${numStr}</span><span>${escapeHtml(rawTitle)}</span>`;
-      agenda.push({ no: numStr, title: rawTitle });
-    }
-    const stageAttr = h2 ? ` data-stage-no="${String(sectionCounter).padStart(2, '0')}"` : '';
-    const slots = wrapper.querySelectorAll('.lucivo-slot');
-    const children = Array.from(wrapper.children);
-    const proseEls = children.filter(el => el !== h2 && !el.classList.contains('front-matter') && !el.classList.contains('lucivo-slot') && !el.querySelector('.lucivo-slot'));
-    const hasComplexBlock = proseEls.some(el => /^(H[3-6]|TABLE|PRE)$/.test(el.tagName) || el.querySelector('table, pre'));
-    const actionsHtml = buildSlabActionsHtml();
-    if (slots.length === 1 && proseEls.length >= 1 && !hasComplexBlock) {
-      const fm = wrapper.querySelector(':scope > .front-matter');
-      const slotEl = children.find(el => el.classList.contains('lucivo-slot') || el.querySelector('.lucivo-slot'));
-      // 解説が短い文章だけのときは、リード型と同じ組み方にして、図と釣り合わせる（DTP-VTPL-060, DD-DIAG-044, #146）
-      const proseInner = proseEls.map(el => el.outerHTML).join('');
-      const proseHtml = isLeadProse(proseEls) ? `<div class="vs-lead">${proseInner}</div>` : proseInner;
-      const headHtml =`${fm ? fm.outerHTML : ''}${h2 ? h2.outerHTML : ''}`;
-      slabsHtml += `<section class="exhibition-slab exhibition-slab-split vs-tpl-split"${stageAttr}>${headHtml}<div class="exhibition-slab-body"><div class="exhibition-slab-prose">${proseHtml}</div><div class="exhibition-slab-figure">${slotEl.outerHTML}</div></div>${footnotesHtml}${actionsHtml}</section>`;
-    } else {
-      const template = detectSlabTemplate(proseEls, slots.length);
-      applySlabTemplate(template, proseEls);
-      const isLongProse = template === 'standard' && shouldUseTwoColumnProse(proseEls);
-      if (isLongProse) {
-        wrapTwoColumnProse(wrapper, h2);
-      }
-      const longProseClass = isLongProse ? ' vs-long-prose' : '';
-      slabsHtml += `<section class="exhibition-slab vs-tpl-${template}${longProseClass}"${stageAttr}>${wrapper.innerHTML}${footnotesHtml}${actionsHtml}</section>`;
-    }
+    const hasH2 = nodes.some(n => n.nodeType === 1 && (n.tagName === 'H2' || n.querySelector?.('h2')));
+    const stageNo = hasH2 ? ++sectionCounter : null;
+    const { html, agendaItem } = buildVisualSlabSection(nodes, stageNo);
+    slabsHtml += html;
+    if (agendaItem) agenda.push(agendaItem);
   });
 
   // 見出しの文字（textContent）はエスケープしてから埋め込む。そのまま入れると、見出しに書いた
   // &lt;img …&gt; などが HTML として解釈される（NFR-003）
-  const heroHtml = heroTitle ? buildCoverHtml(heroTitle, coverMeta, agenda, totalFigures) : '';
-  const endCardHtml = buildEndCardHtml(heroTitle, coverMeta);
+  const { heroHtml, endCardHtml } = buildVisualHeroAndEndCard(h1Title, yaml, agenda, totalFigures);
 
   // 雛形・バッジ・4 色バーの配色は、スタイルのクラスが定義する --vs-c1〜4 から取る（DTP-VTPL-070）
   const ambientClass = state.ambientEffectsEnabled ? ' has-ambient-effects' : '';
