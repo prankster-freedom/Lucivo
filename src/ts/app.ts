@@ -349,7 +349,8 @@ function headingTokenText(token: any, links: Record<string, any>): string {
   });
   const tmp = document.createElement('div');
   tmp.innerHTML = clean;
-  return tmp.textContent || '';
+  const heading = tmp.querySelector('h1, h2, h3, h4, h5, h6');
+  return (heading || tmp).textContent || '';
 }
 
 // Visualモード用に最上位トークン列を章（H2 区切り）単位のスラブグループへ分割する（#251）
@@ -477,8 +478,6 @@ function renderVisualSlabElement(
   if (!slabEl) return null;
 
   wrapTables(slabEl);
-  if (window.katex) renderMath(slabEl);
-  if (window.LucivoEmoji) renderEmoji(slabEl);
   const slots = slabEl.querySelectorAll('.lucivo-slot');
   slots.forEach(slot => {
     const idx = parseInt(slot.getAttribute('data-slot'), 10);
@@ -806,11 +805,11 @@ function renderApp() {
         };
 
         wrap.classList.toggle('has-content-visibility', wrap.querySelectorAll(':scope > .exhibition-slab').length >= 20);
-        // 接続後に非同期解決系と Fit を追加スラブに対してのみ実行
+        // 接続後に解決系（ローカル画像・数式・絵文字・Fit）を追加スラブに対してのみ実行
         insertedEls.forEach(el => {
           resolveFolderImages(el);
-          if (!window.katex) renderMath(el);
-          if (!window.LucivoEmoji) renderEmoji(el);
+          renderMath(el);
+          renderEmoji(el);
         });
         cachedKeys.forEach((cacheKey, idx) => {
           applyReadableFit(visContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
@@ -855,8 +854,8 @@ function renderApp() {
         };
 
         resolveFolderImages(visContainer);
-        if (!window.katex) renderMath(visContainer);
-        if (!window.LucivoEmoji) renderEmoji(visContainer);
+        renderMath(visContainer);
+        renderEmoji(visContainer);
         cachedKeys.forEach((cacheKey, idx) => {
           applyReadableFit(visContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
         });

@@ -1643,7 +1643,8 @@ async function testCoverAndTables(browser) {
     const heroAfter = hero ? getComputedStyle(hero, '::after') : null;
     const heroMask = heroAfter ? ((heroAfter.maskImage && heroAfter.maskImage !== 'none' ? heroAfter.maskImage : heroAfter.webkitMaskImage) || '') : '';
     const quoteCs = quote ? getComputedStyle(quote) : null;
-    const quoteFilter = quoteCs ? (quoteCs.backdropFilter || quoteCs.webkitBackdropFilter || '') : '';
+    const quoteFilter = quoteCs ? (quoteCs.backdropFilter || quoteCs.webkitBackdropFilter || 'none') : '';
+    const quoteBgImg = quoteCs ? (quoteCs.backgroundImage || 'none') : 'none';
     return {
       htmlClass: document.documentElement.classList.contains('has-ambient-effects'),
       wrapClass: wrap ? wrap.classList.contains('has-ambient-effects') : false,
@@ -1651,7 +1652,7 @@ async function testCoverAndTables(browser) {
       heroSheerMask: /backdrop-light-sweep-foreground\.svg/.test(heroMask),
       heroBlend: heroAfter ? heroAfter.mixBlendMode : '',
       slabIsolation: slab ? getComputedStyle(slab).isolation : '',
-      quoteBlur: /blur\(8px\)/.test(quoteFilter),
+      quoteStaticVeil: quoteFilter === 'none' && quoteBgImg !== 'none',
       quoteBorderLeft: quoteCs ? parseFloat(quoteCs.borderLeftWidth) : -1
     };
   });
@@ -1684,7 +1685,7 @@ async function testCoverAndTables(browser) {
     && ambientOnState.heroSheerMask
     && ambientOnState.heroBlend === 'soft-light'
     && ambientOnState.slabIsolation === 'isolate'
-    && ambientOnState.quoteBlur
+    && ambientOnState.quoteStaticVeil
     && ambientOnState.quoteBorderLeft === 0
     && /organic-light-bleed\.svg/.test(styleMasks.shapes)
     && /organic-water-undulation\.svg/.test(styleMasks.cards)
