@@ -135,8 +135,38 @@ export function addVisualDefs(svg) {
   return uid;
 }
 
+// 影を個々のノードではなく親グループ（g.nodes 等）に 1 回だけ適用し、SVG フィルターの合成負荷を抑える（#254）
+function applyGroupedNodeShadow(svg: Element, targetNodes: Set<Element>, filterUrl: string) {
+  if (!targetNodes.size) return;
+  const nodesLayer = svg.querySelector('g.nodes');
+  if (nodesLayer) {
+    const directChildren = Array.from(nodesLayer.children);
+    const allDirectAreTargets = directChildren.length > 0 && directChildren.every(ch => targetNodes.has(ch));
+    if (allDirectAreTargets) {
+      nodesLayer.setAttribute('filter', filterUrl);
+      return;
+    }
+    const inLayer = Array.from(targetNodes).filter(n => n.parentElement === nodesLayer);
+    if (inLayer.length > 0) {
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.setAttribute('class', 'vis-shadow-group');
+      group.setAttribute('filter', filterUrl);
+      nodesLayer.appendChild(group);
+      inLayer.forEach(n => group.appendChild(n));
+    }
+    targetNodes.forEach(n => {
+      if (n.parentElement !== nodesLayer && n.parentElement?.getAttribute('class') !== 'vis-shadow-group') {
+        n.setAttribute('filter', filterUrl);
+      }
+    });
+    return;
+  }
+  targetNodes.forEach(n => n.setAttribute('filter', filterUrl));
+}
+
 // スタイル 1: 🎨 Pastel Shapes (リファレンス1準拠)
 export function decorateVisualShapes(svg, uid) {
+  const shadowNodes = new Set<Element>();
   svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
     const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
     const polygon = g.querySelector('polygon');
@@ -153,7 +183,7 @@ export function decorateVisualShapes(svg, uid) {
       if (!hasUserStyle(rect, 'stroke')) {
         rect.style.setProperty('stroke', 'none', 'important');
       }
-      rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+      shadowNodes.add(g);
 
       if (!hasUserStyle(rect, 'fill')) {
         if (idx === 0 || text.includes('client') || text.includes('start') || text.includes('standby')) {
@@ -176,7 +206,7 @@ export function decorateVisualShapes(svg, uid) {
       if (!hasUserStyle(polygon, 'stroke')) {
         polygon.style.setProperty('stroke', 'none', 'important');
       }
-      polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+      shadowNodes.add(g);
       if (!hasUserStyle(polygon, 'fill')) {
         const points = polygon.getAttribute('points') || '';
         if (points.split(' ').length <= 5) {
@@ -187,6 +217,7 @@ export function decorateVisualShapes(svg, uid) {
       }
     }
   });
+  applyGroupedNodeShadow(svg, shadowNodes, `url(#vis-soft-shadow-${uid})`);
 
   // 結線の色はカード背景に合わせる（Dark では明るい色）
   const edgeColor = getDiagramSpec(true).edgeStroke;
@@ -206,7 +237,7 @@ export function decorateVisualShapes(svg, uid) {
 }
 
 // スタイル 2: 📋 2-Tier Cards (リファレンス4準拠)
-export function decorateVisualCardNode(g: Element, uid: string, capGradients: string[], stepLabel: (n: number) => string, nextIdx: () => number) {
+export function decorateVisualCardNode(g: Element, _uid: string, capGradients: string[], stepLabel: (n: number) => string, nextIdx: () => number, shadowNodes?: Set<Element>) {
   const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
   if (!rect) return;
 
@@ -220,7 +251,7 @@ export function decorateVisualCardNode(g: Element, uid: string, capGradients: st
   };
 
   if (hasUserStyle(rect, 'fill') || hasUserStyle(rect, 'stroke')) {
-    rect.setAttribute('filter', `url(#vis-card-shadow-${uid})`);
+    if (shadowNodes) shadowNodes.add(g);
     styleCardLabels();
     return;
   }
@@ -237,7 +268,7 @@ export function decorateVisualCardNode(g: Element, uid: string, capGradients: st
   (rect as HTMLElement).style.setProperty('fill', '#FFFFFF', 'important');
   (rect as HTMLElement).style.setProperty('stroke', '#E2E8F0', 'important');
   (rect as HTMLElement).style.setProperty('stroke-width', '1.5px', 'important');
-  rect.setAttribute('filter', `url(#vis-card-shadow-${uid})`);
+  if (shadowNodes) shadowNodes.add(g);
 
   const cap = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   cap.setAttribute('x', String(x));
@@ -287,7 +318,9 @@ export function decorateVisualCards(svg, uid) {
     .sort((a, b) => (a.pos.y - b.pos.y) || (a.pos.x - b.pos.x))
     .map(item => item.g);
 
-  orderedNodes.forEach(g => decorateVisualCardNode(g, uid, capGradients, stepLabel, () => cardCount++));
+  const shadowNodes = new Set<Element>();
+  orderedNodes.forEach(g => decorateVisualCardNode(g, uid, capGradients, stepLabel, () => cardCount++, shadowNodes));
+  applyGroupedNodeShadow(svg, shadowNodes, `url(#vis-card-shadow-${uid})`);
 
   const edgeColor = getDiagramSpec(true).edgeStroke;
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
@@ -299,6 +332,7 @@ export function decorateVisualCards(svg, uid) {
 // スタイル 3: ⭕ Vibrant Circles & Dots (リファレンス2準拠)
 export function decorateVisualCircles(svg, uid) {
   const circlePalette = ['#D45D53', '#7EA6BF', '#ECB674', '#7D9763', '#6D597A', '#3D464D'];
+  const shadowNodes = new Set<Element>();
 
   svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
     const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
@@ -314,7 +348,7 @@ export function decorateVisualCircles(svg, uid) {
         rect.style.setProperty('stroke', '#FFFFFF', 'important');
         rect.style.setProperty('stroke-width', '2.5px', 'important');
       }
-      rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+      shadowNodes.add(g);
     }
     // ひし形・平行四辺形も塗り分ける（白文字を淡い塗りの上に載せないため）
     const polygon = g.querySelector('polygon');
@@ -326,7 +360,7 @@ export function decorateVisualCircles(svg, uid) {
         polygon.style.setProperty('stroke', '#FFFFFF', 'important');
         polygon.style.setProperty('stroke-width', '2.5px', 'important');
       }
-      polygon.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+      shadowNodes.add(g);
     }
 
     // 明るいキャメル色の上の白文字はコントラストが足りないため、その色だけ濃い文字にする
@@ -338,6 +372,7 @@ export function decorateVisualCircles(svg, uid) {
       el.style.setProperty('font-weight', String(VISUAL_NODE_LABEL_WEIGHT.circles), 'important');
     });
   });
+  applyGroupedNodeShadow(svg, shadowNodes, `url(#vis-soft-shadow-${uid})`);
 
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach((p, idx) => {
     if (!hasUserStyle(p, 'stroke')) {
@@ -355,6 +390,7 @@ export function decorateVisualCircles(svg, uid) {
 
 // スタイル 4: 📖 Editorial Cream (リファレンス3準拠)
 export function decorateVisualEditorial(svg, uid) {
+  const shadowNodes = new Set<Element>();
   svg.querySelectorAll('g.node:not(.statediagram-cluster)').forEach((g, idx) => {
     const rect = g.querySelector('rect.basic, rect.label-container') || g.querySelector('rect');
     const text = (g.textContent || '').toLowerCase();
@@ -385,7 +421,7 @@ export function decorateVisualEditorial(svg, uid) {
           rect.setAttribute('ry', '9999');
           rect.style.setProperty('fill', '#FFFFFF', 'important');
           rect.style.setProperty('stroke', 'none', 'important');
-          rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+          shadowNodes.add(g);
         }
       } else {
         if (!hasUserStyle(rect, 'fill')) {
@@ -394,7 +430,7 @@ export function decorateVisualEditorial(svg, uid) {
         if (!hasUserStyle(rect, 'stroke')) {
           rect.style.setProperty('stroke', 'none', 'important');
         }
-        rect.setAttribute('filter', `url(#vis-soft-shadow-${uid})`);
+        shadowNodes.add(g);
       }
     }
 
@@ -405,6 +441,7 @@ export function decorateVisualEditorial(svg, uid) {
       el.style.setProperty('font-weight', String(VISUAL_NODE_LABEL_WEIGHT.editorial), 'important');
     });
   });
+  applyGroupedNodeShadow(svg, shadowNodes, `url(#vis-soft-shadow-${uid})`);
 
   svg.querySelectorAll('.edgePath path.path, path.flowchart-link, path.transition').forEach(p => {
     if (!hasUserStyle(p, 'stroke')) {

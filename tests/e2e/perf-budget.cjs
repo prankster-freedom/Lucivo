@@ -461,6 +461,44 @@ async function testPerfOptimizations(browser) {
     JSON.stringify(blurCheck)
   );
   await p11.close();
+
+  // TC-PERF-012 (#254): 多数のノードを持つ図で、影の filter 属性がノードごとではなくグループ 1 つに集約されること
+  const p12 = await openApp(browser);
+  await p12.setViewportSize({ width: 1280, height: 800 });
+  const bigFlow = [
+    '# 影グループ化テスト',
+    '',
+    '```mermaid',
+    'flowchart LR',
+    ...Array.from({ length: 19 }, (_, i) => `  N${i + 1}[ノード${i + 1}] --> N${i + 2}[ノード${i + 2}]`),
+    '```'
+  ].join('\n');
+  await p12.evaluate(text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, bigFlow);
+  await p12.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+
+  const shadowResults = [];
+  for (const style of VISUAL_STYLES) {
+    await selectVisualStyle(p12, style);
+    await p12.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+    await p12.waitForTimeout(100);
+    const res = await p12.evaluate(() => {
+      const svg = document.querySelector('#visual-stage-container .exhibition-viewport svg');
+      const nodes = svg ? svg.querySelectorAll('g.node:not(.statediagram-cluster)').length : 0;
+      const filtered = svg ? svg.querySelectorAll('[filter]').length : -1;
+      return { nodes, filtered };
+    });
+    shadowResults.push({ style, ...res });
+  }
+  record('TC-PERF-012',
+    shadowResults.length === 4 && shadowResults.every(r => r.nodes === 20 && r.filtered === 1),
+    JSON.stringify(shadowResults)
+  );
+  await p12.close();
 }
 
 module.exports = { testPerfBudget, testPerfOptimizations };
