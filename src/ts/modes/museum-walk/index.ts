@@ -22,6 +22,23 @@ interface ModeHost {
 }
 
 const EMPTY_MESSAGE = 'ミュージアム・ウォークで見せる文書がありません';
+const APPEARANCE_KEY = 'lucivo-museum-walk-appearance';
+
+function loadAppearance(): 'dark' | 'light' {
+  try {
+    return localStorage.getItem(APPEARANCE_KEY) === 'light' ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+function saveAppearance(appearance: 'dark' | 'light'): void {
+  try {
+    localStorage.setItem(APPEARANCE_KEY, appearance);
+  } catch {
+    // storage 利用不可時は保存を省略する
+  }
+}
 
 const S = {
   active: false,
@@ -102,8 +119,10 @@ function command(key: string): boolean {
   else if (key === 'g' || key === 'G') S.gaze = !S.gaze;
   else if (key === 't' || key === 'T') {
     const next = !S.light;
+    const nextAppearance = next ? 'light' : 'dark';
+    saveAppearance(nextAppearance);
     setLight(next);
-    void applyStandAppearance(next ? 'light' : 'dark');
+    void applyStandAppearance(nextAppearance);
   }
   else if (key === 'r' || key === 'R' || key === 'Home') backToEntrance();
   else if ((key === 'c' || key === 'C') && S.panel) S.panel.hidden = !S.panel.hidden;
@@ -229,12 +248,18 @@ async function enter(host: ModeHost): Promise<boolean> {
   S.starting = true;
   // 今の表示を覚えて Visualモードの Canvas 表示に切り替える（図の描画が終わるまで待つ）。戻すのは host.restoreView()
   const source = await host.showVisualCanvas();
-  const outline = source ? readOutline(source) : null;
+  let outline = source ? readOutline(source) : null;
   if (!outline || isOutlineEmpty(outline)) {
     S.starting = false;
     host.restoreView();
     host.toast(EMPTY_MESSAGE);
     return false;
+  }
+  const appearance = loadAppearance();
+  if (host.appearance() !== appearance) {
+    const themed = await host.setAppearance(appearance);
+    const themedOutline = themed ? readOutline(themed) : null;
+    if (themedOutline) outline = themedOutline;
   }
   S.host = host;
   // 重ねの下の Visualモードは見えないため、図の光を止める
@@ -247,7 +272,6 @@ async function enter(host: ModeHost): Promise<boolean> {
   document.body.appendChild(root);
   document.documentElement.classList.add('is-museum-walk');
   S.root = root;
-  const appearance = host.appearance();
   setLight(appearance === 'light');
   S.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   S.camera = defaultCamera();
