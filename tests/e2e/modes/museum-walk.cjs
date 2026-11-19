@@ -184,7 +184,6 @@ async function testMuseumWalk(browser) {
       frameLight: document.querySelector('#museum-walk .mw-fig-frame')?.classList.contains('is-light') ?? null,
       imgSrc: document.querySelector('#museum-walk .mw-fig-layer img')?.getAttribute('src') || ''
     }));
-    const appearance = await page.evaluate(() => state.appearance === 'dark' ? 'dark' : 'light');
     const first = (await info(page)).appearance;
     await page.keyboard.press('t');
     await page.waitForFunction(({ wantLight, prevSrc }) => {
@@ -201,6 +200,12 @@ async function testMuseumWalk(browser) {
     await walkTo(page, readingZ(body, 512));
     const toggled = await page.evaluate(id => ({ appearance: window.LucivoModes.get(id).info().appearance, cls: document.getElementById('museum-walk').classList.contains('is-light') }), MODE);
     await shot(page, toggled.appearance === 'light' ? 'wall-light' : 'wall-dark');
+    // T で切り替えた外観（light）を覚えていること、終了時に本体外観（light）へ戻ることを確かめる（#264）
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(id => !window.LucivoModes.get(id).info().active, MODE, { timeout: 5000 });
+    const hostAfterExit = await page.evaluate(() => state.appearance);
+    await start(page);
+    const reopenedAppearance = (await info(page)).appearance;
     await page.keyboard.press('t');
     await page.waitForFunction(wantLight => {
       const frame = document.querySelector('#museum-walk .mw-fig-frame');
@@ -209,11 +214,12 @@ async function testMuseumWalk(browser) {
     await page.keyboard.press('r');
     await page.waitForTimeout(200);
     const atEntrance = await info(page);
-    record('TC-MWLK-003', first === appearance && toggled.appearance !== first && toggled.cls === (toggled.appearance === 'light')
-      && standBefore.frameLight === (first === 'light') && standAfter.frameLight === (toggled.appearance === 'light')
+    record('TC-MWLK-003', first === 'dark' && toggled.appearance === 'light' && toggled.cls === true
+      && hostAfterExit === 'light' && reopenedAppearance === 'light'
+      && standBefore.frameLight === false && standAfter.frameLight === true
       && standAfter.imgSrc !== standBefore.imgSrc && allAsidesFit && zoneStyle.bg !== 'rgba(0, 0, 0, 0)' && zoneStyle.radius !== '0px'
       && atEntrance.z === atEntrance.start,
-    JSON.stringify({ appearance, first, toggled, standBefore, standAfter, asideChecks, allAsidesFit, zoneStyle, z: atEntrance.z, start: atEntrance.start }));
+    JSON.stringify({ first, toggled, hostAfterExit, reopenedAppearance, standBefore, standAfter, asideChecks, allAsidesFit, zoneStyle, z: atEntrance.z, start: atEntrance.start }));
 
     // TC-MWLK-004: Esc で終えると、重ねと付けたクラスが消える（元の表示に戻ることは TC-MODE-004 で確かめる）
     await page.keyboard.press('Escape');

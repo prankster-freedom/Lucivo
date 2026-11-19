@@ -81,11 +81,14 @@ function inspectMarkdown(isVisual) {
     })(),
     code: inline && pre && preCode && (() => {
       const i = cs(inline), p = cs(pre), pc = cs(preCode);
-      const mono = s => /JetBrains Mono|monospace/.test(s.fontFamily);
-      const ok = mono(i) && mono(pc) && !isTransparent(i.backgroundColor) && i.backgroundColor !== backdrop(inline)
+      const ed = document.getElementById('markdown-editor');
+      const es = ed ? cs(ed) : null;
+      const mono = s => /M PLUS 1 Code/.test(s.fontFamily);
+      const ok = mono(i) && mono(pc) && (!es || mono(es))
+        && !isTransparent(i.backgroundColor) && i.backgroundColor !== backdrop(inline)
         && !isTransparent(p.backgroundColor) && p.backgroundColor !== backdrop(pre)
         && isTransparent(pc.backgroundColor) && px(pc.borderTopWidth) === 0;
-      return { ok, inlineBg: i.backgroundColor, inlineBackdrop: backdrop(inline), preBg: p.backgroundColor, preBackdrop: backdrop(pre), preCodeBg: pc.backgroundColor };
+      return { ok, inlineFont: i.fontFamily, preFont: pc.fontFamily, editorFont: es && es.fontFamily, inlineBg: i.backgroundColor, inlineBackdrop: backdrop(inline), preBg: p.backgroundColor, preBackdrop: backdrop(pre), preCodeBg: pc.backgroundColor };
     })(),
     blockquote: bq && bqInner && (() => {
       const s = cs(bq);
@@ -155,6 +158,18 @@ async function testMarkdownTypography(browser) {
     }
     await page.screenshot({ path: path.join(SHOT_DIR, `md-${tag}.png`), clip: res.clip });
   }
+  // TC-MD-004 追加: 日本語を含む文字で全角 1 文字 = 半角 2 文字（1:2 等幅）になることを実測する（#259）
+  const monoRatio = await page.evaluate(async () => {
+    await document.fonts.load('14px "M PLUS 1 Code"', 'あいうえお1234567890');
+    await document.fonts.ready;
+    const ed = document.getElementById('markdown-editor');
+    const c = document.createElement('canvas').getContext('2d');
+    c.font = `14px ${getComputedStyle(ed).fontFamily}`;
+    const full = c.measureText('あいうえお').width;
+    const half = c.measureText('1234567890').width;
+    return { ok: Math.abs(full - half) < 0.5 && full > 0, full, half, font: getComputedStyle(ed).fontFamily };
+  });
+  (byTc['TC-MD-004'] = byTc['TC-MD-004'] || []).push({ mode: 'mono-1to2', ok: monoRatio.ok, detail: monoRatio });
   // TC-MD-023 折りたたみの開閉（DD-MD-019）。開くとシェブロンが 90 度回り、中身の高さが 0 から伸びる。動きを減らす設定では即時に開く
   const toggleDetails = () => page.evaluate(async () => {
     const d = document.querySelector('#visual-stage-container details');

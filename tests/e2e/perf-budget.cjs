@@ -520,6 +520,9 @@ async function testPerfOptimizations(browser) {
       clone.querySelectorAll('.signal-light-canvas').forEach(c => c.remove());
       clone.querySelectorAll('.has-signal-light').forEach(el => el.classList.remove('has-signal-light'));
       clone.querySelectorAll('.is-offscreen').forEach(el => el.classList.remove('is-offscreen'));
+      clone.querySelectorAll('.vs-term-link').forEach(el => el.replaceWith(document.createTextNode(el.textContent || '')));
+      clone.querySelectorAll('[data-term-node]').forEach(el => el.removeAttribute('data-term-node'));
+      clone.normalize();
       return clone.innerHTML;
     };
     const root = document.getElementById('visual-stage-container');

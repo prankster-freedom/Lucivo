@@ -1795,7 +1795,7 @@ async function testCoverAndTables(browser) {
     && badgeFastCount === 0;
   record('TC-VTPL-033', badgeOk, JSON.stringify({ badgeLight: { count: badgeLight.badges.length, noteHasBadge: badgeLight.noteHasBadge, sample: badgeLight.badges[0] }, badgeDarkSample: badgeDark.badges[0], badgeFastCount }));
 
-  // TC-VTPL-034 長い標準章の 2 段組み（FR-061, DD-VTPL-049, #233）
+  // TC-VTPL-034 長い標準章の 2 段組み（FR-061, DD-VTPL-049, #233, #263）
   const longPara = 'これは本文が長い標準章の段組み表示を検証するための日本語の段落です。広い画面では 2 段組みに切り替えて 1 行を短くし、左右の視線移動を減らして読みやすくします。'.repeat(2);
   const twoColMd = [
     '# 2 段組みのテスト',
@@ -1810,6 +1810,8 @@ async function testCoverAndTables(browser) {
     'const twoColumns = true;',
     '```',
     '',
+    '$$s_{\\text{fit}} = \\min\\left(\\frac{W_{\\text{avail}}}{W_{\\text{svg}}},\\; \\frac{H_{\\text{avail}}}{H_{\\text{svg}}},\\; 1.0\\right) \\cdot \\alpha_{\\text{margin}} + \\beta_{\\text{offset}} + \\gamma_{\\text{scale}}$$',
+    '',
     longPara,
     '',
     longPara,
@@ -1822,28 +1824,36 @@ async function testCoverAndTables(browser) {
   ].join('\n');
   await setMode(page, { style: 'shapes', appearance: 'light' });
   await setDocument(page, twoColMd);
+  await page.waitForFunction(() => !!document.querySelector('#visual-stage-container .lucivo-math .katex'), null, { timeout: 10000 });
   const readTwoCol = () => page.evaluate(() => {
     const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab'));
     const body = slabs[0]?.querySelector('.vs-two-col-body');
     const pre = body?.querySelector('pre');
+    const math = body?.querySelector('.lucivo-math[data-display="true"]');
+    const katex = math?.querySelector('.katex');
     return {
       longHasClass: slabs[0]?.classList.contains('vs-long-prose') ?? false,
       shortHasClass: slabs[1]?.classList.contains('vs-long-prose') ?? false,
       hasBody: !!body,
       columnCount: body ? getComputedStyle(body).columnCount : null,
-      preColumnSpan: pre ? getComputedStyle(pre).columnSpan : null
+      preColumnSpan: pre ? getComputedStyle(pre).columnSpan : null,
+      mathColumnSpan: math ? getComputedStyle(math).columnSpan : null,
+      mathFits: math && katex ? katex.scrollWidth <= math.clientWidth + 1 : false,
+      mathClient: math ? math.clientWidth : 0,
+      mathScroll: katex ? katex.scrollWidth : 0,
+      mathScaled: katex ? katex.style.fontSize : ''
     };
   });
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.click('.view-mode-btn[data-view-mode="canvas"]');
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   const twoColWideCanvas = await readTwoCol();
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   const twoColNarrowCanvas = await readTwoCol();
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.click('.view-mode-btn[data-view-mode="split"]');
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   const twoColWideSplit = await readTwoCol();
   await page.click('.view-mode-btn[data-view-mode="canvas"]');
   await page.emulateMedia({ media: 'print' });
@@ -1852,7 +1862,8 @@ async function testCoverAndTables(browser) {
   await setMode(page, { style: 'std', appearance: 'light' });
   const twoColFastCount = await page.evaluate(() => document.querySelectorAll('#standard-doc-container .vs-two-col-body').length);
   const twoColOk = twoColWideCanvas.longHasClass && !twoColWideCanvas.shortHasClass && twoColWideCanvas.hasBody
-    && twoColWideCanvas.columnCount === '2' && twoColWideCanvas.preColumnSpan === 'all'
+    && twoColWideCanvas.columnCount === '2' && twoColWideCanvas.preColumnSpan === 'none'
+    && twoColWideCanvas.mathColumnSpan === 'none' && twoColWideCanvas.mathFits
     && twoColNarrowCanvas.columnCount === 'auto'
     && twoColWideSplit.columnCount === 'auto'
     && twoColPrint.columnCount === 'auto'
@@ -2066,6 +2077,71 @@ async function testCoverAndTables(browser) {
       !/M PLUS Rounded 1c|Noto Serif JP/.test(webFontCheck.voices[st].bodyFont)
     );
   record('TC-VTPL-036', vtpl36Ok, JSON.stringify({ standaloneNoFontDir, standaloneLinks, webFontCheck }));
+
+  // TC-VTPL-038 解説＋図版型の語とノードの光連動（#213, FR-015, DD-VTPL-050）
+  const splitLinkMd = [
+    '# 光連動テスト',
+    '',
+    '## 物語の流れ',
+    '',
+    '主人公が言葉の光を追いかけ、図書館へたどり着く。',
+    '',
+    '```mermaid',
+    'flowchart TD',
+    '  A[言葉の光] --> B[閉館後の図書館]',
+    '```'
+  ].join('\n');
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await setDocument(page, splitLinkMd);
+  await page.waitForFunction(() => !!document.querySelector('#visual-stage-container .exhibition-slab-split .vs-term-link'), null, { timeout: 10000 });
+  const initTerms = await page.evaluate(() => {
+    const links = Array.from(document.querySelectorAll('#visual-stage-container .vs-term-link'));
+    const cs = links[0] ? getComputedStyle(links[0]) : null;
+    return {
+      terms: links.map(el => el.dataset.term),
+      bg: cs ? cs.backgroundColor : '',
+      deco: cs ? cs.textDecorationLine : '',
+      litCount: document.querySelectorAll('#visual-stage-container .is-term-lit').length
+    };
+  });
+  await page.locator('#visual-stage-container .vs-term-link').first().hover();
+  const hoverLink = await page.evaluate(() => ({
+    linkLit: document.querySelector('#visual-stage-container .vs-term-link')?.classList.contains('is-term-lit') ?? false,
+    nodeLit: document.querySelector('#visual-stage-container [data-term-node="言葉の光"]')?.classList.contains('is-term-lit') ?? false
+  }));
+  await page.locator('#visual-stage-container [data-term-node="言葉の光"]').first().hover();
+  const hoverNode = await page.evaluate(() => ({
+    linkLit: document.querySelector('#visual-stage-container .vs-term-link')?.classList.contains('is-term-lit') ?? false,
+    nodeLit: document.querySelector('#visual-stage-container [data-term-node="言葉の光"]')?.classList.contains('is-term-lit') ?? false
+  }));
+  await page.locator('#visual-stage-container .vs-term-link').first().click();
+  await page.mouse.move(10, 10);
+  const pinnedLit = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .is-term-lit').length);
+  await page.keyboard.press('Escape');
+  const clearedLit = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .is-term-lit').length);
+  // ステージ発表でも効くことを確認する
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => document.documentElement.classList.contains('is-stage-show'), null, { timeout: 5000 });
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => !!document.querySelector('.exhibition-slab-split .vs-term-link'), null, { timeout: 5000 });
+  await page.locator('.exhibition-slab-split .vs-term-link').first().click();
+  const stageLit = await page.evaluate(() => ({
+    linkLit: document.querySelector('.exhibition-slab-split .vs-term-link')?.classList.contains('is-term-lit') ?? false,
+    nodeLit: document.querySelector('.exhibition-slab-split [data-term-node="言葉の光"]')?.classList.contains('is-term-lit') ?? false
+  }));
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-stage-show'), null, { timeout: 5000 });
+  await setMode(page, { style: 'std', appearance: 'light' });
+  const fastLinks = await page.evaluate(() => document.querySelectorAll('#standard-doc-container .vs-term-link').length);
+  const vtpl38Ok = JSON.stringify(initTerms.terms) === JSON.stringify(['言葉の光'])
+    && initTerms.bg === 'rgba(0, 0, 0, 0)' && initTerms.deco === 'none' && initTerms.litCount === 0
+    && hoverLink.linkLit && hoverLink.nodeLit
+    && hoverNode.linkLit && hoverNode.nodeLit
+    && pinnedLit === 2 && clearedLit === 0
+    && stageLit.linkLit && stageLit.nodeLit
+    && fastLinks === 0;
+  record('TC-VTPL-038', vtpl38Ok, JSON.stringify({ initTerms, hoverLink, hoverNode, pinnedLit, clearedLit, stageLit, fastLinks }));
 
   if (page.consoleErrors.length) record('TC-VTPL-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
