@@ -68,6 +68,9 @@ jobs:
     - name: Run E2E tests
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm test
+    - name: Report performance budget
+      if: ${{ !cancelled() && needs.changes.outputs.e2e != 'false' }}
+      run: node tools/report-perf-budget.cjs
     - uses: actions/upload-artifact@v7.0.2
       if: ${{ !cancelled() && needs.changes.outputs.e2e != 'false' }}
       with:
