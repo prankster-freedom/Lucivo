@@ -255,4 +255,87 @@ async function testPerfBudget(browser) {
   if (allErrors.length) record('TC-PERF-BUDGET-CONSOLE', false, JSON.stringify(allErrors));
 }
 
-module.exports = { testPerfBudget };
+async function testPerfOptimizations(browser) {
+  // TC-PERF-009 (#255): resize の rAF 集約と updateAllSlabSplits の一括読み書き
+  const page = await openApp(browser);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await selectVisualStyle(page, 'shapes');
+
+  const md = [
+    '# 幅変更のバッチテスト',
+    '',
+    '## 1. 狭い図の章',
+    '',
+    '左の解説文です。十分な説明を記載して 2 段組みにします。',
+    '',
+    '```mermaid',
+    'flowchart LR',
+    '  A[入力] --> B[出力]',
+    '```',
+    '',
+    '## 2. 広い図の章',
+    '',
+    '左の解説文です。',
+    '',
+    '```mermaid',
+    'flowchart LR',
+    '  N1[非常に長いノード名1] --> N2[非常に長いノード名2] --> N3[非常に長いノード名3] --> N4[非常に長いノード名4] --> N5[非常に長いノード名5]',
+    '```'
+  ].join('\n');
+
+  await page.evaluate(text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, md);
+  await page.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+  await page.waitForTimeout(200);
+
+  const wideState = await page.evaluate(async () => {
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    const before = slabs.map(s => s.classList.contains('is-stacked'));
+    // 連続で resize を発火しても rAF で 1 回に集約され、各スラブの scrollWidth が 1 回ずつしか読まれないか確認
+    const vps = slabs.map(s => s.querySelector('.exhibition-viewport'));
+    let scrollWidthReads = 0;
+    const protoDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollWidth');
+    vps.forEach(vp => {
+      Object.defineProperty(vp, 'scrollWidth', {
+        configurable: true,
+        get() {
+          scrollWidthReads++;
+          return protoDesc.get.call(this);
+        }
+      });
+    });
+    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('resize'));
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    vps.forEach(vp => { delete vp.scrollWidth; });
+    const after = slabs.map(s => s.classList.contains('is-stacked'));
+    return { slabCount: slabs.length, before, after, scrollWidthReads };
+  });
+
+  // 画面幅を狭くすると狭い図の章も is-stacked になることを確認
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.waitForTimeout(150);
+  const narrowState = await page.evaluate(() => {
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    return slabs.map(s => s.classList.contains('is-stacked'));
+  });
+
+  record('TC-PERF-009',
+    wideState.slabCount === 2 &&
+    wideState.before[0] === false &&
+    wideState.before[1] === true &&
+    wideState.after[0] === false &&
+    wideState.after[1] === true &&
+    wideState.scrollWidthReads === 2 &&
+    narrowState.every(Boolean),
+    JSON.stringify({ wideState, narrowState })
+  );
+  await page.close();
+}
+
+module.exports = { testPerfBudget, testPerfOptimizations };

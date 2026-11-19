@@ -1333,10 +1333,15 @@ function setupEventListeners() {
 
   setupViewModeControls();
 
+  let resizeRafId = 0;
   window.addEventListener('resize', () => {
-    if (state.isVisualMode) {
-      updateAllSlabSplits(document.getElementById('visual-stage-container'));
-    }
+    if (!state.isVisualMode || resizeRafId) return;
+    resizeRafId = requestAnimationFrame(() => {
+      resizeRafId = 0;
+      if (state.isVisualMode) {
+        updateAllSlabSplits(document.getElementById('visual-stage-container'));
+      }
+    });
   });
 
   const btnFast = document.getElementById('btn-mode-fast');
