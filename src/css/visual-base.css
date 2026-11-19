@@ -736,29 +736,25 @@ body[data-appearance="dark"] :is(html.has-ambient-effects, .exhibition-wrap.has-
   mask: var(--motif-ambient-sunlight) no-repeat center / cover;
 }
 
-/* 3. ステートメント型（blockquote.vs-quote）: すりガラス拡散＆光だまり（AST-135, AST-140） */
+/* 3. ステートメント型（blockquote.vs-quote）: 静的な半透明風の塗りと光だまり（#252, AST-135, AST-140） */
 :is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab blockquote.vs-quote {
   isolation: isolate;
   border-radius: 18px;
   padding: 3.25rem 1.75rem 1.25rem;
   border-left: 0;
-  background-color: color-mix(in oklab, var(--vs-card-bg) 78%, transparent);
+  background-color: color-mix(in oklab, var(--vs-card-bg) 90%, var(--vs-slab-bg));
   background-image:
     radial-gradient(55% 70% at 50% 0%, color-mix(in oklab, var(--vs-c1) 14%, transparent), transparent 72%),
     linear-gradient(135deg, color-mix(in oklab, #FFFFFF 18%, transparent) 0%, transparent 50%, color-mix(in oklab, var(--vs-c3) 8%, transparent) 100%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     0 12px 28px -10px color-mix(in oklab, var(--vs-c1) 18%, rgba(15, 23, 42, 0.12));
 }
 
-/* 4. 要点カード・注目カード（.vs-points > li, .vs-point-featured, .is-spotlight, .vs-compare-after）のすりガラス反射ベール（AST-135） */
+/* 4. 要点カード・注目カード（.vs-points > li, .vs-point-featured, .is-spotlight, .vs-compare-after）の静的反射ベール（#252, AST-135） */
 :is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab .vs-points > li {
   isolation: isolate;
   background-image: linear-gradient(135deg, color-mix(in oklab, var(--vs-c) 9%, transparent) 0%, transparent 55%, color-mix(in oklab, var(--vs-c) 5%, transparent) 100%);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 :is(html.has-ambient-effects, .exhibition-wrap.has-ambient-effects) .exhibition-slab .vs-points > li.vs-point-featured {
   background-image:

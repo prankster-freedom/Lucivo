@@ -419,6 +419,48 @@ async function testPerfOptimizations(browser) {
     JSON.stringify({ initialSteps, afterScrollSteps })
   );
   await p10.close();
+
+  // TC-PERF-011 (#252): 背景が動かないステートメント・要点カードで backdrop-filter を使わず静的な塗りにしていること
+  const p11 = await openApp(browser);
+  await p11.setViewportSize({ width: 1280, height: 800 });
+  await selectVisualStyle(p11, 'shapes');
+  await p11.evaluate(() => {
+    document.documentElement.classList.add('has-ambient-effects');
+    const editor = document.getElementById('markdown-editor');
+    editor.value = [
+      '# 静的な塗りテスト',
+      '',
+      '## 1. 要点カード',
+      '',
+      '- カード A: 内容です',
+      '- カード B: 内容です',
+      '',
+      '## 2. ステートメント',
+      '',
+      '> 静的な塗りで質感を保ちます。'
+    ].join('\n');
+    lastLoadedMarkdown = editor.value;
+    renderApp();
+  });
+  await p11.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+  await p11.waitForTimeout(200);
+  const blurCheck = await p11.evaluate(() => {
+    const li = document.querySelector('#visual-stage-container .vs-points > li');
+    const quote = document.querySelector('#visual-stage-container blockquote.vs-quote');
+    const liCs = li ? getComputedStyle(li) : null;
+    const quoteCs = quote ? getComputedStyle(quote) : null;
+    return {
+      liBlur: liCs ? liCs.backdropFilter : null,
+      liBgImg: liCs ? liCs.backgroundImage !== 'none' : false,
+      quoteBlur: quoteCs ? quoteCs.backdropFilter : null,
+      quoteBgImg: quoteCs ? quoteCs.backgroundImage !== 'none' : false
+    };
+  });
+  record('TC-PERF-011',
+    blurCheck.liBlur === 'none' && blurCheck.liBgImg && blurCheck.quoteBlur === 'none' && blurCheck.quoteBgImg,
+    JSON.stringify(blurCheck)
+  );
+  await p11.close();
 }
 
 module.exports = { testPerfBudget, testPerfOptimizations };
