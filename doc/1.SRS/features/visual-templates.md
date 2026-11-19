@@ -239,8 +239,8 @@ tags: ["Lucivo", "SRS", "visual-templates"]
 
 - Visualモードの標準雛形（`.vs-tpl-standard`）のうち、本文が長い章（段落が 2 つ以上あり、文章要素の合計文字数が 400 字以上の章。`vs-list-grid` や二重段組みになる専用雛形を除く）は、広い画面（画面幅 1600px 以上、かつプレビュー領域の幅が `56rem` 以上）において本文を 2 段組みで表示すること（[Issue #233](https://github.com/prankster-freedom/Lucivo/issues/233)）。
 - 要素ごとの扱い:
-  - 章見出し（`h2`）、コードブロック（`pre`）、図（`.exhibition-diagram-card`, `.lucivo-slot`）、表（`.table-container`）、ブロック数式（`.lucivo-math.is-block-plot`, `.lucivo-math:has(.katex-display)`）は全幅（段をまたぐ）とすること。
-  - 段落（`p`）、小見出し（`h3`〜`h6`）、引用・コールアウト（`blockquote`, `.md-alert`）、リスト（`ul`, `ol`）は段の中に収め、段落やリスト項目内での分割（`break-inside: avoid`）および小見出し直後での段区切り（`break-after: avoid`）を避けること。
+  - 章見出し（`h2`）は全幅（段をまたぐ）とすること。
+  - 段落（`p`）、小見出し（`h3`〜`h6`）、引用・コールアウト（`blockquote`, `.md-alert`）、リスト（`ul`, `ol`）、コードブロック（`pre`）、図（`.exhibition-diagram-card`, `.lucivo-slot`）、表（`.table-container`）、ブロック数式（`.lucivo-math`）は段の中に収め、要素内での分割（`break-inside: avoid`）および小見出し直後での段区切り（`break-after: avoid`）を避けること。段の幅を超えるブロック数式は段内で縮小して収めること（#263）。
 - スマホ幅・Split 狭幅・ステージ発表（`is-stage-show`）・印刷（`@media print`）・高速モードでは 2 段組みにしないこと。
 - **背景・根拠**: 本文が長い章を広い画面で 1 段組みのまま表示すると 1 行が長くなり左右の視線移動が増える。広い画面では 2 段組みに切り替えて 1 行を短くし、読みやすさを高める。初期増分（MVP）として標準雛形の長文を対象とし、試用結果をもとに基準や詳細を調整する。
 

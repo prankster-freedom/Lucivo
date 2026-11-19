@@ -10,7 +10,7 @@ tags: ["Lucivo", "詳細設計", "オフライン"]
 
 | ID         | 項目                  | 設計 |
 | :--------- | :-------------------- | :--- |
-| DD-OFF-001 | 同梱するファイル      | Marked、DOMPurify、Mermaid、KaTeX と 4 種のフォントを `public/vendor/` に置く。版は `package.json` で固定し、`tools/build-vendor.cjs` で `node_modules` から生成する。`public/vendor/` は直接編集しない |
+| DD-OFF-001 | 同梱するファイル      | Marked、DOMPurify、Mermaid、KaTeX と 5 種のフォント（Inter、Plus Jakarta Sans、Noto Sans JP、JetBrains Mono、M PLUS 1 Code）を `public/vendor/` に置く。版は `package.json` で固定し、`tools/build-vendor.cjs` で `node_modules` から生成する。`public/vendor/` は直接編集しない |
 | DD-OFF-002 | フォント              | `@fontsource-variable` の可変フォントを使う。`unicode-range` で分割したファイルのうち、表示する文字を含むものだけをブラウザが読み込む。生成時に family 名をアプリの CSS が指定する名前へ付け替える |
 | DD-OFF-003 | HTML エクスポート     | 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを、同じ版の CDN の URL に置き換える（`EXPORT_URLS`）。書き出した HTML の表示にはインターネット接続が必要 |
 | DD-OFF-004 | 第三者のライセンス    | 同梱するライブラリとフォントのライセンスを、`tools/build-vendor.cjs` で `public/THIRD_PARTY_LICENSES.txt` にまとめる |
