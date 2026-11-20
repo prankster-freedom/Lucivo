@@ -271,11 +271,14 @@ sequenceDiagram
 - 応答が 200 以外、JSON を読めない、版を取り出せない、通信の失敗・打ち切りは、すべて `error` として扱う。
 - `Accept` だけを付けた GET は CORS の単純なリクエストで、事前の確認（preflight）は起きない。
 
-### DD-FILE-087 公開 URL パラメータからの読み込み（`FR-050`）
+### DD-FILE-087 公開 URL パラメータ・読み替え・ドロップ読み込み（`FR-050`）
 
 - `ts/ui/url-loader.ts` が、`window.location.search` および `window.location.hash` から `url` パラメータを取り出す（`extractMarkdownUrlFromLocation()`）。指定がなければ一切通信せずに終了する（`NFR-008`）。
 - `validatePublicMarkdownUrl()` で `http:` / `https:` スキームのみ許可し、不正なスキーム（`javascript:`, `file:` 等）や URL 解析失敗時は外部通信を行わずトーストで警告を出す。
-- 取得時は 10 秒の `AbortController` 付き `fetch(url, { cache: 'no-store' })` で `ArrayBuffer` を取得し、`decodeMarkdown()`（`DD-FILE-082`）で文字コード・改行を正規化して `applyLoadedMarkdown()` で読み取り専用・タイトル設定（`ファイル名 - Lucivo`、`FR-040`）として開く。HTTP エラーや CORS・通信エラー時は読み込みに失敗した旨と CORS / ネットワーク確認を促すトーストを表示する。読み込む前に、`DD-FILE-091` の整形を通す。
+- `rewriteGitHubBlobUrl()` は、`https://github.com/<owner>/<repo>/blob/<ref>/<path>`（および `/raw/`、`?raw=true` 付き）を `https://raw.githubusercontent.com/<owner>/<repo>/<ref>/<path>` に変換する。スラッシュを含むブランチ名は境目が不定のため対象外とし、取得失敗時に `raw` URL の利用をトーストで案内する。
+- 取得時は 10 秒の `AbortController` 付き `fetch(fetchUrl, { cache: 'no-store' })` で `ArrayBuffer` を取得し、`decodeMarkdown()`（`DD-FILE-082`）で文字コード・改行を正規化して `applyLoadedMarkdown()` で読み取り専用・タイトル設定（`ファイル名 - Lucivo`、`FR-040`）として開く。読み込み前に `DD-FILE-091` の整形を通す。
+- 読み込み成功時は `runtime.currentRemoteUrl` に元の公開 URL（`blob` 読み替え前の URL）を保持し、`syncBrowserUrl()` でアドレスバーの `?url=` に反映する。ローカルファイル・フォルダ・同梱サンプルを開いたときは `applyLoadedMarkdown()` 内で `runtime.currentRemoteUrl = null` とし、`?url=` を外す。HTTP エラーや CORS・通信エラー時は失敗トーストを出し、アドレスバーは書き換えない。
+- ドラッグ&ドロップ（`src/ts/ui/file-menu.ts` の `setupFileDrop()`・`handleDroppedDataTransfer()`）は、`dragenter` / `dragover` で `Files` に加えて `text/uri-list` を受け付け（エディタ内の文字列選択ドラッグを妨げないため `text/plain` のみではオーバーレイを出さない）、`drop` 時に `await` の前に同期で `dt.getData('text/uri-list')` と `dt.getData('text/plain')` を抽出しておく（`DD-FILE-060`）。ファイル・フォルダが含まれない場合のみ抽出した URL を `loadMarkdownFromPublicUrl()` へ渡す。
 
 ### DD-FILE-088 整形の部品と入口（`FR-053`）
 
@@ -308,3 +311,10 @@ sequenceDiagram
 - 設定の画面（`#settings-modal`）に「Markdown の整形」の欄を置く。`#setting-format-on-load`（読み込み時に整える）は、`localStorage` の `lucivo.formatOnLoad`（`'1'` / `'0'`）に覚える。既定は整える。`localStorage` が使えないとき（プライベートの窓など）は、その窓の間だけ覚える。
 - `#btn-format-now`（今の文書を整える）は、設定の画面を閉じてから、エディタの文書を整える。`lastLoadedMarkdown` は変えないので、保存していない編集として扱う（別の文書を開くときに確認が出る）。閲覧（読み取り専用）のときも整える（ボタンを押す操作が、整える意思を示すため）。
 - `tailwind.css` は事前生成のため、欄の見た目は `src/css/components.css` の専用のクラス（`.settings-toggle`、`.settings-action-btn`）で組む。
+
+### DD-FILE-093 URL パラメータによる表示状態の復元と同期（`FR-061`）
+
+- `ts/ui/url-loader.ts` に `parseDisplayStateParams(search, hash, validStyles, validTones)` と `syncBrowserUrl(displayState, remoteUrl, defaultViewMode)` を置く。
+- 起動時（`app.ts` の `DOMContentLoaded`）は、`setupEventListeners()` と `setupViewModeControls()` の完了後、`setupMermaid()`・`renderApp()` の前に `applyInitialDisplayStateFromUrl()` を実行し、`state.isVisualMode` / `state.appearance` / `state.infographicStyle` / `state.tone` / `state.viewMode` と各 UI（`data-appearance`・Favicon・モードボタン・スタイルボタン・トーンメニュー・ビューモード）を初期化する。
+- 表示状態の変更ハンドラ（`setStageMode`、`selectInfographicStyle`、`selectTone`、`setViewMode`、`btnTheme.onclick`）は、状態変更後に `syncUrlFromState()` を呼ぶ（発表モード中 `is-stage-show` は一時変更のためスキップする）。
+- `syncBrowserUrl()` は `URL` オブジェクトの `searchParams` を構築し、既定値（`mode=fast`, `theme=light`, `style=shapes`, `tone=default`, `view=defaultViewMode`）と一致するキーは削除し、`hash` の旧パラメータ（`#url=` 等）は整理して `window.history.replaceState(null, '', nextUrl)` で更新する。`file://` 等で `replaceState` が例外を投げた場合は `try/catch` で無視して処理を継続する。
