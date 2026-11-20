@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { decodeMarkdown } from '../utils/text-decode';
-import { extractMarkdownUrlFromLocation, validatePublicMarkdownUrl, fetchMarkdownFromUrl } from './url-loader';
+import { extractMarkdownUrlFromLocation, validatePublicMarkdownUrl, rewriteGitHubBlobUrl, fetchMarkdownFromUrl } from './url-loader';
 import { findScrollParent } from '../diagram/pan-zoom';
 import { showToast, updateStatus } from './toast';
 import { clearMathPlotCache } from '../math/plot';
@@ -584,23 +584,32 @@ export function setupAmbientEffectsToggle() {
   });
 }
 
-// 起動時の URL パラメータ（?url=... / #url=...）から公開 Markdown を読み込む（FR-050, #78）
-export async function loadMarkdownFromUrlParam() {
-  const rawUrl = extractMarkdownUrlFromLocation(window.location.search, window.location.hash);
-  if (!rawUrl) return;
+// 公開 URL（起動時パラメータまたはドラッグ&ドロップ）から Markdown を読み込む（FR-050, #78, #267, #268, #269）
+export async function loadMarkdownFromPublicUrl(rawUrl: string) {
   const validUrl = validatePublicMarkdownUrl(rawUrl);
   if (!validUrl) {
     showToast('URL から Markdown を読み込めませんでした（http / https の有効な URL を指定してください）', 4000);
     return;
   }
+  const { fetchUrl } = rewriteGitHubBlobUrl(validUrl);
   showToast('URL から Markdown を読み込んでいます…');
   try {
-    const { buffer, fileName } = await fetchMarkdownFromUrl(validUrl);
+    const { buffer, fileName } = await fetchMarkdownFromUrl(fetchUrl);
     const decoded = decodeMarkdown(buffer);
     const prepared = await prepareLoadedText(decoded.text);
-    applyLoadedMarkdown(prepared.text, fileName, null, false, decoded.encoding, prepared.formatted);
+    applyLoadedMarkdown(prepared.text, fileName, null, false, decoded.encoding, prepared.formatted, validUrl.toString());
   } catch (err) {
     console.error('Failed to fetch markdown from URL:', err);
-    showToast('URL から Markdown を読み込めませんでした。CORS 制限やネットワークをご確認ください', 4500);
+    if (validUrl.hostname === 'github.com') {
+      showToast('URL から Markdown を読み込めませんでした。GitHub のファイルは raw URL を指定するか、CORS 制限・ネットワークをご確認ください', 4500);
+    } else {
+      showToast('URL から Markdown を読み込めませんでした。CORS 制限やネットワークをご確認ください', 4500);
+    }
   }
+}
+
+export async function loadMarkdownFromUrlParam() {
+  const rawUrl = extractMarkdownUrlFromLocation(window.location.search, window.location.hash);
+  if (!rawUrl) return;
+  await loadMarkdownFromPublicUrl(rawUrl);
 }

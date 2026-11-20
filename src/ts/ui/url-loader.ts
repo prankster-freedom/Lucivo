@@ -1,23 +1,86 @@
-// 公開 URL パラメータ（?url=... / #url=...）からの Markdown 読み込み（FR-050, DD-FILE-087）
+// 公開 URL パラメータ（?url=... / #url=...）および表示状態パラメータ（FR-050, FR-061, DD-FILE-087, DD-FILE-093）
 // パラメータが指定されていない通常起動では外部通信を行わない（NFR-008）
 
 const FETCH_TIMEOUT_MS = 10000;
+const MANAGED_PARAM_KEYS = ['url', 'mode', 'theme', 'style', 'tone', 'view'];
+
+export interface DisplayStateSnapshot {
+  isVisualMode: boolean;
+  appearance: string;
+  infographicStyle: string;
+  tone: string;
+  viewMode: string;
+}
+
+export interface DisplayStateParams {
+  isVisualMode?: boolean;
+  appearance?: 'light' | 'dark';
+  infographicStyle?: string;
+  tone?: string;
+  viewMode?: 'split' | 'canvas' | 'editor';
+}
+
+function getMergedParam(searchParams: URLSearchParams, hashParams: URLSearchParams, key: string): string | null {
+  const q = searchParams.get(key);
+  if (q !== null && q.trim() !== '') return q.trim();
+  const h = hashParams.get(key);
+  if (h !== null && h.trim() !== '') return h.trim();
+  return null;
+}
+
+function parseHashAsSearchParams(hash: string): URLSearchParams {
+  if (!hash || hash.length <= 1) return new URLSearchParams();
+  const rawHash = hash.startsWith('#') ? hash.slice(1) : hash;
+  return new URLSearchParams(rawHash);
+}
 
 /**
  * window.location の search / hash から `url` パラメータの値を取り出す。
  * 指定がなければ null を返す。
  */
 export function extractMarkdownUrlFromLocation(search: string, hash: string): string | null {
-  if (search) {
-    const queryVal = new URLSearchParams(search).get('url');
-    if (queryVal && queryVal.trim()) return queryVal.trim();
+  const searchParams = new URLSearchParams(search || '');
+  const hashParams = parseHashAsSearchParams(hash);
+  return getMergedParam(searchParams, hashParams, 'url');
+}
+
+/**
+ * window.location の search / hash から表示状態パラメータを抽出・検証する（FR-061）。
+ * 不正な値・未定義の識別名は無視する。
+ */
+export function parseDisplayStateParams(
+  search: string,
+  hash: string,
+  validStyles: string[],
+  validTones: string[]
+): DisplayStateParams {
+  const searchParams = new URLSearchParams(search || '');
+  const hashParams = parseHashAsSearchParams(hash);
+  const result: DisplayStateParams = {};
+
+  const mode = getMergedParam(searchParams, hashParams, 'mode')?.toLowerCase();
+  if (mode === 'visual') result.isVisualMode = true;
+  else if (mode === 'fast') result.isVisualMode = false;
+
+  const theme = getMergedParam(searchParams, hashParams, 'theme')?.toLowerCase();
+  if (theme === 'dark' || theme === 'light') result.appearance = theme;
+
+  const style = getMergedParam(searchParams, hashParams, 'style')?.toLowerCase();
+  if (style && validStyles.includes(style)) {
+    result.infographicStyle = style;
+    if (result.isVisualMode === undefined) result.isVisualMode = true;
   }
-  if (hash && hash.length > 1) {
-    const rawHash = hash.startsWith('#') ? hash.slice(1) : hash;
-    const hashVal = new URLSearchParams(rawHash).get('url');
-    if (hashVal && hashVal.trim()) return hashVal.trim();
+
+  const tone = getMergedParam(searchParams, hashParams, 'tone')?.toLowerCase();
+  if (tone && validTones.includes(tone)) {
+    result.tone = tone;
   }
-  return null;
+
+  const view = getMergedParam(searchParams, hashParams, 'view')?.toLowerCase();
+  if (view === 'split' || view === 'canvas') result.viewMode = view;
+  else if (view === 'code' || view === 'editor') result.viewMode = 'editor';
+
+  return result;
 }
 
 /**
@@ -34,6 +97,115 @@ export function validatePublicMarkdownUrl(rawUrl: string): URL | null {
   } catch (_) {
     return null;
   }
+}
+
+/**
+ * GitHub の画面 URL（/blob/<ref>/<path>、/raw/<ref>/<path>）を raw.githubusercontent.com へ読み替える。
+ * スラッシュを含むブランチ名は境目を機械判別できないため対象外とする。
+ */
+export function rewriteGitHubBlobUrl(url: URL): { fetchUrl: URL; rewritten: boolean } {
+  if (url.hostname !== 'github.com') {
+    return { fetchUrl: url, rewritten: false };
+  }
+  const segments = url.pathname.split('/').filter(Boolean);
+  if (segments.length >= 5 && (segments[2] === 'blob' || segments[2] === 'raw')) {
+    const [owner, repo, , ref, ...pathParts] = segments;
+    const rawUrl = new URL(`https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${pathParts.join('/')}`);
+    return { fetchUrl: rawUrl, rewritten: true };
+  }
+  return { fetchUrl: url, rewritten: false };
+}
+
+/**
+ * ドロップ時の DataTransfer（text/uri-list, text/plain）から公開 URL 候補を取り出す。
+ */
+export function extractDroppedUrl(uriList: string, plainText: string): string | null {
+  const candidates: string[] = [];
+  if (uriList) {
+    for (const line of uriList.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        candidates.push(trimmed);
+        break;
+      }
+    }
+  }
+  if (plainText) {
+    const firstLine = plainText.trim().split(/\r?\n/)[0]?.trim();
+    if (firstLine) candidates.push(firstLine);
+  }
+  for (const candidate of candidates) {
+    if (/^https?:\/\//i.test(candidate)) return candidate;
+  }
+  return null;
+}
+
+/**
+ * 現在の表示状態と公開 URL を反映したアプリ URL を組み立てる（既定値は省略）。
+ */
+export function buildAppUrlWithState(
+  currentHref: string,
+  displayState: DisplayStateSnapshot,
+  remoteUrl: string | null,
+  defaultViewMode: string
+): string {
+  const next = new URL(currentHref);
+  if (remoteUrl) next.searchParams.set('url', remoteUrl);
+  else next.searchParams.delete('url');
+
+  if (displayState.isVisualMode) next.searchParams.set('mode', 'visual');
+  else next.searchParams.delete('mode');
+
+  if (displayState.appearance === 'dark') next.searchParams.set('theme', 'dark');
+  else next.searchParams.delete('theme');
+
+  if (displayState.infographicStyle && displayState.infographicStyle !== 'shapes') {
+    next.searchParams.set('style', displayState.infographicStyle);
+  } else {
+    next.searchParams.delete('style');
+  }
+
+  if (displayState.tone && displayState.tone !== 'default') {
+    next.searchParams.set('tone', displayState.tone);
+  } else {
+    next.searchParams.delete('tone');
+  }
+
+  if (displayState.viewMode && displayState.viewMode !== defaultViewMode) {
+    next.searchParams.set('view', displayState.viewMode === 'editor' ? 'code' : displayState.viewMode);
+  } else {
+    next.searchParams.delete('view');
+  }
+
+  // 旧ハッシュ形式のパラメータが混在している場合は、管理対象のキーのみハッシュから取り除く
+  if (next.hash && next.hash.length > 1) {
+    const hashParams = parseHashAsSearchParams(next.hash);
+    if (MANAGED_PARAM_KEYS.some(key => hashParams.has(key))) {
+      for (const key of MANAGED_PARAM_KEYS) hashParams.delete(key);
+      const rest = hashParams.toString();
+      next.hash = rest ? `#${rest}` : '';
+    }
+  }
+
+  return next.toString();
+}
+
+/**
+ * 履歴を増やさずにアドレスバーを現在の状態へ同期する。
+ * file:// 環境等で書き換えが拒否された場合は無視して処理を続ける。
+ */
+export function syncBrowserUrl(
+  displayState: DisplayStateSnapshot,
+  remoteUrl: string | null,
+  defaultViewMode: string
+): void {
+  if (typeof window === 'undefined' || !window.history || typeof window.history.replaceState !== 'function') return;
+  try {
+    const nextUrl = buildAppUrlWithState(window.location.href, displayState, remoteUrl, defaultViewMode);
+    if (nextUrl !== window.location.href) {
+      window.history.replaceState(null, '', nextUrl);
+    }
+  } catch (_) {}
 }
 
 /**

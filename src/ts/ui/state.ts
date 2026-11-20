@@ -15,8 +15,10 @@ export const runtime: Record<string, any> = {
   currentSampleFile: null,
   preferFolderInput: false,
   recentFolderHandle: null,
+  currentRemoteUrl: null as string | null,
   followedKey: null,
-  renderApp: () => {}
+  renderApp: () => {},
+  syncUrlFromState: () => {}
 };
 
 export function resolveModal(idOrEl) {

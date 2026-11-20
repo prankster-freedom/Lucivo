@@ -6,7 +6,7 @@ import { downloadBlob } from './utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
 import { showToast, updateStatus } from './ui/toast';
 import { setupUpdateCheck, applyUpdateCheckState, checkForUpdate, isWebVersion } from './ui/update-check';
-import { extractMarkdownUrlFromLocation, validatePublicMarkdownUrl, fetchMarkdownFromUrl } from './ui/url-loader';
+import { parseDisplayStateParams, syncBrowserUrl } from './ui/url-loader';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
 import { ALERT_LABELS, decorateAlerts } from './markdown/callouts';
@@ -1264,6 +1264,7 @@ function selectTone(toneId: string) {
   syncToneUi();
   setupMermaid();
   renderApp();
+  syncUrlFromState();
   showToast(`トーン: ${getToneEntry(toneId).label}`);
 }
 
@@ -1277,6 +1278,7 @@ function setStageMode(isVisual) {
     showToast('高速モードに戻りました');
   }
   renderApp();
+  syncUrlFromState();
   if (isVisual) void ensureStyleFont(state.infographicStyle);
 }
 
@@ -1293,6 +1295,7 @@ function selectInfographicStyle(style) {
   }
   syncToneUi();
   renderApp();
+  syncUrlFromState();
   void ensureStyleFont(style);
   const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
   showToast(`スタイル適用: ${activeBtn ? activeBtn.textContent.trim() : style}`);
@@ -1739,7 +1742,9 @@ function setupViewModeControls() {
     if (state.isVisualMode && mode !== 'editor') {
       updateAllSlabSplits(document.getElementById('visual-stage-container'));
     }
+    syncUrlFromState();
   };
+  applyViewModeFn = setViewMode;
 
   try {
     const savedRatio = Number(localStorage.getItem(SPLIT_RATIO_KEY));
@@ -1881,6 +1886,7 @@ function setupEventListeners() {
     syncToneUi();
     setupMermaid();
     renderApp();
+    syncUrlFromState();
   };
 
   document.getElementById('btn-open-settings').onclick = () => setModalOpen('settings-modal', true);
@@ -1926,10 +1932,60 @@ function setupEventListeners() {
 /* ==========================================================================
    開く・保存のメニュー（Markdown ファイルの読み込みと保存）
    ========================================================================== */
+let urlSyncReady = false;
+let applyViewModeFn: ((mode: string) => void) | null = null;
+
+function syncUrlFromState() {
+  if (!urlSyncReady) return;
+  if (document.documentElement.classList.contains('is-stage-show')) return;
+  const defaultViewMode = window.innerWidth < 1024 ? 'canvas' : 'split';
+  syncBrowserUrl(state, runtime.currentRemoteUrl, defaultViewMode);
+}
+
+function applyInitialDisplayStateFromUrl() {
+  const params = parseDisplayStateParams(
+    window.location.search,
+    window.location.hash,
+    VISUAL_STYLE_KEYS,
+    COLOR_TONES.map(t => t.id)
+  );
+  if (params.appearance) {
+    state.appearance = params.appearance;
+    document.body.setAttribute('data-appearance', state.appearance);
+    const appFavicon = document.getElementById('app-favicon');
+    if (appFavicon) appFavicon.setAttribute('href', `./assets/logos/${state.appearance}/favicon.svg`);
+    document.getElementById('icon-sun')?.classList.toggle('hidden', state.appearance === 'dark');
+    document.getElementById('icon-moon')?.classList.toggle('hidden', state.appearance !== 'dark');
+  }
+  if (params.infographicStyle) {
+    state.infographicStyle = params.infographicStyle;
+    document.querySelectorAll('.info-style-btn').forEach(b => {
+      b.classList.toggle('is-active', b.getAttribute('data-info-style') === state.infographicStyle);
+    });
+  }
+  if (typeof params.isVisualMode === 'boolean') {
+    state.isVisualMode = params.isVisualMode;
+    syncStageModeUi(state.isVisualMode);
+    if (state.isVisualMode) void ensureStyleFont(state.infographicStyle);
+  }
+  if (params.tone) {
+    state.tone = params.tone;
+  }
+  if (params.appearance || params.infographicStyle || params.tone) {
+    syncToneUi();
+  }
+  if (params.viewMode && applyViewModeFn) {
+    applyViewModeFn(params.viewMode);
+  }
+}
+
 runtime.renderApp = renderApp;
+runtime.syncUrlFromState = syncUrlFromState;
 
 window.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  applyInitialDisplayStateFromUrl();
+  urlSyncReady = true;
   setupVisualStageInteractions();
   setupSplitTermLinks();
   setupKeyboardShortcuts();

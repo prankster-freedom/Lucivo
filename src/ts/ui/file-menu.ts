@@ -2,6 +2,7 @@
 import { downloadBlob } from '../utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from '../utils/text-decode';
 import { showToast, updateStatus } from './toast';
+import { extractDroppedUrl } from './url-loader';
 import { applyUpdateCheckState, checkForUpdate } from './update-check';
 import { setupPresentModes } from './present-modes';
 import {
@@ -26,7 +27,8 @@ import {
   openFolderFromHandle,
   reopenRecentFolder,
   saveRecentFolderHandle,
-  openFolderFile
+  openFolderFile,
+  loadMarkdownFromPublicUrl
 } from './folder-browser';
 
 export const HEADER_MENUS = [
@@ -59,10 +61,11 @@ export function confirmDiscardEdits(fileName) {
 // isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
 // encoding: ファイルから読んだときの文字コード（decodeMarkdown() の結果。同梱サンプルは UTF-8）（FR-048, DD-FILE-083）
 // formatted: 読み込み時の整形の結果（FR-053）。整えたときは、読み込みの知らせに直した箇所の数を添える
-export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null) {
+export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null, remoteUrl: string | null = null) {
   // 改行コードを LF にそろえる。そろえないと、textarea が LF に変えた内容と食い違い、編集していないのに破棄の確認が出る
   const text = normalizeText(String(rawText));
   runtime.currentFileEncoding = encoding;
+  runtime.currentRemoteUrl = remoteUrl;
   document.getElementById('markdown-editor').value = text;
   runtime.lastLoadedMarkdown = text;
   runtime.currentFileName = fileName;
@@ -76,6 +79,7 @@ export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSamp
   setEditorReadOnly(true);
   clearTimeout(runtime.renderDebounceTimer);
   runtime.renderApp();
+  runtime.syncUrlFromState();
   document.getElementById('preview-scroll').scrollTop = 0;
   runtime.followedKey = null;
   // UTF-8 以外で読んだときは、何として読んだかと、保存すると UTF-8 になることを知らせる（DD-FILE-083）
@@ -345,6 +349,8 @@ export async function handleDroppedDataTransfer(dt: DataTransfer) {
   // そのため、待つ前に、必要なものをすべて同期で取り出しておく（#69）。
   const items = Array.from(dt.items || []).filter(item => item.kind === 'file');
   const droppedFiles = Array.from(dt.files || []);
+  const droppedUriList = typeof dt.getData === 'function' ? (dt.getData('text/uri-list') || '') : '';
+  const droppedPlain = typeof dt.getData === 'function' ? (dt.getData('text/plain') || '') : '';
   const handlePromises = items.map((item: any) => {
     if (typeof item.getAsFileSystemHandle !== 'function') return Promise.resolve(null);
     try {
@@ -397,6 +403,15 @@ export async function handleDroppedDataTransfer(dt: DataTransfer) {
 
   const file = droppedFiles.find(f => DROPPABLE_FILE_PATTERN.test(f.name));
   if (!file) {
+    if (droppedFiles.length === 0 && items.length === 0) {
+      const droppedUrl = extractDroppedUrl(droppedUriList, droppedPlain);
+      if (droppedUrl) {
+        await loadMarkdownFromPublicUrl(droppedUrl);
+        return;
+      }
+      showToast('開けるのは .md / .markdown / .txt のファイル、フォルダ、または http / https の公開 URL です');
+      return;
+    }
     showToast('開けるのは .md / .markdown / .txt のファイルまたはフォルダです');
     return;
   }
@@ -407,30 +422,33 @@ export async function handleDroppedDataTransfer(dt: DataTransfer) {
 export function setupFileDrop() {
   const overlay = document.getElementById('drop-overlay');
   let depth = 0;
-  const hasFiles = (event: DragEvent) => Array.from((event.dataTransfer && event.dataTransfer.types) || []).includes('Files');
+  const hasDroppable = (event: DragEvent) => {
+    const types = Array.from((event.dataTransfer && event.dataTransfer.types) || []);
+    return types.includes('Files') || types.includes('text/uri-list');
+  };
   const setShown = (shown: boolean) => {
     overlay.classList.toggle('is-shown', shown);
     overlay.setAttribute('aria-hidden', String(!shown));
   };
 
   window.addEventListener('dragenter', event => {
-    if (!hasFiles(event)) return;
+    if (!hasDroppable(event)) return;
     event.preventDefault();
     depth += 1;
     setShown(true);
   });
   window.addEventListener('dragover', event => {
-    if (!hasFiles(event)) return;
+    if (!hasDroppable(event)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
   });
   window.addEventListener('dragleave', event => {
-    if (!hasFiles(event)) return;
+    if (!hasDroppable(event)) return;
     depth = Math.max(0, depth - 1);
     if (depth === 0) setShown(false);
   });
   window.addEventListener('drop', async event => {
-    if (!hasFiles(event)) return;
+    if (!hasDroppable(event)) return;
     event.preventDefault();
     depth = 0;
     setShown(false);
