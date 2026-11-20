@@ -486,6 +486,142 @@ async function testUrlLoading(browser) {
     && blockedReqs.length === 0 && badScheme.val === '' && badScheme.toast.includes('http / https')
     && errRes.val === '' && errRes.toast.includes('読み込めませんでした'),
     JSON.stringify({ queryRes, hashTitle: hashRes.title, hashMatch: hashRes.val === hashRes.expected, formatted: hashRes.val !== sjisExpected, blockedReqs, badScheme, errRes, consoleErrors: p1.consoleErrors }));
+
+  // Web 版サーバーを起動して、アドレスバー書き換え（replaceState）・blob 読み替え・URL ドロップ・表示状態パラメータを検証する
+  const server = await startWebServer();
+  try {
+    const ghRoute = route => {
+      const u = route.request().url();
+      if (u === 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/docs/guide.md') {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: '# Blob Rewritten\n' });
+      }
+      if (u === 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/v1.0/docs/raw.md') {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: '# Raw Segment\n' });
+      }
+      if (u === 'https://example.com/docs/guide.md') {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: '# Remote Guide\n' });
+      }
+      return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Not Found' });
+    };
+
+    // TC-FILE-041: GitHub blob URL の読み替えと ?url= 反映・解除
+    const blobUrl = 'https://github.com/prankster-freedom/Lucivo/blob/main/docs/guide.md?raw=true';
+    const ctx41 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p41 = await ctx41.newPage();
+    await p41.route('https://raw.githubusercontent.com/**', ghRoute);
+    await p41.goto(`${server.url}?url=${encodeURIComponent(blobUrl)}`);
+    await p41.waitForFunction(() => document.getElementById('markdown-editor')?.value.includes('# Blob Rewritten'), null, { timeout: 10000 });
+    const blobLoadedUrl = await p41.evaluate(() => new URL(window.location.href).searchParams.get('url'));
+    await p41.click('#btn-file-menu');
+    await p41.click('#menu-sample-notation');
+    await p41.waitForFunction(() => document.title === 'notation_sample.md - Lucivo', null, { timeout: 10000 });
+    const afterSampleHasUrl = await p41.evaluate(() => new URL(window.location.href).searchParams.has('url'));
+    await ctx41.close();
+
+    const ctx41Err = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p41Err = await ctx41Err.newPage();
+    await p41Err.route('https://raw.githubusercontent.com/**', ghRoute);
+    await p41Err.goto(`${server.url}?url=${encodeURIComponent('https://github.com/prankster-freedom/Lucivo/blob/feature/x/docs/missing.md')}`);
+    await p41Err.waitForFunction(() => (document.getElementById('toast-message')?.textContent || '').includes('raw URL'), null, { timeout: 5000 }).catch(() => {});
+    const blobErrToast = await p41Err.evaluate(() => document.getElementById('toast-message')?.textContent || '');
+    await ctx41Err.close();
+
+    record('TC-FILE-041',
+      blobLoadedUrl === blobUrl && afterSampleHasUrl === false && blobErrToast.includes('raw URL'),
+      JSON.stringify({ blobLoadedUrl, afterSampleHasUrl, blobErrToast }));
+
+    // TC-FILE-042: 公開 URL のドラッグ&ドロップ
+    const ctx42 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p42 = await ctx42.newPage();
+    await p42.route('https://raw.githubusercontent.com/**', ghRoute);
+    await p42.route('https://example.com/**', ghRoute);
+    await p42.goto(server.url);
+    await p42.waitForFunction(() => typeof renderApp === 'function');
+    const dropTargetUrl = 'https://github.com/prankster-freedom/Lucivo/raw/v1.0/docs/raw.md';
+    await p42.evaluate(u => {
+      const dt = new DataTransfer();
+      dt.setData('text/uri-list', u);
+      dt.setData('text/plain', u);
+      window.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    }, dropTargetUrl);
+    await p42.waitForFunction(() => document.getElementById('markdown-editor')?.value.includes('# Raw Segment'), null, { timeout: 10000 });
+    const urlAfterDrop = await p42.evaluate(() => new URL(window.location.href).searchParams.get('url'));
+
+    // ファイルと URL 同時ドロップ時はファイル優先、?url= は外れる
+    await p42.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(['# Local Drop\n'], 'local-drop.md', { type: 'text/markdown' }));
+      dt.setData('text/uri-list', 'https://example.com/docs/guide.md');
+      window.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    });
+    await p42.waitForFunction(() => document.title === 'local-drop.md - Lucivo', null, { timeout: 10000 });
+    const afterMixedDrop = await p42.evaluate(() => ({
+      val: document.getElementById('markdown-editor')?.value,
+      hasUrl: new URL(window.location.href).searchParams.has('url')
+    }));
+
+    // 不正スキームのドロップは拒否
+    await p42.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.setData('text/uri-list', 'javascript:alert(1)');
+      window.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    });
+    await p42.waitForFunction(() => (document.getElementById('toast-message')?.textContent || '').includes('http / https'), null, { timeout: 5000 }).catch(() => {});
+    const badDropToast = await p42.evaluate(() => document.getElementById('toast-message')?.textContent || '');
+    await ctx42.close();
+
+    record('TC-FILE-042',
+      urlAfterDrop === dropTargetUrl && afterMixedDrop.val === '# Local Drop\n' && afterMixedDrop.hasUrl === false && badDropToast.includes('http / https'),
+      JSON.stringify({ urlAfterDrop, afterMixedDrop, badDropToast }));
+
+    // TC-FILE-043: URL パラメータによる表示状態の復元と同期
+    const ctx43 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p43 = await ctx43.newPage();
+    await p43.goto(`${server.url}?mode=visual&theme=dark&style=cards&tone=matcha-wagashi&view=code&bad=xxx`);
+    await p43.waitForFunction(() => typeof renderApp === 'function');
+    const restored = await p43.evaluate(() => ({
+      isVisualMode: window.state.isVisualMode,
+      appearance: window.state.appearance,
+      style: window.state.infographicStyle,
+      tone: window.state.tone,
+      viewMode: window.state.viewMode,
+      histLen: window.history.length
+    }));
+    await p43.click('#btn-mode-fast');
+    await p43.click('#btn-theme-toggle');
+    await p43.click('.view-mode-btn[data-view-mode="split"]');
+    const afterToggle = await p43.evaluate(() => {
+      const sp = new URL(window.location.href).searchParams;
+      return {
+        hasMode: sp.has('mode'),
+        hasTheme: sp.has('theme'),
+        hasView: sp.has('view'),
+        style: sp.get('style'),
+        tone: sp.get('tone'),
+        histLen: window.history.length
+      };
+    });
+    // #style=editorial&theme=invalid での復元（style 指定で自動的に visual、不正な theme は無視して light）
+    await p43.goto(`${server.url}#style=editorial&theme=invalid`);
+    await p43.waitForFunction(() => typeof renderApp === 'function');
+    const hashState = await p43.evaluate(() => ({
+      isVisualMode: window.state.isVisualMode,
+      style: window.state.infographicStyle,
+      appearance: window.state.appearance
+    }));
+    await ctx43.close();
+
+    record('TC-FILE-043',
+      restored.isVisualMode === true && restored.appearance === 'dark' && restored.style === 'cards'
+      && restored.tone === 'matcha-wagashi' && restored.viewMode === 'editor'
+      && afterToggle.hasMode === false && afterToggle.hasTheme === false && afterToggle.hasView === false
+      && afterToggle.style === 'cards' && afterToggle.tone === 'matcha-wagashi'
+      && afterToggle.histLen === restored.histLen
+      && hashState.isVisualMode === true && hashState.style === 'editorial' && hashState.appearance === 'light',
+      JSON.stringify({ restored, afterToggle, hashState }));
+  } finally {
+    await server.close();
+  }
 }
 
 async function testTitleAndDrop(browser) {
