@@ -640,6 +640,106 @@ async function testPerfOptimizations(browser) {
     JSON.stringify({ visInc, cvScreen, cvPrint, cvStageShow, shortHasCv })
   );
   await p13.close();
+
+  // TC-PERF-014 (#274): document に passive:false の wheel リスナーを置かないこと、および
+  // Visualモードの resize 時に画面外（content-visibility: auto）スラブの強制レイアウトを避け、画面復帰時に遅延更新すること
+  const ctx14 = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await ctx14.addInitScript(() => {
+    window.__docWheelRegistrations = 0;
+    const orig = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function(type, listener, options) {
+      if (this === document && type === 'wheel') {
+        window.__docWheelRegistrations++;
+      }
+      return orig.call(this, type, listener, options);
+    };
+  });
+  const p14 = await ctx14.newPage();
+  const appUrl14 = 'file:///' + path.join(APP_DIR, 'index.html').replace(/\\/g, '/');
+  await p14.goto(appUrl14);
+  await p14.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
+  await p14.click('.view-mode-btn[data-view-mode="canvas"]');
+  await selectVisualStyle(p14, 'shapes');
+
+  const longSplitMd = [
+    '# 長文リサイズ遅延更新テスト',
+    '',
+    ...Array.from({ length: 28 }, (_, i) => [
+      `## ${i + 1}. 章 ${i + 1}`,
+      '',
+      `第 ${i + 1} 章の解説文です。図と 2 段組みで表示します。`,
+      '',
+      '```mermaid',
+      'flowchart LR',
+      '  A[入力] --> B[出力]',
+      '```',
+      ''
+    ].join('\n'))
+  ].join('\n');
+
+  await p14.evaluate(text => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = text;
+    lastLoadedMarkdown = text;
+    renderApp();
+  }, longSplitMd);
+  await p14.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 90000 });
+  await p14.waitForTimeout(300);
+
+  // 末尾の画面外スラブの scrollWidth 読み取り回数を監視した状態で幅を狭くする
+  await p14.evaluate(() => {
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    const lastVp = slabs[slabs.length - 1]?.querySelector('.exhibition-viewport');
+    window.__lastSlabScrollReads = 0;
+    if (lastVp) {
+      const desc = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollWidth');
+      Object.defineProperty(lastVp, 'scrollWidth', {
+        configurable: true,
+        get() {
+          window.__lastSlabScrollReads++;
+          return desc.get.call(this);
+        }
+      });
+    }
+  });
+  await p14.setViewportSize({ width: 320, height: 800 });
+  await p14.waitForTimeout(200);
+
+  const beforeScroll14 = await p14.evaluate(() => {
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    const firstStacked = slabs[0]?.classList.contains('is-stacked') || false;
+    const lastVp = slabs[slabs.length - 1]?.querySelector('.exhibition-viewport');
+    if (lastVp) delete lastVp.scrollWidth;
+    return {
+      docWheelRegs: window.__docWheelRegistrations,
+      slabCount: slabs.length,
+      firstStacked,
+      lastSlabScrollReadsOnResize: window.__lastSlabScrollReads
+    };
+  });
+
+  // 末尾スラブを画面内へスクロールし、contentvisibilityautostatechange で遅延更新されて is-stacked が付くか確認
+  await p14.evaluate(() => {
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab-split');
+    slabs[slabs.length - 1].scrollIntoView({ block: 'center' });
+  });
+  await p14.waitForTimeout(250);
+  const afterScroll14 = await p14.evaluate(() => {
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    return {
+      lastStackedAfterScroll: slabs[slabs.length - 1]?.classList.contains('is-stacked') || false
+    };
+  });
+
+  record('TC-PERF-014',
+    beforeScroll14.docWheelRegs === 0 &&
+    beforeScroll14.slabCount === 28 &&
+    beforeScroll14.firstStacked === true &&
+    beforeScroll14.lastSlabScrollReadsOnResize === 0 &&
+    afterScroll14.lastStackedAfterScroll === true,
+    JSON.stringify({ beforeScroll14, afterScroll14 })
+  );
+  await ctx14.close();
 }
 
 module.exports = { testPerfBudget, testPerfOptimizations };
