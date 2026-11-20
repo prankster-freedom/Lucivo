@@ -38,6 +38,10 @@ export function clearDiagramZoom(vp: HTMLElement): void {
 
 // 縦方向は図の表示枠ではなくプレビューがスクロールするため、拡大・縮小の基準点を保つときに使う
 export function findScrollParent(el: Element): Element | null {
+  const previewScroll = el.closest('#preview-scroll');
+  if (previewScroll && previewScroll.scrollHeight > previewScroll.clientHeight) {
+    return previewScroll;
+  }
   for (let node = el.parentElement; node; node = node.parentElement) {
     const overflowY = getComputedStyle(node).overflowY;
     if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) return node;
@@ -65,11 +69,15 @@ export function zoomDiagram(vp: HTMLElement, event: WheelEvent, onUpdateSplit?: 
   vp.classList.add('is-zoomed');
   vp.dataset.zoom = String(next);
   svg.style.setProperty('--zoom-width', `${(viewBox.width * next).toFixed(1)}px`);
-  
-  if (onUpdateSplit) {
-    onUpdateSplit(vp.closest('.exhibition-slab-split'));
-  } else if ((window as any).updateSlabSplit) {
-    (window as any).updateSlabSplit(vp.closest('.exhibition-slab-split'));
+
+  const split = vp.closest('.exhibition-slab-split');
+  // 既に 1 段組み（is-stacked）の状態でさらに拡大するときは、外して測り直す強制レイアウトを省く
+  if (split && !(split.classList.contains('is-stacked') && next > current)) {
+    if (onUpdateSplit) {
+      onUpdateSplit(split);
+    } else if ((window as any).updateSlabSplit) {
+      (window as any).updateSlabSplit(split);
+    }
   }
 
   // 拡大・縮小の後も、同じ図の点がカーソルの下に来るようにスクロールする
@@ -80,7 +88,29 @@ export function zoomDiagram(vp: HTMLElement, event: WheelEvent, onUpdateSplit?: 
   updatePannable(vp);
 }
 
-export function setupDiagramPanZoom(onUpdateSplit?: (split: Element | null) => void): void {
+const boundDiagramViewports = new WeakSet<HTMLElement>();
+
+// 図の表示枠にのみ Ctrl + ホイール（passive: false）と pointerenter を取り付ける（#274）。
+// document に passive: false の wheel リスナーを置かないことで、本文スクロールがメインスレッドにブロックされないようにする
+export function bindDiagramPanZoom(scope: ParentNode, onUpdateSplit?: (split: Element | null) => void): void {
+  scope.querySelectorAll(DIAGRAM_VIEWPORT_SELECTOR).forEach(node => {
+    const vp = node as HTMLElement;
+    if (boundDiagramViewports.has(vp)) return;
+    boundDiagramViewports.add(vp);
+    vp.addEventListener('pointerenter', () => {
+      if (vp.querySelector(':scope > svg')) updatePannable(vp);
+    }, { passive: true });
+    vp.addEventListener('wheel', event => {
+      if (!event.ctrlKey || !event.deltaY) return;
+      if (document.documentElement.classList.contains('is-stage-show')) return;
+      if (!vp.querySelector(':scope > svg')) return;
+      event.preventDefault();
+      zoomDiagram(vp, event, onUpdateSplit);
+    }, { passive: false });
+  });
+}
+
+export function setupDiagramPanZoom(_onUpdateSplit?: (split: Element | null) => void): void {
   const pan: { vp: HTMLElement | null; pointerId: number | null; x: number; y: number; left: number; top: number; moved: boolean } = {
     vp: null,
     pointerId: null,
@@ -90,17 +120,6 @@ export function setupDiagramPanZoom(onUpdateSplit?: (split: Element | null) => v
     top: 0,
     moved: false
   };
-
-  document.addEventListener('mouseover', event => updatePannable(findDiagramViewport(event.target)));
-
-  // 図の上の Ctrl + ホイールは、ブラウザのページ全体のズームではなく、図の拡大・縮小にする（DD-DIAG-071）
-  document.addEventListener('wheel', event => {
-    if (!event.ctrlKey || !event.deltaY) return;
-    const vp = findDiagramViewport(event.target);
-    if (!vp) return;
-    event.preventDefault();
-    zoomDiagram(vp, event, onUpdateSplit);
-  }, { passive: false });
 
   // スクロール表示の図をマウスでつかんで動かす（FR-038, DD-DIAG-070）
   document.addEventListener('pointerdown', event => {

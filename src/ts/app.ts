@@ -12,7 +12,7 @@ import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotC
 import { ALERT_LABELS, decorateAlerts } from './markdown/callouts';
 import { splitFrontMatter, highlightYamlLine, buildFrontMatterHtml } from './markdown/front-matter';
 import { scopeSvgIds } from './diagram/scope';
-import { setupDiagramPanZoom, findScrollParent, clearDiagramZoom, updatePannable, zoomDiagram } from './diagram/pan-zoom';
+import { setupDiagramPanZoom, bindDiagramPanZoom, findScrollParent, clearDiagramZoom, updatePannable, zoomDiagram } from './diagram/pan-zoom';
 import { scalePickerHtml, setScaleMode, bindScaleMenus, type ScaleAction } from './diagram/scale-mode';
 import {
   resolveModal,
@@ -48,6 +48,7 @@ import {
 } from './markdown/math-and-headings';
 import {
   applyReadableFit,
+  ensureSlabVisibilityTracking,
   updateSlabSplit,
   updateAllSlabSplits,
   postProcessSvg,
@@ -1106,6 +1107,7 @@ function downloadDiagramPng(svgEl: SVGElement, idx: string) {
 
 // scope: 新規にバインドする範囲、rootContainer: 表示中の全体コンテナ
 function bindViewportInteractions(scope, rootContainer = scope) {
+  bindDiagramPanZoom(scope);
   // 矢印の形状を選ぶと、その図だけキャッシュのキーが変わり、描き直される（DD-EDGE-011）
   scope.querySelectorAll('.edge-curve-btn').forEach(btn => {
     btn.onclick = () => {
@@ -1936,6 +1938,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupFolder();
   setupUpdateCheck();
   setupDiagramPanZoom();
+  ensureSlabVisibilityTracking(document.getElementById('visual-stage-container'));
   setupLocalImages();
   setupFrontMatterToggle();
   setupAnimationToggle();

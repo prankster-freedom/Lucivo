@@ -120,10 +120,45 @@ export function updateSlabSplit(slab) {
   }
 }
 
+// content-visibility: auto で画面外に省略中のスラブを追跡し、resize/ズーム時に全スラブを強制レイアウトしないようにする（#274）
+const trackedSlabRoots = new WeakSet<Element>();
+const skippedSlabs = new WeakSet<Element>();
+const dirtySplitSlabs = new WeakSet<Element>();
+const dirtyMathSlabs = new WeakSet<Element>();
+
+export function ensureSlabVisibilityTracking(root: Element | null): void {
+  if (!root || trackedSlabRoots.has(root)) return;
+  trackedSlabRoots.add(root);
+  // contentvisibilityautostatechange はバブリングしないため、キャプチャフェーズで各スラブの状態変化を拾う
+  root.addEventListener('contentvisibilityautostatechange', (event: Event) => {
+    const target = event.target as Element | null;
+    if (!target || !target.classList || !target.classList.contains('exhibition-slab')) return;
+    if ((event as any).skipped) {
+      skippedSlabs.add(target);
+    } else {
+      skippedSlabs.delete(target);
+      if (dirtySplitSlabs.has(target)) {
+        dirtySplitSlabs.delete(target);
+        updateSlabSplit(target);
+      }
+      if (dirtyMathSlabs.has(target)) {
+        dirtyMathSlabs.delete(target);
+        fitTwoColMath(target as HTMLElement);
+      }
+    }
+  }, true);
+}
+
 export function updateAllSlabSplits(container) {
   if (!container) return;
+  ensureSlabVisibilityTracking(container);
   const targets: { slab: Element; vp: Element; actualSize: boolean; needStack: boolean }[] = [];
   container.querySelectorAll('.exhibition-slab-split').forEach(slab => {
+    if (skippedSlabs.has(slab)) {
+      dirtySplitSlabs.add(slab);
+      return;
+    }
+    dirtySplitSlabs.delete(slab);
     const vp = slab.querySelector('.exhibition-viewport');
     if (!vp || !vp.querySelector(':scope > svg')) return;
     targets.push({ slab, vp, actualSize: vp.classList.contains('is-actual-size'), needStack: false });
@@ -148,7 +183,11 @@ export function updateAllSlabSplits(container) {
       }
     }
   }
-  fitTwoColMath(container);
+  fitTwoColMath(container, slab => {
+    if (!skippedSlabs.has(slab)) return false;
+    dirtyMathSlabs.add(slab);
+    return true;
+  });
 }
 
 // path の d（絶対座標）が囲む範囲。曲線の制御点も含むので、わずかに大きくなることがある

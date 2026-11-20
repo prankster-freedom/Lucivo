@@ -101,13 +101,18 @@ export function renderMath(container) {
 }
 
 // 2 段組み内のブロック数式が段幅を超えるとき、文字を縮小して段内に収める（#263）
-export function fitTwoColMath(container: HTMLElement | null): void {
+// shouldSkipSlab が true を返す画面外スラブは強制レイアウトを避けてスキップする（#274）
+export function fitTwoColMath(container: HTMLElement | null, shouldSkipSlab?: (slab: Element) => boolean): void {
   if (!container) return;
   const targets = container.querySelectorAll('.vs-two-col-body .lucivo-math[data-display="true"]');
   if (targets.length === 0) return;
   const items: { box: HTMLElement; formula: HTMLElement; ratio: number }[] = [];
   targets.forEach(node => {
     const el = node as HTMLElement;
+    if (shouldSkipSlab) {
+      const slab = el.closest('.exhibition-slab');
+      if (slab && shouldSkipSlab(slab)) return;
+    }
     const box = (el.querySelector('.vs-math-formula') || el) as HTMLElement;
     const formula = (box.querySelector('.katex-display > .katex') || box.querySelector('.katex')) as HTMLElement | null;
     if (formula) items.push({ box, formula, ratio: 1 });
