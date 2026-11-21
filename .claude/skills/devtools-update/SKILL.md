@@ -128,6 +128,21 @@ winget upgrade --id <ID> --exact --silent --accept-source-agreements --accept-pa
 - **古いブラウザー**: Playwright は、どの版の Playwright からも使われなくなった版のブラウザーを自動で削除する。手で削除しない。
 - **結果の確認**: `npx --no-install playwright --version` の版に加え、プロジェクトの Playwright のテストを実行してよいかをユーザーに確認し、承認されたら実行して結果を報告する。
 
+## プロジェクト内の版の記述の同期
+
+ツールの版を上げたとき、作業中のプロジェクトに版を書いた箇所があると、ローカルと CI・文書で版が食い違う。手順 2 の更新計画を示す前に、次を調べて表にし、更新とあわせて同期する。ユーザーの承認は更新計画と同時に得る。リポジトリ固有の方針（版を固定する理由など）は `AGENTS.repo.md` に従う。
+
+| 対象のツール   | 調べる場所                                                                         | 同期のしかた |
+| :------------- | :--------------------------------------------------------------------------------- | :----------- |
+| node           | CI のワークフロー（`.github/workflows/` の `node-version`）、`.nvmrc`・`.node-version`、`package.json` の `engines`、`Dockerfile`、`AGENTS.repo.md` と文書の版の記述 | Node.js のメジャー版を上げたときは、CI の指定を 1 つの PR でまとめて上げ、文書の記述も直す。同じメジャー版の中の更新は、固定している記述がなければ変更不要 |
+| npm            | `package.json` の `packageManager`・`engines`、`package-lock.json` の差分          | 更新後に `npm install` を実行し、lockfile に意図しない差分が出ないかを `git diff` で確かめる。メジャー版を上げたときは、CI の Node.js 同梱の npm で `npm ci` が通るかも確かめる |
+| playwright     | `package.json`（固定の版）、`package-lock.json`（`playwright`・`playwright-core`） | 手で書き換えず、`npm install --save-dev --save-exact playwright@<版>` で 2 つのファイルを同時に更新する |
+| gcloud・gh・uv | プロジェクト内の版の記述（CI・ドキュメント・スクリプトなど）                       | `Grep` で検索し、あれば同期する。なければ変更不要と報告する |
+
+- npm 12 以降は、依存パッケージのインストール時スクリプト（`postinstall` など）を既定で止める（`npm warn install-scripts` が出る）。esbuild のようにスクリプトが必要なパッケージがないかを、更新後のビルドとテストで確かめ、必要なら `npm install-scripts approve <パッケージ>` で許可する。
+- `package-lock.json` のプロジェクト自身の版が `package.json` と食い違っていると、`npm install` が直す。このような今回の更新と関係のない差分は、報告に書く。
+- 同期した変更（`package.json`・lockfile・ワークフロー・文書）は、ツールの更新とは別のコミットにする。コミットはユーザーの指示があったときだけ行う。
+
 ## 対象外
 
 - npm のグローバルパッケージ（`npm outdated -g` で表示されるもの）、gcloud 以外の Google Cloud のツール
