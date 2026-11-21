@@ -46,6 +46,7 @@ import {
   setupMarkedHeadings,
   renderMath
 } from './markdown/math-and-headings';
+import { setupMarkedBlocks, noteRawHtmlBlocks } from './markdown/block-renderers';
 import {
   applyReadableFit,
   ensureSlabVisibilityTracking,
@@ -530,6 +531,7 @@ function renderApp() {
   isInputRender = false;
   // フロントマターは Marked に渡さない。渡すと先頭の --- が水平線、YAML が段落になる（DD-FM-001）
   const { yaml, body } = splitFrontMatter(rawMarkdown);
+  noteRawHtmlBlocks(body);
   const { mermaidBlocks, tokensToKeep, links, hasFootnotes } = parseMarkdownAndMermaidSlots(rawMarkdown, body);
 
   const frontMatterHtml = yaml !== null && state.showFrontMatter ? buildFrontMatterHtml(yaml) : '';
@@ -2004,6 +2006,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupFormatter();
   setupMarkedMath();
   setupMarkedHeadings();
+  setupMarkedBlocks();
   setupMarkedFootnotes();
   setupMarkedEmoji();
   setupMermaid();

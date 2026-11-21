@@ -133,8 +133,10 @@ export function resolveFolderImages(container) {
 }
 
 // 表（table）が親コンテナやスラブの枠をはみ出さないよう、横スクロール可能な .table-container で包む（DD-MD-020）
+// Markdown が作る表は、Marked のレンダラーが最初から包んで出力する（block-renderers.ts, #287）。
+// この関数は、Markdown に直接書かれた HTML の <table> がある文書のためだけに残す
 export function wrapTables(container) {
-  if (!container) return;
+  if (!container || !runtime.rawHtmlBlocks) return;
   container.querySelectorAll('table').forEach(table => {
     if (table.parentElement && table.parentElement.classList.contains('table-container')) return;
     const wrapper = document.createElement('div');

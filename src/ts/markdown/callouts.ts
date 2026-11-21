@@ -1,6 +1,8 @@
 /* ==========================================================================
    コールアウト（GitHub アラート記法, FR-034）: サニタイズ後の DOM で、最初の行がマーカーだけの引用を注意書きのパネルにする
    ========================================================================== */
+import { runtime } from '../ui/state';
+
 export const ALERT_LABELS: Record<string, string> = {
   note: 'Note',
   tip: 'Tip',
@@ -13,7 +15,10 @@ export const ALERT_LABELS: Record<string, string> = {
 export const ALERT_MARKER_RE = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*(?:\n|$)/i;
 
 // 引用の最初の段落の先頭の文字だけを調べ、要素の大きさは計測しない（NFR-006, DD-MD-021）
+// Markdown が作る引用は、Marked のレンダラーが最初から出力する（block-renderers.ts, #287）。
+// この関数は、Markdown に直接書かれた HTML の <blockquote> がある文書のためだけに残す
 export function decorateAlerts(container: HTMLElement): void {
+  if (!runtime.rawHtmlBlocks) return;
   container.querySelectorAll('blockquote').forEach(quote => {
     const first = quote.firstElementChild;
     const head = first && first.tagName === 'P' ? first.firstChild : null;
