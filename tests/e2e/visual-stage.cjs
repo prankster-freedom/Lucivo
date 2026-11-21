@@ -2000,6 +2000,7 @@ async function testCoverAndTables(browser) {
       await page.locator('#visual-stage-container .exhibition-viewport').first().scrollIntoViewIfNeeded();
       await page.waitForFunction(() => Boolean(document.querySelector('#visual-stage-container .exhibition-viewport svg linearGradient[id*="vis-g-amber-"]')), null, { timeout: 5000 }).catch(() => {});
       return page.evaluate(() => {
+        const card = document.querySelector('#visual-stage-container .exhibition-diagram-card');
         const svg = document.querySelector('#visual-stage-container .exhibition-viewport svg');
         const stop = svg ? svg.querySelector('linearGradient[id*="vis-g-amber-"] stop') : null;
         const nodeRect = svg ? svg.querySelector('.node rect, .node polygon') : null;
@@ -2010,6 +2011,7 @@ async function testCoverAndTables(browser) {
           hasSwatch: Boolean(c.querySelector('.lucivo-color-swatch'))
         }));
         return {
+          cardBgImage: card ? getComputedStyle(card).backgroundImage : null,
           gradStop: stop ? stop.getAttribute('stop-color') : null,
           nodeFill: nodeRect ? getComputedStyle(nodeRect).fill : null,
           swatches,
@@ -2033,6 +2035,8 @@ async function testCoverAndTables(browser) {
       defLight.swatches.length === 3 && defLight.preSwatches === 0 && !unsafeHasSwatch
       && defLight.gradStop !== cobaltLight.gradStop
       && defDark.gradStop !== cobaltDark.gradStop
+      && defLight.cardBgImage !== cobaltLight.cardBgImage
+      && defDark.cardBgImage !== cobaltDark.cardBgImage
       && page.consoleErrors.length === 0,
       JSON.stringify({ defLight, cobaltLight, defDark, cobaltDark, errors: page.consoleErrors }));
   }

@@ -64,6 +64,57 @@ body[data-appearance="dark"] #visual-stage-container:has(.vs-theme-editorial) {
   background-repeat: repeat;
 }
 
+/* カスタムトーン選択時: 図カード背景（.infographic-bg-*）をトーンの配色トークンへ追従させる（#311） */
+.exhibition-wrap.has-custom-tone .infographic-bg-shapes {
+  background-color: var(--vs-slab-bg);
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.42) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.42) 1.5px, transparent 1.5px),
+    linear-gradient(
+      125deg,
+      color-mix(in oklab, var(--vs-c3) 34%, var(--vs-slab-bg)) 0%,
+      color-mix(in oklab, var(--vs-c4) 22%, var(--vs-slab-bg)) 38%,
+      color-mix(in oklab, var(--vs-c2) 18%, var(--vs-slab-bg)) 68%,
+      color-mix(in oklab, var(--vs-c1) 20%, var(--vs-slab-bg)) 100%
+    ) !important;
+  background-size: 48px 48px, 48px 48px, 100% 100% !important;
+}
+body[data-appearance="dark"] .exhibition-wrap.has-custom-tone .infographic-bg-shapes {
+  background-color: var(--vs-slab-bg);
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px),
+    linear-gradient(
+      125deg,
+      color-mix(in oklab, var(--vs-c3) 26%, var(--vs-slab-bg)) 0%,
+      color-mix(in oklab, var(--vs-c4) 18%, var(--vs-slab-bg)) 38%,
+      color-mix(in oklab, var(--vs-c2) 14%, var(--vs-slab-bg)) 68%,
+      color-mix(in oklab, var(--vs-c1) 18%, var(--vs-slab-bg)) 100%
+    ) !important;
+}
+.exhibition-wrap.has-custom-tone .infographic-bg-cards {
+  background: linear-gradient(180deg, var(--vs-card-bg) 0%, var(--vs-slab-bg) 100%) !important;
+}
+.exhibition-wrap.has-custom-tone .infographic-bg-circles {
+  background: var(--vs-card-bg) !important;
+}
+.exhibition-wrap.has-custom-tone .infographic-bg-editorial {
+  background-color: var(--vs-slab-bg) !important;
+  background-image: var(--paper-grain-light) !important;
+  background-repeat: repeat !important;
+}
+body[data-appearance="dark"] .exhibition-wrap.has-custom-tone .infographic-bg-editorial {
+  background-color: var(--vs-slab-bg) !important;
+  background-image: var(--paper-grain-dark) !important;
+}
+#visual-stage-container:has(.exhibition-wrap.has-custom-tone.vs-theme-editorial) {
+  background-color: var(--vs-stage-bg);
+}
+.exhibition-wrap.has-custom-tone .exhibition-diagram-header {
+  background: color-mix(in oklab, var(--vs-card-bg) 88%, transparent);
+  border-bottom-color: var(--vs-card-border);
+}
+
 /* 展示用のカードの中の横スクロールバーは、操作するときだけ目立つようにする。
    文字の判読性（NFR-005）のための横スクロールは残し、ビューアーらしさを抑える */
 .exhibition-viewport {

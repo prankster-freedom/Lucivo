@@ -1140,6 +1140,8 @@ function applyToneToVisualStage(visContainer: Element | null) {
   const wrap = visContainer?.querySelector('.exhibition-wrap') as HTMLElement | null;
   if (!wrap || !containerEl) return;
   wrap.classList.toggle('is-single-page', state.visualLayout === 'single');
+  const hasCustomTone = Boolean(state.tone && state.tone !== 'default');
+  wrap.classList.toggle('has-custom-tone', hasCustomTone);
   const palette = getEffectiveVisualPalette(state.infographicStyle, state.appearance);
   // 各アクセント色（c1〜c4）上の文字色を WCAG コントラスト比に基づいて自動設定する（#258, #260）
   palette.slice(0, 4).forEach((hex, idx) => {
