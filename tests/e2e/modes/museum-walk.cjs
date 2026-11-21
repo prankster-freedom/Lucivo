@@ -314,6 +314,105 @@ async function testMuseumWalk(browser) {
       && mobileLand.coarse && mobileLand.disabled && mobileLand.ariaDisabled === 'true' && /スマホ非対応/.test(mobileLand.text)
       && !desktopState.disabled && !/スマホ非対応/.test(desktopState.text);
     record('TC-MWLK-007', mw7Ok, JSON.stringify({ mobilePort, mobileLand, desktopState }));
+
+    // TC-MWLK-009: 展示への近寄り・離れる・戻り・歩き出し自動リセット・調整パネル・動きを減らす設定（#275）
+    const zoomPage = await openWebPageWithSample(browser, server);
+    await zoomPage.evaluate(() => window.history.replaceState(null, '', `${window.location.pathname}?museum-tune=1`));
+    await start(zoomPage);
+    const zi = await info(zoomPage);
+    const zBody = zi.parts.find(p => p.kind === 'body' && p.z < zi.gates[1].z);
+    const zHall = zi.sections.find(s => s.name === 'hall');
+
+    await walkTo(zoomPage, readingZ(zBody, 512));
+    const beforeZoom = await info(zoomPage);
+    await zoomPage.keyboard.press('+');
+    await zoomPage.keyboard.press('Control++');
+    await zoomPage.keyboard.press('+');
+    await zoomPage.keyboard.press('+');
+    await zoomPage.keyboard.press('+');
+    await walkTo(zoomPage, readingZ(zBody, 512));
+    const afterZoomIn = await info(zoomPage);
+    await shot(zoomPage, 'wall-zoom');
+
+    // Ctrl+ホイール下回しで離れる、上回しで近寄る
+    await zoomPage.evaluate(() => {
+      const root = document.getElementById('museum-walk');
+      root.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, ctrlKey: true, bubbles: true, cancelable: true }));
+      root.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, ctrlKey: true, bubbles: true, cancelable: true }));
+    });
+    const afterWheelOut = await info(zoomPage);
+    await zoomPage.evaluate(() => {
+      const root = document.getElementById('museum-walk');
+      root.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, ctrlKey: true, bubbles: true, cancelable: true }));
+    });
+    const afterWheelIn = await info(zoomPage);
+
+    // 0 キーで既定距離に戻る
+    await zoomPage.keyboard.press('Control+0');
+    const afterResetKey = await info(zoomPage);
+
+    // 再び近寄ってから、歩き出し（ArrowUp）で自動で 0 に戻る
+    await zoomPage.keyboard.press('+');
+    await zoomPage.keyboard.press('+');
+    const beforeWalkReset = await info(zoomPage);
+    await zoomPage.keyboard.press('ArrowUp');
+    const afterWalkReset = await info(zoomPage);
+
+    // 広間で近寄っても中央を保ったまま視野が寄る（立体図の脇を通り抜けない）
+    await walkTo(zoomPage, zHall.from - 200);
+    await zoomPage.keyboard.press('+');
+    await zoomPage.keyboard.press('+');
+    await zoomPage.keyboard.press('+');
+    await walkTo(zoomPage, zHall.from - 200);
+    const hallZoom = await info(zoomPage);
+    await shot(zoomPage, 'hall-zoom');
+
+    // 調整パネル（C）に「近寄り」の項目がある
+    await zoomPage.keyboard.press('c');
+    const panelInfo = await zoomPage.evaluate(() => {
+      const p = document.querySelector('#museum-walk .mw-panel');
+      const headings = Array.from(p ? p.querySelectorAll('h4') : []).map(h => h.textContent.trim());
+      const box = p ? p.querySelector('textarea')?.value || '' : '';
+      return { visible: !!p && !p.hidden, headings, hasZoomKeys: box.includes('"zoomShiftX"') && box.includes('"zoomBob"') };
+    });
+    await zoomPage.context().close();
+
+    // reducedMotion 時は上下揺れ 0 かつ即座に切り替わる
+    const rmZoom = await openWebPageWithSample(browser, server, { reducedMotion: 'reduce' });
+    await start(rmZoom);
+    const rmI = await info(rmZoom);
+    const rmBody = rmI.parts.find(p => p.kind === 'body' && p.z < rmI.gates[1].z);
+    await walkTo(rmZoom, readingZ(rmBody, 512));
+    await rmZoom.keyboard.press('+');
+    await rmZoom.waitForFunction(id => {
+      const st = window.LucivoModes.get(id).info();
+      return st.zoom === st.zoomTarget && st.zoom > 0;
+    }, MODE, { timeout: 5000 }).catch(() => {});
+    const rmAfter = await info(rmZoom);
+    await rmZoom.context().close();
+
+    const mw9Ok = afterZoomIn.zoomTarget === 1 && afterZoomIn.zoom > 0.9
+      && afterZoomIn.x < beforeZoom.x - 50 && afterZoomIn.x >= -390
+      && afterZoomIn.fov > beforeZoom.fov + 100
+      && afterWheelOut.zoomTarget < afterZoomIn.zoomTarget
+      && afterWheelIn.zoomTarget > afterWheelOut.zoomTarget
+      && afterResetKey.zoomTarget === 0
+      && beforeWalkReset.zoomTarget > 0 && afterWalkReset.zoomTarget === 0
+      && Math.abs(hallZoom.x) < 20 && hallZoom.fov > 900
+      && panelInfo.visible && panelInfo.headings.includes('近寄り') && panelInfo.hasZoomKeys
+      && rmAfter.zoom === rmAfter.zoomTarget && rmAfter.zoom > 0 && rmAfter.bob === 0;
+    record('TC-MWLK-009', mw9Ok, JSON.stringify({
+      beforeZoom: { x: beforeZoom.x, fov: beforeZoom.fov },
+      afterZoomIn: { x: afterZoomIn.x, fov: afterZoomIn.fov, zoom: afterZoomIn.zoom, zoomTarget: afterZoomIn.zoomTarget },
+      afterWheelOut: afterWheelOut.zoomTarget,
+      afterWheelIn: afterWheelIn.zoomTarget,
+      afterResetKey: afterResetKey.zoomTarget,
+      beforeWalkReset: beforeWalkReset.zoomTarget,
+      afterWalkReset: afterWalkReset.zoomTarget,
+      hallZoom: { x: hallZoom.x, fov: hallZoom.fov },
+      panelInfo,
+      rmAfter: { zoom: rmAfter.zoom, zoomTarget: rmAfter.zoomTarget, bob: rmAfter.bob }
+    }));
   } finally {
     await server.close();
   }
@@ -321,6 +420,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008'], fn: testMuseumWalk, timeoutMs: 180000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009'], fn: testMuseumWalk, timeoutMs: 180000 }
   ]
 };
