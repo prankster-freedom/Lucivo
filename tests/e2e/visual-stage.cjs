@@ -2037,6 +2037,95 @@ async function testCoverAndTables(browser) {
       JSON.stringify({ defLight, cobaltLight, defDark, cobaltDark, errors: page.consoleErrors }));
   }
 
+  // TC-VTPL-040 Visualモードのページ単位（16:10）とシングルページ表示の切替・URL 連携・印刷保護（#308）
+  {
+    await setMode(page, { style: 'shapes', appearance: 'light' });
+    await setDocument(page, TONE_CHECK_MD);
+    const beforeLayout = await page.evaluate(() => {
+      const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+      return {
+        stateLayout: state.visualLayout,
+        hasSingleClass: wrap?.classList.contains('is-single-page') ?? false,
+        btnLabel: document.getElementById('active-layout-name')?.textContent?.trim() || ''
+      };
+    });
+    await page.click('#btn-layout-menu');
+    await page.click('#layout-menu .tone-menu-item[data-layout-id="single"]');
+    await waitRendered(page);
+    const singleLight = await page.evaluate(() => {
+      const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+      const slab = wrap?.querySelector('.exhibition-slab');
+      const wcs = wrap ? getComputedStyle(wrap) : null;
+      const scs = slab ? getComputedStyle(slab) : null;
+      return {
+        stateLayout: state.visualLayout,
+        hasSingleClass: wrap?.classList.contains('is-single-page') ?? false,
+        btnLabel: document.getElementById('active-layout-name')?.textContent?.trim() || '',
+        wrapGap: wcs ? wcs.rowGap || wcs.gap : null,
+        wrapRadius: wcs ? wcs.borderTopLeftRadius : null,
+        slabRadius: scs ? scs.borderTopLeftRadius : null,
+        localStorageHasLayout: Object.keys(localStorage).some(k => /layout/i.test(k))
+      };
+    });
+    await page.locator('#visual-stage-container .exhibition-wrap').screenshot({ path: path.join(SHOT_DIR, 'vtpl-single-page-light.png') });
+    await setMode(page, { style: 'shapes', appearance: 'dark' });
+    await page.locator('#visual-stage-container .exhibition-wrap').screenshot({ path: path.join(SHOT_DIR, 'vtpl-single-page-dark.png') });
+    // 印刷メディアではページ単位を維持（wrap の border/overflow がリセットされる）
+    await page.emulateMedia({ media: 'print' });
+    const printSingle = await page.evaluate(() => {
+      const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
+      const wcs = wrap ? getComputedStyle(wrap) : null;
+      return { overflow: wcs ? wcs.overflow : null, radius: wcs ? wcs.borderTopLeftRadius : null };
+    });
+    await page.emulateMedia({ media: 'screen' });
+    // 既定（page）へ戻す
+    await page.click('#btn-layout-menu');
+    await page.click('#layout-menu .tone-menu-item[data-layout-id="page"]');
+    await setMode(page, { style: 'shapes', appearance: 'light' });
+    // URL パラメータ ?layout=single の復元確認（Web サーバー経由）
+    const layoutServer = await startWebServer();
+    let urlLayoutCheck = null;
+    try {
+      const lCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      const lPage = await lCtx.newPage();
+      await lPage.goto(`${layoutServer.url}?layout=single`);
+      await lPage.waitForFunction(() => typeof renderApp === 'function' && state.visualLayout === 'single', null, { timeout: 10000 });
+      urlLayoutCheck = await lPage.evaluate(() => ({
+        isVisualMode: state.isVisualMode,
+        visualLayout: state.visualLayout,
+        search: window.location.search
+      }));
+      await lCtx.close();
+    } finally {
+      await layoutServer.close();
+    }
+    record('TC-VTPL-040',
+      beforeLayout.stateLayout === 'page' && !beforeLayout.hasSingleClass
+      && singleLight.stateLayout === 'single' && singleLight.hasSingleClass && singleLight.btnLabel === 'シングルページ'
+      && (singleLight.wrapGap === '0px' || singleLight.wrapGap === 'normal')
+      && singleLight.slabRadius === '0px' && !singleLight.localStorageHasLayout
+      && printSingle.overflow === 'visible' && printSingle.radius === '0px'
+      && urlLayoutCheck && urlLayoutCheck.isVisualMode && urlLayoutCheck.visualLayout === 'single'
+      && page.consoleErrors.length === 0,
+      JSON.stringify({ beforeLayout, singleLight, printSingle, urlLayoutCheck, errors: page.consoleErrors }));
+  }
+
+  // TC-KEY-005 一元化キーマップ（#288）: ヘルプ自動生成・IME変換中ガード・Esc優先順位
+  {
+    const keymapCheck = await page.evaluate(() => {
+      const list = document.getElementById('shortcut-normal-list');
+      const items = list ? list.children.length : 0;
+      const beforeMode = state.isVisualMode;
+      // IME 変換中（isComposing: true）の 'm' は無視される
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', isComposing: true, bubbles: true }));
+      const afterCompose = state.isVisualMode;
+      return { items, modeUnchangedOnCompose: beforeMode === afterCompose };
+    });
+    record('TC-KEY-005',
+      keymapCheck.items >= 6 && keymapCheck.modeUnchangedOnCompose && page.consoleErrors.length === 0,
+      JSON.stringify({ keymapCheck, errors: page.consoleErrors }));
+  }
+
   // TC-VTPL-036 スタイル別見出し書体（声色）の切替と配布先出し分け（#218, DTP-004, DD-VTPL-035）
   // 1) スタンドアロン版（dist/）: 書体ファイルを含めず、スタイル切替でも style-fonts 読み込みやエラーが起きない
   const standaloneNoFontDir = !fs.existsSync(path.join(APP_DIR, 'vendor', 'style-fonts'));

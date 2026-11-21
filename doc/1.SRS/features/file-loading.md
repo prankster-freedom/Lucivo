@@ -191,6 +191,7 @@ tags: ["Lucivo", "SRS", "file-loading"]
   - `style`: `shapes`（既定）/ `cards` / `circles` / `editorial`（`style` が指定されて `mode` が省略された場合は `visual` として開く）
   - `tone`: `default`（既定）/ `cobalt-workshop` / `morning-window` / `matcha-wagashi` / `nordic-frost` / `amber-sunset` / `midnight-library` / `cyber-prism`
   - `view`: `split` / `canvas` / `code`（`editor` も同義として受け付ける。省略時は画面幅に応じた既定値）
+  - `layout`: `page`（既定・16:10 ページ単位）/ `single`（ページ区切りなしのシングルページ表示。`layout=single` が指定されて `mode` が省略された場合は `visual` として開く、#308）
 - 不正な値や存在しない識別名が指定されたパラメータは無視し、既定値（または他の有効な状態）で起動を継続すること。
 - 利用者が上記の表示状態を切り替えたときは、履歴を増やさずにアドレスバーのクエリ（`?`）を更新すること（`history.replaceState`）。既定値と一致するパラメータは省略して URL を簡潔に保ち（`view` は画面幅によらず `split` を既定値として比較し、`canvas`・`code` は常に URL に残す、#307）、発表モード中の一時的な状態切り替えでは更新しないこと。`file://` 環境等で書き換えが拒否された場合は無視して動作を継続すること。
 - **背景・根拠**: ブックマークやリンク共有で「どの文書を、どの見た目で開くか」を 1 つの URL で再現できるようにする。図表の個別倍率（Fit / 1:1）や試験提供中の発表モード（`stage: "web"`）は対象外とする。

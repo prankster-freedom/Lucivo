@@ -302,5 +302,12 @@
     font-size: 0.93rem !important;
     line-height: 1.5 !important;
   }
+  /* 画面でシングルページ表示にしていても、PDF 印刷時は従来どおりページ単位で出力する（#308） */
+  .exhibition-wrap.is-single-page {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
 }
 

@@ -912,3 +912,74 @@ body[data-appearance="dark"] :is(html.has-ambient-effects, .exhibition-wrap.has-
   }
 }
 
+/* ==========================================================================
+   Visualモード: シングルページ表示（連続誌面レイアウト。FR-064, #308）
+   ステージ発表（html.is-stage-show）と印刷（@media print）は従来どおりページ単位を保つ。
+   ========================================================================== */
+@media screen {
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page {
+    gap: 0;
+    background: var(--vs-card-bg, #ffffff);
+    border: 1px solid var(--vs-card-border, rgba(15, 23, 42, 0.1));
+    border-top: 4px solid var(--vs-c1, #e29578);
+    border-radius: 20px;
+    box-shadow: 0 18px 48px -22px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+  }
+  html:not(.is-stage-show) body[data-appearance="dark"] .exhibition-wrap.is-single-page {
+    box-shadow: 0 22px 54px -20px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-hero,
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    min-height: 0;
+    margin: 0;
+    padding: 2.6rem 3.1rem;
+  }
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-hero {
+    padding-top: 3rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--vs-c1, #e29578) 22%, var(--vs-card-border, rgba(15, 23, 42, 0.12)));
+  }
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab {
+    position: relative;
+    border-top: 1px solid color-mix(in oklab, var(--vs-card-border, rgba(15, 23, 42, 0.12)) 78%, transparent);
+  }
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab:first-of-type {
+    border-top: none;
+  }
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 3.1rem;
+    width: 72px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--vs-c1, #e29578), transparent);
+    pointer-events: none;
+  }
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab:first-of-type::after {
+    display: none;
+  }
+  html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab > .vs-watermark-num {
+    top: 1.15rem;
+    right: 2.4rem;
+    opacity: 0.048;
+  }
+  @media (max-width: 767px) {
+    html:not(.is-stage-show) .exhibition-wrap.is-single-page {
+      border-radius: 14px;
+    }
+    html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-hero,
+    html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab {
+      padding: 1.75rem 1.25rem;
+    }
+    html:not(.is-stage-show) .exhibition-wrap.is-single-page > .exhibition-slab::after {
+      left: 1.25rem;
+    }
+  }
+}
+

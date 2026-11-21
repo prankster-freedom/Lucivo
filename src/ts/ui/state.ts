@@ -468,6 +468,11 @@ export const EMPTY_GUIDE_HTML = `
   <p class="empty-guide-update">Lucivo <span class="update-check-version"></span> <button type="button" class="btn-check-update" title="最新リリースを確認（インターネットに接続します）">更新を確認</button> <span class="update-check-result" role="status" aria-live="polite"></span></p>
 </div>`;
 
+export const VISUAL_LAYOUTS = [
+  { id: 'page', label: 'ページ単位', shortLabel: 'ページ単位', desc: '16:10 相当の章パネルで区切って表示' },
+  { id: 'single', label: 'シングルページ', shortLabel: 'シングルページ', desc: 'ページ区切りなしの連続した 1 枚の誌面で表示' }
+] as const;
+
 export const state = {
   appearance: 'light',
   palette: 'cobalt',
@@ -475,6 +480,7 @@ export const state = {
   viewMode: 'split',
   isVisualMode: false,
   infographicStyle: 'shapes',
+  visualLayout: 'page' as 'page' | 'single',
   showFrontMatter: false,
   signalLightsEnabled: true,
   ambientEffectsEnabled: false,

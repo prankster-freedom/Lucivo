@@ -7,6 +7,7 @@ import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode
 import { showToast, updateStatus } from './ui/toast';
 import { setupUpdateCheck, applyUpdateCheckState, checkForUpdate, isWebVersion } from './ui/update-check';
 import { parseDisplayStateParams, syncBrowserUrl } from './ui/url-loader';
+import { registerEscapeHandler, registerShortcutAction, setupGlobalKeymap } from './ui/keymap';
 import { treeTokenFor } from './markdown/tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl, clearMathPlotCache } from './math/plot';
 import { ALERT_LABELS, decorateAlerts } from './markdown/callouts';
@@ -20,6 +21,7 @@ import {
   setModalOpen,
   VISUAL_STYLE_KEYS,
   COLOR_TONES,
+  VISUAL_LAYOUTS,
   getToneEntry,
   getEffectiveVisualPalette,
   EMPTY_GUIDE_HTML,
@@ -1127,13 +1129,17 @@ function syncStageModeUi(isVisual) {
   document.getElementById('btn-mode-fast')?.classList.toggle('is-active', !isVisual);
   document.getElementById('btn-visual-mode')?.classList.toggle('is-active', isVisual);
   document.getElementById('style-bar')?.classList.toggle('is-hidden', !isVisual);
-  if (!isVisual) setToneMenuOpen(false);
+  if (!isVisual) {
+    setToneMenuOpen(false);
+    setLayoutMenuOpen(false);
+  }
 }
 
 function applyToneToVisualStage(visContainer: Element | null) {
   const containerEl = visContainer as HTMLElement | null;
   const wrap = visContainer?.querySelector('.exhibition-wrap') as HTMLElement | null;
   if (!wrap || !containerEl) return;
+  wrap.classList.toggle('is-single-page', state.visualLayout === 'single');
   const palette = getEffectiveVisualPalette(state.infographicStyle, state.appearance);
   // 各アクセント色（c1〜c4）上の文字色を WCAG コントラスト比に基づいて自動設定する（#258, #260）
   palette.slice(0, 4).forEach((hex, idx) => {
@@ -1208,6 +1214,45 @@ function selectTone(toneId: string) {
   showToast(`トーン: ${getToneEntry(toneId).label}`);
 }
 
+function syncLayoutUi() {
+  const entry = VISUAL_LAYOUTS.find(l => l.id === state.visualLayout) || VISUAL_LAYOUTS[0];
+  const labelEl = document.getElementById('active-layout-name');
+  if (labelEl) labelEl.textContent = entry.shortLabel;
+  document.querySelectorAll('#layout-menu .tone-menu-item').forEach(btn => {
+    const active = btn.getAttribute('data-layout-id') === state.visualLayout;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+}
+
+function setLayoutMenuOpen(open: boolean) {
+  const btn = document.getElementById('btn-layout-menu');
+  const menu = document.getElementById('layout-menu');
+  if (!btn || !menu) return;
+  if (open) {
+    setToneMenuOpen(false);
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = `${Math.round(rect.bottom + 6)}px`;
+    menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
+  }
+  menu.classList.toggle('hidden', !open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function selectVisualLayout(layoutId: string) {
+  const next = layoutId === 'single' ? 'single' : 'page';
+  state.visualLayout = next;
+  setLayoutMenuOpen(false);
+  syncLayoutUi();
+  applyToneToVisualStage(document.getElementById('visual-stage-container'));
+  if (state.isVisualMode) {
+    updateAllSlabSplits(document.getElementById('visual-stage-container'));
+  }
+  syncUrlFromState();
+  const entry = VISUAL_LAYOUTS.find(l => l.id === next) || VISUAL_LAYOUTS[0];
+  showToast(`誌面レイアウト: ${entry.label}`);
+}
+
 function setStageMode(isVisual) {
   if (state.isVisualMode === isVisual) return;
   state.isVisualMode = isVisual;
@@ -1244,12 +1289,6 @@ function selectInfographicStyle(style) {
 /* ==========================================================================
    キーボードショートカットとナビゲーション（FR-025, DD-KEY-001〜004）
    ========================================================================== */
-function isEditableElement(el) {
-  if (!el) return false;
-  const tag = el.tagName;
-  return tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT' || el.isContentEditable;
-}
-
 function closeShortcutModal() {
   setModalOpen('shortcut-modal', false);
 }
@@ -1537,50 +1576,36 @@ function scrollSection(direction) {
 function setupKeyboardShortcuts() {
   document.getElementById('shortcut-close-btn')?.addEventListener('click', closeShortcutModal);
 
-  document.addEventListener('keydown', event => {
-    if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
-    // ステージ発表中（is-stage-show）は stage.js のハンドラが処理するためスキップ
-    if (document.documentElement.classList.contains('is-stage-show')) return;
-
-    // ショートカットヘルプモーダルまたはズームモーダルが開いている場合の Escape 処理
-    if (event.key === 'Escape') {
-      if (isModalOpen('shortcut-modal')) {
-        closeShortcutModal();
-        return;
-      }
-      if (isModalOpen('zoom-modal')) {
-        document.getElementById('zoom-close-btn')?.click();
-        return;
-      }
+  registerEscapeHandler('modals', 70, () => {
+    if (isModalOpen('shortcut-modal')) {
+      closeShortcutModal();
+      return true;
     }
-
-    // エディタや入力欄にフォーカスがあるときは文字入力を優先しショートカットを起動しない（DD-KEY-001）
-    if (isEditableElement(document.activeElement)) return;
-
-    // ] / [ はキーボードの左右の並び（右が次、左が前）で章を移る（FR-025, DD-KEY-002）
-    if (event.key === 'j' || event.key === 'J' || event.key === ']') {
-      event.preventDefault();
-      scrollSection(1);
-    } else if (event.key === 'k' || event.key === 'K' || event.key === '[') {
-      event.preventDefault();
-      scrollSection(-1);
-    } else if (event.key === 'm' || event.key === 'M') {
-      event.preventDefault();
-      setStageMode(!state.isVisualMode);
-    } else if (event.key >= '1' && event.key <= '4') {
-      const targetStyle = VISUAL_STYLE_KEYS[parseInt(event.key, 10) - 1];
-      if (targetStyle) {
-        event.preventDefault();
-        selectInfographicStyle(targetStyle);
-      }
-    } else if (event.key === 'p' || event.key === 'P') {
-      event.preventDefault();
-      document.getElementById('btn-stage-show')?.click();
-    } else if (event.key === '?') {
-      event.preventDefault();
-      toggleShortcutModal();
+    if (isModalOpen('zoom-modal')) {
+      document.getElementById('zoom-close-btn')?.click();
+      return true;
     }
+    if (isModalOpen('external-conflict-modal')) {
+      document.getElementById('btn-close-external-conflict')?.click();
+      return true;
+    }
+    return false;
   });
+
+  // ] / [ はキーボードの左右の並び（右が次、左が前）で章を移る（FR-025, DD-KEY-002）
+  ['j', 'J', ']'].forEach(k => registerShortcutAction(k, () => scrollSection(1)));
+  ['k', 'K', '['].forEach(k => registerShortcutAction(k, () => scrollSection(-1)));
+  ['m', 'M'].forEach(k => registerShortcutAction(k, () => setStageMode(!state.isVisualMode)));
+  ['1', '2', '3', '4'].forEach((k, idx) => {
+    registerShortcutAction(k, () => {
+      const targetStyle = VISUAL_STYLE_KEYS[idx];
+      if (targetStyle) selectInfographicStyle(targetStyle);
+    });
+  });
+  ['p', 'P'].forEach(k => registerShortcutAction(k, () => document.getElementById('btn-stage-show')?.click()));
+  registerShortcutAction('?', () => toggleShortcutModal());
+
+  setupGlobalKeymap();
 }
 
 /* ==========================================================================
@@ -1797,6 +1822,7 @@ function setupEventListeners() {
     toneBtn.onclick = e => {
       e.stopPropagation();
       const willOpen = toneMenu.classList.contains('hidden');
+      if (willOpen) setLayoutMenuOpen(false);
       setToneMenuOpen(willOpen);
     };
     document.addEventListener('click', e => {
@@ -1804,14 +1830,46 @@ function setupEventListeners() {
         setToneMenuOpen(false);
       }
     });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !toneMenu.classList.contains('hidden')) {
-        setToneMenuOpen(false);
-        toneBtn.focus();
-      }
+    registerEscapeHandler('tone-menu', 90, () => {
+      if (toneMenu.classList.contains('hidden')) return false;
+      setToneMenuOpen(false);
+      toneBtn.focus();
+      return true;
     });
   }
   syncToneUi();
+
+  const layoutBtn = document.getElementById('btn-layout-menu');
+  const layoutMenu = document.getElementById('layout-menu');
+  if (layoutMenu) {
+    layoutMenu.innerHTML = VISUAL_LAYOUTS.map(l =>
+      `<button type="button" role="menuitemradio" aria-checked="false" data-layout-id="${l.id}" class="tone-menu-item">`
+      + `<span class="tone-menu-label">${l.label}</span>`
+      + `</button>`
+    ).join('');
+    layoutMenu.querySelectorAll('.tone-menu-item').forEach((item: any) => {
+      item.onclick = () => selectVisualLayout(item.getAttribute('data-layout-id'));
+    });
+  }
+  if (layoutBtn && layoutMenu) {
+    layoutBtn.onclick = e => {
+      e.stopPropagation();
+      const willOpen = layoutMenu.classList.contains('hidden');
+      setLayoutMenuOpen(willOpen);
+    };
+    document.addEventListener('click', e => {
+      if (!layoutMenu.classList.contains('hidden') && !layoutMenu.contains(e.target as Node) && !layoutBtn.contains(e.target as Node)) {
+        setLayoutMenuOpen(false);
+      }
+    });
+    registerEscapeHandler('layout-menu', 89, () => {
+      if (layoutMenu.classList.contains('hidden')) return false;
+      setLayoutMenuOpen(false);
+      layoutBtn.focus();
+      return true;
+    });
+  }
+  syncLayoutUi();
 
   const btnTheme = document.getElementById('btn-theme-toggle');
   const iconSun = document.getElementById('icon-sun');
@@ -1910,6 +1968,10 @@ function applyInitialDisplayStateFromUrl() {
   }
   if (params.tone) {
     state.tone = params.tone;
+  }
+  if (params.visualLayout) {
+    state.visualLayout = params.visualLayout;
+    syncLayoutUi();
   }
   if (params.appearance || params.infographicStyle || params.tone) {
     syncToneUi();
