@@ -66,9 +66,19 @@ function isPortrait(): boolean {
   return window.innerWidth < window.innerHeight * 0.8;
 }
 
+function syncPerspective(): void {
+  if (!S.refs || !S.cam) return;
+  const nextP = perspectiveFor(S.cam.fov, window.innerWidth);
+  if (Math.abs(nextP - S.P) > 0.5) {
+    S.P = nextP;
+    S.refs.view.style.perspective = `${S.P}px`;
+  }
+}
+
 function fit(): void {
   if (!S.refs) return;
-  S.P = perspectiveFor(S.camera.fov, window.innerWidth);
+  const fov = S.cam ? S.cam.fov : S.camera.fov;
+  S.P = perspectiveFor(fov, window.innerWidth);
   S.refs.view.style.perspective = `${S.P}px`;
 }
 
@@ -78,6 +88,7 @@ function frame(now: number): void {
   S.last = now;
   stepWalk(S.cam, S.input.held, dt, S.camera, S.plan.start, S.plan.end, now);
   direct(S.cam, dt, S.plan, S.camera, S.gaze, isPortrait());
+  syncPerspective();
   updateWorld(S.refs, S.plan, S.cam, S.P, S.reduced);
   S.raf = requestAnimationFrame(frame);
 }
@@ -111,6 +122,11 @@ function backToEntrance(): void {
   S.cam.z = S.plan.start;
   S.cam.vel = 0;
   S.cam.userYaw = 0;
+  S.cam.zoom = 0;
+  S.cam.zoomTarget = 0;
+  S.cam.zoomPhase = 0;
+  S.cam.fov = S.camera.fov;
+  syncPerspective();
 }
 
 // 歩く以外のキー
@@ -133,7 +149,7 @@ function command(key: string): boolean {
 function buildChrome(root: HTMLElement): void {
   const hud = document.createElement('div');
   hud.className = 'mw-hud';
-  hud.innerHTML = '<span class="mw-hint-wide">スクロール・↑ ↓・スワイプで歩く ／ ドラッグで見回す ／ G 視線の自動 ／ T 明暗 ／ R 入口へ ／ Esc 終了</span>'
+  hud.innerHTML = '<span class="mw-hint-wide">スクロール・↑ ↓・スワイプで歩く ／ Ctrl+ホイール・+ - 近寄る ／ ドラッグで見回す ／ G 視線の自動 ／ T 明暗 ／ R 入口へ ／ Esc 終了</span>'
     + '<span class="mw-hint-narrow">スワイプで歩く ・ ドラッグで見回す</span>';
   root.appendChild(hud);
   const close = document.createElement('button');
@@ -287,7 +303,7 @@ async function enter(host: ModeHost): Promise<boolean> {
   buildChrome(root);
   S.panel = /museum-tune/.test(location.search + location.hash) ? buildPanel(root) : null;
 
-  S.cam = { z: S.plan.start, x: S.camera.x, yaw: 0, pitch: 0, userYaw: 0, vel: 0, bob: 0 };
+  S.cam = { z: S.plan.start, x: S.camera.x, yaw: 0, pitch: 0, userYaw: 0, vel: 0, bob: 0, zoom: 0, zoomTarget: 0, zoomPhase: 0, fov: S.camera.fov };
   S.input = attachInput(root, { cam: S.cam, camera: () => S.camera, command });
   window.addEventListener('resize', fit);
   fit();
@@ -336,6 +352,10 @@ function info() {
     z: S.cam ? S.cam.z : 0,
     yaw: S.cam ? S.cam.yaw : 0,
     x: S.cam ? S.cam.x : 0,
+    zoom: S.cam ? S.cam.zoom : 0,
+    zoomTarget: S.cam ? S.cam.zoomTarget : 0,
+    fov: S.cam ? S.cam.fov : S.camera.fov,
+    bob: S.cam ? S.cam.bob : 0,
     start: plan ? plan.start : 0,
     end: plan ? plan.end : 0,
     appearance: S.light ? 'light' : 'dark',
@@ -354,6 +374,7 @@ function walkTo(z: number): void {
   S.cam.z = clamp(z, S.plan.end + 520, S.plan.start);
   S.cam.vel = 0;
   for (let i = 0; i < 30; i++) direct(S.cam, 0.2, S.plan, S.camera, S.gaze, isPortrait());
+  syncPerspective();
   updateWorld(S.refs, S.plan, S.cam, S.P, S.reduced);
 }
 

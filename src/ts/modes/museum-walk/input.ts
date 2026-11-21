@@ -25,15 +25,27 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
   const { cam } = h;
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.altKey) return;
     if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) {
       if (e.key !== 'Escape') return;
     }
     const k = e.key;
+    // 近寄り・離れる・戻る（#275）。Ctrl / Meta 併用時はブラウザ標準ズームを上書きしてアプリで受ける
+    if (k === '+' || k === '=' || k === '-' || k === '_' || k === '0') {
+      e.preventDefault();
+      e.stopPropagation();
+      const C = h.camera();
+      if (k === '+' || k === '=') cam.zoomTarget = clamp(cam.zoomTarget + C.zoomKeyStep, C.zoomMin, C.zoomMax);
+      else if (k === '-' || k === '_') cam.zoomTarget = clamp(cam.zoomTarget - C.zoomKeyStep, C.zoomMin, C.zoomMax);
+      else cam.zoomTarget = 0;
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) return;
     const walk = FWD.has(k) || BACK.has(k);
     if (walk) {
       e.preventDefault();
       e.stopPropagation();
+      cam.zoomTarget = 0;
       if (!e.repeat) held.set(k, performance.now());
       return;
     }
@@ -59,7 +71,14 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
 
   const onWheel = (e: WheelEvent) => {
     e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+      const C = h.camera();
+      const dir = e.deltaY < 0 ? 1 : e.deltaY > 0 ? -1 : 0;
+      if (dir !== 0) cam.zoomTarget = clamp(cam.zoomTarget + dir * C.zoomWheelStep, C.zoomMin, C.zoomMax);
+      return;
+    }
     const dy = clamp(e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY, -300, 300);
+    if (dy !== 0) cam.zoomTarget = 0;
     cam.vel = clamp(cam.vel + dy * 3.2, -1500, 1500);
   };
 
@@ -81,6 +100,7 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
     cam.userYaw = clamp(cam.userYaw + dx * 0.12, -75, 60);
     if (drag.touch && Math.abs(dy) > Math.abs(dx)) {
       // 上へスワイプすると前へ進む（文書を読み進めるスクロールと同じ向き）
+      cam.zoomTarget = 0;
       const step = -dy * 2.4;
       cam.z -= step;
       cam.vel = lerp(cam.vel, clamp(step / dt, -1500, 1500), 0.5);
@@ -133,6 +153,7 @@ export function stepWalk(cam: Cam, held: Map<string, number>, dt: number, C: Cam
     if (Math.abs(cam.vel) < 2) cam.vel = 0;
   }
   const min = end + 520;
+  if (Math.abs(cam.vel) > 20) cam.zoomTarget = 0;
   cam.z = clamp(cam.z - cam.vel * dt, min, start);
   if (cam.z === start && cam.vel < 0) cam.vel = 0;
   if (cam.z === min && cam.vel > 0) cam.vel = 0;

@@ -39,11 +39,21 @@ export const CAMERA_SPEC: SpecRow[] = [
   ['alcoveYaw', '止まったときの向き（度）', 68, 30, 85, 1],
   ['縦長の画面'],
   ['portraitYaw', '止まったときの向きの下限（度）', 52, 0, 85, 1],
-  ['portraitX', '立つ位置の下限', 240, 0, 380, 10]
+  ['portraitX', '立つ位置の下限', 240, 0, 380, 10],
+  ['近寄り'],
+  ['zoomMin', '離れる限度（負で後ろへ引く）', -0.5, -1, 0, 0.05],
+  ['zoomMax', '近寄る限度', 1, 0.2, 2, 0.05],
+  ['zoomKeyStep', 'キー 1 回の近寄り幅', 0.25, 0.05, 0.5, 0.05],
+  ['zoomWheelStep', 'ホイール 1 目盛りの近寄り幅', 0.15, 0.05, 0.5, 0.05],
+  ['zoomShiftX', '近寄りで壁へ寄せる横の距離', 220, 0, 400, 10],
+  ['zoomFov', '近寄りで狭める視野（perspective 増加量）', 220, 0, 500, 10],
+  ['zoomEase', '近寄りの速さ（大きいほど速い）', 5.5, 1, 15, 0.5],
+  ['zoomBob', '近寄り・戻りの上下の揺れ（px）', 10, 0, 28, 1],
+  ['zoomBobSpeed', '上下の揺れの速さ', 10, 2, 24, 1]
 ];
 
 // 動きを減らす設定のときに上書きする値（DD-MWLK-009）
-export const REDUCED_MOTION: Record<string, number> = { friction: 6, stride: 420, bob: 0 };
+export const REDUCED_MOTION: Record<string, number> = { friction: 6, stride: 420, bob: 0, zoomBob: 0, zoomEase: 60 };
 
 export type CameraValues = Record<string, number>;
 
@@ -63,7 +73,19 @@ export function loadCamera(target: CameraValues, values: Record<string, unknown>
 }
 
 // カメラの状態。z は進む向き（-Z）の位置、vel は前へ進む速さ（px/s）、yaw は左向きが正（度）、userYaw はドラッグで見回した分
-export interface Cam { z: number; x: number; yaw: number; pitch: number; userYaw: number; vel: number; bob: number; }
+export interface Cam {
+  z: number;
+  x: number;
+  yaw: number;
+  pitch: number;
+  userYaw: number;
+  vel: number;
+  bob: number;
+  zoom: number;
+  zoomTarget: number;
+  zoomPhase: number;
+  fov: number;
+}
 
 // 場所ごとの指示。w は効き具合（0〜1）。yaw・stopYaw・x・pitch は、その場所での向き・止まったときの向き・立つ位置・見上げる角度
 interface Cue { w: number; yaw?: number; stopYaw?: number; x?: number; pitch?: number; }
@@ -112,11 +134,33 @@ export function direct(cam: Cam, dt: number, plan: Plan, C: CameraValues, gaze: 
   for (const c of list) {
     if (c.w > 0 && c.yaw != null) yaw = lerp(yaw, c.yaw, c.w);
   }
+  const prevZoom = cam.zoom;
+  const instantZoom = C.zoomEase >= 50;
+  const zk = instantZoom ? 1 : 1 - Math.exp(-dt * C.zoomEase);
+  cam.zoom += (cam.zoomTarget - cam.zoom) * zk;
+  if (Math.abs(cam.zoomTarget - cam.zoom) < 0.001) cam.zoom = cam.zoomTarget;
+
+  const targetYaw = clamp(yaw + cam.userYaw, -75, 88);
+  // 近寄り: 壁を見ているときは向いている壁側へ横位置を寄せ、正面の門・広間では中央を保ったまま視野を狭める（#275）
+  const wallDir = Math.sin((targetYaw * Math.PI) / 180);
+  x -= cam.zoom * C.zoomShiftX * wallDir;
+
   const k = 1 - Math.exp(-dt * C.ease);
-  // 壁にめり込まない範囲
+  const kx = instantZoom && Math.abs(cam.zoom - prevZoom) > 0.001 ? 1 : k;
+  // 壁・柱を通り抜けない範囲（場所ごとの上限）
   const room = sectionAt(plan, cam.z).half - 130;
-  cam.yaw += (clamp(yaw + cam.userYaw, -75, 88) - cam.yaw) * k;
-  cam.x += (clamp(x, -room, room) - cam.x) * k;
+  cam.yaw += (targetYaw - cam.yaw) * k;
+  cam.x += (clamp(x, -room, room) - cam.x) * kx;
   cam.pitch += (pitch - cam.pitch) * k;
-  cam.bob = C.bob * Math.sin((plan.start - cam.z) / 95) * Math.min(1, Math.abs(cam.vel) / 200);
+  cam.fov = clamp(C.fov + cam.zoom * C.zoomFov, 360, 2200);
+
+  const walkBob = C.bob * Math.sin((plan.start - cam.z) / 95) * Math.min(1, Math.abs(cam.vel) / 200);
+  const zoomSpeed = Math.abs(cam.zoom - prevZoom) / Math.max(dt, 0.001);
+  if (Math.abs(cam.zoomTarget - cam.zoom) > 0.002) {
+    cam.zoomPhase += dt * C.zoomBobSpeed;
+  } else {
+    cam.zoomPhase = 0;
+  }
+  const zoomBob = C.zoomBob * Math.sin(cam.zoomPhase) * clamp(zoomSpeed * 1.4, 0, 1);
+  cam.bob = walkBob + zoomBob;
 }
