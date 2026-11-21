@@ -77,6 +77,7 @@ import {
 } from './markdown/local-images';
 import { setupMarkedFootnotes, resetFootnotes, applyFootnotes } from './markdown/footnotes';
 import { setupMarkedEmoji, renderEmoji } from './markdown/emoji';
+import { parseDocumentModel, type DocumentModel } from './markdown/document-model';
 import {
   closeFileMenu,
   setupFormatter,
@@ -173,52 +174,46 @@ interface VisRenderCache {
 }
 
 let prevVisCache: VisRenderCache | null = null;
+let prevDocModel: DocumentModel | null = null;
 let visPendingGeneration = 0;
 let lastRenderMs = 30;
 
 function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
   resetFootnotes();
-  const parsed: any = marked.lexer(body);
+  const model = parseDocumentModel(rawMarkdown, body, {
+    lex: src => marked.lexer(src),
+    prevModel: prevDocModel
+  });
+  prevDocModel = model;
+
   const mermaidBlocks: any[] = [];
   runtime.lastMermaidSources = [];
-  const tokensToKeep: any[] = [];
-  let srcLine = countLinesBefore(rawMarkdown, rawMarkdown.length - body.length);
-  let hasFootnotes = false;
-
-  parsed.forEach((token: any) => {
-    if (token.type === 'footnoteDef') hasFootnotes = true;
-    if (token.type === 'heading') token.srcLine = srcLine;
-    srcLine += countLinesBefore(token.raw, token.raw.length);
-    if (token.type === 'code' && (token.lang || '').trim().toLowerCase() === 'mermaid') {
-      const index = mermaidBlocks.length;
-      const code = token.text.trim();
-      const curve = getBlockCurve(index, code);
-      const hash = fnv1aHash(code + state.appearance + state.palette + state.tone + (curve || '') + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std'));
-      mermaidBlocks.push({ index, code, hash, curve });
-      runtime.lastMermaidSources[index] = code;
-      tokensToKeep.push({
-        type: 'lucivoDiagram',
-        raw: token.raw,
-        index,
+  const tokensToKeep: any[] = model.tokens.map(token => {
+    if (token.type === 'lucivoDiagram' && token.__mermaid) {
+      const idx = token.index;
+      const code = token.code;
+      const curve = getBlockCurve(idx, code);
+      // 表示状態（外観・パレット・トーン・スタイル）は文書モデルから分離し、描画側でハッシュを組み合わせる（#291）
+      const hash = fnv1aHash(
+        code + state.appearance + state.palette + state.tone + (curve || '') + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std')
+      );
+      mermaidBlocks.push({ index: idx, code, hash, curve });
+      runtime.lastMermaidSources[idx] = code;
+      return {
+        ...token,
         curve,
-        __mermaid: { index, hash, curve }
-      });
-    } else {
-      const treeTok = treeTokenFor(token);
-      if (treeTok) {
-        (treeTok as any).__isTree = true;
-        tokensToKeep.push(treeTok);
-      } else {
-        tokensToKeep.push(token);
-      }
+        __mermaid: { index: idx, hash, curve }
+      };
     }
+    return token;
   });
+
   // 脚注の番号と一覧を決める。Visualモードは章ごと、高速モードは文書の末尾に置く（FR-057）
   return {
     mermaidBlocks,
     tokensToKeep: applyFootnotes(tokensToKeep, state.isVisualMode),
-    links: parsed.links || {},
-    hasFootnotes
+    links: model.links,
+    hasFootnotes: model.hasFootnotes
   };
 }
 
