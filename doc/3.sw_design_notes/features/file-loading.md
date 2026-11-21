@@ -326,3 +326,13 @@ sequenceDiagram
 - 単一ファイルは `file-menu.ts` の「ファイルを開く…」で `window.showOpenFilePicker()` を優先使用し（失敗・非対応時は `runtime.preferFileInput = true` にして `<input type="file">` へフォールバック）、ドロップ時は `handleDroppedDataTransfer()` で取得済みの `FileSystemFileHandle` を `loadMarkdownFile()` へ渡す。フォルダ内ファイルは `makeHandleFolder()` に `hasLiveHandle: true` を付け、`openFolderFile()` で `watchFile()` を登録する。
 - 変化検知時、エディタが未編集（`editor.value === runtime.lastLoadedMarkdown`）なら `preview-scroll.scrollTop` を退避して `decodeMarkdown()` → `prepareLoadedText()` → `applyLoadedMarkdown()`（スクロール維持・サイレント）で自動反映し、トーストで通知する。編集中のときは上書きせず、`#external-update-banner`（`#pane-preview` 上部）に「読み込み直す」ボタンを表示してトーストで通知する。
 - タブ非表示中および発表中（`is-stage-show` / `is-museum-walk` 等）は監視をスキップする。設定モーダル（`#settings-modal`）の `#setting-auto-reload` は `localStorage` の `lucivo.autoReloadOnChange`（既定 `'1'`）に保存する。
+
+### DD-FILE-095 Web 版の利用状況計測（`FR-063`, `ARC-ANA-001`〜`004`）
+
+- `src/ts/ui/analytics.ts` に `getReleaseChannel(version)`、`resolveReleaseChannel(env)`、`trackWebEvent(eventName, params, env)` を配置する。
+- `getReleaseChannel(version)` は `APP_VERSION`（`__LUCIVO_VERSION__`）に `'(build id:'` が含まれない場合 `null`、`'-canary'` が含まれる場合 `'preview'`、それ以外を `'production'` と判定する。`resolveReleaseChannel()` はさらに `window.location.protocol === 'file:'` または `navigator.webdriver === true` を `null` とし、ローカル開発・スタンドアロン版・E2E 実行時のイベント送信を抑止する。
+- 送信箇所は次の 3 か所とし、起動時の `applyInitialDisplayStateFromUrl()` からは呼び出さない。
+  1. `src/ts/app.ts` の `selectInfographicStyle(style)`: `trackWebEvent('design_style_select', { design_style: style })`
+  2. `src/ts/app.ts` の `selectTone(toneId)`: `trackWebEvent('tone_select', { tone: toneId })`
+  3. `src/ts/ui/present-modes.ts` の `loadMode(id)`: `trackWebEvent('present_mode_select', { present_mode: id })`
+- すべてのイベントに `{ event, release_channel, ...params }` のみを `window.dataLayer.push()` する。`public/index.html` の `LUCIVO_WEB_ANALYTICS_START`〜`END` では `gtm.js?id=GTM-KMQ3KLNT` 読み込み前に `{ 'gtm.start': new Date().getTime(), event: 'gtm.js' }` を `dataLayer` へ積む。
