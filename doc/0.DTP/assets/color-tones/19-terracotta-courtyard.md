@@ -7,6 +7,8 @@
 
 ## カラーコード一覧
 
+
+![terracotta-courtyard の色見本（文字色＋背景色）](swatches/terracotta-courtyard.svg)
 | 役割 | トークン例 | Light | Dark | 用途 |
 | :--- | :--- | :--- | :--- | :--- |
 | 第 1 色（主役・素焼） | `--vs-c1` | `#D46A52` | `#E48670` | 見出しアクセント・主ノード・カード 1 |

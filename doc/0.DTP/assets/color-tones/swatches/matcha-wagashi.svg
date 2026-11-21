@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="513" height="62" viewBox="0 0 513 62" role="img" aria-label="カラートーン見本（Light / Dark）">
+  <text x="4" y="20" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="600" fill="#64748B">Light</text>
+  <rect x="40" y="4" width="74" height="24" rx="4" fill="#FBF9F4" stroke="#635E52" stroke-width="1"/>
+  <text x="77" y="20" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#24211B">Abcあいう</text>
+  <rect x="119" y="4" width="74" height="24" rx="4" fill="#F3EFE4" stroke="#635E52" stroke-width="1"/>
+  <text x="156" y="20" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#24211B">Abcあいう</text>
+  <rect x="198" y="4" width="74" height="24" rx="4" fill="#7D9763" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="235" y="20" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#0F172A">Abcあいう</text>
+  <rect x="277" y="4" width="74" height="24" rx="4" fill="#DFC69E" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="314" y="20" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#0F172A">Abcあいう</text>
+  <rect x="356" y="4" width="74" height="24" rx="4" fill="#C78A8B" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="393" y="20" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#0F172A">Abcあいう</text>
+  <rect x="435" y="4" width="74" height="24" rx="4" fill="#5E5448" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="472" y="20" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">Abcあいう</text>
+  <text x="4" y="50" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="600" fill="#64748B">Dark</text>
+  <rect x="40" y="34" width="74" height="24" rx="4" fill="#161813" stroke="#9C9688" stroke-width="1"/>
+  <text x="77" y="50" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#F4F1E8">Abcあいう</text>
+  <rect x="119" y="34" width="74" height="24" rx="4" fill="#20241C" stroke="#9C9688" stroke-width="1"/>
+  <text x="156" y="50" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#F4F1E8">Abcあいう</text>
+  <rect x="198" y="34" width="74" height="24" rx="4" fill="#99B37F" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="235" y="50" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#0F172A">Abcあいう</text>
+  <rect x="277" y="34" width="74" height="24" rx="4" fill="#EAD6B5" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="314" y="50" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#0F172A">Abcあいう</text>
+  <rect x="356" y="34" width="74" height="24" rx="4" fill="#DAA3A4" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="393" y="50" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#0F172A">Abcあいう</text>
+  <rect x="435" y="34" width="74" height="24" rx="4" fill="#8E8273" stroke="rgba(15,23,42,0.14)" stroke-width="1"/>
+  <text x="472" y="50" text-anchor="middle" font-family="'Inter','Noto Sans JP',sans-serif" font-size="11" font-weight="600" fill="#0F172A">Abcあいう</text>
+</svg>

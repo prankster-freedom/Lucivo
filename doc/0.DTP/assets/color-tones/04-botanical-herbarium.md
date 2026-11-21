@@ -7,6 +7,8 @@
 
 ## カラーコード一覧
 
+
+![botanical-herbarium の色見本（文字色＋背景色）](swatches/botanical-herbarium.svg)
 | 役割 | トークン例 | Light | Dark | 用途 |
 | :--- | :--- | :--- | :--- | :--- |
 | 第 1 色（主役・薔薇） | `--vs-c1` | `#D98490` | `#E29AA4` | 見出しアクセント・主ノード・カード 1 |
