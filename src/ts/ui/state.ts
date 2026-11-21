@@ -16,6 +16,7 @@ export const runtime: Record<string, any> = {
   preferFolderInput: false,
   recentFolderHandle: null,
   currentRemoteUrl: null as string | null,
+  currentRemoteFetchUrl: null as string | null,
   followedKey: null,
   renderApp: () => {},
   syncUrlFromState: () => {}

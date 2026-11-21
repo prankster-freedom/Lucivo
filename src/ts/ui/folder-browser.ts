@@ -1,6 +1,14 @@
 // @ts-nocheck
 import { decodeMarkdown } from '../utils/text-decode';
-import { extractMarkdownUrlFromLocation, validatePublicMarkdownUrl, rewriteGitHubBlobUrl, fetchMarkdownFromUrl } from './url-loader';
+import {
+  extractMarkdownUrlFromLocation,
+  validatePublicMarkdownUrl,
+  rewriteGitHubBlobUrl,
+  parseGitHubTreeUrl,
+  makeGitHubRawUrl,
+  fetchGitHubTreeFiles,
+  fetchMarkdownFromUrl
+} from './url-loader';
 import { findScrollParent } from '../diagram/pan-zoom';
 import { showToast, updateStatus } from './toast';
 import { clearMathPlotCache } from '../math/plot';
@@ -176,6 +184,11 @@ export async function scanEntryDirectory(rootEntry) {
 
 export function getFolderImageUrl(folder, path) {
   if (!folderImageUrls.has(path)) {
+    if (typeof folder.getImageUrl === 'function') {
+      const url = folder.getImageUrl(path);
+      folderImageUrls.set(path, url);
+      return Promise.resolve(url);
+    }
     folderImageUrls.set(path, folder.getFile(path).then(file => {
       const url = file ? URL.createObjectURL(file) : null;
       // 読み込み中に別のフォルダに替わったら、作った URL を捨てる
@@ -202,6 +215,9 @@ export function setOpenedFolder(folder) {
   runtime.openedFolder = folder;
   // 前に開いていた文書は、新しいフォルダの文書ではない
   runtime.currentFolderPath = null;
+  runtime.currentRemoteUrl = folder.isRemote ? folder.remoteTreeUrl : null;
+  runtime.currentRemoteFetchUrl = null;
+  runtime.syncUrlFromState();
   setFolderPaneCollapsed(false);
   renderFolderList();
   runtime.renderApp();
@@ -210,9 +226,15 @@ export function setOpenedFolder(folder) {
 }
 
 export function closeFolder() {
+  const wasRemote = Boolean(runtime.openedFolder && runtime.openedFolder.isRemote);
   clearFolderImageUrls();
   runtime.openedFolder = null;
   runtime.currentFolderPath = null;
+  if (wasRemote) {
+    runtime.currentRemoteUrl = null;
+    runtime.currentRemoteFetchUrl = null;
+    runtime.syncUrlFromState();
+  }
   renderFolderList();
   runtime.renderApp();
 }
@@ -265,7 +287,7 @@ export async function openFolderFile(path) {
     const prepared = await prepareLoadedText(decoded.text);
     // 整えている間に別のフォルダを開いたときは、古いフォルダのファイルを表示しない
     if (folder !== runtime.openedFolder) return false;
-    applyLoadedMarkdown(prepared.text, name, path, false, decoded.encoding, prepared.formatted);
+    applyLoadedMarkdown(prepared.text, name, path, false, decoded.encoding, prepared.formatted, folder.isRemote ? folder.remoteTreeUrl : null, null);
   } catch (err) {
     console.error('Failed to read file:', err);
     showToast(`「${name}」を読み込めませんでした`);
@@ -338,6 +360,18 @@ export function setupDocumentLinks() {
         if (ok && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
       });
       return;
+    }
+    if (!runtime.openedFolder && runtime.currentRemoteFetchUrl) {
+      try {
+        const baseUrl = runtime.currentRemoteUrl || runtime.currentRemoteFetchUrl;
+        const targetUrl = new URL(pathPart, baseUrl);
+        if (targetUrl.protocol === 'http:' || targetUrl.protocol === 'https:') {
+          loadMarkdownFromPublicUrl(targetUrl.toString()).then(opened => {
+            if (opened && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+          });
+          return;
+        }
+      } catch (_) {}
     }
     if (!runtime.openedFolder || runtime.currentFolderPath === null) {
       showToast('Markdown へのリンクは、「開く」→「フォルダを開く…」で開いた文書で使えます');
@@ -584,12 +618,71 @@ export function setupAmbientEffectsToggle() {
   });
 }
 
-// 公開 URL（起動時パラメータまたはドラッグ&ドロップ）から Markdown を読み込む（FR-050, #78, #267, #268, #269）
-export async function loadMarkdownFromPublicUrl(rawUrl: string) {
+function makeRemoteFolder(name, treeSpec, remoteTreeUrl, rawFiles, truncated) {
+  return {
+    name: name || treeSpec.repo,
+    isRemote: true,
+    remoteTreeUrl,
+    files: sortFolderFiles(rawFiles),
+    truncated,
+    async getFile(relPath) {
+      const fullPath = treeSpec.basePath ? `${treeSpec.basePath}/${relPath}` : relPath;
+      const rawUrl = makeGitHubRawUrl(treeSpec.owner, treeSpec.repo, treeSpec.ref, fullPath);
+      const res = await fetch(rawUrl, { cache: 'no-store' });
+      if (!res.ok) return null;
+      const buffer = await res.arrayBuffer();
+      return { arrayBuffer: async () => buffer };
+    },
+    getImageUrl(relPath) {
+      const fullPath = treeSpec.basePath ? `${treeSpec.basePath}/${relPath}` : relPath;
+      return makeGitHubRawUrl(treeSpec.owner, treeSpec.repo, treeSpec.ref, fullPath);
+    }
+  };
+}
+
+async function loadGitHubTreeFolder(validUrl, treeSpec) {
+  showToast('GitHub フォルダを読み込んでいます…');
+  try {
+    const { files, truncated } = await fetchGitHubTreeFiles(
+      treeSpec,
+      DROPPABLE_FILE_PATTERN,
+      FOLDER_FILE_LIMIT,
+      FOLDER_DEPTH_LIMIT
+    );
+    if (files.length === 0) {
+      showToast('このフォルダに Markdown ファイルが見つかりませんでした', 4000);
+      return false;
+    }
+    const folderName = treeSpec.basePath ? treeSpec.basePath.split('/').pop() : treeSpec.repo;
+    const folder = makeRemoteFolder(folderName, treeSpec, validUrl.toString(), files, truncated);
+    setOpenedFolder(folder);
+    const readme = folder.files.find(f => f.dir === '' && f.name.toLowerCase() === 'readme.md');
+    const initial = readme || folder.files[0];
+    if (initial) {
+      await openFolderFile(initial.path);
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to fetch GitHub tree:', err);
+    if (err && err.message === 'GITHUB_RATE_LIMIT') {
+      showToast('GitHub API の利用回数制限に達しました。しばらく待ってから再度お試しください', 4500);
+    } else {
+      showToast('GitHub フォルダを読み込めませんでした。URL やネットワークをご確認ください', 4500);
+    }
+    return false;
+  }
+}
+
+// 公開 URL（起動時パラメータまたはドラッグ&ドロップ）から Markdown を読み込む（FR-050, #78, #267, #268, #269, #280, #281）
+export async function loadMarkdownFromPublicUrl(rawUrl): Promise<boolean> {
   const validUrl = validatePublicMarkdownUrl(rawUrl);
   if (!validUrl) {
     showToast('URL から Markdown を読み込めませんでした（http / https の有効な URL を指定してください）', 4000);
-    return;
+    return false;
+  }
+  const treeSpec = parseGitHubTreeUrl(validUrl);
+  if (treeSpec) {
+    return await loadGitHubTreeFolder(validUrl, treeSpec);
   }
   const { fetchUrl } = rewriteGitHubBlobUrl(validUrl);
   showToast('URL から Markdown を読み込んでいます…');
@@ -597,7 +690,8 @@ export async function loadMarkdownFromPublicUrl(rawUrl: string) {
     const { buffer, fileName } = await fetchMarkdownFromUrl(fetchUrl);
     const decoded = decodeMarkdown(buffer);
     const prepared = await prepareLoadedText(decoded.text);
-    applyLoadedMarkdown(prepared.text, fileName, null, false, decoded.encoding, prepared.formatted, validUrl.toString());
+    applyLoadedMarkdown(prepared.text, fileName, null, false, decoded.encoding, prepared.formatted, validUrl.toString(), fetchUrl.toString());
+    return true;
   } catch (err) {
     console.error('Failed to fetch markdown from URL:', err);
     if (validUrl.hostname === 'github.com') {
@@ -605,6 +699,7 @@ export async function loadMarkdownFromPublicUrl(rawUrl: string) {
     } else {
       showToast('URL から Markdown を読み込めませんでした。CORS 制限やネットワークをご確認ください', 4500);
     }
+    return false;
   }
 }
 

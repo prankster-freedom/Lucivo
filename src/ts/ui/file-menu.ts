@@ -61,11 +61,12 @@ export function confirmDiscardEdits(fileName) {
 // isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
 // encoding: ファイルから読んだときの文字コード（decodeMarkdown() の結果。同梱サンプルは UTF-8）（FR-048, DD-FILE-083）
 // formatted: 読み込み時の整形の結果（FR-053）。整えたときは、読み込みの知らせに直した箇所の数を添える
-export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null, remoteUrl: string | null = null) {
+export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null, remoteUrl: string | null = null, remoteFetchUrl: string | null = null) {
   // 改行コードを LF にそろえる。そろえないと、textarea が LF に変えた内容と食い違い、編集していないのに破棄の確認が出る
   const text = normalizeText(String(rawText));
   runtime.currentFileEncoding = encoding;
   runtime.currentRemoteUrl = remoteUrl;
+  runtime.currentRemoteFetchUrl = remoteFetchUrl;
   document.getElementById('markdown-editor').value = text;
   runtime.lastLoadedMarkdown = text;
   runtime.currentFileName = fileName;

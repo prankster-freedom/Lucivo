@@ -79,6 +79,19 @@ export function setupLocalImages() {
       data.forceKeepAttr = true;
       return;
     }
+    // 公開 URL で開いた単一文書の相対パスは、取得元の公開 URL を基準に絶対 URL へ解決する（FR-050, #280）
+    if (runtime.currentRemoteFetchUrl && isRelativeSrc(data.attrValue)) {
+      try {
+        const resolved = new URL(data.attrValue, runtime.currentRemoteFetchUrl);
+        if (resolved.protocol === 'http:' || resolved.protocol === 'https:') {
+          const resolvedStr = resolved.toString();
+          node.setAttribute('src', resolvedStr);
+          data.attrValue = resolvedStr;
+          data.forceKeepAttr = true;
+          return;
+        }
+      } catch (_) {}
+    }
     const url = toLocalImageUrl(data.attrValue);
     if (!url) return;
     // forceKeepAttr を立てると、DOMPurify は attrValue を書き戻さずに次の属性へ進むため、ここで書き換える

@@ -117,6 +117,97 @@ export function rewriteGitHubBlobUrl(url: URL): { fetchUrl: URL; rewritten: bool
 }
 
 /**
+ * GitHub のフォルダ URL（/tree/<ref> または /tree/<ref>/<path>）を解析する。
+ */
+export interface GitHubTreeSpec {
+  owner: string;
+  repo: string;
+  ref: string;
+  basePath: string;
+}
+
+export function parseGitHubTreeUrl(url: URL): GitHubTreeSpec | null {
+  if (url.hostname !== 'github.com') return null;
+  const segments = url.pathname.split('/').filter(Boolean);
+  if (segments.length < 4 || segments[2] !== 'tree') return null;
+  const [owner, repo, , ref, ...pathParts] = segments;
+  return {
+    owner: decodeURIComponent(owner),
+    repo: decodeURIComponent(repo),
+    ref: decodeURIComponent(ref),
+    basePath: pathParts.map(p => {
+      try { return decodeURIComponent(p); } catch (_) { return p; }
+    }).join('/')
+  };
+}
+
+/**
+ * GitHub のリポジトリ内パスから raw.githubusercontent.com の URL を組み立てる。
+ */
+export function makeGitHubRawUrl(owner: string, repo: string, ref: string, fullRepoPath: string): string {
+  const encodedPath = fullRepoPath.split('/').filter(Boolean).map(seg => encodeURIComponent(seg)).join('/');
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(ref)}/${encodedPath}`;
+}
+
+/**
+ * GitHub Trees API を用いて公開リポジトリの指定フォルダ配下の Markdown ファイル一覧を取得する。
+ */
+export async function fetchGitHubTreeFiles(
+  spec: GitHubTreeSpec,
+  filePattern: RegExp,
+  limit = 2000,
+  maxDepth = 12,
+  timeoutMs = FETCH_TIMEOUT_MS
+): Promise<{ files: Array<{ path: string; name: string; dir: string }>; truncated: boolean }> {
+  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(spec.owner)}/${encodeURIComponent(spec.repo)}/git/trees/${encodeURIComponent(spec.ref)}?recursive=1`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { Accept: 'application/vnd.github+json' },
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    if (res.status === 403 || res.status === 429) {
+      throw new Error('GITHUB_RATE_LIMIT');
+    }
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const prefix = spec.basePath ? `${spec.basePath}/` : '';
+    const files: Array<{ path: string; name: string; dir: string }> = [];
+    let truncated = Boolean(data.truncated);
+    for (const item of data.tree || []) {
+      if (item.type !== 'blob' || typeof item.path !== 'string') continue;
+      let relPath = item.path;
+      if (prefix) {
+        if (!relPath.startsWith(prefix)) continue;
+        relPath = relPath.slice(prefix.length);
+      }
+      if (!relPath) continue;
+      const parts = relPath.split('/');
+      if (parts.some(p => p.startsWith('.') || p === 'node_modules')) continue;
+      if (parts.length - 1 > maxDepth) continue;
+      const name = parts[parts.length - 1];
+      if (!filePattern.test(name)) continue;
+      if (files.length >= limit) {
+        truncated = true;
+        break;
+      }
+      files.push({
+        path: relPath,
+        name,
+        dir: parts.slice(0, -1).join('/')
+      });
+    }
+    return { files, truncated };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * ドロップ時の DataTransfer（text/uri-list, text/plain）から公開 URL 候補を取り出す。
  */
 export function extractDroppedUrl(uriList: string, plainText: string): string | null {
