@@ -740,6 +740,108 @@ async function testPerfOptimizations(browser) {
     JSON.stringify({ beforeScroll14, afterScroll14 })
   );
   await ctx14.close();
+
+  // TC-PERF-015 (#287): 表の包みとコールアウトを、Marked のレンダラーが最初から出力する。
+  // DOM の形（従来の DOM の書き換えと同じ）、マーカーでない引用の保持、直接書いた HTML の表のフォールバック、
+  // Visualモードの出力を確かめる
+  const p15 = await openApp(browser);
+  await p15.setViewportSize({ width: 1280, height: 900 });
+  const render15 = async text => {
+    await p15.evaluate(t => {
+      const editor = document.getElementById('markdown-editor');
+      editor.value = t;
+      lastLoadedMarkdown = t;
+      renderApp();
+    }, text);
+    await p15.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+    await p15.waitForTimeout(100);
+  };
+  const markdownDoc15 = [
+    '# 表とコールアウト',
+    '',
+    '## 表',
+    '',
+    '| 列 A | 列 B |',
+    '| :-- | :-- |',
+    '| 1 | 2 |',
+    '',
+    '## 注記',
+    '',
+    '> [!NOTE]',
+    '> 注記の本文です。',
+    '',
+    '> [!tip]',
+    '> ヒントの本文です。',
+    '',
+    '> [!WARNING] 同じ行に本文が続く引用',
+    '',
+    '> 通常の引用です。',
+    '',
+    '> [!IMPORTANT]',
+    '>',
+    '> 空の段落のあとの本文です。'
+  ].join('\n');
+  const readShape15 = scope => p15.evaluate(sel => {
+    const root = document.querySelector(sel);
+    const tables = Array.from(root.querySelectorAll('table'));
+    const alerts = Array.from(root.querySelectorAll('.md-alert'));
+    const important = alerts.find(a => a.classList.contains('md-alert-important'));
+    const afterTitle = important ? important.querySelector('.md-alert-title').nextElementSibling : null;
+    return {
+      tables: tables.length,
+      wrapped: tables.every(t => t.parentElement && t.parentElement.classList.contains('table-container')),
+      doubleWrapped: root.querySelectorAll('.table-container .table-container').length,
+      alertTypes: alerts.map(a => a.className.replace('md-alert md-alert-', '')),
+      roles: alerts.every(a => a.getAttribute('role') === 'note'),
+      titles: alerts.map(a => a.querySelector(':scope > .md-alert-title').textContent),
+      icons: alerts.every(a => a.querySelector(':scope > .md-alert-title > .md-alert-icon[aria-hidden="true"]')),
+      noteText: (alerts.find(a => a.classList.contains('md-alert-note')) || { textContent: '' }).textContent,
+      importantFirstBody: afterTitle ? { tag: afterTitle.tagName, text: afterTitle.textContent.trim() } : null,
+      quotes: Array.from(root.querySelectorAll('blockquote')).map(q => q.textContent.trim()),
+      leftoverMarker: /\[!(NOTE|TIP|IMPORTANT)\]/i.test(alerts.map(a => a.textContent).join('\n'))
+    };
+  }, scope);
+
+  await render15(markdownDoc15);
+  const fast15 = await readShape15('#standard-doc-container');
+
+  // 直接書いた HTML の表も、Markdown の表と同じように包まれ、二重には包まれない
+  const rawDoc15 = markdownDoc15 + '\n\n<table><tr><td>直接書いた表</td></tr></table>\n';
+  await render15(rawDoc15);
+  const raw15 = await p15.evaluate(() => {
+    const root = document.getElementById('standard-doc-container');
+    const tables = Array.from(root.querySelectorAll('table'));
+    return {
+      tables: tables.length,
+      wrapped: tables.every(t => t.parentElement && t.parentElement.classList.contains('table-container')),
+      doubleWrapped: root.querySelectorAll('.table-container .table-container').length
+    };
+  });
+
+  await render15(markdownDoc15);
+  await selectVisualStyle(p15, 'cards');
+  await p15.waitForFunction(() => !/Rendering/.test(document.getElementById('telemetry-status').textContent), null, { timeout: 60000 });
+  await p15.waitForTimeout(200);
+  const visual15 = await readShape15('#visual-stage-container');
+
+  const shapeOk15 = s =>
+    s.tables === 1 && s.wrapped && s.doubleWrapped === 0 &&
+    JSON.stringify(s.alertTypes) === JSON.stringify(['note', 'tip', 'important']) &&
+    s.roles &&
+    JSON.stringify(s.titles) === JSON.stringify(['Note', 'Tip', 'Important']) &&
+    s.icons &&
+    s.noteText.includes('注記の本文です。') &&
+    s.importantFirstBody && s.importantFirstBody.tag === 'P' && s.importantFirstBody.text === '空の段落のあとの本文です。' &&
+    s.quotes.length === 2 &&
+    s.quotes.some(q => q.includes('[!WARNING] 同じ行に本文が続く引用')) &&
+    s.quotes.some(q => q.includes('通常の引用です。')) &&
+    !s.leftoverMarker;
+  record('TC-PERF-015',
+    shapeOk15(fast15) && raw15.tables === 2 && raw15.wrapped && raw15.doubleWrapped === 0 &&
+    shapeOk15(visual15) && p15.consoleErrors.length === 0,
+    JSON.stringify({ fast15, raw15, visual15, consoleErrors: p15.consoleErrors })
+  );
+  await p15.close();
 }
 
 module.exports = { testPerfBudget, testPerfOptimizations };
