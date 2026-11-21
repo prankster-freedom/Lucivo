@@ -7,13 +7,14 @@
   "scripts": {
     "pretest": "node tools/build-app.cjs --prod && node tools/build-app.cjs --prod --channel standalone",
     "test": "node tests/e2e.cjs",
+    "test:unit": "node tests/document-model.test.cjs && node tests/align-tables.test.cjs",
     "build": "node tools/build-app.cjs",
     "build:prod": "node tools/build-app.cjs --prod",
     "build:standalone": "node tools/build-app.cjs --prod --channel standalone",
     "build:css": "node tools/build-tailwind-css.cjs",
     "build:vendor": "node tools/build-vendor.cjs",
     "build:samples": "node tools/build-samples-data.cjs",
-    "lint": "node tools/check-control-chars.cjs && node tools/check-modes.cjs && eslint"
+    "lint": "node tools/check-control-chars.cjs && node tools/check-modes.cjs && eslint && node tests/document-model.test.cjs"
   },
   "devDependencies": {
     "@fontsource-variable/inter": "5.3.0",
