@@ -1878,8 +1878,8 @@ let applyViewModeFn: ((mode: string) => void) | null = null;
 function syncUrlFromState() {
   if (!urlSyncReady) return;
   if (document.documentElement.classList.contains('is-stage-show')) return;
-  const defaultViewMode = window.innerWidth < 1024 ? 'canvas' : 'split';
-  syncBrowserUrl(state, runtime.currentRemoteUrl, defaultViewMode);
+  // 人へリンクを共有した際に画面幅の違いで view=canvas 等が落ちないよう、既定値は常に 'split' 基準とする（#307）
+  syncBrowserUrl(state, runtime.currentRemoteUrl, 'split');
 }
 
 function applyInitialDisplayStateFromUrl() {

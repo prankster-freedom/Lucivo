@@ -1,7 +1,7 @@
 // ローカルファイルの外部更新検知と自動反映（FR-062, DD-FILE-094, #282）
 // File System Access API のハンドル（単一ファイル / フォルダ内ファイル）から lastModified・size を監視し、
 // 未編集ならスクロール位置を保って自動反映、編集中なら上書きせず通知バーで「読み込み直す」を案内する。
-import { runtime } from './state';
+import { isModalOpen, runtime, setModalOpen } from './state';
 import { showToast } from './toast';
 
 export const AUTO_RELOAD_KEY = 'lucivo.autoReloadOnChange';
@@ -54,14 +54,24 @@ function showExternalUpdateBanner(fileName: string): void {
   if (banner) banner.classList.remove('hidden');
 }
 
+function showExternalConflictModal(fileName: string): void {
+  const msg = document.getElementById('external-conflict-message');
+  if (msg) msg.textContent = `「${fileName}」が外部で更新されました。Lucivo 上で編集中の内容があります。どうしますか？`;
+  if (!isModalOpen('external-conflict-modal')) {
+    setModalOpen('external-conflict-modal', true);
+  }
+}
+
 export function watchFile(target: WatchTarget): void {
   activeTarget = target;
   hideExternalUpdateBanner();
+  setModalOpen('external-conflict-modal', false);
 }
 
 export function clearWatchedFile(): void {
   activeTarget = null;
   hideExternalUpdateBanner();
+  setModalOpen('external-conflict-modal', false);
 }
 
 export async function reloadWatchedFile(): Promise<boolean> {
@@ -97,7 +107,8 @@ export async function checkWatchedFileNow(): Promise<boolean> {
     const isDirty = Boolean(editor && editor.value !== runtime.lastLoadedMarkdown);
     if (isDirty) {
       showExternalUpdateBanner(target.fileName);
-      showToast(`「${target.fileName}」が外部で更新されました（編集中のため保留）`, 4000);
+      showExternalConflictModal(target.fileName);
+      showToast(`「${target.fileName}」が外部で更新されました（編集中のため確認待ち）`, 4000);
       return true;
     }
     await target.onReload(file);
@@ -122,10 +133,29 @@ export function setupFileWatch(): void {
     });
   }
   document.getElementById('btn-external-reload')?.addEventListener('click', () => {
+    setModalOpen('external-conflict-modal', false);
     void reloadWatchedFile();
   });
   document.getElementById('btn-external-reload-dismiss')?.addEventListener('click', () => {
     hideExternalUpdateBanner();
+  });
+  const keepLocalEdits = () => {
+    setModalOpen('external-conflict-modal', false);
+    if (activeTarget) showToast(`「${activeTarget.fileName}」の編集内容を維持しました`);
+  };
+  document.getElementById('btn-close-external-conflict')?.addEventListener('click', keepLocalEdits);
+  document.getElementById('btn-conflict-keep')?.addEventListener('click', keepLocalEdits);
+  document.getElementById('btn-conflict-reload')?.addEventListener('click', () => {
+    setModalOpen('external-conflict-modal', false);
+    void reloadWatchedFile();
+  });
+  document.getElementById('btn-conflict-save-reload')?.addEventListener('click', () => {
+    setModalOpen('external-conflict-modal', false);
+    document.getElementById('btn-save-markdown')?.click();
+    void reloadWatchedFile();
+  });
+  document.getElementById('external-conflict-modal')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) keepLocalEdits();
   });
   window.addEventListener('focus', () => {
     void checkWatchedFileNow();

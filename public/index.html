@@ -31,8 +31,8 @@
   <header id="main-header" class="glass-nav h-12 px-2 sm:px-3 lg:px-5 flex items-center justify-between gap-1 lg:gap-2 shrink-0 z-30">
     <div class="flex items-center gap-1 lg:gap-2 shrink-0">
       <div id="header-brand-logo" class="header-brand-logo shrink-0">
-        <!-- 公開リポジトリ（最新版）への導線（FR-024）。URL は app.js の REPOSITORY_URL と同じにする -->
-        <a class="brand-link" href="https://github.com/prankster-freedom/Lucivo" target="_blank" rel="noopener noreferrer" title="Lucivo の公開リポジトリ（最新版）を開く">
+        <!-- 公開 URL で README を開く導線（FR-024, #298）。URL は state.ts の README_VIEWER_URL と同じにする -->
+        <a class="brand-link" href="https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual" target="_blank" rel="noopener noreferrer" title="Lucivo で README を開く（インターネットに接続します）">
           <img class="brand-logo-light" src="./assets/logos/light/logo_capsule.svg" alt="Lucivo（公開リポジトリを開く）" width="117" height="32" />
           <img class="brand-logo-dark" src="./assets/logos/dark/logo_capsule.svg" alt="Lucivo（公開リポジトリを開く）" width="117" height="32" />
           <img class="brand-mark-light" src="./assets/logos/light/favicon.svg" alt="Lucivo（公開リポジトリを開く）" width="28" height="28" />
@@ -208,7 +208,7 @@
           <button id="menu-more-update" type="button" role="menuitem" class="file-menu-item">最新版を確認（通信発生）</button>
         </div>
       </div>
-      <a id="btn-header-help" href="https://github.com/prankster-freedom/Lucivo/blob/main/README.md" target="_blank" rel="noopener noreferrer" class="header-icon-btn" aria-label="ヘルプ（README）を開く" title="ヘルプ（README）を開く（GitHub に接続します）">
+      <a id="btn-header-help" href="https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual" target="_blank" rel="noopener noreferrer" class="header-icon-btn" aria-label="ヘルプ（README）を開く" title="ヘルプ（README）を Lucivo で開く（インターネットに接続します）">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="9"></circle>
           <path stroke-linecap="round" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"></path>
@@ -324,6 +324,22 @@
   </main>
 
   <!-- ==================== その他（アプリ設定）モーダル ==================== -->
+  <!-- 外部更新と編集の競合確認モーダル（FR-062, #297） -->
+  <div id="external-conflict-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="external-conflict-title">
+    <div class="w-full max-w-md rounded-2xl border p-5 sm:p-6 shadow-2xl flex flex-col gap-4" style="background: var(--panel-bg); border-color: var(--border-subtle);">
+      <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--border-subtle);">
+        <h3 id="external-conflict-title" class="font-display font-bold text-sm tracking-tight" style="color: var(--text-primary);">外部でのファイル更新と編集が重なっています</h3>
+        <button id="btn-close-external-conflict" type="button" class="w-6 h-6 rounded flex items-center justify-center text-xs cursor-pointer" style="color: var(--text-muted);" aria-label="閉じる">✕</button>
+      </div>
+      <p id="external-conflict-message" class="text-xs leading-relaxed" style="color: var(--text-secondary);">ファイルが外部で更新されました。Lucivo 上で編集中の内容があります。どうしますか？</p>
+      <div class="flex flex-col gap-2 pt-1">
+        <button id="btn-conflict-save-reload" type="button" class="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer text-left">編集内容を保存してから外部の更新を読み込む</button>
+        <button id="btn-conflict-reload" type="button" class="w-full px-3 py-2 rounded-lg text-xs font-semibold border cursor-pointer text-left" style="background: var(--panel-sub); border-color: var(--border-subtle); color: var(--text-primary);">編集内容を破棄して外部の更新を読み込む</button>
+        <button id="btn-conflict-keep" type="button" class="w-full px-3 py-2 rounded-lg text-xs font-medium border cursor-pointer text-left" style="background: transparent; border-color: var(--border-subtle); color: var(--text-secondary);">外部の更新を取り込まずに編集を続ける</button>
+      </div>
+    </div>
+  </div>
+
   <div id="settings-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-3 sm:p-4">
     <div class="w-full max-w-md rounded-2xl border p-5 sm:p-6 shadow-2xl flex flex-col gap-5" style="background: var(--panel-bg); border-color: var(--border-subtle);">
       <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--border-subtle);">

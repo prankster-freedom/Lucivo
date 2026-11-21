@@ -101,16 +101,17 @@ async function testFileLoading(browser) {
     && darkLogo.headerDarkVisible && darkLogo.headerLightHidden && darkLogo.guideDarkVisible && darkLogo.guideLightHidden,
     JSON.stringify({ init, darkLogo }));
 
-  // TC-FILE-014 ヘッダーと案内のロゴ、案内の「最新版はこちら」が公開リポジトリへのリンクになっている
+  // TC-FILE-014 ヘッダーと案内のロゴが Lucivo の公開 URL で README を開き、案内の「最新版はこちら」が公開リポジトリへのリンクになっている（#298）
   const repoLinks = await page.evaluate(() => {
-    const url = 'https://github.com/prankster-freedom/Lucivo';
-    const describe = a => a && { href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'), ok: a.getAttribute('href') === url && a.getAttribute('target') === '_blank' && /\bnoopener\b/.test(a.getAttribute('rel') || '') && /\bnoreferrer\b/.test(a.getAttribute('rel') || '') };
+    const repoUrl = 'https://github.com/prankster-freedom/Lucivo';
+    const readmeUrl = 'https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual';
+    const describe = (a, expected) => a && { href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'), ok: a.getAttribute('href') === expected && a.getAttribute('target') === '_blank' && /\bnoopener\b/.test(a.getAttribute('rel') || '') && /\bnoreferrer\b/.test(a.getAttribute('rel') || '') };
     const latest = document.querySelector('#standard-doc-container .empty-guide-latest');
     return {
-      header: describe(document.querySelector('#header-brand-logo a.brand-link')),
-      guideLogo: describe(document.querySelector('#standard-doc-container .empty-guide-logo a.brand-link')),
+      header: describe(document.querySelector('#header-brand-logo a.brand-link'), readmeUrl),
+      guideLogo: describe(document.querySelector('#standard-doc-container .empty-guide-logo a.brand-link'), readmeUrl),
       latestText: latest ? latest.textContent.trim() : null,
-      latest: describe(latest && latest.querySelector('a'))
+      latest: describe(latest && latest.querySelector('a'), repoUrl)
     };
   });
   record('TC-FILE-014', !!(repoLinks.header && repoLinks.header.ok && repoLinks.guideLogo && repoLinks.guideLogo.ok && repoLinks.latest && repoLinks.latest.ok
@@ -239,7 +240,7 @@ async function testFileLoading(browser) {
       && latest.state === 'latest' && latest.text.includes('最新版です') && latest.text.includes(appVersion)
       && failed.state === 'error' && failed.text.includes('確認できませんでした')
       && afterRender.state === 'error'
-      && helpAttr.helpHref === 'https://github.com/prankster-freedom/Lucivo/blob/main/README.md'
+      && helpAttr.helpHref === 'https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual'
       && helpAttr.helpTarget === '_blank' && helpAttr.helpRel === 'noopener noreferrer'
       && helpAttr.updateText === '最新版確認' && helpAttr.updateMenuHiddenInitially === true
       && helpAttr.menuItemText === '通信が発生します' && helpAttr.updateIconAfterText && helpAttr.updateSingleLine
@@ -731,6 +732,25 @@ async function testUrlLoading(browser) {
       && afterCloseUrl === false
       && rateToast.includes('利用回数制限'),
       JSON.stringify({ treeInit, afterSub, afterCloseUrl, rateToast }));
+
+    // TC-FILE-047: 狭い画面（< 1024px）でも view=canvas 等のカスタマイズ済み URL パラメータが保持される（#307）
+    const ctx47 = await browser.newContext({ viewport: { width: 900, height: 800 } });
+    const p47 = await ctx47.newPage();
+    await p47.goto(server.url);
+    await p47.waitForFunction(() => typeof renderApp === 'function', null, { timeout: 10000 });
+    await p47.evaluate(() => {
+      document.querySelector('.view-mode-btn[data-view-mode="canvas"]')?.click();
+      document.getElementById('mode-visual-btn')?.click();
+      document.querySelector('.info-style-btn[data-info-style="cards"]')?.click();
+      document.querySelector('#tone-menu .tone-menu-item[data-tone-id="cobalt-workshop"]')?.click();
+    });
+    await waitRendered(p47);
+    const sharedQuery = await p47.evaluate(() => window.location.search);
+    await ctx47.close();
+    record('TC-FILE-047',
+      sharedQuery.includes('view=canvas') && sharedQuery.includes('mode=visual')
+      && sharedQuery.includes('style=cards') && sharedQuery.includes('tone=cobalt-workshop'),
+      JSON.stringify({ sharedQuery }));
   } finally {
     await server.close();
   }
@@ -1404,7 +1424,7 @@ async function testAutoReload(browser) {
     };
   });
 
-  // 編集中（未保存変更あり）に外部更新 → 上書きせずバナー表示、「読み込み直す」で反映
+  // 編集中（未保存変更あり）に外部更新 → 上書きせず確認モーダルとバナー表示、「編集を続ける」→ バナーの「読み込み直す」で反映（#297）
   await page.click('#btn-edit-unlock');
   await page.evaluate(() => {
     const ed = document.getElementById('markdown-editor');
@@ -1414,7 +1434,14 @@ async function testAutoReload(browser) {
   await page.evaluate(() => window.checkWatchedFileNow());
   const dirtyRes = await page.evaluate(() => ({
     val: document.getElementById('markdown-editor').value,
-    bannerShown: !document.getElementById('external-update-banner').classList.contains('hidden')
+    bannerShown: !document.getElementById('external-update-banner').classList.contains('hidden'),
+    modalShown: !document.getElementById('external-conflict-modal').classList.contains('hidden')
+  }));
+  await page.click('#btn-conflict-keep');
+  const afterKeep = await page.evaluate(() => ({
+    val: document.getElementById('markdown-editor').value,
+    modalHidden: document.getElementById('external-conflict-modal').classList.contains('hidden'),
+    bannerStillShown: !document.getElementById('external-update-banner').classList.contains('hidden')
   }));
   await page.click('#btn-external-reload');
   await page.waitForFunction(() => document.getElementById('markdown-editor').value === '# Updated While Dirty\n', null, { timeout: 5000 });
@@ -1438,11 +1465,12 @@ async function testAutoReload(browser) {
 
   record('TC-FILE-046',
     autoRes.val.startsWith('# Updated Externally') && autoRes.scrollTop > 0 && autoRes.bannerHidden && autoRes.toast.includes('外部更新を反映しました')
-    && dirtyRes.val === '# Local Unsaved Edit\n' && dirtyRes.bannerShown
+    && dirtyRes.val === '# Local Unsaved Edit\n' && dirtyRes.bannerShown && dirtyRes.modalShown
+    && afterKeep.val === '# Local Unsaved Edit\n' && afterKeep.modalHidden && afterKeep.bannerStillShown
     && manualReload.val === '# Updated While Dirty\n' && manualReload.bannerHidden
     && checkedWhenOff === false && offVal === '# Updated While Dirty\n'
     && page.consoleErrors.length === 0,
-    JSON.stringify({ beforeScroll, autoRes, dirtyRes, manualReload, checkedWhenOff, offVal, errors: page.consoleErrors }));
+    JSON.stringify({ beforeScroll, autoRes, dirtyRes, afterKeep, manualReload, checkedWhenOff, offVal, errors: page.consoleErrors }));
   await page.context().close();
 }
 
