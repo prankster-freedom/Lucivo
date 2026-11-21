@@ -619,6 +619,118 @@ async function testUrlLoading(browser) {
       && afterToggle.histLen === restored.histLen
       && hashState.isVisualMode === true && hashState.style === 'editorial' && hashState.appearance === 'light',
       JSON.stringify({ restored, afterToggle, hashState }));
+
+    // TC-FILE-044: 公開 URL 文書内の相対パス画像・Markdown リンク解決（#280）
+    const svgBody = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60"><rect width="120" height="60" fill="#2563EB"/></svg>';
+    const extraMd = '# Extra Sample\n\n![Flow](images/lucivo-flow.svg)\n\n[Next](notation_sample.md#target-sec)\n';
+    const nextMd = '# Notation\n\n' + Array.from({ length: 30 }, (_, i) => `Paragraph ${i}\n`).join('\n') + '\n## Target Sec\n\nFound!\n';
+    const ghRelRoute = route => {
+      const u = route.request().url();
+      if (u === 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/notation_sample_extra1.md') {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: extraMd });
+      }
+      if (u === 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/images/lucivo-flow.svg') {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'image/svg+xml' }, body: svgBody });
+      }
+      if (u === 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/notation_sample.md') {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: nextMd });
+      }
+      return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Not Found' });
+    };
+    const ctx44 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p44 = await ctx44.newPage();
+    await p44.route('https://raw.githubusercontent.com/**', ghRelRoute);
+    const startBlob = 'https://github.com/prankster-freedom/Lucivo/blob/main/public/samples/notation_sample_extra1.md';
+    await p44.goto(`${server.url}?url=${encodeURIComponent(startBlob)}`);
+    await p44.waitForFunction(() => document.querySelector('#standard-doc-container img')?.complete, null, { timeout: 10000 });
+    const relImg = await p44.evaluate(() => {
+      const img = document.querySelector('#standard-doc-container img');
+      return { src: img?.getAttribute('src') || '', naturalWidth: img?.naturalWidth || 0 };
+    });
+    await p44.click('#standard-doc-container a[href="notation_sample.md#target-sec"]');
+    await p44.waitForFunction(() => document.title === 'notation_sample.md - Lucivo', null, { timeout: 10000 });
+    await p44.waitForFunction(() => document.getElementById('preview-scroll').scrollTop > 0, null, { timeout: 5000 }).catch(() => {});
+    const relLink = await p44.evaluate(() => ({
+      urlParam: new URL(window.location.href).searchParams.get('url'),
+      scrollTop: document.getElementById('preview-scroll').scrollTop
+    }));
+    await ctx44.close();
+
+    record('TC-FILE-044',
+      relImg.src === 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/images/lucivo-flow.svg'
+      && relImg.naturalWidth === 120
+      && relLink.urlParam === 'https://github.com/prankster-freedom/Lucivo/blob/main/public/samples/notation_sample.md'
+      && relLink.scrollTop > 0,
+      JSON.stringify({ relImg, relLink }));
+
+    // TC-FILE-045: GitHub tree URL からのフォルダ読み込み（#281）
+    const treeJson = {
+      truncated: false,
+      tree: [
+        { path: 'public/samples/README.md', type: 'blob' },
+        { path: 'public/samples/guide.md', type: 'blob' },
+        { path: 'public/samples/sub/detail.md', type: 'blob' },
+        { path: 'public/samples/.hidden/secret.md', type: 'blob' },
+        { path: 'public/samples/images/lucivo-flow.svg', type: 'blob' },
+        { path: 'other/skip.md', type: 'blob' }
+      ]
+    };
+    const treeUrl = 'https://github.com/prankster-freedom/Lucivo/tree/main/public/samples';
+    const ctx45 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p45 = await ctx45.newPage();
+    await p45.route('https://api.github.com/repos/**', route => route.fulfill({
+      status: 200,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      body: JSON.stringify(treeJson)
+    }));
+    await p45.route('https://raw.githubusercontent.com/**', route => {
+      const u = route.request().url();
+      if (u.endsWith('/public/samples/README.md')) {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: '# Samples Readme\n\n![Flow](images/lucivo-flow.svg)\n' });
+      }
+      if (u.endsWith('/public/samples/sub/detail.md')) {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: '# Sub Detail\n' });
+      }
+      if (u.endsWith('/public/samples/images/lucivo-flow.svg')) {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'image/svg+xml' }, body: svgBody });
+      }
+      return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Not Found' });
+    });
+    await p45.goto(`${server.url}?url=${encodeURIComponent(treeUrl)}`);
+    await p45.waitForFunction(() => document.title === 'README.md - Lucivo', null, { timeout: 10000 });
+    await p45.waitForFunction(() => document.querySelector('#standard-doc-container img')?.complete, null, { timeout: 10000 });
+    const treeInit = await p45.evaluate(() => ({
+      items: Array.from(document.querySelectorAll('#folder-list .folder-list-item')).map(el => el.textContent.trim()),
+      imgWidth: document.querySelector('#standard-doc-container img')?.naturalWidth || 0,
+      urlParam: new URL(window.location.href).searchParams.get('url')
+    }));
+    await p45.click('#folder-list .folder-list-item[data-path="sub/detail.md"]');
+    await p45.waitForFunction(() => document.title === 'detail.md - Lucivo', null, { timeout: 10000 });
+    const afterSub = await p45.evaluate(() => ({
+      val: document.getElementById('markdown-editor')?.value,
+      urlParam: new URL(window.location.href).searchParams.get('url')
+    }));
+    await p45.click('#btn-folder-close');
+    const afterCloseUrl = await p45.evaluate(() => new URL(window.location.href).searchParams.has('url'));
+    await ctx45.close();
+
+    // API 403 レート制限時のエラー通知
+    const ctx45Err = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p45Err = await ctx45Err.newPage();
+    await p45Err.route('https://api.github.com/repos/**', route => route.fulfill({ status: 403, headers: { 'Access-Control-Allow-Origin': '*' }, body: '{}' }));
+    await p45Err.goto(`${server.url}?url=${encodeURIComponent(treeUrl)}`);
+    await p45Err.waitForFunction(() => (document.getElementById('toast-message')?.textContent || '').includes('制限'), null, { timeout: 5000 }).catch(() => {});
+    const rateToast = await p45Err.evaluate(() => document.getElementById('toast-message')?.textContent || '');
+    await ctx45Err.close();
+
+    record('TC-FILE-045',
+      treeInit.items.includes('README.md') && treeInit.items.includes('guide.md') && treeInit.items.includes('detail.md')
+      && !treeInit.items.some(t => t.includes('secret') || t.includes('skip'))
+      && treeInit.imgWidth === 120 && treeInit.urlParam === treeUrl
+      && afterSub.val === '# Sub Detail\n' && afterSub.urlParam === treeUrl
+      && afterCloseUrl === false
+      && rateToast.includes('利用回数制限'),
+      JSON.stringify({ treeInit, afterSub, afterCloseUrl, rateToast }));
   } finally {
     await server.close();
   }
