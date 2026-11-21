@@ -4,8 +4,9 @@
    Markdown に直接書かれた HTML の <table>・<blockquote> は、レンダラーを通らないため、
    本文にあるときだけ、従来の DOM の書き換え（wrapTables・decorateAlerts）を残す。
    ========================================================================== */
-import { runtime } from '../ui/state';
+import { state, runtime } from '../ui/state';
 import { ALERT_LABELS, ALERT_MARKER_RE } from './callouts';
+import { createDiagramFrameHtml } from '../diagram/svg-postprocess';
 
 // Markdown 本文に、直接書かれた HTML の表・引用があるか。あるときだけ DOM の書き換えを行う
 export function noteRawHtmlBlocks(body: string): void {
@@ -48,6 +49,15 @@ function readAlert(parser: any, tokens: any[]): AlertParts | null {
 export function setupMarkedBlocks(): void {
   const base = new marked.Renderer();
   marked.use({
+    extensions: [
+      {
+        name: 'lucivoDiagram',
+        level: 'block',
+        renderer(token: any) {
+          return `${createDiagramFrameHtml(token.index, state.isVisualMode, token.curve)}\n`;
+        }
+      }
+    ],
     renderer: {
       // 表が親の枠をはみ出さないよう、横スクロールできる .table-container で包む
       table(token) {

@@ -84,6 +84,11 @@ import {
   setupFileMenu,
   setupFileDrop
 } from './ui/file-menu';
+import {
+  sanitizeMarkdownHtml,
+  postProcessDetachedFragment,
+  postProcessConnectedScope
+} from './ui/fragment-renderer';
 import { setupFileWatch } from './ui/file-watch';
 import {
   setupDocumentLinks,
@@ -192,9 +197,10 @@ function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
       mermaidBlocks.push({ index, code, hash, curve });
       runtime.lastMermaidSources[index] = code;
       tokensToKeep.push({
-        type: 'html',
-        raw: `<div class="lucivo-slot" data-slot="${index}"></div>`,
-        text: `<div class="lucivo-slot" data-slot="${index}"></div>`,
+        type: 'lucivoDiagram',
+        raw: token.raw,
+        index,
+        curve,
         __mermaid: { index, hash, curve }
       });
     } else {
@@ -288,32 +294,6 @@ function renderGroupSliceHtml(groups: StdBlockGroup[], links: Record<string, any
   }).join(sep);
 }
 
-function applyStandardScopePostProcess(
-  scope: HTMLElement,
-  mermaidBlocks: any[],
-  dirtyBlocks: any[],
-  cachedKeys: Map<number, string>
-) {
-  decorateAlerts(scope);
-  wrapTables(scope);
-  if (window.katex) renderMath(scope);
-  if (window.LucivoEmoji) renderEmoji(scope);
-  const slots = scope.querySelectorAll('.lucivo-slot');
-  slots.forEach(slot => {
-    const idx = parseInt(slot.getAttribute('data-slot'), 10);
-    const block = mermaidBlocks[idx];
-    if (!block) return;
-    const cacheKey = `${block.hash}-std`;
-    if (svgCache.has(cacheKey)) {
-      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, false, block.curve);
-      cachedKeys.set(idx, cacheKey);
-    } else {
-      slot.outerHTML = createDiagramCard(idx, '', true, false, block.curve);
-      dirtyBlocks.push({ ...block, modeTag: 'std', cacheKey });
-    }
-  });
-}
-
 // セパレータ要素でコンテナ直下の子ノード列をグループ単位に分割し、セパレータを除去する
 function splitContainerNodesBySep(container: HTMLElement, groupCount: number, sepAttrValue: string): ChildNode[][] {
   const buckets: ChildNode[][] = Array.from({ length: groupCount }, () => []);
@@ -351,10 +331,7 @@ function updateGroupHeadingLines(entry: StdBlockEntry, nextLines: number[]) {
 function headingTokenText(token: any, links: Record<string, any>): string {
   const slice: any = [token];
   slice.links = links;
-  const clean = DOMPurify.sanitize(marked.parser(slice), {
-    ADD_TAGS: ['div', 'span', 'strong', 'small'],
-    ADD_ATTR: ['class', 'data-slot', 'style']
-  });
+  const clean = sanitizeMarkdownHtml(marked.parser(slice));
   const tmp = document.createElement('div');
   tmp.innerHTML = clean;
   const heading = tmp.querySelector('h1, h2, h3, h4, h5, h6');
@@ -473,10 +450,7 @@ function renderVisualSlabElement(
   const slice: any = [...group.tokens];
   slice.links = links;
   const rawHtml = (group.frontMatterHtml || '') + marked.parser(slice);
-  const cleanHtml = DOMPurify.sanitize(rawHtml, {
-    ADD_TAGS: ['div', 'span', 'strong', 'small'],
-    ADD_ATTR: ['class', 'data-slot', 'style']
-  });
+  const cleanHtml = sanitizeMarkdownHtml(rawHtml);
   const slabHtml = buildSingleVisualSlabHtml(cleanHtml, group.stageNo, group.stripFirstH1);
   if (!slabHtml) return null;
 
@@ -485,22 +459,16 @@ function renderVisualSlabElement(
   const slabEl = holder.firstElementChild as HTMLElement | null;
   if (!slabEl) return null;
 
-  wrapTables(slabEl);
-  const slots = slabEl.querySelectorAll('.lucivo-slot');
-  slots.forEach(slot => {
-    const idx = parseInt(slot.getAttribute('data-slot'), 10);
-    const block = mermaidBlocks[idx];
-    if (!block) return;
-    const cacheKey = `${block.hash}-${modeTag}`;
-    if (svgCache.has(cacheKey)) {
-      slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, true, block.curve);
-      cachedKeys.set(idx, cacheKey);
-    } else {
-      slot.outerHTML = createDiagramCard(idx, '', true, true, block.curve);
-      dirtyBlocks.push({ ...block, modeTag, cacheKey });
-    }
+  postProcessDetachedFragment(slabEl, {
+    isVisual: true,
+    modeTag,
+    mermaidBlocks,
+    dirtyBlocks,
+    cachedKeys,
+    syncMathEmoji: false,
+    bindInteractions: bindViewportInteractions,
+    rootContainer: visContainer
   });
-  bindViewportInteractions(slabEl, visContainer);
   return slabEl;
 }
 
@@ -607,14 +575,19 @@ function renderApp() {
           const sliceGroups = groups.slice(addedStart, addedEnd);
           const sepAttr = `b${generation}`;
           const sliceRaw = renderGroupSliceHtml(sliceGroups, links, sepAttr);
-          const sliceClean = DOMPurify.sanitize(sliceRaw, {
-            ADD_TAGS: ['div', 'span', 'strong', 'small'],
-            ADD_ATTR: ['class', 'data-slot', 'style']
-          });
+          const sliceClean = sanitizeMarkdownHtml(sliceRaw);
           const tmp = document.createElement('div');
           tmp.innerHTML = sliceClean;
-          applyStandardScopePostProcess(tmp, mermaidBlocks, dirtyBlocks, cachedKeys);
-          bindViewportInteractions(tmp, stdContainer);
+          postProcessDetachedFragment(tmp, {
+            isVisual: false,
+            modeTag: 'std',
+            mermaidBlocks,
+            dirtyBlocks,
+            cachedKeys,
+            syncMathEmoji: true,
+            bindInteractions: bindViewportInteractions,
+            rootContainer: stdContainer
+          });
           const buckets = splitContainerNodesBySep(tmp, sliceGroups.length, sepAttr);
           const frag = document.createDocumentFragment();
           sliceGroups.forEach((g, idx) => {
@@ -638,24 +611,22 @@ function renderApp() {
         }
         prevStdCache = { envKey, linksSig, mermaidCount: mermaidBlocks.length, blocks: nextBlocks };
         stdContainer.classList.toggle('has-content-visibility', stdContainer.children.length >= 200);
-        // 接続後に非同期解決系（ローカル画像・未読込 KaTeX/絵文字）を実行
-        resolveFolderImages(stdContainer);
-        if (!window.katex) renderMath(stdContainer);
-        if (!window.LucivoEmoji) renderEmoji(stdContainer);
-        cachedKeys.forEach((cacheKey, idx) => {
-          applyReadableFit(stdContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
-        });
+        postProcessConnectedScope(stdContainer, { cachedKeys, fitRoot: stdContainer });
         usedIncremental = true;
       } else {
         // 初回または全体フォールバック時もセパレータ付き 1 回 sanitize でグループ境界を記録する
         const sepAttr = `b${generation}`;
         const rawHtml = renderGroupSliceHtml(groups, links, sepAttr);
-        const cleanHtml = DOMPurify.sanitize(rawHtml, {
-          ADD_TAGS: ['div', 'span', 'strong', 'small'],
-          ADD_ATTR: ['class', 'data-slot', 'style']
-        });
+        const cleanHtml = sanitizeMarkdownHtml(rawHtml);
         stdContainer.innerHTML = cleanHtml;
-        applyStandardScopePostProcess(stdContainer, mermaidBlocks, dirtyBlocks, cachedKeys);
+        postProcessDetachedFragment(stdContainer, {
+          isVisual: false,
+          modeTag: 'std',
+          mermaidBlocks,
+          dirtyBlocks,
+          cachedKeys,
+          syncMathEmoji: true
+        });
         const buckets = splitContainerNodesBySep(stdContainer, groups.length, sepAttr);
         prevStdCache = {
           envKey,
@@ -664,12 +635,7 @@ function renderApp() {
           blocks: groups.map((g, idx) => ({ key: g.stableKey, nodes: buckets[idx], headingLines: g.headingLines }))
         };
         stdContainer.classList.toggle('has-content-visibility', stdContainer.children.length >= 200);
-        resolveFolderImages(stdContainer);
-        if (!window.katex) renderMath(stdContainer);
-        if (!window.LucivoEmoji) renderEmoji(stdContainer);
-        cachedKeys.forEach((cacheKey, idx) => {
-          applyReadableFit(stdContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
-        });
+        postProcessConnectedScope(stdContainer, { cachedKeys, fitRoot: stdContainer });
         bindViewportInteractions(stdContainer);
         usedIncremental = true;
       }
@@ -815,10 +781,9 @@ function renderApp() {
 
         wrap.classList.toggle('has-content-visibility', wrap.querySelectorAll(':scope > .exhibition-slab').length >= 20);
         // 接続後に解決系（ローカル画像・数式・絵文字・Fit）を追加スラブに対してのみ実行
+        const emptyKeys = new Map<number, string>();
         insertedEls.forEach(el => {
-          resolveFolderImages(el);
-          renderMath(el);
-          renderEmoji(el);
+          postProcessConnectedScope(el, { cachedKeys: emptyKeys, fitRoot: visContainer, forceMathEmoji: true });
         });
         cachedKeys.forEach((cacheKey, idx) => {
           applyReadableFit(visContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
@@ -862,12 +827,7 @@ function renderApp() {
           slabs: slabEntries
         };
 
-        resolveFolderImages(visContainer);
-        renderMath(visContainer);
-        renderEmoji(visContainer);
-        cachedKeys.forEach((cacheKey, idx) => {
-          applyReadableFit(visContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
-        });
+        postProcessConnectedScope(visContainer, { cachedKeys, fitRoot: visContainer, forceMathEmoji: true });
         usedIncremental = true;
       }
     }
@@ -878,10 +838,7 @@ function renderApp() {
     prevVisCache = null;
     if (window.LucivoStage) LucivoStage.resetLights();
     const rawHtml = frontMatterHtml + marked.parser(tokensToKeep);
-    const cleanHtml = DOMPurify.sanitize(rawHtml, {
-      ADD_TAGS: ['div', 'span', 'strong', 'small'],
-      ADD_ATTR: ['class', 'data-slot', 'style']
-    });
+    const cleanHtml = sanitizeMarkdownHtml(rawHtml);
 
     if (isVisual) {
       stdWrapper.classList.add('hidden');
@@ -900,36 +857,21 @@ function renderApp() {
       visContainer.innerHTML = '';
       stdWrapper.classList.remove('hidden');
       stdContainer.innerHTML = isEmpty ? EMPTY_GUIDE_HTML : cleanHtml;
-      decorateAlerts(stdContainer);
       // 長い文書（200 ブロック以上）のみ画面外ブロックのレイアウト・描画を省く（#238）
       stdContainer.classList.toggle('has-content-visibility', !isEmpty && stdContainer.children.length >= 200);
     }
 
     if (isEmpty) applyUpdateCheckState(activeContainer);
-    wrapTables(activeContainer);
-    resolveFolderImages(activeContainer);
-    renderMath(activeContainer);
-    renderEmoji(activeContainer);
-    const slots = activeContainer.querySelectorAll('.lucivo-slot');
-
-    slots.forEach(slot => {
-      const idx = parseInt(slot.getAttribute('data-slot'), 10);
-      const block = mermaidBlocks[idx];
-      if (!block) return;
-      const cacheKey = `${block.hash}-${modeTag}`;
-      if (svgCache.has(cacheKey)) {
-        slot.outerHTML = createDiagramCard(idx, svgCache.get(cacheKey), false, isVisual, block.curve);
-        cachedKeys.set(idx, cacheKey);
-      } else {
-        slot.outerHTML = createDiagramCard(idx, '', true, isVisual, block.curve);
-        dirtyBlocks.push({ ...block, modeTag, cacheKey });
-      }
+    postProcessDetachedFragment(activeContainer, {
+      isVisual,
+      modeTag,
+      mermaidBlocks,
+      dirtyBlocks,
+      cachedKeys,
+      syncMathEmoji: false,
+      bindInteractions: bindViewportInteractions
     });
-
-    cachedKeys.forEach((cacheKey, idx) => {
-      applyReadableFit(activeContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
-    });
-    bindViewportInteractions(activeContainer);
+    postProcessConnectedScope(activeContainer, { cachedKeys, fitRoot: activeContainer, forceMathEmoji: true });
   }
 
   rebuildFollowIndex(activeContainer);

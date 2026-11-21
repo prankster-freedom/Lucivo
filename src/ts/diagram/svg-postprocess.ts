@@ -330,12 +330,13 @@ export function decorateStandardSvg(svg, diagramType) {
 // ======================================================================
 // 2. Visual Stage モード：インフォグラフィック・エンジン
 
-// curve: 矢印の形状を選べる図ではその形状、選べない図では null（DD-EDGE-010）
-export function createDiagramCard(index, svgHtml, isRendering, isVisual, curve = null) {
-  const content = isRendering
-    ? `<div class="py-12 font-mono text-xs text-blue-500 animate-pulse flex items-center justify-center">Rendering Diagram 0${index + 1}...</div>`
-    : svgHtml;
+export function diagramPlaceholderHtml(index: number): string {
+  return `<div class="py-12 font-mono text-xs text-blue-500 animate-pulse flex items-center justify-center">Rendering Diagram 0${index + 1}...</div>`;
+}
 
+// 図の枠だけを文字列の段階で出力する（#287）。中身（SVG または描画待ち）は描画後に [data-stage-index] へ差し込む。
+// .lucivo-slot と data-slot を枠自身に持たせることで、Visual Stage のスラブ判定と差し込みの入口を保つ。
+export function createDiagramFrameHtml(index: number, isVisual: boolean, curve: string | null = null): string {
   const cardClass = isVisual ? `exhibition-diagram-card infographic-bg-${state.infographicStyle}` : 'diagram-frame';
   const headerClass = isVisual ? 'exhibition-diagram-header' : 'diagram-frame-header';
   const viewportClass = isVisual ? 'exhibition-viewport' : 'diagram-viewport';
@@ -345,24 +346,18 @@ export function createDiagramCard(index, svgHtml, isRendering, isVisual, curve =
         `<button type="button" data-curve="${key}" data-index="${index}" aria-pressed="${key === curve}" class="edge-curve-btn pill-btn text-[10px]${key === curve ? ' is-active' : ''}">${label}</button>`).join('')}</div>`
     : '';
 
-  return `
-    <div id="diagram-frame-${index}" class="${cardClass}">
-      <div class="${headerClass}">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full ${isVisual ? 'bg-amber-500 shadow-sm' : 'bg-blue-500'}"></span>
-          <span class="font-mono text-[11px] font-bold tracking-wider" style="color: var(--text-primary);">${badgeLabel}</span>
-        </div>
-        <div class="flex items-center gap-1">
-          ${curvePicker}
-          ${scalePickerHtml(index)}
-          <button type="button" data-action="png" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">PNG</button>
-          <button type="button" data-action="svg" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">SVG</button>
-          <button type="button" data-action="zoom" data-index="${index}" class="text-[11px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer">Expand</button>
-        </div>
-      </div>
-      <div class="${viewportClass} is-scale-fit" data-stage-index="${index}">${content}</div>
-    </div>
-  `;
+  return `<div id="diagram-frame-${index}" class="${cardClass} lucivo-slot" data-slot="${index}"><div class="${headerClass}"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full ${isVisual ? 'bg-amber-500 shadow-sm' : 'bg-blue-500'}"></span><span class="font-mono text-[11px] font-bold tracking-wider" style="color: var(--text-primary);">${badgeLabel}</span></div><div class="flex items-center gap-1">${curvePicker}${scalePickerHtml(index)}<button type="button" data-action="png" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">PNG</button><button type="button" data-action="svg" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">SVG</button><button type="button" data-action="zoom" data-index="${index}" class="text-[11px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer">Expand</button></div></div><div class="${viewportClass} is-scale-fit" data-stage-index="${index}"></div></div>`;
+}
+
+// curve: 矢印の形状を選べる図ではその形状、選べない図では null（DD-EDGE-010）
+export function createDiagramCard(index, svgHtml, isRendering, isVisual, curve = null) {
+  const content = isRendering ? diagramPlaceholderHtml(index) : svgHtml;
+  const frame = createDiagramFrameHtml(index, isVisual, curve);
+  const marker = `data-stage-index="${index}">`;
+  const pos = frame.indexOf(marker);
+  if (pos < 0) return frame;
+  const insertAt = pos + marker.length;
+  return frame.slice(0, insertAt) + content + frame.slice(insertAt);
 }
 
 /* ==========================================================================
