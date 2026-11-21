@@ -73,17 +73,17 @@ jobs:
 
           node - <<'EOF'
           const fs = require('fs');
-          const readme = fs.readFileSync('README.md', 'utf8');
+          const notes = fs.readFileSync('release-notes.md', 'utf8');
           const ver = process.env.VERSION;
           const zipName = `Lucivo-v${ver}.zip`;
           const tag = process.env.TAG;
           const repo = process.env.REPO;
           const dlUrl = `https://github.com/${repo}/releases/download/${tag}/${zipName}`;
           const escapedVer = ver.replace(/\./g, '\\.');
-          const re = new RegExp(`(^###\\s+${escapedVer}(?:[^\\n]*)\\n[\\s\\S]*?)(?=^###\\s+|^##\\s+|(?![\\s\\S]))`, 'm');
-          const m = readme.match(re);
+          const re = new RegExp(`(^##\\s+${escapedVer}(?:[^\\n]*)\\n[\\s\\S]*?)(?=^##\\s+|(?![\\s\\S]))`, 'm');
+          const m = notes.match(re);
           if (!m) {
-            console.error(`Release notes section for ${ver} not found in README.md`);
+            console.error(`Release notes section for ${ver} not found in release-notes.md`);
             process.exit(1);
           }
           const section = m[1].trim();
