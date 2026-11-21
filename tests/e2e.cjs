@@ -13,7 +13,8 @@ const {
   testLocalImages,
   testFolder,
   testSampleLinks,
-  testEncoding
+  testEncoding,
+  testAutoReload
 } = require('./e2e/file-loading.cjs');
 
 const {
@@ -75,6 +76,7 @@ const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015', 'TC-FILE-034'], fn: testFileLoading },
   { name: 'testUrlLoading', tcPrefix: ['TC-FILE-035', 'TC-FILE-041', 'TC-FILE-042', 'TC-FILE-043', 'TC-FILE-044', 'TC-FILE-045'], fn: testUrlLoading },
+  { name: 'testAutoReload', tcPrefix: ['TC-FILE-046'], fn: testAutoReload },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },

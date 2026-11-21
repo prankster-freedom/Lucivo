@@ -1347,9 +1347,109 @@ async function testEncoding(browser) {
   await page.context().close();
 }
 
+// TC-FILE-046: ローカルファイルの外部更新の自動反映（FR-062, DD-FILE-094, #282）
+async function testAutoReload(browser) {
+  const page = await openApp(browser);
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await waitRendered(page);
+
+  // 擬似 FileSystemFileHandle で showOpenFilePicker をモック
+  await page.evaluate(() => {
+    window.__mockFileState = {
+      text: '# Initial Doc\n\n' + Array.from({ length: 80 }, (_, i) => `Paragraph ${i}\n`).join('\n'),
+      lastModified: 1000
+    };
+    window.showOpenFilePicker = async () => [{
+      kind: 'file',
+      name: 'live-note.md',
+      async getFile() {
+        const s = window.__mockFileState;
+        const buf = new TextEncoder().encode(s.text).buffer;
+        return {
+          name: 'live-note.md',
+          lastModified: s.lastModified,
+          size: buf.byteLength,
+          async arrayBuffer() { return buf; }
+        };
+      }
+    }];
+  });
+
+  await page.click('#btn-file-menu');
+  await page.click('#menu-open-markdown');
+  await page.waitForFunction(() => document.title === 'live-note.md - Lucivo', null, { timeout: 10000 });
+  await waitRendered(page);
+
+  // スクロールした状態で外部更新（未編集時 → スクロール位置を保って自動反映）
+  const beforeScroll = await page.evaluate(() => {
+    const sc = document.getElementById('preview-scroll');
+    sc.scrollTop = 240;
+    window.__mockFileState = {
+      text: '# Updated Externally\n\n' + Array.from({ length: 80 }, (_, i) => `Updated ${i}\n`).join('\n'),
+      lastModified: 2000
+    };
+    return { top: sc.scrollTop, sh: sc.scrollHeight, ch: sc.clientHeight, h1: document.querySelector('#standard-doc-container h1')?.textContent || '' };
+  });
+  await page.evaluate(() => window.checkWatchedFileNow());
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value.startsWith('# Updated Externally'), null, { timeout: 5000 });
+  const autoRes = await page.evaluate(() => {
+    const sc = document.getElementById('preview-scroll');
+    return {
+      val: document.getElementById('markdown-editor').value.slice(0, 24),
+      scrollTop: sc.scrollTop,
+      sh: sc.scrollHeight,
+      ch: sc.clientHeight,
+      bannerHidden: document.getElementById('external-update-banner').classList.contains('hidden'),
+      toast: document.getElementById('toast-message').textContent
+    };
+  });
+
+  // 編集中（未保存変更あり）に外部更新 → 上書きせずバナー表示、「読み込み直す」で反映
+  await page.click('#btn-edit-unlock');
+  await page.evaluate(() => {
+    const ed = document.getElementById('markdown-editor');
+    ed.value = '# Local Unsaved Edit\n';
+    window.__mockFileState = { text: '# Updated While Dirty\n', lastModified: 3000 };
+  });
+  await page.evaluate(() => window.checkWatchedFileNow());
+  const dirtyRes = await page.evaluate(() => ({
+    val: document.getElementById('markdown-editor').value,
+    bannerShown: !document.getElementById('external-update-banner').classList.contains('hidden')
+  }));
+  await page.click('#btn-external-reload');
+  await page.waitForFunction(() => document.getElementById('markdown-editor').value === '# Updated While Dirty\n', null, { timeout: 5000 });
+  const manualReload = await page.evaluate(() => ({
+    val: document.getElementById('markdown-editor').value,
+    bannerHidden: document.getElementById('external-update-banner').classList.contains('hidden')
+  }));
+
+  // 設定で自動反映をオフにすると、外部更新しても自動反映されない
+  await page.click('#btn-open-settings');
+  await page.uncheck('#setting-auto-reload');
+  await page.click('#btn-close-settings');
+  await page.evaluate(() => {
+    window.__mockFileState = { text: '# Should Not Reload\n', lastModified: 4000 };
+  });
+  const checkedWhenOff = await page.evaluate(() => window.checkWatchedFileNow());
+  const offVal = await page.evaluate(() => document.getElementById('markdown-editor').value);
+  await page.click('#btn-open-settings');
+  await page.check('#setting-auto-reload');
+  await page.click('#btn-close-settings');
+
+  record('TC-FILE-046',
+    autoRes.val.startsWith('# Updated Externally') && autoRes.scrollTop > 0 && autoRes.bannerHidden && autoRes.toast.includes('外部更新を反映しました')
+    && dirtyRes.val === '# Local Unsaved Edit\n' && dirtyRes.bannerShown
+    && manualReload.val === '# Updated While Dirty\n' && manualReload.bannerHidden
+    && checkedWhenOff === false && offVal === '# Updated While Dirty\n'
+    && page.consoleErrors.length === 0,
+    JSON.stringify({ beforeScroll, autoRes, dirtyRes, manualReload, checkedWhenOff, offVal, errors: page.consoleErrors }));
+  await page.context().close();
+}
+
 module.exports = {
   testFileLoading,
   testUrlLoading,
+  testAutoReload,
   testTitleAndDrop,
   testLocalImages,
   testFolder,
