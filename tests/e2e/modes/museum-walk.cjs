@@ -136,9 +136,11 @@ async function testMuseumWalk(browser) {
     await page.keyboard.press('ArrowRight');
     const zTap1 = await settle(page);
     await page.mouse.move(700, 450);
-    await page.mouse.wheel(0, 400);
+    await page.mouse.wheel(0, -400);
     const zWheel = await settle(page);
-    await holdUntil(page, 'ArrowDown', z => z > zWheel + 100);
+    await page.mouse.wheel(0, 200);
+    const zWheelBack = await settle(page);
+    await holdUntil(page, 'ArrowDown', z => z > zWheelBack + 100);
     const zBack = await settle(page);
     const body = i0.parts.find(p => p.kind === 'body' && p.z < g1.z);
     await walkTo(page, readingZ(body, 512));
@@ -148,9 +150,9 @@ async function testMuseumWalk(browser) {
     await walkTo(page, readingZ(body, 512));
     const noGaze = await info(page);
     await page.keyboard.press('g');
-    record('TC-MWLK-002', afterHold.z < g1.z && zoneAfter !== zoneBefore && /01/.test(zoneAfter) && zTap1 < zTap0 - 200 && zWheel < zTap1 - 200 && zBack > zWheel
+    record('TC-MWLK-002', afterHold.z < g1.z && zoneAfter !== zoneBefore && /01/.test(zoneAfter) && zTap1 < zTap0 - 200 && zWheel < zTap1 - 200 && zWheelBack > zWheel && zBack > zWheelBack
       && stopped.yaw > 40 && !noGaze.gaze && Math.abs(noGaze.yaw) < 5,
-    JSON.stringify({ g1: g1.z, afterHold: afterHold.z, zoneBefore, zoneAfter, zTap0, zTap1, zWheel, zBack, stoppedYaw: stopped.yaw, noGazeYaw: noGaze.yaw }));
+    JSON.stringify({ g1: g1.z, afterHold: afterHold.z, zoneBefore, zoneAfter, zTap0, zTap1, zWheel, zWheelBack, zBack, stoppedYaw: stopped.yaw, noGazeYaw: noGaze.yaw }));
 
     // TC-MWLK-003: 広間の立体図と小部屋の銘板（ゲラ）。T で外観を切り替え（図板と図の色も追従）、R で入口へ戻る（#129）
     const hall = i0.sections.find(s => s.name === 'hall');
