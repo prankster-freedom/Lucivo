@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { hexToRgba } from '../utils/color';
+import { hexToRgba, mixHex } from '../utils/color';
 import {
   NODE_DECORATED_TYPES,
   CIRCLE_DARK_TEXT_FILLS,
   SEQUENCE_MATH_LIFT,
+  getToneEntry,
   getEffectiveVisualPalette,
   LIGHT_SECTION_TEXT,
   state
@@ -90,15 +91,24 @@ export function addVisualDefs(svg) {
 
   const uid = Math.random().toString(36).slice(2, 7);
   const isDark = state.appearance === 'dark';
-  // Dark 外観やカスタムトーン選択時に図のノード色が背景に沈まないよう、鮮明なグラデーションを選択する（#260）
-  const gAmber = isDark ? ['#F59E0B', '#FDE047'] : ['#E89B27', '#F7D05C'];
-  const gAqua = isDark ? ['#22D3EE', '#A5F3FC'] : ['#73E8F4', '#DAEDFA'];
-  const gCoral = isDark ? ['#FB7185', '#FDA4AF'] : ['#E87C6C', '#F6CBC3'];
-  const gLime = isDark ? ['#4ADE80', '#BEF264'] : ['#8CEE97', '#CEF65B'];
-  const capCoral = isDark ? ['#F08060', '#FFA388'] : ['#E29578', '#ECAC94'];
-  const capGold = isDark ? ['#F0B429', '#FFD466'] : ['#E5AD35', '#F3C868'];
-  const capViolet = isDark ? ['#8CA6F8', '#B4C6FF'] : ['#9AAEE4', '#BAC7EC'];
-  const capTeal = isDark ? ['#45C4C0', '#7AE0DC'] : ['#64ADB0', '#88C4C6'];
+  const hasCustomTone = Boolean(state.tone && state.tone !== 'default');
+  const toneMode = hasCustomTone ? (isDark ? getToneEntry(state.tone).dark : getToneEntry(state.tone).light) : null;
+  const palette = hasCustomTone ? getEffectiveVisualPalette(state.infographicStyle, state.appearance) : null;
+  const softGrad = (hex: string) => (isDark
+    ? [mixHex(hex, toneMode.canvasBg, 0.32), mixHex(hex, toneMode.canvasBg, 0.54)]
+    : [mixHex(hex, '#FFFFFF', 0.45), mixHex(hex, '#FFFFFF', 0.74)]);
+  const capGrad = (hex: string) => (isDark
+    ? [hex, mixHex(hex, '#FFFFFF', 0.28)]
+    : [hex, mixHex(hex, '#FFFFFF', 0.24)]);
+  // Dark 外観やカスタムトーン選択時に図のノード色が背景に沈まないよう、鮮明なグラデーションを選択する（#260, #311）
+  const gAmber = hasCustomTone ? softGrad(palette[0]) : (isDark ? ['#F59E0B', '#FDE047'] : ['#E89B27', '#F7D05C']);
+  const gAqua = hasCustomTone ? softGrad(palette[1]) : (isDark ? ['#22D3EE', '#A5F3FC'] : ['#73E8F4', '#DAEDFA']);
+  const gCoral = hasCustomTone ? softGrad(palette[2]) : (isDark ? ['#FB7185', '#FDA4AF'] : ['#E87C6C', '#F6CBC3']);
+  const gLime = hasCustomTone ? softGrad(palette[3]) : (isDark ? ['#4ADE80', '#BEF264'] : ['#8CEE97', '#CEF65B']);
+  const capCoral = hasCustomTone ? capGrad(palette[0]) : (isDark ? ['#F08060', '#FFA388'] : ['#E29578', '#ECAC94']);
+  const capGold = hasCustomTone ? capGrad(palette[1]) : (isDark ? ['#F0B429', '#FFD466'] : ['#E5AD35', '#F3C868']);
+  const capViolet = hasCustomTone ? capGrad(palette[2]) : (isDark ? ['#8CA6F8', '#B4C6FF'] : ['#9AAEE4', '#BAC7EC']);
+  const capTeal = hasCustomTone ? capGrad(palette[3]) : (isDark ? ['#45C4C0', '#7AE0DC'] : ['#64ADB0', '#88C4C6']);
 
   defs.insertAdjacentHTML('beforeend', `
     <filter id="vis-soft-shadow-${uid}" x="-30%" y="-30%" width="160%" height="170%">

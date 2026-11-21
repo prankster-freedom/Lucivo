@@ -1971,6 +1971,72 @@ async function testCoverAndTables(browser) {
   record('TC-VTPL-035', toneResults.length === 16 && toneBad.length === 0 && darkSlabSet.size >= 5,
     JSON.stringify(toneBad.length ? { toneBad, darkSlabs: darkSlabSet.size } : { checked: toneResults.length, minStepAcrossAll: Math.min(...toneResults.map(r => r.minStepRatio)), minBadgeAcrossAll: Math.min(...toneResults.map(r => r.badgeRatio)), minChevronAcrossAll: Math.min(...toneResults.map(r => r.chevronRatio)), darkSlabs: darkSlabSet.size }));
 
+  // TC-VTPL-039 カラートーン選択時の Mermaid 配色連動（#311）とインラインコードカラーコードスウォッチ（#312）
+  {
+    const TONE_DIAG_MD = [
+      '# Tone & Swatch Check',
+      '',
+      '## Diagram & Swatch Check',
+      '',
+      '| Role | Code |',
+      '| :--- | :--- |',
+      '| Hex | `#F3A78B` |',
+      '| RGB | `rgb(15, 23, 42)` |',
+      '| HSL | `hsl(210, 80%, 50%)` |',
+      '| Unsafe | `#fff;background:url(x)` |',
+      '',
+      '```css',
+      '.box { color: #F3A78B; }',
+      '```',
+      '',
+      '```mermaid',
+      'flowchart LR',
+      '  A[開始] --> B[処理]',
+      '```'
+    ].join('\n');
+    await setMode(page, { style: 'shapes', appearance: 'light' });
+    await setDocument(page, TONE_DIAG_MD);
+    const readToneDiag = async () => {
+      await page.locator('#visual-stage-container .exhibition-viewport').first().scrollIntoViewIfNeeded();
+      await page.waitForFunction(() => Boolean(document.querySelector('#visual-stage-container .exhibition-viewport svg linearGradient[id*="vis-g-amber-"]')), null, { timeout: 5000 }).catch(() => {});
+      return page.evaluate(() => {
+        const svg = document.querySelector('#visual-stage-container .exhibition-viewport svg');
+        const stop = svg ? svg.querySelector('linearGradient[id*="vis-g-amber-"] stop') : null;
+        const nodeRect = svg ? svg.querySelector('.node rect, .node polygon') : null;
+        const swatches = Array.from(document.querySelectorAll('#visual-stage-container code .lucivo-color-swatch')).map(s => s.style.backgroundColor);
+        const preSwatches = document.querySelectorAll('#visual-stage-container pre code .lucivo-color-swatch').length;
+        const codeTexts = Array.from(document.querySelectorAll('#visual-stage-container p code, #visual-stage-container td code')).map(c => ({
+          text: c.textContent,
+          hasSwatch: Boolean(c.querySelector('.lucivo-color-swatch'))
+        }));
+        return {
+          gradStop: stop ? stop.getAttribute('stop-color') : null,
+          nodeFill: nodeRect ? getComputedStyle(nodeRect).fill : null,
+          swatches,
+          preSwatches,
+          codeTexts
+        };
+      });
+    };
+    const defLight = await readToneDiag();
+    await page.evaluate(() => document.querySelector('#tone-menu .tone-menu-item[data-tone-id="cobalt-workshop"]')?.click());
+    await waitRendered(page);
+    const cobaltLight = await readToneDiag();
+    await setMode(page, { style: 'shapes', appearance: 'dark' });
+    const cobaltDark = await readToneDiag();
+    await page.evaluate(() => document.querySelector('#tone-menu .tone-menu-item[data-tone-id="default"]')?.click());
+    await waitRendered(page);
+    const defDark = await readToneDiag();
+    await setMode(page, { style: 'shapes', appearance: 'light' });
+    const unsafeHasSwatch = defLight.codeTexts.find(c => c.text.includes('url('))?.hasSwatch ?? true;
+    record('TC-VTPL-039',
+      defLight.swatches.length === 3 && defLight.preSwatches === 0 && !unsafeHasSwatch
+      && defLight.gradStop !== cobaltLight.gradStop
+      && defDark.gradStop !== cobaltDark.gradStop
+      && page.consoleErrors.length === 0,
+      JSON.stringify({ defLight, cobaltLight, defDark, cobaltDark, errors: page.consoleErrors }));
+  }
+
   // TC-VTPL-036 スタイル別見出し書体（声色）の切替と配布先出し分け（#218, DTP-004, DD-VTPL-035）
   // 1) スタンドアロン版（dist/）: 書体ファイルを含めず、スタイル切替でも style-fonts 読み込みやエラーが起きない
   const standaloneNoFontDir = !fs.existsSync(path.join(APP_DIR, 'vendor', 'style-fonts'));

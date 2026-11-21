@@ -260,7 +260,22 @@ export const TIGHT_VIEWBOX_TYPES = ['timeline', 'journey'];
 // Dark の背景の上でノードと枝、スライスと凡例が黒く沈むので、明度をそろえた色を明示する（DD-DIAG-025）
 export const DARK_SECTION_HUES = [215, 172, 262, 32, 145, 330, 195, 12, 95, 285, 50, 240];
 export function darkSectionScale() {
-  const vars = {};
+  const vars: Record<string, string> = {};
+  if (state.tone && state.tone !== 'default') {
+    const entry = getToneEntry(state.tone);
+    const palette = [entry.dark.c1, entry.dark.c2, entry.dark.c3, entry.dark.c4];
+    const fillWeights = [0.46, 0.58, 0.34];
+    const pieWeights = [0.22, 0.42, 0.58];
+    for (let i = 0; i < 12; i++) {
+      const base = palette[i % 4];
+      const band = Math.floor(i / 4);
+      vars[`cScale${i}`] = mixHex(base, entry.dark.canvasBg, fillWeights[band]);
+      vars[`cScalePeer${i}`] = base;
+      vars[`cScaleLabel${i}`] = entry.dark.text;
+      vars[`pie${i + 1}`] = mixHex(base, entry.dark.canvasBg, pieWeights[band]);
+    }
+    return vars;
+  }
   DARK_SECTION_HUES.forEach((hue, i) => {
     vars[`cScale${i}`] = `hsl(${hue}, 45%, 38%)`;
     vars[`cScalePeer${i}`] = `hsl(${hue}, 50%, 58%)`;
@@ -415,15 +430,17 @@ export const CIRCLE_DARK_TEXT_FILLS = ['#ECB674'];
 // シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）
 export const SEQUENCE_MATH_LIFT = 6;
 
-// 公開リポジトリ（最新版の配布元）。ヘッダーのロゴのリンク（index.html）も同じ URL にする（FR-024）
+// 公開リポジトリ（最新版の配布元）と Lucivo で README を開く公開 URL（FR-024, FR-049, #298）
 export const REPOSITORY_URL = 'https://github.com/prankster-freedom/Lucivo';
+export const README_VIEWER_URL = `https://prankster-freedom.github.io/Lucivo/preview/?url=${encodeURIComponent('https://github.com/prankster-freedom/Lucivo/blob/main/README.md')}&view=canvas&mode=visual`;
 // 新しいタブで開き、開いたページから Lucivo の画面を操作されないようにする
 export const REPOSITORY_LINK_ATTRS = `href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer"`;
+export const README_VIEWER_LINK_ATTRS = `href="${README_VIEWER_URL}" target="_blank" rel="noopener noreferrer"`;
 
 export const EMPTY_GUIDE_HTML = `
 <div class="empty-guide">
   <div class="empty-guide-logo">
-    <a class="brand-link" ${REPOSITORY_LINK_ATTRS} title="Lucivo の公開リポジトリ（最新版）を開く">
+    <a class="brand-link" ${README_VIEWER_LINK_ATTRS} title="Lucivo で README を開く（インターネットに接続します）">
       <img class="brand-logo-light" src="./assets/logos/light/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —（公開リポジトリを開く）" width="264" height="72" />
       <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —（公開リポジトリを開く）" width="264" height="72" />
     </a>

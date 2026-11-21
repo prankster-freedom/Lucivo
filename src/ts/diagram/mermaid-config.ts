@@ -71,9 +71,30 @@ export function getBlockCurve(index, code) {
   return state.curveByIndex.get(index) || DEFAULT_CURVES[target];
 }
 
-// 描画に使う配色。Visual Stage はスタイルごとの配色、通常モードは外観とパレットの配色
+// 描画に使う配色。Visual Stage はトーンまたはスタイルごとの配色、通常モードは外観とパレットの配色（#311）
 export function getDiagramSpec(isVisual) {
   if (isVisual) {
+    if (state.tone && state.tone !== 'default') {
+      const entry = getToneEntry(state.tone);
+      const isDark = state.appearance === 'dark';
+      const t = isDark ? entry.dark : entry.light;
+      return {
+        clusterBg: t.cardBg,
+        clusterBorder: t.edge,
+        nodeBg: t.cardBg,
+        nodeStroke: t.c1,
+        nodeText: t.text,
+        edgeStroke: t.edge,
+        edgeLabelBg: t.canvasBg,
+        edgeLabelBorder: t.edge,
+        edgeLabelText: t.text,
+        secondary: mixHex(t.c2, t.canvasBg, isDark ? 0.65 : 0.78),
+        tertiary: mixHex(t.c3, t.canvasBg, isDark ? 0.65 : 0.78),
+        lifeline: t.edge,
+        activationBg: mixHex(t.c2, t.canvasBg, isDark ? 0.62 : 0.75),
+        activationBorder: t.c2
+      };
+    }
     const themes = state.appearance === 'dark' ? VISUAL_THEMES_DARK : VISUAL_THEMES;
     return themes[state.infographicStyle] || themes.shapes;
   }

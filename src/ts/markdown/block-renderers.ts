@@ -46,6 +46,18 @@ function readAlert(parser: any, tokens: any[]): AlertParts | null {
   return { type: match[1].toLowerCase(), tokens: body };
 }
 
+const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const RGB_COLOR_RE = /^rgba?\(\s*\d{1,3}%?(?:\s*,\s*|\s+)\d{1,3}%?(?:\s*,\s*|\s+)\d{1,3}%?(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i;
+const HSL_COLOR_RE = /^hsla?\(\s*\d{1,3}(?:deg|rad|grad|turn)?(?:\s*,\s*|\s+)\d{1,3}%(?:\s*,\s*|\s+)\d{1,3}%(?:\s*[,/]\s*(?:0|1|0?\.\d+|\d{1,3}%))?\s*\)$/i;
+
+// 厳格な書式に一致するカラーコード文字列のみを返す（NFR-003: CSS インジェクション防止）
+export function matchInlineColorCode(raw: string): string | null {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  if (HEX_COLOR_RE.test(s) || RGB_COLOR_RE.test(s) || HSL_COLOR_RE.test(s)) return s;
+  return null;
+}
+
 export function setupMarkedBlocks(): void {
   const base = new marked.Renderer();
   marked.use({
@@ -69,6 +81,13 @@ export function setupMarkedBlocks(): void {
         if (!alert) return false;
         const label = ALERT_LABELS[alert.type];
         return `<div class="md-alert md-alert-${alert.type}" role="note"><p class="md-alert-title"><span class="md-alert-icon" aria-hidden="true"></span>${label}</p>${this.parser.parse(alert.tokens)}</div>\n`;
+      },
+      // インラインコード内のカラーコードに色見本スウォッチを添える（#312）
+      codespan(token) {
+        const html = base.codespan.call(this, token);
+        const color = matchInlineColorCode(token.text);
+        if (!color) return html;
+        return html.replace('<code>', `<code><span class="lucivo-color-swatch" style="background-color:${color};" aria-hidden="true"></span>`);
       }
     }
   });
