@@ -1,6 +1,6 @@
 ---
 name: swe1
-description: ソフトウェア開発の工程 1（SWE.1: ソフトウェア要求分析）。全体のつながりが分かる要求仕様書（SRS）と個別 feature 要求仕様書（SRS/features/Feature名/）を作成・更新するとき、要求の追加・変更を整理するときに使用する。FR/NFR の ID 管理、PlantUML のユースケース図・シーケンス図を含む。
+description: "ソフトウェア開発の工程 1（SWE.1: ソフトウェア要求分析）。全体のつながりが分かる要求仕様書（SRS）と個別 feature 要求仕様書（SRS/features/Feature名/）を作成・更新するとき、要求の追加・変更を整理するときに使用する。FR/NFR の ID 管理、PlantUML のユースケース図・シーケンス図を含む。"
 argument-hint: "[対象プロジェクト・要求の概要]"
 metadata:
   version: "2.0.0"
