@@ -95,7 +95,7 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 一方、Dependabot version updates は、GitHub Actions のアクションに限ってオンにする（`.github/dependabot.yml` の `github-actions` だけ。npm は対象にしない）。アクションには、上の「配布物が古いまま残る」問題がないため。
 
 - アクションの指定は、SHA に固定せず、マイナー・パッチまで書いたタグ（`actions/checkout@v7.0.1` など）にする。許可するアクションは GitHub 製のみで、タグの付け替えの危険より、版の読みやすさと更新の手間の少なさを採る
-- Node.js の版は、全ワークフローで `22` にそろえる（E2E で試した版と、配布物をビルドする版を同じにする）。上げるときは、1 つの PR で全ワークフローを上げる
+- Node.js の版は、全ワークフローで `26` にそろえる（E2E で試した版と、配布物をビルドする版を同じにする）。上げるときは、1 つの PR で全ワークフローを上げる
 - Dependabot の PR は、作成者が所有者でないため `canary-auto-merge.yml` の対象にならず、自動でマージされない。CI（lint・test）の結果を見て、ユーザーがマージする
 
 ## 8. GitHub Release（release スキルの追加手順）
