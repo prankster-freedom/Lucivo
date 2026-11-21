@@ -319,3 +319,10 @@ sequenceDiagram
 - 起動時（`app.ts` の `DOMContentLoaded`）は、`setupEventListeners()` と `setupViewModeControls()` の完了後、`setupMermaid()`・`renderApp()` の前に `applyInitialDisplayStateFromUrl()` を実行し、`state.isVisualMode` / `state.appearance` / `state.infographicStyle` / `state.tone` / `state.viewMode` と各 UI（`data-appearance`・Favicon・モードボタン・スタイルボタン・トーンメニュー・ビューモード）を初期化する。
 - 表示状態の変更ハンドラ（`setStageMode`、`selectInfographicStyle`、`selectTone`、`setViewMode`、`btnTheme.onclick`）は、状態変更後に `syncUrlFromState()` を呼ぶ（発表モード中 `is-stage-show` は一時変更のためスキップする）。
 - `syncBrowserUrl()` は `URL` オブジェクトの `searchParams` を構築し、既定値（`mode=fast`, `theme=light`, `style=shapes`, `tone=default`, `view=defaultViewMode`）と一致するキーは削除し、`hash` の旧パラメータ（`#url=` 等）は整理して `window.history.replaceState(null, '', nextUrl)` で更新する。`file://` 等で `replaceState` が例外を投げた場合は `try/catch` で無視して処理を継続する。
+
+### DD-FILE-094 ローカルファイルの外部更新検知と自動反映（`FR-062`）
+
+- `ts/ui/file-watch.ts` が現在開いているローカルファイルのハンドル（`WatchTarget`）をメモリ上に保持し、`window` の `focus`・`document` の `visibilitychange`・2 秒間隔タイマーで `getFile()` を呼び出し、`lastModified` と `size` の変化を比較する。
+- 単一ファイルは `file-menu.ts` の「ファイルを開く…」で `window.showOpenFilePicker()` を優先使用し（失敗・非対応時は `runtime.preferFileInput = true` にして `<input type="file">` へフォールバック）、ドロップ時は `handleDroppedDataTransfer()` で取得済みの `FileSystemFileHandle` を `loadMarkdownFile()` へ渡す。フォルダ内ファイルは `makeHandleFolder()` に `hasLiveHandle: true` を付け、`openFolderFile()` で `watchFile()` を登録する。
+- 変化検知時、エディタが未編集（`editor.value === runtime.lastLoadedMarkdown`）なら `preview-scroll.scrollTop` を退避して `decodeMarkdown()` → `prepareLoadedText()` → `applyLoadedMarkdown()`（スクロール維持・サイレント）で自動反映し、トーストで通知する。編集中のときは上書きせず、`#external-update-banner`（`#pane-preview` 上部）に「読み込み直す」ボタンを表示してトーストで通知する。
+- タブ非表示中および発表中（`is-stage-show` / `is-museum-walk` 等）は監視をスキップする。設定モーダル（`#settings-modal`）の `#setting-auto-reload` は `localStorage` の `lucivo.autoReloadOnChange`（既定 `'1'`）に保存する。
