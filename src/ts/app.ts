@@ -83,6 +83,7 @@ import {
   setupFileMenu,
   setupFileDrop
 } from './ui/file-menu';
+import { setupFileWatch } from './ui/file-watch';
 import {
   setupDocumentLinks,
   setupFolder,
@@ -1991,6 +1992,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupKeyboardShortcuts();
   setupFileMenu();
   setupFileDrop();
+  setupFileWatch();
   setupFolder();
   setupUpdateCheck();
   setupDiagramPanZoom();

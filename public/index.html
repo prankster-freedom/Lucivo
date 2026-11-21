@@ -293,6 +293,14 @@
 
     <!-- 右ペイン：プレビュー領域 -->
     <section id="pane-preview" class="flex-1 h-full flex flex-col min-w-0 min-h-0 relative">
+      <!-- 外部更新通知バー（FR-062, DD-FILE-094, #282） -->
+      <div id="external-update-banner" class="hidden px-4 py-2 border-b flex items-center justify-between gap-3 text-xs shrink-0" role="status" aria-live="polite" style="background: var(--panel-sub); border-color: var(--border-subtle); color: var(--text-primary);">
+        <span id="external-update-message" class="truncate">ファイルが外部で更新されました</span>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-external-reload" type="button" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer">読み込み直す</button>
+          <button id="btn-external-reload-dismiss" type="button" class="w-6 h-6 rounded flex items-center justify-center text-xs cursor-pointer" style="color: var(--text-muted);" aria-label="通知を閉じる">✕</button>
+        </div>
+      </div>
       <div id="preview-scroll" class="flex-1 overflow-y-auto select-text" style="background-color: var(--app-bg);">
         <!-- 1. 通常モード表示コンテナ -->
         <div id="standard-doc-wrapper" class="p-4 sm:p-6 lg:p-10">
@@ -331,6 +339,15 @@
           <span>ファイルを開いたときに整える（見出しの空白・前後の空行・行末の空白・リストの記号・表の列）</span>
         </label>
         <button id="btn-format-now" type="button" class="settings-action-btn">今の文書を整える</button>
+      </div>
+
+      <!-- ローカルファイルの外部更新（FR-062, DD-FILE-094, #282） -->
+      <div class="flex flex-col gap-2 border-t pt-3" style="border-color: var(--border-subtle);">
+        <label class="text-[11px] font-mono uppercase font-semibold" style="color: var(--text-muted);">ローカルファイルの自動反映</label>
+        <label class="settings-toggle" for="setting-auto-reload">
+          <input id="setting-auto-reload" type="checkbox" checked />
+          <span>開いているローカルファイルが外部で更新されたとき自動で反映する（未編集時のみ）</span>
+        </label>
       </div>
 
       <!-- Visualモードの背景・前景演出（FR-060, DTP-VTPL-096, #202） -->

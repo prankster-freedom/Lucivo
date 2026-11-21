@@ -14,6 +14,7 @@ export const runtime: Record<string, any> = {
   currentFolderPath: null,
   currentSampleFile: null,
   preferFolderInput: false,
+  preferFileInput: false,
   recentFolderHandle: null,
   currentRemoteUrl: null as string | null,
   currentRemoteFetchUrl: null as string | null,

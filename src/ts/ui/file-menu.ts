@@ -3,6 +3,7 @@ import { downloadBlob } from '../utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from '../utils/text-decode';
 import { showToast, updateStatus } from './toast';
 import { extractDroppedUrl } from './url-loader';
+import { watchFile, clearWatchedFile } from './file-watch';
 import { applyUpdateCheckState, checkForUpdate } from './update-check';
 import { setupPresentModes } from './present-modes';
 import {
@@ -61,9 +62,12 @@ export function confirmDiscardEdits(fileName) {
 // isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
 // encoding: ファイルから読んだときの文字コード（decodeMarkdown() の結果。同梱サンプルは UTF-8）（FR-048, DD-FILE-083）
 // formatted: 読み込み時の整形の結果（FR-053）。整えたときは、読み込みの知らせに直した箇所の数を添える
-export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null, remoteUrl: string | null = null, remoteFetchUrl: string | null = null) {
+export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null, remoteUrl: string | null = null, remoteFetchUrl: string | null = null, opts: { preserveScroll?: boolean; silentToast?: boolean; keepWatch?: boolean } = {}) {
   // 改行コードを LF にそろえる。そろえないと、textarea が LF に変えた内容と食い違い、編集していないのに破棄の確認が出る
   const text = normalizeText(String(rawText));
+  if (!opts.keepWatch) clearWatchedFile();
+  const scroller = document.getElementById('preview-scroll');
+  const prevScrollTop = opts.preserveScroll && scroller ? scroller.scrollTop : 0;
   runtime.currentFileEncoding = encoding;
   runtime.currentRemoteUrl = remoteUrl;
   runtime.currentRemoteFetchUrl = remoteFetchUrl;
@@ -81,8 +85,14 @@ export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSamp
   clearTimeout(runtime.renderDebounceTimer);
   runtime.renderApp();
   runtime.syncUrlFromState();
-  document.getElementById('preview-scroll').scrollTop = 0;
+  if (scroller) {
+    scroller.scrollTop = opts.preserveScroll ? prevScrollTop : 0;
+    if (opts.preserveScroll && prevScrollTop > 0) {
+      requestAnimationFrame(() => { scroller.scrollTop = prevScrollTop; });
+    }
+  }
   runtime.followedKey = null;
+  if (opts.silentToast) return;
   // UTF-8 以外で読んだときは、何として読んだかと、保存すると UTF-8 になることを知らせる（DD-FILE-083）
   const formatNote = formatted && formatted.changed ? `。${formatSummary(formatted)}を整えました` : '';
   showToast(isUtf8Family(encoding)
@@ -170,8 +180,8 @@ export function setupFormatter() {
   });
 }
 
-// ファイルのバイト列を読み、文字コードを判定してから開く（FR-048, DD-FILE-082）
-export async function loadMarkdownFile(file) {
+// ファイルのバイト列を読み、文字コードを判定してから開く（FR-048, DD-FILE-082, FR-062, DD-FILE-094）
+export async function loadMarkdownFile(file, fileHandle = null) {
   if (!confirmDiscardEdits(file.name)) return;
   let decoded;
   try {
@@ -183,6 +193,44 @@ export async function loadMarkdownFile(file) {
   }
   const prepared = await prepareLoadedText(decoded.text);
   applyLoadedMarkdown(prepared.text, file.name, null, false, decoded.encoding, prepared.formatted);
+  if (fileHandle && typeof fileHandle.getFile === 'function') {
+    watchFile({
+      getFile: () => fileHandle.getFile(),
+      fileName: file.name,
+      folderPath: null,
+      lastModified: file.lastModified,
+      size: file.size,
+      onReload: async nextFile => {
+        const nextDecoded = decodeMarkdown(await nextFile.arrayBuffer());
+        const nextPrepared = await prepareLoadedText(nextDecoded.text);
+        applyLoadedMarkdown(nextPrepared.text, nextFile.name, null, false, nextDecoded.encoding, nextPrepared.formatted, null, null, {
+          preserveScroll: true,
+          silentToast: true,
+          keepWatch: true
+        });
+      }
+    });
+  }
+}
+
+async function openMarkdownFileWithPicker(input: HTMLInputElement) {
+  if (typeof (window as any).showOpenFilePicker === 'function' && !runtime.preferFileInput) {
+    try {
+      const [handle] = await (window as any).showOpenFilePicker({
+        multiple: false,
+        types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md', '.markdown'], 'text/plain': ['.txt'] } }]
+      });
+      if (!handle) return;
+      const file = await handle.getFile();
+      await loadMarkdownFile(file, handle);
+      return;
+    } catch (err: any) {
+      if (err && err.name === 'AbortError') return;
+      console.warn('showOpenFilePicker failed:', err);
+      runtime.preferFileInput = true;
+    }
+  }
+  input.click();
 }
 
 // 開くメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
@@ -293,7 +341,7 @@ export function setupFileMenu() {
   const fileMenu = document.getElementById('file-menu');
   document.getElementById('menu-open-markdown').onclick = () => {
     closeHeaderMenus();
-    input.click();
+    void openMarkdownFileWithPicker(input);
   };
   document.getElementById('menu-open-folder').onclick = () => {
     closeHeaderMenus();
@@ -402,7 +450,8 @@ export async function handleDroppedDataTransfer(dt: DataTransfer) {
     return;
   }
 
-  const file = droppedFiles.find(f => DROPPABLE_FILE_PATTERN.test(f.name));
+  const fileIdx = droppedFiles.findIndex(f => DROPPABLE_FILE_PATTERN.test(f.name));
+  const file = fileIdx >= 0 ? droppedFiles[fileIdx] : null;
   if (!file) {
     if (droppedFiles.length === 0 && items.length === 0) {
       const droppedUrl = extractDroppedUrl(droppedUriList, droppedPlain);
@@ -416,7 +465,8 @@ export async function handleDroppedDataTransfer(dt: DataTransfer) {
     showToast('開けるのは .md / .markdown / .txt のファイルまたはフォルダです');
     return;
   }
-  loadMarkdownFile(file);
+  const matchedHandle = handles.find(h => h && h.kind === 'file' && h.name === file.name) || null;
+  loadMarkdownFile(file, matchedHandle);
 }
 
 // ウィンドウのどこにファイルやフォルダを落としても開く（FR-041, DD-FILE-060）。ドラッグ中だけ、受け付けの表示（#drop-overlay）を重ねる

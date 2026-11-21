@@ -11,6 +11,7 @@ import {
 } from './url-loader';
 import { findScrollParent } from '../diagram/pan-zoom';
 import { showToast, updateStatus } from './toast';
+import { watchFile } from './file-watch';
 import { clearMathPlotCache } from '../math/plot';
 import { state, DROPPABLE_FILE_PATTERN, runtime } from './state';
 import { isRelativeSrc } from '../markdown/local-images';
@@ -105,6 +106,7 @@ export async function scanDirectoryHandle(root) {
 export function makeHandleFolder(root, scan) {
   return {
     name: root.name,
+    hasLiveHandle: true,
     files: scan.files,
     truncated: scan.truncated,
     async getFile(path) {
@@ -288,6 +290,26 @@ export async function openFolderFile(path) {
     // 整えている間に別のフォルダを開いたときは、古いフォルダのファイルを表示しない
     if (folder !== runtime.openedFolder) return false;
     applyLoadedMarkdown(prepared.text, name, path, false, decoded.encoding, prepared.formatted, folder.isRemote ? folder.remoteTreeUrl : null, null);
+    if (folder.hasLiveHandle) {
+      watchFile({
+        getFile: () => (folder === runtime.openedFolder ? folder.getFile(path) : Promise.resolve(null)),
+        fileName: name,
+        folderPath: path,
+        lastModified: file.lastModified,
+        size: file.size,
+        onReload: async nextFile => {
+          if (folder !== runtime.openedFolder) return;
+          const nextDecoded = decodeMarkdown(await nextFile.arrayBuffer());
+          const nextPrepared = await prepareLoadedText(nextDecoded.text);
+          if (folder !== runtime.openedFolder) return;
+          applyLoadedMarkdown(nextPrepared.text, name, path, false, nextDecoded.encoding, nextPrepared.formatted, null, null, {
+            preserveScroll: true,
+            silentToast: true,
+            keepWatch: true
+          });
+        }
+      });
+    }
   } catch (err) {
     console.error('Failed to read file:', err);
     showToast(`「${name}」を読み込めませんでした`);
