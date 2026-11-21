@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { downloadBlob } from '../utils/download';
+import { registerEscapeHandler } from './keymap';
 import { showToast, updateStatus } from './toast';
 import { state, EXPORT_URLS, loadLibrary, runtime } from './state';
 import { getThemeSpec } from '../diagram/mermaid-config';
@@ -325,8 +326,9 @@ export function setupVisualStageInteractions() {
     }
   });
 
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') clearVisualStageSpotlight(visContainer);
+  registerEscapeHandler('visual-spotlight', 50, () => {
+    clearVisualStageSpotlight(visContainer);
+    return false;
   });
 }
 

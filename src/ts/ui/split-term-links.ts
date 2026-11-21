@@ -1,3 +1,5 @@
+import { registerEscapeHandler } from './keymap';
+
 // 解説＋図版型（.exhibition-slab-split）で、解説の語と図の同じ名前のノードを光で結ぶ（#213, FR-015, DD-VTPL-050）。
 
 const SKIP_SELECTOR = 'code, pre, a, script, style, .lucivo-math, .katex, .vs-term-link';
@@ -160,11 +162,11 @@ export function setupSplitTermLinks(): void {
     applyLitState(activeSlab, pinnedTerm);
   });
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && pinnedTerm) {
-      activeSlab = null;
-      pinnedTerm = null;
-      applyLitState(null, null);
-    }
+  registerEscapeHandler('split-term-links', 60, () => {
+    if (!pinnedTerm) return false;
+    activeSlab = null;
+    pinnedTerm = null;
+    applyLitState(null, null);
+    return false;
   });
 }

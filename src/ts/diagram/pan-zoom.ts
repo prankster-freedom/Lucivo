@@ -121,28 +121,22 @@ export function setupDiagramPanZoom(_onUpdateSplit?: (split: Element | null) => 
     moved: false
   };
 
-  // スクロール表示の図をマウスでつかんで動かす（FR-038, DD-DIAG-070）
-  document.addEventListener('pointerdown', event => {
-    if (event.pointerType !== 'mouse' || event.button !== 0) return;
-    const vp = findDiagramViewport(event.target);
-    if (!vp || (event.target as Element)?.closest('a, button') || !isScrollable(vp)) return;
-    event.preventDefault();
-    Object.assign(pan, { vp, pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: vp.scrollLeft, top: vp.scrollTop, moved: false });
-    vp.setPointerCapture(event.pointerId);
-    vp.classList.add('is-panning');
-  });
-  document.addEventListener('pointermove', event => {
+  // ドラッグ中だけ document に pointermove / pointerup / pointercancel を付ける（#288）
+  const onPointerMove = (event: PointerEvent) => {
     if (!pan.vp || event.pointerId !== pan.pointerId) return;
     const dx = event.clientX - pan.x;
     const dy = event.clientY - pan.y;
     if (Math.hypot(dx, dy) > PAN_CLICK_TOLERANCE_PX) pan.moved = true;
     pan.vp.scrollLeft = pan.left - dx;
     pan.vp.scrollTop = pan.top - dy;
-  });
+  };
   const endPan = (event: PointerEvent) => {
     if (!pan.vp || event.pointerId !== pan.pointerId) return;
     pan.vp.classList.remove('is-panning');
     if (pan.vp.hasPointerCapture(event.pointerId)) pan.vp.releasePointerCapture(event.pointerId);
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', endPan);
+    document.removeEventListener('pointercancel', endPan);
     // ドラッグの後のクリックで、図の中のリンク（Mermaid の click）などが動かないようにする
     // クリックが発生しなかったときに、次の本物のクリックを止めないよう、直後のタスクで外す
     if (pan.moved) {
@@ -153,6 +147,18 @@ export function setupDiagramPanZoom(_onUpdateSplit?: (split: Element | null) => 
     pan.vp = null;
     pan.pointerId = null;
   };
-  document.addEventListener('pointerup', endPan);
-  document.addEventListener('pointercancel', endPan);
+
+  // スクロール表示の図をマウスでつかんで動かす（FR-038, DD-DIAG-070）
+  document.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    const vp = findDiagramViewport(event.target);
+    if (!vp || (event.target as Element)?.closest('a, button') || !isScrollable(vp)) return;
+    event.preventDefault();
+    Object.assign(pan, { vp, pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: vp.scrollLeft, top: vp.scrollTop, moved: false });
+    vp.setPointerCapture(event.pointerId);
+    vp.classList.add('is-panning');
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', endPan);
+    document.addEventListener('pointercancel', endPan);
+  });
 }

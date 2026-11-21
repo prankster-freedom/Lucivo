@@ -1,3 +1,5 @@
+import { registerEscapeHandler } from '../ui/keymap';
+
 // 図の倍率（FR-005, DD-DIAG-045）。図のカードと Expand の画面で、同じ部品と同じ切替の処理を使う
 //   Fit  : 縦横が描画領域に収まる（scale-fit。既定）
 //   1:n  : 横が描画領域に収まる（scale-width）
@@ -95,10 +97,10 @@ export function bindScaleMenus(): void {
       toggle.setAttribute('aria-expanded', String(!menu.hidden));
     }
   });
-  document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape' || !document.querySelector('.scale-menu:not([hidden])')) return;
+  registerEscapeHandler('scale-menu', 100, event => {
+    if (!document.querySelector('.scale-menu:not([hidden])')) return false;
     closeScaleMenus();
     event.preventDefault();
-    event.stopImmediatePropagation();
-  }, true);
+    return true;
+  });
 }

@@ -2,6 +2,7 @@
 import { downloadBlob } from '../utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from '../utils/text-decode';
 import { showToast, updateStatus } from './toast';
+import { registerEscapeHandler } from './keymap';
 import { extractDroppedUrl } from './url-loader';
 import { watchFile, clearWatchedFile } from './file-watch';
 import { applyUpdateCheckState, checkForUpdate } from './update-check';
@@ -388,8 +389,9 @@ export function setupFileMenu() {
   document.addEventListener('click', event => {
     if (!HEADER_MENUS.some(([, menuId]) => document.getElementById(menuId)?.contains(event.target as Node))) closeHeaderMenus();
   });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeHeaderMenus();
+  registerEscapeHandler('header-menus', 80, () => {
+    closeHeaderMenus();
+    return false;
   });
 }
 
