@@ -116,6 +116,14 @@ for (const doc of fallbackCases) {
   assert.deepStrictEqual(normalizeModel(inc), normalizeModel(full));
 }
 
+// 3.5. 脚注を含む文書は同一本文の再パースでも lexer を再実行する（resetFootnotes 後の定義再登録を保証）
+const fnDoc = 'Text with footnote[^1].\n\n[^1]: Note body\n';
+const fnM0 = parseDocumentModel(fnDoc, fnDoc, { lex });
+let lexCalls = 0;
+const fnM1 = parseDocumentModel(fnDoc, fnDoc, { lex: s => { lexCalls++; return lex(s); }, prevModel: fnM0 });
+assert.strictEqual(fnM1.incrementalUsed, false);
+assert.strictEqual(lexCalls, 1);
+
 // 4. フロントマター（bodyStartLine > 0）がある場合も見出しの srcLine が一致
 const fm = '---\ntitle: Test\ndate: 2026-11-21\n---\n\n';
 const fmDoc0 = fm + baseDoc;

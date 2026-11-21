@@ -306,7 +306,8 @@ export function parseDocumentModel(
   const bodyStartLine = countNewlines(rawMarkdown.slice(0, rawMarkdown.length - body.length));
   const prev = options.prevModel || null;
 
-  if (prev && prev.body === body && prev.bodyStartLine === bodyStartLine) {
+  // 脚注を含む文書は resetFootnotes() 後に lexer の副作用で定義を再登録する必要があるためキャッシュ再利用しない
+  if (prev && !prev.hasFootnotes && !hasGlobalContextSyntax(body) && prev.body === body && prev.bodyStartLine === bodyStartLine) {
     return { ...prev, incrementalUsed: true };
   }
 
