@@ -1474,6 +1474,42 @@ async function testAutoReload(browser) {
   await page.context().close();
 }
 
+// TC-FILE-048: Web 版の利用状況計測とスタンドアロン版・E2E の抑止（FR-063, #321）
+async function testWebAnalytics(browser) {
+  const webHtml = fs.readFileSync(path.join(ROOT_DIR, 'public', 'index.html'), 'utf8');
+  const distHtml = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
+  const hasGtmInWeb = webHtml.includes('GTM-KMQ3KLNT') && webHtml.includes("'gtm.start'");
+  const noGtmInDist = !distHtml.includes('GTM-KMQ3KLNT')
+    && !distHtml.includes('LUCIVO_WEB_ANALYTICS_START')
+    && !distHtml.includes('googletagmanager.com');
+
+  const srv = await startWebServer();
+  const ctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+
+  // GTM 外部通信はオフライン環境でも失敗しないよう空応答でモック
+  await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
+  await page.goto(`${srv.url}?mode=visual&style=cards&tone=warm`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => typeof renderApp === 'function');
+  // スタイルとトーンを切り替えても、E2E (navigator.webdriver=true) およびローカルビルドではカスタムイベントを送らない
+  await page.click('.info-style-btn[data-info-style="editorial"]');
+  await page.click('#btn-tone-menu');
+  await page.click('.tone-menu-item[data-tone-id="matcha-wagashi"]');
+  const events = await page.evaluate(() => (window.dataLayer || []).filter(item =>
+    item && ['design_style_select', 'tone_select', 'present_mode_select'].includes(item.event)
+  ));
+  await ctx.close();
+  if (typeof srv.close === 'function') await srv.close();
+  else if (srv.server) await new Promise(r => srv.server.close(r));
+
+  record('TC-FILE-048',
+    hasGtmInWeb && noGtmInDist && events.length === 0 && errors.length === 0,
+    JSON.stringify({ hasGtmInWeb, noGtmInDist, eventsCount: events.length, errors }));
+}
+
 module.exports = {
   testFileLoading,
   testUrlLoading,
@@ -1482,5 +1518,6 @@ module.exports = {
   testLocalImages,
   testFolder,
   testSampleLinks,
-  testEncoding
+  testEncoding,
+  testWebAnalytics
 };

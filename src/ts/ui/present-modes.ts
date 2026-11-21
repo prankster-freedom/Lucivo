@@ -4,6 +4,7 @@
 import { state, runtime } from './state';
 import { showToast } from './toast';
 import { updateAllSlabSplits } from '../diagram/svg-postprocess';
+import { trackWebEvent } from './analytics';
 
 // ビルドが埋め込む、この配布先で出すモードの表（modes.json の行から stage を除いたもの）
 declare const __LUCIVO_PRESENT_MODES__: Array<{ id: string; label: string }>;
@@ -138,6 +139,7 @@ const loads = new Map<string, Promise<boolean>>();
 
 // まだ読んでいなければ、モードの CSS と JS を読み込む。JS が register() するまでを待つ。失敗したら次の機会にやり直せるようにする
 function loadMode(id: string): Promise<boolean> {
+  trackWebEvent('present_mode_select', { present_mode: id });
   if (modes.has(id)) return Promise.resolve(true);
   if (!loads.has(id)) {
     loads.set(id, new Promise<boolean>(resolve => {

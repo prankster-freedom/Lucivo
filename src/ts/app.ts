@@ -6,6 +6,7 @@ import { downloadBlob } from './utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from './utils/text-decode';
 import { showToast, updateStatus } from './ui/toast';
 import { setupUpdateCheck, applyUpdateCheckState, checkForUpdate, isWebVersion } from './ui/update-check';
+import { trackWebEvent } from './ui/analytics';
 import { parseDisplayStateParams, syncBrowserUrl } from './ui/url-loader';
 import { registerEscapeHandler, registerShortcutAction, setupGlobalKeymap } from './ui/keymap';
 import { treeTokenFor } from './markdown/tree';
@@ -1213,6 +1214,7 @@ function selectTone(toneId: string) {
   setupMermaid();
   renderApp();
   syncUrlFromState();
+  trackWebEvent('tone_select', { tone: toneId });
   showToast(`トーン: ${getToneEntry(toneId).label}`);
 }
 
@@ -1283,6 +1285,7 @@ function selectInfographicStyle(style) {
   syncToneUi();
   renderApp();
   syncUrlFromState();
+  trackWebEvent('design_style_select', { design_style: style });
   void ensureStyleFont(style);
   const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
   showToast(`スタイル適用: ${activeBtn ? activeBtn.textContent.trim() : style}`);

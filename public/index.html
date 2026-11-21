@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light dark" />
   <!-- LUCIVO_WEB_ANALYTICS_START -->
-  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-KMQ3KLNT"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+    window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
   </script>
+  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-KMQ3KLNT"></script>
   <!-- LUCIVO_WEB_ANALYTICS_END -->
   <!-- ファイルを読み込んだら「ファイル名 - Lucivo」に変える（js/app.js、DD-FILE-050） -->
   <title>Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —</title>
