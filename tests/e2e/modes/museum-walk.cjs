@@ -369,17 +369,40 @@ async function testMuseumWalk(browser) {
     const hallZoom = await info(zoomPage);
     await shot(zoomPage, 'hall-zoom');
 
-    // 調整パネル（C）に「近寄り」の項目がある
+    // 調整パネル（C）に「近寄り」「歩き」「構え」の独立項目がある（#275, #293, #294, #295）
     await zoomPage.keyboard.press('c');
     const panelInfo = await zoomPage.evaluate(() => {
       const p = document.querySelector('#museum-walk .mw-panel');
       const headings = Array.from(p ? p.querySelectorAll('h4') : []).map(h => h.textContent.trim());
       const box = p ? p.querySelector('textarea')?.value || '' : '';
-      return { visible: !!p && !p.hidden, headings, hasZoomKeys: box.includes('"zoomShiftX"') && box.includes('"zoomBob"') };
+      let parsed = null;
+      try { parsed = JSON.parse(box); } catch (_) { /* ignore */ }
+      return {
+        visible: !!p && !p.hidden,
+        headings,
+        hasZoomKeys: box.includes('"zoomShiftX"') && box.includes('"zoomBob"'),
+        hasIndependentValues: !!parsed
+          && parsed.wheelSpeed === 4.8
+          && parsed.zoomWheelStep === 0.225
+          && parsed.bob === 6
+          && parsed.bobStep === 95
+          && parsed.zoomBob === 18
+          && parsed.zoomBobSpeed === 4.5
+      };
     });
+    // 歩き中に上下揺れ（walkBob）が発生することを確認（#294）
+    await zoomPage.keyboard.press('c');
+    await zoomPage.keyboard.down('ArrowUp');
+    let walkBobSample = 0;
+    for (let i = 0; i < 12; i++) {
+      await zoomPage.waitForTimeout(40);
+      const st = await info(zoomPage);
+      if (Math.abs(st.bob) > Math.abs(walkBobSample)) walkBobSample = st.bob;
+    }
+    await zoomPage.keyboard.up('ArrowUp');
     await zoomPage.context().close();
 
-    // reducedMotion 時は上下揺れ 0 かつ即座に切り替わる
+    // reducedMotion 時はズーム・歩行とも上下揺れ 0 かつ即座に切り替わる
     const rmZoom = await openWebPageWithSample(browser, server, { reducedMotion: 'reduce' });
     await start(rmZoom);
     const rmI = await info(rmZoom);
@@ -391,6 +414,10 @@ async function testMuseumWalk(browser) {
       return st.zoom === st.zoomTarget && st.zoom > 0;
     }, MODE, { timeout: 5000 }).catch(() => {});
     const rmAfter = await info(rmZoom);
+    await rmZoom.keyboard.down('ArrowUp');
+    await rmZoom.waitForTimeout(150);
+    const rmWalkBob = (await info(rmZoom)).bob;
+    await rmZoom.keyboard.up('ArrowUp');
     await rmZoom.context().close();
 
     const mw9Ok = afterZoomIn.zoomTarget === 1 && afterZoomIn.zoom > 0.9
@@ -401,8 +428,9 @@ async function testMuseumWalk(browser) {
       && afterResetKey.zoomTarget === 0
       && beforeWalkReset.zoomTarget > 0 && afterWalkReset.zoomTarget === 0
       && Math.abs(hallZoom.x) < 20 && hallZoom.fov > 900
-      && panelInfo.visible && panelInfo.headings.includes('近寄り') && panelInfo.hasZoomKeys
-      && rmAfter.zoom === rmAfter.zoomTarget && rmAfter.zoom > 0 && rmAfter.bob === 0;
+      && panelInfo.visible && panelInfo.headings.includes('近寄り') && panelInfo.hasZoomKeys && panelInfo.hasIndependentValues
+      && Math.abs(walkBobSample) > 0.2
+      && rmAfter.zoom === rmAfter.zoomTarget && rmAfter.zoom > 0 && rmAfter.bob === 0 && rmWalkBob === 0;
     record('TC-MWLK-009', mw9Ok, JSON.stringify({
       beforeZoom: { x: beforeZoom.x, fov: beforeZoom.fov },
       afterZoomIn: { x: afterZoomIn.x, fov: afterZoomIn.fov, zoom: afterZoomIn.zoom, zoomTarget: afterZoomIn.zoomTarget },
@@ -413,7 +441,8 @@ async function testMuseumWalk(browser) {
       afterWalkReset: afterWalkReset.zoomTarget,
       hallZoom: { x: hallZoom.x, fov: hallZoom.fov },
       panelInfo,
-      rmAfter: { zoom: rmAfter.zoom, zoomTarget: rmAfter.zoomTarget, bob: rmAfter.bob }
+      walkBobSample,
+      rmAfter: { zoom: rmAfter.zoom, zoomTarget: rmAfter.zoomTarget, bob: rmAfter.bob, rmWalkBob }
     }));
   } finally {
     await server.close();

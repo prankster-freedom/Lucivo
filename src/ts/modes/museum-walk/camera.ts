@@ -23,11 +23,13 @@ export const CAMERA_SPEC: SpecRow[] = [
   ['speed', '歩く速さ', 520, 150, 1400, 10],
   ['friction', '止まるときの滑り（小さいほど長く滑る）', 2.4, 0.6, 6, 0.1],
   ['stride', '1 回押しの歩幅', 800, 200, 1800, 20],
+  ['wheelSpeed', 'ホイールの反応量（前進・後退）', 4.8, 1, 12, 0.2],
   ['構え'],
   ['x', '立つ位置（左右。正は右寄り）', 90, -300, 380, 10],
   ['pitch', '見上げる角度（度）', 0, -8, 14, 0.5],
   ['fov', '視野（小さいほど広角）', 800, 420, 1500, 10],
-  ['bob', '歩きの揺れ', 0, 0, 14, 0.5],
+  ['bob', '歩きの揺れ（px）', 6, 0, 20, 0.5],
+  ['bobStep', '歩きの揺れの周期（距離 px）', 95, 30, 300, 5],
   ['門（通路の真ん中の見出し）'],
   ['gateFar', '正面を向き始める距離', 1350, 600, 3500, 50],
   ['gateNear', '正面を向き切る距離', 650, 100, 1600, 50],
@@ -44,12 +46,12 @@ export const CAMERA_SPEC: SpecRow[] = [
   ['zoomMin', '離れる限度（負で後ろへ引く）', -0.5, -1, 0, 0.05],
   ['zoomMax', '近寄る限度', 1, 0.2, 2, 0.05],
   ['zoomKeyStep', 'キー 1 回の近寄り幅', 0.25, 0.05, 0.5, 0.05],
-  ['zoomWheelStep', 'ホイール 1 目盛りの近寄り幅', 0.15, 0.05, 0.5, 0.05],
+  ['zoomWheelStep', 'ホイール 1 目盛りの近寄り幅', 0.225, 0.05, 0.6, 0.025],
   ['zoomShiftX', '近寄りで壁へ寄せる横の距離', 220, 0, 400, 10],
   ['zoomFov', '近寄りで狭める視野（perspective 増加量）', 220, 0, 500, 10],
-  ['zoomEase', '近寄りの速さ（大きいほど速い）', 5.5, 1, 15, 0.5],
-  ['zoomBob', '近寄り・戻りの上下の揺れ（px）', 10, 0, 28, 1],
-  ['zoomBobSpeed', '上下の揺れの速さ', 10, 2, 24, 1]
+  ['zoomEase', '近寄りの速さ（大きいほど速い）', 4.5, 1, 15, 0.5],
+  ['zoomBob', '近寄り・戻りの上下の揺れ（px）', 18, 0, 36, 1],
+  ['zoomBobSpeed', '近寄り・戻りの揺れの速さ', 4.5, 1, 24, 0.5]
 ];
 
 // 動きを減らす設定のときに上書きする値（DD-MWLK-009）
@@ -154,7 +156,7 @@ export function direct(cam: Cam, dt: number, plan: Plan, C: CameraValues, gaze: 
   cam.pitch += (pitch - cam.pitch) * k;
   cam.fov = clamp(C.fov + cam.zoom * C.zoomFov, 360, 2200);
 
-  const walkBob = C.bob * Math.sin((plan.start - cam.z) / 95) * Math.min(1, Math.abs(cam.vel) / 200);
+  const walkBob = C.bob * Math.sin((plan.start - cam.z) / Math.max(1, C.bobStep)) * Math.min(1, Math.abs(cam.vel) / 200);
   const zoomSpeed = Math.abs(cam.zoom - prevZoom) / Math.max(dt, 0.001);
   if (Math.abs(cam.zoomTarget - cam.zoom) > 0.002) {
     cam.zoomPhase += dt * C.zoomBobSpeed;

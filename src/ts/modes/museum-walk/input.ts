@@ -79,8 +79,8 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
     }
     const dy = clamp(e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY, -300, 300);
     if (dy !== 0) cam.zoomTarget = 0;
-    // 上回し（deltaY < 0）で前進（+vel -> -z）、下回し（deltaY > 0）で後退とし、ズームイン・アウトの向きと揃える（#305）
-    cam.vel = clamp(cam.vel - dy * 3.2, -1500, 1500);
+    // 上回し（deltaY < 0）で前進（+vel -> -z）、下回し（deltaY > 0）で後退とし、ズームイン・アウトの向きと揃える（#305）。係数は CAMERA_SPEC.wheelSpeed で独立調整可（#295）
+    cam.vel = clamp(cam.vel - dy * h.camera().wheelSpeed, -1500, 1500);
   };
 
   let drag: null | { x: number; y: number; t: number; touch: boolean } = null;
