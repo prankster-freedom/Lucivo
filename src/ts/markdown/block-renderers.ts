@@ -5,7 +5,9 @@
    本文にあるときだけ、従来の DOM の書き換え（wrapTables・decorateAlerts）を残す。
    ========================================================================== */
 import { state, runtime } from '../ui/state';
+import { escapeHtml } from '../utils/escape';
 import { ALERT_LABELS, ALERT_MARKER_RE } from './callouts';
+import { highlightCodeSyntax } from './syntax-highlight';
 import { createDiagramFrameHtml } from '../diagram/svg-postprocess';
 
 // Markdown 本文に、直接書かれた HTML の表・引用があるか。あるときだけ DOM の書き換えを行う
@@ -88,6 +90,14 @@ export function setupMarkedBlocks(): void {
         const color = matchInlineColorCode(token.text);
         if (!color) return html;
         return html.replace('<code>', `<code><span class="lucivo-color-swatch" style="background-color:${color};" aria-hidden="true"></span>`);
+      },
+      // コードブロックにテーマ連動のシンタックスハイライトを適用する（FR-065, #330）
+      code(token) {
+        const rawLang = String(token.lang || '').trim().split(/\s+/)[0];
+        const safeLang = rawLang.replace(/[^a-zA-Z0-9_+-]/g, '');
+        const classAttr = safeLang ? ` class="language-${escapeHtml(safeLang)}"` : '';
+        const text = String(token.text || '').replace(/\n$/, '');
+        return `<pre><code${classAttr}>${highlightCodeSyntax(text, safeLang)}\n</code></pre>\n`;
       }
     }
   });

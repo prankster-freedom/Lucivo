@@ -190,6 +190,56 @@
   background: transparent;
 }
 
+/* コードブロックのシンタックスハイライト（FR-065, DTP-VTPL-038, #330）
+   高速モード（Light / Dark）の基準配色。Visualモードでは --vs-c1〜--vs-c4 とトーンに連動して上書きする */
+:root,
+body[data-appearance="light"] {
+  --hl-kw: #1D4ED8;
+  --hl-str: #047857;
+  --hl-num: #B45309;
+  --hl-cmt: #64748B;
+  --hl-fn: #7C3AED;
+  --hl-type: #0E7490;
+  --hl-attr: #BE185D;
+  --hl-op: #475569;
+}
+body[data-appearance="dark"] {
+  --hl-kw: #7DD3FC;
+  --hl-str: #6EE7B7;
+  --hl-num: #FCD34D;
+  --hl-cmt: #94A3B8;
+  --hl-fn: #C4B5FD;
+  --hl-type: #67E8F9;
+  --hl-attr: #F472B6;
+  --hl-op: #CBD5E1;
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-kw {
+  color: var(--hl-kw);
+  font-weight: 600;
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-str {
+  color: var(--hl-str);
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-num {
+  color: var(--hl-num);
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-cmt {
+  color: var(--hl-cmt);
+  font-style: italic;
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-fn {
+  color: var(--hl-fn);
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-type {
+  color: var(--hl-type);
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-attr {
+  color: var(--hl-attr);
+}
+:is(.prose-doc, .exhibition-slab) pre code .hl-op {
+  color: var(--hl-op);
+}
+
 /* 引用は背景を付けず灰色の左線にして、意味の色の左線と背景を持つコールアウト（.md-alert, DD-MD-022）と見分ける */
 :is(.prose-doc, .exhibition-slab) blockquote {
   margin: 0.875rem 0;

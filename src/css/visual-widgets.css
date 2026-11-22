@@ -141,6 +141,15 @@ html.is-stage-show .slab-actions {
   color: #1E293B !important;
   border: 1px solid color-mix(in oklab, var(--vs-c1) 24%, var(--vs-card-border)) !important;
   box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.08) !important;
+  /* Visualモードのテーマ（--vs-c1〜--vs-c4・トーン）に調和しつつ高いコントラストを保つシンタックス配色（FR-065, #330） */
+  --hl-kw: color-mix(in oklab, var(--vs-c1) 62%, #0F172A);
+  --hl-fn: color-mix(in oklab, var(--vs-c3) 65%, #1E1B4B);
+  --hl-str: color-mix(in oklab, var(--vs-c4) 62%, #064E3B);
+  --hl-num: color-mix(in oklab, var(--vs-c2) 65%, #78350F);
+  --hl-type: color-mix(in oklab, var(--vs-c3) 55%, #0C4A6E);
+  --hl-attr: color-mix(in oklab, var(--vs-c1) 55%, #831843);
+  --hl-cmt: #64748B;
+  --hl-op: #475569;
 }
 .exhibition-slab pre.vs-code-block code {
   color: #1E293B !important;
@@ -205,6 +214,14 @@ html.is-stage-show .slab-actions {
   color: #E2E8F0 !important;
   border-color: rgba(148, 163, 184, 0.25) !important;
   box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.35) !important;
+  --hl-kw: color-mix(in oklab, var(--vs-c1) 62%, #F8FAFC);
+  --hl-fn: color-mix(in oklab, var(--vs-c3) 65%, #E0E7FF);
+  --hl-str: color-mix(in oklab, var(--vs-c4) 65%, #D1FAE5);
+  --hl-num: color-mix(in oklab, var(--vs-c2) 68%, #FEF3C7);
+  --hl-type: color-mix(in oklab, var(--vs-c3) 55%, #CFFAFE);
+  --hl-attr: color-mix(in oklab, var(--vs-c1) 55%, #FCE7F3);
+  --hl-cmt: #94A3B8;
+  --hl-op: #CBD5E1;
 }
 :is(body[data-appearance="dark"], html.is-stage-show body) .exhibition-slab pre.vs-code-block code {
   color: #E2E8F0 !important;

@@ -1326,6 +1326,96 @@ async function testCoverAndTables(browser) {
     && vtpl20After.copyLabelAfter === 'Copied' && vtpl20After.isCopied && /コードをクリップボードにコピー/.test(vtpl20After.toast);
   record('TC-VTPL-020', vtpl20Ok, JSON.stringify({ vtpl20Before, vtpl20LightCode, vtpl20DarkCode, vtpl20After }));
 
+  // TC-VTPL-039 コードブロックのテーマ連動シンタックスハイライト（FR-065, DTP-VTPL-038, #330）
+  const SYNTAX_TEST_MD = [
+    '# シンタックスハイライト確認',
+    '',
+    '## 1. TypeScript / JSON / HTML',
+    '',
+    '```typescript',
+    '// サンプル関数',
+    'export async function computeScore(items: Item[], scale = 1.5): Promise<number> {',
+    '  const label = "Lucivo";',
+    '  return items.length * scale;',
+    '}',
+    '```',
+    '',
+    '```json',
+    '{"name": "lucivo", "version": 1, "active": true}',
+    '```',
+    '',
+    '```html',
+    '<!-- コメント -->',
+    '<section class="slab" data-id="01">Hello</section>',
+    '```'
+  ].join('\n');
+
+  await selectVisualStyle(page, 'shapes');
+  await setDocument(page, SYNTAX_TEST_MD);
+  await page.waitForTimeout(150);
+
+  const inspectSyntaxColors = selector => page.evaluate(sel => {
+    const root = document.querySelector(sel);
+    const codes = Array.from(root.querySelectorAll('pre > code'));
+    const tsCode = codes[0];
+    const jsonCode = codes[1];
+    const htmlCode = codes[2];
+    const colorOf = (el, cls) => {
+      const sp = el ? el.querySelector(`.${cls}`) : null;
+      return sp ? getComputedStyle(sp).color : '';
+    };
+    return {
+      tsText: tsCode ? tsCode.textContent.trim() : '',
+      tsHasKw: Boolean(tsCode && tsCode.querySelector('.hl-kw')),
+      tsHasFn: Boolean(tsCode && tsCode.querySelector('.hl-fn')),
+      tsHasStr: Boolean(tsCode && tsCode.querySelector('.hl-str')),
+      tsHasNum: Boolean(tsCode && tsCode.querySelector('.hl-num')),
+      tsHasCmt: Boolean(tsCode && tsCode.querySelector('.hl-cmt')),
+      tsHasType: Boolean(tsCode && tsCode.querySelector('.hl-type')),
+      jsonHasAttr: Boolean(jsonCode && jsonCode.querySelector('.hl-attr')),
+      jsonHasStr: Boolean(jsonCode && jsonCode.querySelector('.hl-str')),
+      jsonHasNum: Boolean(jsonCode && jsonCode.querySelector('.hl-num')),
+      htmlHasKw: Boolean(htmlCode && htmlCode.querySelector('.hl-kw')),
+      htmlHasAttr: Boolean(htmlCode && htmlCode.querySelector('.hl-attr')),
+      htmlHasCmt: Boolean(htmlCode && htmlCode.querySelector('.hl-cmt')),
+      kwColor: colorOf(tsCode, 'hl-kw'),
+      strColor: colorOf(tsCode, 'hl-str'),
+      numColor: colorOf(tsCode, 'hl-num'),
+      cmtColor: colorOf(tsCode, 'hl-cmt'),
+      fnColor: colorOf(tsCode, 'hl-fn'),
+      baseColor: tsCode ? getComputedStyle(tsCode).color : ''
+    };
+  }, selector);
+
+  const shapesLightSyntax = await inspectSyntaxColors('#visual-stage-container');
+  await selectVisualStyle(page, 'circles');
+  await page.waitForTimeout(100);
+  const circlesLightSyntax = await inspectSyntaxColors('#visual-stage-container');
+  await setMode(page, { style: 'circles', appearance: 'dark' });
+  await page.waitForTimeout(100);
+  const circlesDarkSyntax = await inspectSyntaxColors('#visual-stage-container');
+  await setMode(page, { style: 'std', appearance: 'light' });
+  await page.waitForTimeout(100);
+  const fastLightSyntax = await inspectSyntaxColors('#standard-doc-container');
+
+  // 元の SHOWCASE_EXT_MD に戻して後続テストへ影響させない
+  await setMode(page, { style: 'shapes', appearance: 'light' });
+  await setDocument(page, SHOWCASE_EXT_MD);
+  await page.waitForTimeout(150);
+
+  const vtpl39Ok = shapesLightSyntax.tsHasKw && shapesLightSyntax.tsHasFn && shapesLightSyntax.tsHasStr
+    && shapesLightSyntax.tsHasNum && shapesLightSyntax.tsHasCmt && shapesLightSyntax.tsHasType
+    && shapesLightSyntax.jsonHasAttr && shapesLightSyntax.jsonHasStr && shapesLightSyntax.jsonHasNum
+    && shapesLightSyntax.htmlHasKw && shapesLightSyntax.htmlHasAttr && shapesLightSyntax.htmlHasCmt
+    // トークン種類ごとに異なる色が塗られ、単色ではないこと
+    && new Set([shapesLightSyntax.kwColor, shapesLightSyntax.strColor, shapesLightSyntax.numColor, shapesLightSyntax.cmtColor, shapesLightSyntax.fnColor]).size >= 4
+    // Visual モードのテーマ（shapes -> circles）切替、および Light -> Dark 切替でキーワード色が連動して変わること
+    && shapesLightSyntax.kwColor !== circlesLightSyntax.kwColor
+    && circlesLightSyntax.kwColor !== circlesDarkSyntax.kwColor
+    // 高速モードでもシンタックスハイライトが効いていること
+    && fastLightSyntax.tsHasKw && fastLightSyntax.kwColor !== fastLightSyntax.strColor;
+  record('TC-VTPL-039', vtpl39Ok, JSON.stringify({ shapesLightSyntax, circlesLightSyntax, circlesDarkSyntax, fastLightSyntax }));
+
   // TC-VTPL-025 数式の補足グラフとラスター画像変換（FR-048, DD-VTPL-140〜144）
   const MATH_PLOT_TEST_MD = [
     '## 1. 数式の補足グラフ（インラインとブロック）',
