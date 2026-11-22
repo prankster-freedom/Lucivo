@@ -167,6 +167,10 @@ export function applyStaticI18n(root: ParentNode = document): void {
 
   // 言語切り替え UI の表示状態を同期
   const lang = getLang();
+  const parenOpen = document.getElementById('save-file-paren-open');
+  const parenClose = document.getElementById('save-file-paren-close');
+  if (parenOpen) parenOpen.textContent = lang === 'en' ? ' (' : '（';
+  if (parenClose) parenClose.textContent = lang === 'en' ? ')' : '）';
   const langLabel = document.getElementById('header-lang-label');
   if (langLabel) langLabel.textContent = lang === 'ja' ? '日本語' : 'EN';
   document.querySelectorAll<HTMLElement>('[data-lang-option]').forEach(btn => {
