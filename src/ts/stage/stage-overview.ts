@@ -1,4 +1,5 @@
-import { prefersReducedMotion, suspendLights } from './stage-lights.js';
+// @ts-nocheck
+import { prefersReducedMotion, suspendLights } from './stage-lights';
 
 /* ==========================================================================
    俯瞰（ライトテーブル。DTP-SHOW-070）と光のポインター（DTP-SHOW-080）

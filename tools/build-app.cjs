@@ -48,7 +48,7 @@ const MODES = ALL_MODES.filter(mode => channel === 'web' || mode.stage === 'all'
 
 // 本体と同じく起動時に読む部品（光の演出）。Visualモードに初めて入ったときに読み込む
 const STAGE_MODE_ENTRIES = [
-  { entry: path.join(ROOT_DIR, 'src', 'js', 'stage.js'), outfile: path.join(OUT_DIR, 'js', 'stage.js') },
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'stage', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'stage.js') },
   // 発表モード（src/ts/modes/<id>/index.ts → js/modes/<id>.js）。追加・廃止は登録表の行とフォルダで決まる
   ...MODES.map(({ id }) => ({
     entry: path.join(MODES_DIR, id, 'index.ts'),

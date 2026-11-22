@@ -4,7 +4,7 @@ import { registerEscapeHandler } from './keymap';
 import { showToast, updateStatus } from './toast';
 import { state, EXPORT_URLS, loadLibrary, runtime } from './state';
 import { getThemeSpec } from '../diagram/mermaid-config';
-import { scrollBehavior } from '../app';
+import { scrollBehavior } from './editor-follow';
 
 export function clearVisualStageSpotlight(container) {
   if (!container) return;

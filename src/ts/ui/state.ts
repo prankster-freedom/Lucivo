@@ -6,6 +6,12 @@ export const DROPPABLE_FILE_PATTERN = /\.(md|markdown|txt)$/i;
 export const runtime: Record<string, any> = {
   renderDebounceTimer: null,
   renderGeneration: 0,
+  lastRenderMs: 30,
+  prevStdCache: null,
+  stdPendingGeneration: 0,
+  prevVisCache: null,
+  prevDocModel: null,
+  visPendingGeneration: 0,
   lastLoadedMarkdown: '',
   currentFileName: 'untitled.md',
   currentFileEncoding: 'UTF-8',
@@ -19,6 +25,15 @@ export const runtime: Record<string, any> = {
   currentRemoteUrl: null as string | null,
   currentRemoteFetchUrl: null as string | null,
   followedKey: null,
+  followFrame: 0,
+  isInputRender: false,
+  followIndex: [] as { line: number; el: HTMLElement }[],
+  caretState: { pos: 0, line: 0, length: -1, dirty: true },
+  pendingEdit: null as { type: string; start: number; deletedNewlines: number } | null,
+  lastNavTargetTop: null as number | null,
+  lastNavTime: 0,
+  urlSyncReady: false,
+  applyViewModeFn: null as ((mode: string) => void) | null,
   renderApp: () => {},
   syncUrlFromState: () => {}
 };

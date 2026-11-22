@@ -15,7 +15,7 @@ import { watchFile } from './file-watch';
 import { clearMathPlotCache } from '../math/plot';
 import { state, DROPPABLE_FILE_PATTERN, runtime } from './state';
 import { isRelativeSrc } from '../markdown/local-images';
-import { scrollBehavior, previewScrollTopOf } from '../app';
+import { scrollBehavior, previewScrollTopOf } from './editor-follow';
 import {
   closeHeaderMenus,
   confirmDiscardEdits,

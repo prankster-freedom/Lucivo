@@ -14,14 +14,6 @@ module.exports = [
     }
   },
   {
-    files: ['src/js/**/*.js'],
-    languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-    rules: {
-      'no-control-regex': 'error',
-      'no-irregular-whitespace': ['error', { skipStrings: false, skipRegExps: false, skipTemplates: false }]
-    }
-  },
-  {
     files: ['tests/**/*.cjs', 'tools/**/*.cjs', 'agents-support-tools/**/*.cjs', 'eslint.config.cjs'],
     languageOptions: { ecmaVersion: 'latest', sourceType: 'commonjs' },
     rules: {

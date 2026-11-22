@@ -1,6 +1,7 @@
+// @ts-nocheck
 // Visualモードの舞台演出。Visualモードに初めて入ったときに読み込み、高速モードの起動には影響させない（NFR-006）
-//  - シグナル・ライト（FR-018）: 図の結線に重ねた Canvas に、上流から下流へ伝わる光を描く（stage-lights.js）
-//  - 俯瞰・光のポインター（DTP-SHOW-070, 080）: stage-overview.js
+//  - シグナル・ライト（FR-018）: 図の結線に重ねた Canvas に、上流から下流へ伝わる光を描く（stage-lights.ts）
+//  - 俯瞰・光のポインター（DTP-SHOW-070, 080）: stage-overview.ts
 //  - ステージ発表（FR-019）: 章を 1 シーンとして全画面でページ送りする
 import {
   flows,
@@ -15,8 +16,8 @@ import {
   isLightsEnabled,
   seekLights,
   getLightPlans
-} from './stage-lights.js';
-import { createStageOverview } from './stage-overview.js';
+} from './stage-lights';
+import { createStageOverview } from './stage-overview';
 
 const AUTO_DWELL = { scene: 7000, build: 2400, afterLight: 800 };
 const SCENE_FIT = { maxScale: 2.4, bottomMargin: 108, minHeightRatio: 0.6, scrollRatio: 0.8 };
