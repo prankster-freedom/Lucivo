@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="600" viewBox="0 0 920 600" font-family="'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif">
+  <title>トーン 12 区分の見本</title>
+  <desc>トーンの略号 12 種を、縦軸を明度、横軸を彩度にして配置した図。各トーンを赤（R）と青紫（PB）の 2 色相で示す。右上ほど明るく鮮やか、右下ほど暗く濃く、左側ほど灰みを帯びる。清色（純色に白か黒を混ぜた色）と濁色（灰みを帯びた色）の範囲も示す。</desc>
+  <rect width="920" height="600" fill="#ffffff"/>
+  <text x="24" y="36" font-size="20" font-weight="bold" fill="#222">トーン 12 区分（上: 赤 R ／ 下: 青紫 PB）</text>
+
+  <!-- axes -->
+  <line x1="70" y1="560" x2="890" y2="560" stroke="#666" stroke-width="1.5"/>
+  <polygon points="890,560 880,555 880,565" fill="#666"/>
+  <text x="820" y="586" font-size="14" fill="#444">彩度 高</text>
+  <text x="74" y="586" font-size="14" fill="#444">彩度 低（灰み）</text>
+  <line x1="70" y1="560" x2="70" y2="60" stroke="#666" stroke-width="1.5"/>
+  <polygon points="70,60 65,70 75,70" fill="#666"/>
+  <text x="20" y="80" font-size="14" fill="#444">明度</text>
+  <text x="34" y="98" font-size="14" fill="#444">高</text>
+  <text x="34" y="552" font-size="14" fill="#444">低</text>
+
+  <!-- region labels -->
+  <rect x="90" y="64" width="276" height="486" rx="14" fill="#f2f2f2" stroke="#bbb" stroke-dasharray="6 5"/>
+  <text x="104" y="540" font-size="14" fill="#666">濁色（灰みを帯びた色）</text>
+  <text x="560" y="78" font-size="14" fill="#666">明清色（純色＋白）</text>
+  <text x="560" y="540" font-size="14" fill="#666">暗清色（純色＋黒）</text>
+
+  <!-- tone cell template: x,y ; R swatch top, PB swatch bottom -->
+  <!-- Vp -->
+  <g transform="translate(110,96)">
+    <rect width="96" height="34" fill="#f7dcd9"/><rect y="34" width="96" height="34" fill="#dbe3f4"/>
+    <text y="88" font-size="14" fill="#222">Vp ごくうすい</text>
+  </g>
+  <!-- P -->
+  <g transform="translate(380,110)">
+    <rect width="96" height="34" fill="#f2a9a6"/><rect y="34" width="96" height="34" fill="#a4b6e4"/>
+    <text y="88" font-size="14" fill="#222">P うすい</text>
+  </g>
+  <!-- B -->
+  <g transform="translate(560,110)">
+    <rect width="96" height="34" fill="#ee6f6c"/><rect y="34" width="96" height="34" fill="#5f82d6"/>
+    <text y="88" font-size="14" fill="#222">B あかるい</text>
+  </g>
+  <!-- Lgr -->
+  <g transform="translate(110,214)">
+    <rect width="96" height="34" fill="#d9bdb9"/><rect y="34" width="96" height="34" fill="#b9c0d4"/>
+    <text y="88" font-size="14" fill="#222">Lgr あかるいはいみの</text>
+  </g>
+  <!-- L -->
+  <g transform="translate(380,222)">
+    <rect width="96" height="34" fill="#e2958c"/><rect y="34" width="96" height="34" fill="#8ca1d4"/>
+    <text y="88" font-size="14" fill="#222">L あさい</text>
+  </g>
+  <!-- S -->
+  <g transform="translate(600,240)">
+    <rect width="96" height="34" fill="#c23a3d"/><rect y="34" width="96" height="34" fill="#3852a3"/>
+    <text y="88" font-size="14" fill="#222">S つよい</text>
+  </g>
+  <!-- V -->
+  <g transform="translate(760,240)">
+    <rect width="96" height="34" fill="#d61f2c"/><rect y="34" width="96" height="34" fill="#1f3f9e"/>
+    <text y="88" font-size="14" fill="#222">V さえた</text>
+  </g>
+  <!-- Gr -->
+  <g transform="translate(110,330)">
+    <rect width="96" height="34" fill="#9d807d"/><rect y="34" width="96" height="34" fill="#7b8199"/>
+    <text y="88" font-size="14" fill="#222">Gr はいみの</text>
+  </g>
+  <!-- Dl -->
+  <g transform="translate(380,336)">
+    <rect width="96" height="34" fill="#ad5f5a"/><rect y="34" width="96" height="34" fill="#5b6b9d"/>
+    <text y="88" font-size="14" fill="#222">Dl にぶい</text>
+  </g>
+  <!-- Dp -->
+  <g transform="translate(640,370)">
+    <rect width="96" height="34" fill="#9c1a2c"/><rect y="34" width="96" height="34" fill="#1d2f7b"/>
+    <text y="88" font-size="14" fill="#222">Dp こい</text>
+  </g>
+  <!-- Dgr -->
+  <g transform="translate(110,446)">
+    <rect width="96" height="34" fill="#4b3637"/><rect y="34" width="96" height="34" fill="#2f3447"/>
+  </g>
+  <text x="216" y="482" font-size="14" fill="#222">Dgr くらいはいみの</text>
+  <!-- Dk -->
+  <g transform="translate(400,446)">
+    <rect width="96" height="34" fill="#6b1e25"/><rect y="34" width="96" height="34" fill="#1f2a56"/>
+  </g>
+  <text x="506" y="482" font-size="14" fill="#222">Dk くらい</text>
+
+  <!-- neutrals -->
+  <g transform="translate(760,400)">
+    <text y="-8" font-size="14" fill="#222">無彩色 N（数字は明度）</text>
+    <rect width="20" height="40" fill="#f6f6f6" stroke="#ccc"/>
+    <rect x="22" width="20" height="40" fill="#c6c6c6"/>
+    <rect x="44" width="20" height="40" fill="#8e8e8e"/>
+    <rect x="66" width="20" height="40" fill="#4c4c4c"/>
+    <rect x="88" width="20" height="40" fill="#262323"/>
+    <text y="58" font-size="12" fill="#444">9.5</text>
+    <text x="24" y="58" font-size="12" fill="#444">8</text>
+    <text x="46" y="58" font-size="12" fill="#444">6</text>
+    <text x="68" y="58" font-size="12" fill="#444">3</text>
+    <text x="86" y="58" font-size="12" fill="#444">1.5</text>
+  </g>
+</svg>
