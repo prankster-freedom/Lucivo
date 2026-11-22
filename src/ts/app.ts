@@ -4,8 +4,9 @@ import { escapeHtml } from './utils/escape';
 import { hexToRgba } from './utils/color';
 import { downloadBlob } from './utils/download';
 import { showToast } from './ui/toast';
-import { setupUpdateCheck } from './ui/update-check';
-import { registerEscapeHandler, registerShortcutAction, setupGlobalKeymap } from './ui/keymap';
+import { initI18n, applyStaticI18n, onLangChange, t, getSampleBaseFileName } from './i18n';
+import { applyUpdateCheckState, setupUpdateCheck } from './ui/update-check';
+import { registerEscapeHandler, registerShortcutAction, renderShortcutModalList, setupGlobalKeymap } from './ui/keymap';
 import { setupDiagramPanZoom, findScrollParent, updatePannable } from './diagram/pan-zoom';
 import { scalePickerHtml, setScaleMode, bindScaleMenus, type ScaleAction } from './diagram/scale-mode';
 import {
@@ -48,12 +49,15 @@ import { setupMarkedFootnotes } from './markdown/footnotes';
 import { setupMarkedEmoji } from './markdown/emoji';
 import {
   closeFileMenu,
+  loadBundledSample,
   setupFormatter,
   setupFileMenu,
   setupFileDrop
 } from './ui/file-menu';
 import { setupFileWatch } from './ui/file-watch';
 import {
+  renderFolderList,
+  updateRecentFolderMenu,
   setupDocumentLinks,
   setupFolder,
   setupFrontMatterToggle,
@@ -285,13 +289,13 @@ function setupEventListeners() {
       document.documentElement.outerHTML
     );
     downloadBlob(fullHtml, 'lucivo-architecture-export.html', 'text/html');
-    showToast('単一HTMLファイルをエクスポートしました');
+    showToast(t('export.htmlToast'));
   };
 
   document.getElementById('btn-test-cache').onclick = () => {
     const t0 = performance.now();
     renderApp();
-    showToast(`キャッシュ再描画: ${(performance.now() - t0).toFixed(1)}ms (0ms相当)`);
+    showToast(t('test.cacheToast', { ms: (performance.now() - t0).toFixed(1) }));
   };
 
   document.getElementById('btn-test-err').onclick = () => {
@@ -304,8 +308,10 @@ runtime.renderApp = renderApp;
 runtime.syncUrlFromState = syncUrlFromState;
 
 window.addEventListener('DOMContentLoaded', () => {
+  initI18n();
   setupEventListeners();
   applyInitialDisplayStateFromUrl();
+  applyStaticI18n();
   runtime.urlSyncReady = true;
   setupVisualStageInteractions();
   setupSplitTermLinks();
@@ -331,6 +337,27 @@ window.addEventListener('DOMContentLoaded', () => {
   setupMarkedFootnotes();
   setupMarkedEmoji();
   setupMermaid();
+  syncToneUi();
+  syncLayoutUi();
+  onLangChange(() => {
+    applyStaticI18n();
+    renderShortcutModalList();
+    syncToneUi();
+    syncLayoutUi();
+    const zoomPicker = document.getElementById('zoom-scale-picker');
+    if (zoomPicker) zoomPicker.innerHTML = scalePickerHtml('');
+    applyUpdateCheckState();
+    updateRecentFolderMenu();
+    renderFolderList();
+    syncUrlFromState();
+    const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement | null;
+    const isUnmodified = Boolean(editor && editor.value === runtime.lastLoadedMarkdown);
+    if (runtime.currentSampleFile && isUnmodified) {
+      void loadBundledSample(getSampleBaseFileName(runtime.currentSampleFile), { silentToast: true });
+    } else {
+      renderApp();
+    }
+  });
   renderApp();
   loadMarkdownFromUrlParam();
 });

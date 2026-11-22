@@ -4,10 +4,11 @@
 import { state } from './state';
 import { showToast } from './toast';
 import { trackWebEvent } from './analytics';
+import { getLang, onLangChange, t, type Lang } from '../i18n';
 
 // ビルドが埋め込む、この配布先で出すモードの表（modes.json の行から stage を除いたもの）
-declare const __LUCIVO_PRESENT_MODES__: Array<{ id: string; label: string }>;
-const PRESENT_MODES: Array<{ id: string; label: string }> =
+declare const __LUCIVO_PRESENT_MODES__: Array<{ id: string; label: string; labelEn?: string }>;
+const PRESENT_MODES: Array<{ id: string; label: string; labelEn?: string }> =
   typeof __LUCIVO_PRESENT_MODES__ !== 'undefined' ? __LUCIVO_PRESENT_MODES__ : [];
 
 // モードが本体について知ってよいのは、この host と LucivoModes だけ（ARC-MODE-006）
@@ -19,6 +20,7 @@ export interface ModeHost {
   toast(message: string): void;
   appearance(): 'dark' | 'light';
   setAppearance(appearance: 'dark' | 'light'): Promise<HTMLElement | null>;
+  lang(): Lang;
 }
 
 interface Mode {
@@ -119,6 +121,9 @@ const host: ModeHost = {
     await waitDiagrams(container, 10000);
     toggleLights(false);
     return container;
+  },
+  lang() {
+    return getLang();
   }
 };
 
@@ -159,22 +164,23 @@ export function setupPresentModes(closeMenus: () => void): void {
   const menu = document.getElementById('present-menu');
   if (!menu) return;
   const syncRestrictions: Array<() => void> = [];
-  PRESENT_MODES.forEach(({ id, label }) => {
+  PRESENT_MODES.forEach(({ id, label, labelEn }) => {
     const item = document.createElement('button');
     item.id = `menu-present-${id}`;
     item.type = 'button';
     item.setAttribute('role', 'menuitem');
     item.className = 'file-menu-item';
     const sync = () => {
+      const displayLabel = getLang() === 'en' && labelEn ? labelEn : label;
       if (id === 'museum-walk' && isMobileTouchDevice()) {
         item.disabled = true;
         item.setAttribute('aria-disabled', 'true');
-        item.textContent = `${label}（スマホ非対応）`;
-        item.title = 'スマホでは表示崩れのため一時的に制限しています（PC でご利用ください）';
+        item.textContent = `${displayLabel}${t('present.mobileUnsupportedSuffix')}`;
+        item.title = t('present.mobileUnsupportedTitle');
       } else {
         item.disabled = false;
         item.removeAttribute('aria-disabled');
-        item.textContent = label;
+        item.textContent = displayLabel;
         item.removeAttribute('title');
       }
     };
@@ -183,17 +189,20 @@ export function setupPresentModes(closeMenus: () => void): void {
     item.addEventListener('click', async () => {
       if (id === 'museum-walk' && isMobileTouchDevice()) {
         closeMenus();
-        showToast('ミュージアム・ウォークは現在スマホでは利用できません（PC でご利用ください）');
+        showToast(t('present.mobileUnsupportedToast'));
         return;
       }
       closeMenus();
       if (!(await loadMode(id))) {
-        showToast('発表の見せ方を読み込めませんでした');
+        showToast(t('present.loadFailedToast'));
         return;
       }
       modes.get(id)!.enter(host);
     });
     menu.appendChild(item);
+  });
+  onLangChange(() => {
+    syncRestrictions.forEach(fn => fn());
   });
   const btn = document.getElementById('btn-present-menu');
   if (btn) {

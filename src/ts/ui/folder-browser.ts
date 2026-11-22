@@ -11,6 +11,7 @@ import {
 } from './url-loader';
 import { findScrollParent } from '../diagram/pan-zoom';
 import { showToast, updateStatus } from './toast';
+import { onLangChange, t } from '../i18n';
 import { watchFile } from './file-watch';
 import { clearMathPlotCache } from '../math/plot';
 import { state, DROPPABLE_FILE_PATTERN, runtime } from './state';
@@ -44,7 +45,18 @@ export const RECENT_FOLDER_KEY = 'recentFolder';
 // 同梱サンプルとして開いた文書のファイル名（同梱サンプルでなければ null）（DD-FILE-081）
 // 同梱サンプルのフォルダ（index.html からの相対パス）と、サンプルのファイル名
 export const SAMPLES_DIR = 'samples';
-export const BUNDLED_SAMPLES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md', 'museum-walk-sample.md', 'print-sample.md'];
+export const BUNDLED_SAMPLES = [
+  'visual-sample.md',
+  'notation_sample.md',
+  'notation_sample_extra1.md',
+  'museum-walk-sample.md',
+  'print-sample.md',
+  'visual-sample.en.md',
+  'notation_sample.en.md',
+  'notation_sample_extra1.en.md',
+  'museum-walk-sample.en.md',
+  'print-sample.en.md'
+];
 // フォルダの画像のパス → blob URL（読み込み中は Promise）（DD-FILE-076）
 export const folderImageUrls = new Map();
 // File System Access API が使えなかったとき、次からはフォルダの選択の入力欄を使う（DD-FILE-071）
@@ -145,7 +157,7 @@ export function makeInputFolder(fileList) {
   }
   const truncated = files.length > FOLDER_FILE_LIMIT;
   return {
-    name: name || 'フォルダ',
+    name: name || t('folder.defaultName'),
     files: sortFolderFiles(files).slice(0, FOLDER_FILE_LIMIT),
     truncated,
     async getFile(path) {
@@ -230,8 +242,8 @@ export function setOpenedFolder(folder) {
   setFolderPaneCollapsed(false);
   renderFolderList();
   runtime.renderApp();
-  const note = folder.truncated ? `（先頭の ${FOLDER_FILE_LIMIT} 件）` : '';
-  showToast(`「${folder.name}」を開きました。Markdown ${folder.files.length} 件${note}`);
+  const note = folder.truncated ? t('folder.truncatedNote', { limit: FOLDER_FILE_LIMIT }) : '';
+  showToast(t('folder.openedToast', { name: folder.name, count: folder.files.length, note }));
 }
 
 export function closeFolder() {
@@ -275,7 +287,7 @@ export async function openFolderFromHandle(handle) {
     setOpenedFolder(makeHandleFolder(handle, await scanDirectoryHandle(handle)));
   } catch (err) {
     console.error('Failed to read folder:', err);
-    showToast(`「${handle.name}」を読み込めませんでした`);
+    showToast(t('file.readFailedToast', { name: handle.name }));
   }
 }
 
@@ -288,7 +300,7 @@ export async function openFolderFile(path) {
   const file = await folder.getFile(path);
   if (folder !== runtime.openedFolder) return false;
   if (!file) {
-    showToast(`「${path}」はフォルダの中に見つかりません`);
+    showToast(t('folder.notFoundToast', { path }));
     return false;
   }
   if (!confirmDiscardEdits(name)) return false;
@@ -320,7 +332,7 @@ export async function openFolderFile(path) {
     }
   } catch (err) {
     console.error('Failed to read file:', err);
-    showToast(`「${name}」を読み込めませんでした`);
+    showToast(t('file.readFailedToast', { name }));
     return false;
   }
   // 狭い画面では一覧が文書に重なるため、選んだら隠す
@@ -370,7 +382,7 @@ export function setupDocumentLinks() {
         scroller.scrollTo({ top: previewScrollTopOf(footnoteTarget, scroller), behavior: scrollBehavior() });
         return;
       }
-      if (!scrollToHeadingAnchor(href.slice(1))) showToast('リンク先の見出しが見つかりません');
+      if (!scrollToHeadingAnchor(href.slice(1))) showToast(t('folder.anchorNotFoundToast'));
       return;
     }
     if (!isRelativeSrc(href)) return;
@@ -382,12 +394,12 @@ export function setupDocumentLinks() {
     if (runtime.currentSampleFile && !(runtime.openedFolder && runtime.currentFolderPath !== null)) {
       const samplePath = resolveFolderPath('', pathPart);
       if (!BUNDLED_SAMPLES.includes(samplePath)) {
-        showToast(`「${samplePath || pathPart}」は同梱サンプルにありません`);
+        showToast(t('folder.sampleNotFoundToast', { path: samplePath || pathPart }));
         return;
       }
       const opened = samplePath === runtime.currentSampleFile ? Promise.resolve(true) : loadBundledSample(samplePath);
       opened.then(ok => {
-        if (ok && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+        if (ok && anchor && !scrollToHeadingAnchor(anchor)) showToast(t('folder.anchorNotFoundToast'));
       });
       return;
     }
@@ -397,24 +409,24 @@ export function setupDocumentLinks() {
         const targetUrl = new URL(pathPart, baseUrl);
         if (targetUrl.protocol === 'http:' || targetUrl.protocol === 'https:') {
           loadMarkdownFromPublicUrl(targetUrl.toString()).then(opened => {
-            if (opened && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+            if (opened && anchor && !scrollToHeadingAnchor(anchor)) showToast(t('folder.anchorNotFoundToast'));
           });
           return;
         }
       } catch (_) {}
     }
     if (!runtime.openedFolder || runtime.currentFolderPath === null) {
-      showToast('Markdown へのリンクは、「開く」→「フォルダを開く…」で開いた文書で使えます');
+      showToast(t('folder.linkNeedFolderToast'));
       return;
     }
     const path = resolveFolderPath(folderDirOf(runtime.currentFolderPath), pathPart);
     if (path === null) {
-      showToast('開いたフォルダの外のファイルは開けません');
+      showToast(t('folder.linkOutsideToast'));
       return;
     }
     const open = path === runtime.currentFolderPath ? Promise.resolve(true) : openFolderFile(path);
     open.then(opened => {
-      if (opened && anchor && !scrollToHeadingAnchor(anchor)) showToast('リンク先の見出しが見つかりません');
+      if (opened && anchor && !scrollToHeadingAnchor(anchor)) showToast(t('folder.anchorNotFoundToast'));
     });
   });
 }
@@ -438,7 +450,7 @@ export function renderFolderList() {
   if (!runtime.openedFolder.files.length) {
     const empty = document.createElement('p');
     empty.className = 'folder-list-empty';
-    empty.textContent = 'Markdown ファイル（.md / .markdown / .txt）がありません';
+    empty.textContent = t('folder.emptyFiles');
     list.append(empty);
     return;
   }
@@ -532,7 +544,7 @@ export function updateRecentFolderMenu() {
     const item = document.getElementById(id);
     if (!item) return;
     item.classList.toggle('hidden', !runtime.recentFolderHandle);
-    if (runtime.recentFolderHandle) item.textContent = `前回のフォルダ「${runtime.recentFolderHandle.name}」を開く`;
+    if (runtime.recentFolderHandle) item.textContent = t('menu.openRecentFolder', { name: runtime.recentFolderHandle.name });
   });
 }
 
@@ -544,12 +556,12 @@ export async function reopenRecentFolder() {
     let permission = await handle.queryPermission({ mode: 'read' });
     if (permission !== 'granted') permission = await handle.requestPermission({ mode: 'read' });
     if (permission !== 'granted') {
-      showToast(`「${handle.name}」を読む許可がありません`);
+      showToast(t('folder.noPermissionToast', { name: handle.name }));
       return;
     }
   } catch (err) {
     console.warn('Failed to reopen the folder:', err);
-    showToast(`「${handle.name}」を開けませんでした。「フォルダを開く…」から選び直してください`);
+    showToast(t('folder.reopenFailedToast', { name: handle.name }));
     return;
   }
   await openFolderFromHandle(handle);
@@ -629,8 +641,8 @@ export function setupAnimationToggle() {
     btn.setAttribute('aria-pressed', String(enabled));
     btn.classList.toggle('is-active', enabled);
     btn.title = enabled
-      ? 'フローのアニメーション: ON（クリックでOFF）'
-      : 'フローのアニメーション: OFF（クリックでON）';
+      ? t('tools.animationOnTitle')
+      : t('tools.animationOffTitle');
     const icon = btn.querySelector('svg');
     if (icon) {
       icon.classList.toggle('text-amber-500', enabled);
@@ -638,13 +650,14 @@ export function setupAnimationToggle() {
     }
   };
   syncAnimationToggleUi();
+  onLangChange(syncAnimationToggleUi);
   btn.addEventListener('click', () => {
     state.signalLightsEnabled = !state.signalLightsEnabled;
     syncAnimationToggleUi();
     if ((window as any).LucivoStage?.toggleLights) {
       (window as any).LucivoStage.toggleLights(state.signalLightsEnabled);
     }
-    showToast(state.signalLightsEnabled ? 'フローのアニメーション: ON' : 'フローのアニメーション: OFF');
+    showToast(state.signalLightsEnabled ? t('tools.animationOnToast') : t('tools.animationOffToast'));
   });
 }
 
@@ -681,7 +694,7 @@ export function setupAmbientEffectsToggle() {
   toggle.checked = initial;
   toggle.addEventListener('change', () => {
     setAmbientEffectsEnabled(toggle.checked);
-    showToast(toggle.checked ? 'Visualモードの背景・前景演出: ON' : 'Visualモードの背景・前景演出: OFF');
+    showToast(toggle.checked ? t('settings.ambientOnToast') : t('settings.ambientOffToast'));
   });
 }
 
@@ -708,7 +721,7 @@ function makeRemoteFolder(name, treeSpec, remoteTreeUrl, rawFiles, truncated) {
 }
 
 async function loadGitHubTreeFolder(validUrl, treeSpec) {
-  showToast('GitHub フォルダを読み込んでいます…');
+  showToast(t('url.loadingGitHubFolder'));
   try {
     const { files, truncated } = await fetchGitHubTreeFiles(
       treeSpec,
@@ -717,7 +730,7 @@ async function loadGitHubTreeFolder(validUrl, treeSpec) {
       FOLDER_DEPTH_LIMIT
     );
     if (files.length === 0) {
-      showToast('このフォルダに Markdown ファイルが見つかりませんでした', 4000);
+      showToast(t('url.noMdInFolder'), 4000);
       return false;
     }
     const folderName = treeSpec.basePath ? treeSpec.basePath.split('/').pop() : treeSpec.repo;
@@ -732,9 +745,9 @@ async function loadGitHubTreeFolder(validUrl, treeSpec) {
   } catch (err) {
     console.error('Failed to fetch GitHub tree:', err);
     if (err && err.message === 'GITHUB_RATE_LIMIT') {
-      showToast('GitHub API の利用回数制限に達しました。しばらく待ってから再度お試しください', 4500);
+      showToast(t('url.githubRateLimit'), 4500);
     } else {
-      showToast('GitHub フォルダを読み込めませんでした。URL やネットワークをご確認ください', 4500);
+      showToast(t('url.githubFolderFailed'), 4500);
     }
     return false;
   }
@@ -744,7 +757,7 @@ async function loadGitHubTreeFolder(validUrl, treeSpec) {
 export async function loadMarkdownFromPublicUrl(rawUrl): Promise<boolean> {
   const validUrl = validatePublicMarkdownUrl(rawUrl);
   if (!validUrl) {
-    showToast('URL から Markdown を読み込めませんでした（http / https の有効な URL を指定してください）', 4000);
+    showToast(t('url.invalidUrl'), 4000);
     return false;
   }
   const treeSpec = parseGitHubTreeUrl(validUrl);
@@ -752,7 +765,7 @@ export async function loadMarkdownFromPublicUrl(rawUrl): Promise<boolean> {
     return await loadGitHubTreeFolder(validUrl, treeSpec);
   }
   const { fetchUrl } = rewriteGitHubBlobUrl(validUrl);
-  showToast('URL から Markdown を読み込んでいます…');
+  showToast(t('url.loadingUrl'));
   try {
     const { buffer, fileName } = await fetchMarkdownFromUrl(fetchUrl);
     const decoded = decodeMarkdown(buffer);
@@ -762,9 +775,9 @@ export async function loadMarkdownFromPublicUrl(rawUrl): Promise<boolean> {
   } catch (err) {
     console.error('Failed to fetch markdown from URL:', err);
     if (validUrl.hostname === 'github.com') {
-      showToast('URL から Markdown を読み込めませんでした。GitHub のファイルは raw URL を指定するか、CORS 制限・ネットワークをご確認ください', 4500);
+      showToast(t('url.fetchFailedGitHub'), 4500);
     } else {
-      showToast('URL から Markdown を読み込めませんでした。CORS 制限やネットワークをご確認ください', 4500);
+      showToast(t('url.fetchFailed'), 4500);
     }
     return false;
   }

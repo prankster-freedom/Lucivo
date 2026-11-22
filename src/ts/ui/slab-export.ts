@@ -2,6 +2,7 @@
 import { downloadBlob } from '../utils/download';
 import { registerEscapeHandler } from './keymap';
 import { showToast, updateStatus } from './toast';
+import { t } from '../i18n';
 import { state, EXPORT_URLS, loadLibrary, runtime } from './state';
 import { getThemeSpec } from '../diagram/mermaid-config';
 import { scrollBehavior } from './editor-follow';
@@ -22,9 +23,9 @@ export const SLAB_IMAGE_EXPORT_ENABLED = false;
 export function buildSlabActionsHtml() {
   if (!SLAB_IMAGE_EXPORT_ENABLED) return '';
   return `
-    <div class="slab-actions" aria-label="スラブの操作">
-      <button type="button" class="slab-action-btn btn-copy-slab" title="この章のカード画像をクリップボードにコピー" aria-label="コピー"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
-      <button type="button" class="slab-action-btn btn-export-slab" title="この章のカード画像をPNGとして保存" aria-label="PNG"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
+    <div class="slab-actions" aria-label="${t('render.slabActionsAria')}">
+      <button type="button" class="slab-action-btn btn-copy-slab" title="${t('render.slabCopyTitle')}" aria-label="${t('render.slabCopyAria')}"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+      <button type="button" class="slab-action-btn btn-export-slab" title="${t('render.slabExportTitle')}" aria-label="PNG"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
     </div>
   `;
 }
@@ -203,19 +204,19 @@ export async function copySlabImage(slabEl) {
     const blob = await renderSlabToBlob(slabEl);
     if (navigator.clipboard && window.ClipboardItem) {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      showToast('スラブ画像をクリップボードにコピーしました');
+      showToast(t('render.slabCopiedToast'));
     } else {
       downloadBlob(blob, filename, 'image/png');
-      showToast('クリップボード非対応のため画像を保存しました');
+      showToast(t('render.slabSavedFallbackToast'));
     }
   } catch (err) {
     console.warn('copySlabImage failed, fallback to download', err);
     try {
       const blob = await renderSlabToBlob(slabEl);
       downloadBlob(blob, filename, 'image/png');
-      showToast('画像を保存しました');
+      showToast(t('render.slabSavedToast'));
     } catch (e) {
-      showToast('画像のエクスポートに失敗しました');
+      showToast(t('render.slabExportFailedToast'));
     }
   }
 }
@@ -225,10 +226,10 @@ export async function exportSlabImage(slabEl) {
   try {
     const blob = await renderSlabToBlob(slabEl);
     downloadBlob(blob, filename, 'image/png');
-    showToast('スラブ画像を保存しました');
+    showToast(t('render.slabExportedToast'));
   } catch (err) {
     console.warn('exportSlabImage failed', err);
-    showToast('画像のエクスポートに失敗しました');
+    showToast(t('render.slabExportFailedToast'));
   }
 }
 
@@ -282,7 +283,7 @@ export function setupVisualStageInteractions() {
       }
       codeCopyBtn.setAttribute('data-copy-label', 'Copied');
       codeCopyBtn.classList.add('is-copied');
-      showToast('コードをクリップボードにコピーしました');
+      showToast(t('render.codeCopiedToast'));
       setTimeout(() => {
         codeCopyBtn.setAttribute('data-copy-label', 'Copy');
         codeCopyBtn.classList.remove('is-copied');

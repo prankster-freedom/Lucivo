@@ -44,34 +44,44 @@ const overview = createStageOverview({
 });
 const { ov, pointer } = overview;
 
+function isEn(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.lang === 'en';
+}
+
 function buildHud() {
+  const en = isEn();
   const hud = document.createElement('div');
   hud.id = 'stage-hud';
   hud.className = 'stage-hud';
+  hud.dataset.lang = en ? 'en' : 'ja';
   hud.innerHTML = `
     <div class="stage-sweep" aria-hidden="true"></div>
-    <div class="stage-hint">→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ B・Q 幕間 ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了</div>
+    <div class="stage-hint">${en
+      ? '→ Next / ← Prev / O Overview / L Pointer / B·Q Curtain / A Auto / T Theme / ? Shortcuts / Esc Exit'
+      : '→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ B・Q 幕間 ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了'}</div>
     <div class="stage-pointer" aria-hidden="true"><span class="stage-pointer-dot"></span></div>
     <div class="stage-curtain" aria-hidden="true">
       <div class="stage-curtain-inner">
         <span class="stage-curtain-orbit" aria-hidden="true"></span>
         <p class="stage-curtain-eyebrow">Q &amp; A / STANDBY</p>
         <h2 class="stage-curtain-title"></h2>
-        <p class="stage-curtain-sub">章番号を押すとそのシーンへ直接戻ります（B / Q / Esc で復帰）</p>
-        <div class="stage-curtain-chapters" role="navigation" aria-label="章へ戻る"></div>
+        <p class="stage-curtain-sub">${en
+          ? 'Click a chapter number to jump directly to that scene (Press B / Q / Esc to resume)'
+          : '章番号を押すとそのシーンへ直接戻ります（B / Q / Esc で復帰）'}</p>
+        <div class="stage-curtain-chapters" role="navigation" aria-label="${en ? 'Jump to chapter' : '章へ戻る'}"></div>
       </div>
     </div>
     <div class="stage-hud-bar">
       <span class="stage-hud-title"></span>
       <span class="stage-hud-count"></span>
       <div class="stage-hud-actions">
-        <button type="button" data-stage-action="prev" aria-label="前へ">←</button>
-        <button type="button" data-stage-action="next" aria-label="次へ">→</button>
-        <button type="button" data-stage-action="overview" aria-pressed="false">一覧</button>
-        <button type="button" data-stage-action="pointer" aria-pressed="false">ポインター</button>
-        <button type="button" data-stage-action="curtain" aria-pressed="false">幕間</button>
-        <button type="button" data-stage-action="auto" aria-pressed="false">自動進行</button>
-        <button type="button" data-stage-action="exit">終了</button>
+        <button type="button" data-stage-action="prev" aria-label="${en ? 'Previous' : '前へ'}">←</button>
+        <button type="button" data-stage-action="next" aria-label="${en ? 'Next' : '次へ'}">→</button>
+        <button type="button" data-stage-action="overview" aria-pressed="false">${en ? 'Overview' : '一覧'}</button>
+        <button type="button" data-stage-action="pointer" aria-pressed="false">${en ? 'Pointer' : 'ポインター'}</button>
+        <button type="button" data-stage-action="curtain" aria-pressed="false">${en ? 'Curtain' : '幕間'}</button>
+        <button type="button" data-stage-action="auto" aria-pressed="false">${en ? 'Auto' : '自動進行'}</button>
+        <button type="button" data-stage-action="exit">${en ? 'Exit' : '終了'}</button>
       </div>
     </div>
     <div class="stage-hud-rail" aria-hidden="true"><span class="stage-hud-fill"></span></div>`;
@@ -412,7 +422,7 @@ function enterShow() {
   show.scenes = collectScenes();
   if (!show.scenes.length || !document.getElementById('markdown-editor').value.trim()) {
     restoreView();
-    showToast('発表する章がありません');
+    showToast(isEn() ? 'No chapters to present' : '発表する章がありません');
     return;
   }
   clearVisualStageSpotlight(stageContainer());
@@ -422,6 +432,11 @@ function enterShow() {
   show.auto = false;
   show.autoLooped = false;
   curtain.active = false;
+  const curLang = isEn() ? 'en' : 'ja';
+  if (show.hud && show.hud.dataset.lang !== curLang) {
+    show.hud.remove();
+    show.hud = null;
+  }
   show.hud = show.hud || buildHud();
   document.documentElement.classList.add('is-stage-show');
   document.addEventListener('keydown', onShowKey, true);

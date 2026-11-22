@@ -2,6 +2,7 @@
 // ボタンを押したときだけ GitHub の最新リリースを問い合わせる。押さなければ通信しない（NFR-008）
 import { escapeHtml } from '../utils/escape';
 import { showToast } from './toast';
+import { t } from '../i18n';
 
 // ビルド時に package.json の version を埋め込む（tools/build-app.cjs の define）
 declare const __LUCIVO_VERSION__: string;
@@ -52,13 +53,13 @@ export function compareVersions(a: string, b: string): number {
 function resultHtml(result: CheckResult): string {
   switch (result.kind) {
     case 'checking':
-      return '確認しています…';
+      return escapeHtml(t('update.statusChecking'));
     case 'latest':
-      return `最新版です（${escapeHtml(result.version)}）`;
+      return escapeHtml(t('update.statusLatest', { version: result.version }));
     case 'newer':
-      return `新しい版 <strong>${escapeHtml(result.version)}</strong> があります: <a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">リリースのページを開く</a>`;
+      return `${escapeHtml(t('update.statusNewerPrefix'))}<strong>${escapeHtml(result.version)}</strong>${escapeHtml(t('update.statusNewerSuffix'))}<a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(t('update.openReleaseLink'))}</a>`;
     default:
-      return `確認できませんでした。インターネットへの接続を確かめるか、<a href="${RELEASES_URL}" target="_blank" rel="noopener noreferrer">リリースの一覧</a>を開いてください`;
+      return `${escapeHtml(t('update.statusErrorPrefix'))}<a href="${RELEASES_URL}" target="_blank" rel="noopener noreferrer">${escapeHtml(t('update.releasesListLink'))}</a>${escapeHtml(t('update.statusErrorSuffix'))}`;
   }
 }
 
@@ -90,7 +91,7 @@ export function applyUpdateCheckState(root: ParentNode = document): void {
     const label = el.querySelector<HTMLElement>('.empty-guide-latest-label');
     const link = el.querySelector<HTMLAnchorElement>('.empty-guide-latest-link');
     if (web) {
-      if (label) label.textContent = 'スタンドアロン版はこちら';
+      if (label) label.textContent = t('update.standaloneHere');
       if (link) {
         link.href = RELEASES_URL;
         link.textContent = 'github.com/prankster-freedom/Lucivo/releases';
@@ -114,23 +115,23 @@ export function applyUpdateCheckState(root: ParentNode = document): void {
   }
   if (headerLabel) {
     if (lastResult?.kind === 'checking') {
-      headerLabel.textContent = '確認中…';
+      headerLabel.textContent = t('update.headerChecking');
     } else if (lastResult?.kind === 'newer') {
-      headerLabel.textContent = '更新あり';
+      headerLabel.textContent = t('update.headerNewer');
     } else if (lastResult?.kind === 'latest') {
-      headerLabel.textContent = '更新なし';
+      headerLabel.textContent = t('update.headerLatest');
     } else {
-      headerLabel.textContent = '最新版確認';
+      headerLabel.textContent = t('update.headerLabel');
     }
   }
   if (headerBtn) {
     headerBtn.classList.toggle('is-active', lastResult?.kind === 'newer');
     if (lastResult?.kind === 'latest') {
-      headerBtn.title = `最新版です（v${lastResult.version}）`;
+      headerBtn.title = t('update.headerTitleLatest', { version: lastResult.version });
     } else if (lastResult?.kind === 'newer') {
-      headerBtn.title = `新しい版 v${lastResult.version} があります（現在 v${APP_VERSION}）`;
+      headerBtn.title = t('update.headerTitleNewer', { version: lastResult.version, current: APP_VERSION });
     } else {
-      headerBtn.title = `最新版を確認（現在 v${APP_VERSION}）`;
+      headerBtn.title = t('update.headerTitleDefault', { version: APP_VERSION });
     }
   }
 }
@@ -165,15 +166,15 @@ export async function checkForUpdate(): Promise<void> {
   if (lastResult && lastResult.kind === 'checking') return;
   lastResult = { kind: 'checking' };
   applyUpdateCheckState();
-  showToast('最新リリースを確認しています…（GitHubに接続中）');
+  showToast(t('update.toastChecking'));
   lastResult = await fetchLatest();
   applyUpdateCheckState();
   if (lastResult.kind === 'latest') {
-    showToast(`最新版です（v${lastResult.version}）`);
+    showToast(t('update.toastLatest', { version: lastResult.version }));
   } else if (lastResult.kind === 'newer') {
-    showToast(`新しい版 v${lastResult.version} があります`);
+    showToast(t('update.toastNewer', { version: lastResult.version }));
   } else if (lastResult.kind === 'error') {
-    showToast('更新を確認できませんでした（接続を確認してください）');
+    showToast(t('update.toastError'));
   }
 }
 

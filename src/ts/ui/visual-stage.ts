@@ -3,6 +3,7 @@ import { escapeHtml } from '../utils/escape';
 import { decorateAlerts } from '../markdown/callouts';
 import { state, runtime } from './state';
 import { buildSlabActionsHtml } from './slab-export';
+import { t } from '../i18n';
 
 export const TEMPLATE_LIMITS = {
   leadChars: 160, itemChars: 100, quoteChars: 240, points: [2, 6], steps: [2, 8],
@@ -285,7 +286,7 @@ export function buildCoverHtml(title, meta, agenda, figureCount = 0) {
   if (agenda.length > 0) specItems.push({ kind: 'stages', label: `${agenda.length} ${agenda.length === 1 ? 'STAGE' : 'STAGES'}` });
   if (figureCount > 0) specItems.push({ kind: 'figures', label: `${figureCount} ${figureCount === 1 ? 'FIGURE' : 'FIGURES'}` });
   const specsHtml = specItems.length
-    ? `<div class="vs-cover-specs" aria-label="文書スペック">${specItems.map(item =>
+    ? `<div class="vs-cover-specs" aria-label="${escapeHtml(t('render.coverSpecsAria'))}">${specItems.map(item =>
       `<span class="vs-cover-spec-pill" data-spec-kind="${item.kind}" data-spec-label="${escapeHtml(item.label)}"></span>`
     ).join('')}</div>`
     : '';
@@ -295,7 +296,7 @@ export function buildCoverHtml(title, meta, agenda, figureCount = 0) {
     // 印刷物の目次と同じく、列の上から下へ読む順に並べる（DTP-VTPL-100）
     const cols = agenda.length <= 6 ? 2 : 3;
     const rows = Math.ceil(agenda.length / cols);
-    agendaHtml = `<ol class="vs-cover-agenda" style="--vs-rows: ${rows};" aria-label="目次">${agenda.map(a =>
+    agendaHtml = `<ol class="vs-cover-agenda" style="--vs-rows: ${rows};" aria-label="${escapeHtml(t('render.coverAgendaAria'))}">${agenda.map(a =>
       `<li><button type="button" class="vs-cover-agenda-item" data-stage-target="${a.no}"><span class="vs-cover-agenda-no">${a.no}</span><span class="vs-cover-agenda-title">${escapeHtml(a.title)}</span></button></li>`
     ).join('')}</ol>`;
   }
@@ -389,8 +390,8 @@ export function decorateCodeBlocks(container) {
     copyBtn.type = 'button';
     copyBtn.className = 'vs-code-copy-btn';
     copyBtn.setAttribute('data-copy-label', 'Copy');
-    copyBtn.setAttribute('title', 'コードをクリップボードにコピー');
-    copyBtn.setAttribute('aria-label', 'コードをコピー');
+    copyBtn.setAttribute('title', t('render.codeCopyTitle'));
+    copyBtn.setAttribute('aria-label', t('render.codeCopyAria'));
     pre.appendChild(caret);
     pre.appendChild(copyBtn);
   });
@@ -542,7 +543,7 @@ function buildEndCardHtml(heroTitle: string, meta: { author: string; closing: st
       : `<span class="vs-endcard-url">${escapeHtml(meta.url)}</span>`;
   }
   return `
-      <section class="exhibition-slab vs-endcard" aria-label="エンドカード">
+      <section class="exhibition-slab vs-endcard" aria-label="${escapeHtml(t('render.endcardAria'))}">
         <span class="vs-cover-texture" aria-hidden="true"></span>
         <div class="exhibition-hero-top">
           <span class="exhibition-hero-emblem" aria-hidden="true"></span>
