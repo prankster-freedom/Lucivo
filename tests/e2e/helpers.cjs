@@ -39,12 +39,21 @@ function record(id, ok, detail) {
   console.log(`${ok ? 'PASS' : 'FAIL'} ${id} ${detail || ''}${suite ? ` [${suite}]` : ''}`);
 }
 
-async function openApp(browser) {
-  const page = await browser.newPage({ viewport: { width: 1300, height: 16000 } });
+async function openApp(browser, opts = {}) {
+  const context = await browser.newContext({
+    viewport: opts.viewport || { width: 1300, height: 16000 },
+    locale: opts.locale || 'ja-JP'
+  });
+  const page = await context.newPage();
+  const origClose = page.close.bind(page);
+  page.close = async () => {
+    await origClose().catch(() => {});
+    await context.close().catch(() => {});
+  };
   page.consoleErrors = [];
   page.on('console', m => { if (m.type() === 'error') page.consoleErrors.push(m.text().slice(0, 200)); });
   page.on('pageerror', e => page.consoleErrors.push('pageerror: ' + e.message));
-  await page.goto(APP_URL);
+  await page.goto(opts.url || APP_URL);
   // Mermaid は図が現れるまで読み込まれないため、アプリの準備だけを待つ
   await page.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
   return page;
@@ -151,7 +160,7 @@ async function startWebServer() {
 }
 
 async function openWebPageWithSample(browser, server, contextOptions = {}, sampleName = 'visual-sample.md') {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...contextOptions });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ja-JP', ...contextOptions });
   const page = await context.newPage();
   page.consoleErrors = [];
   page.on('console', m => { if (m.type() === 'error') page.consoleErrors.push(m.text().slice(0, 200)); });

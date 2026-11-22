@@ -63,6 +63,8 @@ const {
   testOffline
 } = require('./e2e/modes-and-ui.cjs');
 
+const { testI18n } = require('./e2e/i18n.cjs');
+
 const { testPerfBudget, testPerfOptimizations } = require('./e2e/perf-budget.cjs');
 
 // 発表モードのテスト（tests/e2e/modes/<id>.cjs）は、フォルダから自動で集める（doc/2.ARCHITECTURE.md 4.16 ARC-MODE-008）。
@@ -81,6 +83,7 @@ const SUITES = [
   { name: 'testUrlLoading', tcPrefix: ['TC-FILE-035', 'TC-FILE-041', 'TC-FILE-042', 'TC-FILE-043', 'TC-FILE-044', 'TC-FILE-045'], fn: testUrlLoading },
   { name: 'testAutoReload', tcPrefix: ['TC-FILE-046'], fn: testAutoReload },
   { name: 'testWebAnalytics', tcPrefix: ['TC-FILE-048'], fn: testWebAnalytics },
+  { name: 'testI18n', tcPrefix: ['TC-I18N-'], fn: testI18n },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
@@ -103,7 +106,7 @@ const SUITES = [
   { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates, timeoutMs: 150000 },
   { name: 'testVisualBaseline', tcPrefix: ['TC-VTPL-041'], fn: testVisualBaseline, timeoutMs: 150000 },
   { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024', 'TC-VTPL-025', 'TC-VTPL-026', 'TC-VTPL-027', 'TC-VTPL-030', 'TC-VTPL-031', 'TC-VTPL-032', 'TC-VTPL-033', 'TC-VTPL-034', 'TC-VTPL-035', 'TC-VTPL-036', 'TC-VTPL-038', 'TC-VTPL-039'], fn: testCoverAndTables, timeoutMs: 150000 },
-  { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
+  { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight, serial: true },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007', 'TC-SHOW-026', 'TC-SHOW-027'], fn: testStageShow, timeoutMs: 180000 },
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025'], fn: testStageOverviewPointer },
   { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022', 'TC-VTPL-028', 'TC-VTPL-029', 'TC-VTPL-037'], fn: testCalloutsGlossaryPrint },
@@ -177,6 +180,11 @@ async function runSuite(suite, browser) {
   console.log(`E2E: ${parallel.length} suites in parallel (workers=${workers}), then ${serial.length} serial suites`);
   const runStartedAt = Date.now();
   const browser = await chromium.launch();
+  // 既存の日本語前提 E2E が英語環境（CI の ubuntu-latest 等）で揺れないよう、明示指定がないコンテキストの既定ロケールを ja-JP にそろえる
+  const origNewContext = browser.newContext.bind(browser);
+  browser.newContext = (opts = {}) => origNewContext({ locale: 'ja-JP', ...opts });
+  const origNewPage = browser.newPage.bind(browser);
+  browser.newPage = (opts = {}) => origNewPage({ locale: 'ja-JP', ...opts });
   try {
     // 上限（timeoutMs）の長いスイートほど所要時間も長いため、先に始めて全体の終わりを早める。同じ上限の中では登録順を保つ
     const queue = parallel
