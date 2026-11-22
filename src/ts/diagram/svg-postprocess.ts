@@ -126,6 +126,60 @@ const trackedSlabRoots = new WeakSet<Element>();
 const skippedSlabs = new WeakSet<Element>();
 const dirtySplitSlabs = new WeakSet<Element>();
 const dirtyMathSlabs = new WeakSet<Element>();
+const dirtyTableSlabs = new WeakSet<Element>();
+
+// 2 段組み対象の標準章のうち、段幅を超える自然な幅の表を含むスラブは 1 段組みへ戻す（FR-061, DD-VTPL-049, #352）
+export function updateTwoColWideTables(root: Element | null, shouldSkipSlab?: (slab: Element) => boolean): void {
+  if (!root) return;
+  const slabs = root.classList.contains('vs-long-prose')
+    ? [root]
+    : Array.from(root.querySelectorAll('.exhibition-slab.vs-long-prose'));
+  const targets: { slab: Element; body: HTMLElement; tables: { table: HTMLTableElement; container: HTMLElement; prevMinWidth: string; prevMinPriority: string; prevWidth: string; prevWidthPriority: string }[]; hasWide: boolean }[] = [];
+  for (const slab of slabs) {
+    if (shouldSkipSlab && shouldSkipSlab(slab)) continue;
+    const body = slab.querySelector(':scope > .vs-two-col-body') as HTMLElement | null;
+    if (!body) continue;
+    const tables = Array.from(body.querySelectorAll('.table-container > table')).map(el => {
+      const table = el as HTMLTableElement;
+      return {
+        table,
+        container: table.parentElement as HTMLElement,
+        prevMinWidth: table.style.getPropertyValue('min-width'),
+        prevMinPriority: table.style.getPropertyPriority('min-width'),
+        prevWidth: table.style.getPropertyValue('width'),
+        prevWidthPriority: table.style.getPropertyPriority('width'),
+      };
+    });
+    if (tables.length > 0) {
+      targets.push({ slab, body, tables, hasWide: false });
+    }
+  }
+  if (targets.length === 0) return;
+
+  // 一括 Write: 2 段組み状態に戻し、min-width: 560px の影響を外した自然な幅で計測できるよう準備する
+  for (const item of targets) {
+    item.slab.classList.remove('vs-has-wide-table');
+    for (const t of item.tables) {
+      t.table.style.setProperty('min-width', '0', 'important');
+      t.table.style.setProperty('width', 'auto', 'important');
+    }
+  }
+  // 一括 Read: 2 段組みが有効なときだけ段幅と表幅を比較する
+  for (const item of targets) {
+    if (getComputedStyle(item.body).columnCount !== '2') continue;
+    item.hasWide = item.tables.some(t => t.table.scrollWidth > t.container.clientWidth + 1);
+  }
+  // 一括 Write: 一時スタイルを復元し、判定結果を反映する
+  for (const item of targets) {
+    for (const t of item.tables) {
+      if (t.prevMinWidth) t.table.style.setProperty('min-width', t.prevMinWidth, t.prevMinPriority);
+      else t.table.style.removeProperty('min-width');
+      if (t.prevWidth) t.table.style.setProperty('width', t.prevWidth, t.prevWidthPriority);
+      else t.table.style.removeProperty('width');
+    }
+    item.slab.classList.toggle('vs-has-wide-table', item.hasWide);
+  }
+}
 
 export function ensureSlabVisibilityTracking(root: Element | null): void {
   if (!root || trackedSlabRoots.has(root)) return;
@@ -141,6 +195,10 @@ export function ensureSlabVisibilityTracking(root: Element | null): void {
       if (dirtySplitSlabs.has(target)) {
         dirtySplitSlabs.delete(target);
         updateSlabSplit(target);
+      }
+      if (dirtyTableSlabs.has(target)) {
+        dirtyTableSlabs.delete(target);
+        updateTwoColWideTables(target);
       }
       if (dirtyMathSlabs.has(target)) {
         dirtyMathSlabs.delete(target);
@@ -184,6 +242,11 @@ export function updateAllSlabSplits(container) {
       }
     }
   }
+  updateTwoColWideTables(container, slab => {
+    if (!skippedSlabs.has(slab)) return false;
+    dirtyTableSlabs.add(slab);
+    return true;
+  });
   fitTwoColMath(container, slab => {
     if (!skippedSlabs.has(slab)) return false;
     dirtyMathSlabs.add(slab);
