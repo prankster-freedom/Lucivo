@@ -45,9 +45,9 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 ## 4. 版番号（`AGENTS.md` 1.9・release スキルの例外）
 
-- 版番号は、README の本文の「**Version**」と `package.json` の `version` の 2 か所に書き、この 2 か所を正とする（release スキルの「README の Front Matter の `version`」の例外）。リリースでは 2 か所を同じ版にそろえる
+- 版番号は、README（`README.md` と `README.en.md`）の本文の「**Version**」と `package.json` の `version` に書き、`package.json` と揃える（release スキルの「README の Front Matter の `version`」の例外）。リリースではこれらを同じ版にそろえる
 - 画面に表示するバージョン表記は、本番・スタンドアロン配布版が `X.Y.Z (build id: <run_id>)`、Canary 版（`/preview/`）が `X.Y.Z-canary (build id: <run_id>)`、ローカル開発ビルドが `X.Y.Z` とする（`tools/build-app.cjs` が `LUCIVO_VERSION_OVERRIDE` または `package.json` の `version` を埋め込む）
-- `release/*` ブランチでは `package.json` の `"version"` と `README.md` のみを更新する。版の表記はファイルに書いてコミットせず、CI（`release.yml` / `deploy.yml`）がビルドのときに注入する（`doc/2.ARCHITECTURE.md` 4.14 `ARC-PUB-003`）。リリース PR は版番号と文書しか変えないため、`tools/check-ci-changes.cjs` により E2E テストは再実行されない
+- `release/*` ブランチでは `package.json` の `"version"`、`README.md`、`README.en.md`、`release-notes.md`、`release-notes.en.md` のみを更新する。版の表記はファイルに書いてコミットせず、CI（`release.yml` / `deploy.yml`）がビルドのときに注入する（`doc/2.ARCHITECTURE.md` 4.14 `ARC-PUB-003`）。リリース PR は版番号と文書しか変えないため、`tools/check-ci-changes.cjs` により E2E テストは再実行されない
 
 ## 5. 「Visualモードの追加訴求ポイントの提案依頼」の定型ワークフロー
 
@@ -103,12 +103,12 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 
 利用者には GitHub Release（スタンドアロン版の ZIP `Lucivo-v<版>.zip` の 1 つだけを付ける）および GitHub Pages（公開用 URL `/`）で配布する。流れの設計は `doc/2.ARCHITECTURE.md` 4.14（`ARC-PUB-004`・`005`）による。モバイル版 Claude 等、`gh release create` 権限のない環境からでもリリースを完結できるよう、Release 作成と Pages 公開は GitHub Actions（`.github/workflows/release.yml`・`deploy.yml`）で自動化する。
 
-1. **リリース PR の作成（`release/v<版>` ブランチ）**: `package.json` の `"version"`、`README.md`（**Version** と、直近 2 版のリリースノート）、`release-notes.md`（全版のリリースノート）のみを更新して `main` 向け PR を発行する（版番号と文書しか変えないため E2E はスキップされる）。`release-notes.md` の先頭に新しい版の節（`## <版>（yyyy-mm-dd）`）を追加し、`README.md` には同じ節（`### <版>（yyyy-mm-dd）`）を先頭に追加して、3 つ前になった版の節を消す。
+1. **リリース PR の作成（`release/v<版>` ブランチ）**: `package.json` の `"version"`、`README.md`・`README.en.md`（**Version** と、直近 2 版のリリースノート）、`release-notes.md`・`release-notes.en.md`（全版のリリースノート）のみを更新して `main` 向け PR を発行する（版番号と文書しか変えないため E2E はスキップされる）。`release-notes.md` / `release-notes.en.md` の先頭に新しい版の節（`## <版>（yyyy-mm-dd）` / `## <版> (yyyy-mm-dd)`）を追加し、`README.md` / `README.en.md` には同じ節（`### <版>（yyyy-mm-dd）` / `### <版> (yyyy-mm-dd)`）を先頭に追加して、3 つ前になった版の節を消す。
 2. **【承認】`/self-approve` によるマージ**: ユーザーが PR に `/self-approve` コメントをすると、`main` へマージされる。
 3. **自動ビルド・タグ・GitHub Release 公開（`.github/workflows/release.yml`）**: `main` の `package.json` の `version` に対応するタグ `lucivo-v<版>` が未作成の場合、CI が自動で以下を順に実行する。
    - `LUCIVO_VERSION_OVERRIDE="<版> (build id: <run_id>)"` でスタンドアロン版（`dist/`）をビルドし、`Lucivo-v<版>/` フォルダ構成の ZIP `Lucivo-v<版>.zip` を作成する
    - 注釈付きのタグ `lucivo-v<版>` を作成・push する。注釈の本文には、埋め込んだ版の表記（`<版> (build id: <run_id>)`）をそのまま書く
-   - `release-notes.md` の該当版の節＋ZIP のダウンロードリンクと使い方を本文にして GitHub Release（タイトル `Lucivo <版>`）を公開し、ZIP を付ける
+   - `release-notes.en.md` と `release-notes.md` の該当版の節（日英両方）＋ZIP のダウンロードリンクと使い方を本文にして GitHub Release（タイトル `Lucivo <版>`）を公開し、ZIP を付ける
 4. **GitHub Pages の更新（`.github/workflows/deploy.yml`）**: `Release` ワークフローの完了を受けて自動で起動し、最新のタグからビルドし直して公開用 URL（`https://prankster-freedom.github.io/Lucivo/`）を更新する。版の表記はタグの注釈から読むため、ZIP と同じ `<版> (build id: <Release の run_id>)` になる。あわせて `main` からテスト用 URL（`/preview/`）も更新する。
 5. **公開後の確認**: GitHub Release ページのリリースノート本文（ZIP 案内および `release-notes.md` の該当版の節が欠落なく反映されていること）、付いている ZIP が `Lucivo-v<版>.zip` の 1 つだけで、展開して `index.html` が開けること、公開用 URL の版の表記が ZIP と同じであること、テスト用 URL が開けることを確かめる。
 
