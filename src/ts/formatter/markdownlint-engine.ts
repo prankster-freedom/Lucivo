@@ -23,7 +23,7 @@ export const FIX_RULES = {
   MD004: { style: 'consistent' },
   // 文書の最後の改行を 1 つにする
   MD047: true
-};
+} as const;
 
 export interface LintFixResult {
   text: string;
