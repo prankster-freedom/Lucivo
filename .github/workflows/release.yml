@@ -60,9 +60,10 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           BUILD_VERSION="${VERSION} (build id: ${{ github.run_id }})"
-          # スタンドアロン版（dist/）だけをビルドして ZIP にする。GitHub Release に付けるのはこの ZIP 1 つ
-          # 公開用 URL の Web 版は、deploy.yml がタグからビルドし直す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-004・005）
+          # スタンドアロン版（dist/）をビルドして ZIP にする。GitHub Release に付けるのはこの ZIP 1 つ
+          # 公開用 URL の Web 版（public/）もここでビルドし、Actions アーティファクトとして保存して deploy.yml で使い回す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-004・005）
           LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod --channel standalone
+          LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod
 
           ZIP_DIR="Lucivo-v${VERSION}"
           ZIP_NAME="Lucivo-v${VERSION}.zip"
@@ -110,3 +111,10 @@ jobs:
           git push origin "$TAG"
 
           gh release create "$TAG" "$ZIP_NAME" --verify-tag --title "Lucivo ${VERSION}" --notes-file /tmp/release-notes.md
+      - name: Upload Web production build artifact
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: lucivo-web-prod-${{ steps.check.outputs.tag }}
+          path: public/
+          retention-days: 90
