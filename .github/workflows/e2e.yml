@@ -4,6 +4,11 @@ name: E2E Tests
 on:
   pull_request:
     branches: [ main, feature/pre-test ]
+# 同じ PR に push を重ねたとき、古いコミットの実行を取り消す。取り消された実行は conclusion が cancelled になり、
+# canary-auto-merge.yml は success のときだけ動くため、古いコミットが main へ入ることはない
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 jobs:
   # 壊れた文字列（制御文字、正規表現の中の制御文字、見えない空白）を検出する。ドキュメントも対象なので常に実行する
   lint:
@@ -14,6 +19,7 @@ jobs:
     - uses: actions/setup-node@v7.1.0
       with:
         node-version: 26
+        cache: npm
     - name: Install dependencies
       run: npm ci
     - name: Lint
@@ -34,6 +40,7 @@ jobs:
     - uses: actions/setup-node@v7.1.0
       with:
         node-version: 26
+        cache: npm
     - id: filter
       env:
         BASE: ${{ github.event.pull_request.base.sha }}
@@ -58,6 +65,7 @@ jobs:
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       with:
         node-version: 26
+        cache: npm
     - name: Install dependencies
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm ci
