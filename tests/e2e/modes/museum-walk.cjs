@@ -2,7 +2,7 @@
 // 共通の品質（始められる・エラーがない・スマホの幅ではみ出さない・Esc で戻る）は present-modes.cjs の関門で確かめる。ここでは体験の核心だけを確かめる。
 // 確かめた場面のスクリーンショット（ゲラ）を SHOT_DIR に mw-*.png で残す（dtp の校正で使う）。
 const path = require('path');
-const { record, SHOT_DIR, startWebServer, openWebPageWithSample, setDocument, waitRendered } = require('../helpers.cjs');
+const { record, SHOT_DIR, startWebServer, openWebPageWithSample, setDocument, waitRendered, waitForSettled } = require('../helpers.cjs');
 
 const MODE = 'museum-walk';
 
@@ -10,7 +10,7 @@ async function start(page) {
   await page.click('#btn-present-menu');
   await page.click(`#menu-present-${MODE}`);
   await page.waitForFunction(id => window.LucivoModes.get(id) && window.LucivoModes.get(id).info().active, MODE, { timeout: 20000 });
-  await page.waitForTimeout(400);
+  await waitForSettled(page, { selector: '#museum-walk', frames: 5 });
 }
 
 const info = page => page.evaluate(id => window.LucivoModes.get(id).info(), MODE);
@@ -333,6 +333,7 @@ async function testMuseumWalk(browser) {
     await zoomPage.keyboard.press('+');
     await zoomPage.keyboard.press('+');
     await walkTo(zoomPage, readingZ(zBody, 512));
+    await waitForSettled(zoomPage, { selector: '#museum-walk', frames: 5 });
     const afterZoomIn = await info(zoomPage);
     await shot(zoomPage, 'wall-zoom');
 
@@ -342,22 +343,27 @@ async function testMuseumWalk(browser) {
       root.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, ctrlKey: true, bubbles: true, cancelable: true }));
       root.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, ctrlKey: true, bubbles: true, cancelable: true }));
     });
+    await waitForSettled(zoomPage, { selector: '#museum-walk', frames: 5 });
     const afterWheelOut = await info(zoomPage);
     await zoomPage.evaluate(() => {
       const root = document.getElementById('museum-walk');
       root.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, ctrlKey: true, bubbles: true, cancelable: true }));
     });
+    await waitForSettled(zoomPage, { selector: '#museum-walk', frames: 5 });
     const afterWheelIn = await info(zoomPage);
 
     // 0 キーで既定距離に戻る
     await zoomPage.keyboard.press('Control+0');
+    await waitForSettled(zoomPage, { selector: '#museum-walk', frames: 5 });
     const afterResetKey = await info(zoomPage);
 
     // 再び近寄ってから、歩き出し（ArrowUp）で自動で 0 に戻る
     await zoomPage.keyboard.press('+');
     await zoomPage.keyboard.press('+');
+    await waitForSettled(zoomPage, { selector: '#museum-walk', frames: 5 });
     const beforeWalkReset = await info(zoomPage);
     await zoomPage.keyboard.press('ArrowUp');
+    await waitForSettled(zoomPage, { selector: '#museum-walk', frames: 5 });
     const afterWalkReset = await info(zoomPage);
 
     // 広間で近寄っても中央を保ったまま視野が寄る（立体図の脇を通り抜けない）
@@ -366,6 +372,7 @@ async function testMuseumWalk(browser) {
     await zoomPage.keyboard.press('+');
     await zoomPage.keyboard.press('+');
     await walkTo(zoomPage, zHall.from - 200);
+    await waitForSettled(zoomPage, { selector: '#museum-walk', frames: 5 });
     const hallZoom = await info(zoomPage);
     await shot(zoomPage, 'hall-zoom');
 
@@ -500,6 +507,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009'], fn: testMuseumWalk, timeoutMs: 180000, serial: true }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009'], fn: testMuseumWalk, timeoutMs: 180000 }
   ]
 };

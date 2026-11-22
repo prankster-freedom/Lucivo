@@ -172,8 +172,42 @@ async function selectScale(page, selector) {
   await page.click(selector);
 }
 
+// 有限アニメーション／トランジションの完了と、対象要素のスクロール位置・矩形座標が連続 N フレーム変化しないことを待つ（#341）
+async function waitForSettled(page, { selector = '#preview-scroll', frames = 3, timeout = 15000 } = {}) {
+  await page.waitForFunction(
+    ({ sel }) => {
+      const finiteRunning = document.getAnimations().some(a => {
+        if (a.playState !== 'running') return false;
+        const t = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming() : null;
+        return t && t.iterations !== Infinity;
+      });
+      return !finiteRunning && Boolean(document.querySelector(sel) || document.scrollingElement);
+    },
+    { sel: selector },
+    { timeout }
+  ).catch(() => {});
+
+  await page.evaluate(async ({ sel, requiredFrames }) => {
+    const el = document.querySelector(sel) || document.scrollingElement;
+    let stable = 0;
+    let prev = '';
+    let guard = 0;
+    while (stable < requiredFrames && guard < 240) {
+      guard++;
+      await new Promise(r => requestAnimationFrame(r));
+      const rect = el ? el.getBoundingClientRect() : { top: 0, left: 0, width: 0, height: 0 };
+      const sig = el
+        ? `${Math.round(el.scrollTop)}:${Math.round(el.scrollLeft)}:${Math.round(rect.top)}:${Math.round(rect.left)}:${el.style.transform || ''}`
+        : '';
+      if (sig === prev) stable++;
+      else { stable = 0; prev = sig; }
+    }
+  }, { sel: selector, requiredFrames: frames });
+}
+
 module.exports = {
   selectScale,
+  waitForSettled,
   ENCODING_FIXTURE,
   FORMAT_FIXTURE,
   MD_MODES,
