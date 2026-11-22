@@ -6,7 +6,7 @@ tags: ["Lucivo", "DTP", "カラートーン", "配色"]
 
 # カラートーン・ストック（`color-tones/`）
 
-[color-tones-schemes.svg](../../../.claude/skills/design-craft/assets/color-tones-schemes.svg)（`design-craft` 11.2 節）のトーン 12 区分および目的別の配色技法に基づき、**色の組み合わせに情景・イメージを表す名前**を付けたカラートーンのストック集。ここから製品メニュー（「カラートーン」切替）へ採用・デプロイする案を選定する。
+[color-tones-schemes.svg](../../../../.claude/skills/design-craft/assets/color-tones-schemes.svg)（`design-craft` 11.2 節）のトーン 12 区分および目的別の配色技法に基づき、**色の組み合わせに情景・イメージを表す名前**を付けたカラートーンのストック集。ここから製品メニュー（「カラートーン」切替）へ採用・デプロイする案を選定する。
 
 見本の A〜G は、各トーン文書の「カラーコード一覧」の行に対応する（A〜D: 第 1〜4 色、E: ベース背景、F: 補助面、G: 光彩）。文字色は「文字（主）」、枠線は「境界・線」。
 
