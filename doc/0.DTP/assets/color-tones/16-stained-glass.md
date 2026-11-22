@@ -7,16 +7,19 @@
 
 ## カラーコード一覧
 
-
-![stained-glass の色見本（文字色＋背景色）](swatches/stained-glass.svg)
-| 役割 | トークン例 | Light | Dark | 用途 |
-| :--- | :--- | :--- | :--- | :--- |
-| 第 1 色（主役・瑠璃） | `--vs-c1` | `#2A9AD6` | `#4FB5EC` | 見出しアクセント・主ノード・カード 1 |
-| 第 2 色（副色・萌黄） | `--vs-c2` | `#9CC65A` | `#B2D678` | カード 2・手順 2・補助グラフ |
-| 第 3 色（展開・柘榴） | `--vs-c3` | `#E0287A` | `#F0569B` | カード 3・手順 3・分岐 |
-| 第 4 色（締め・山吹） | `--vs-c4` | `#F7B04A` | `#FAC36E` | カード 4・手順 4・補足 |
-| ベース背景 | `--diag-canvas` | `#FFFFFF` | `#120E1D` | 図・スラブの背景面 |
-| 補助面（カード） | `--vs-card-bg` | `#F8F7FC` | `#1C162E` | カード・ノードの面 |
-| 境界・線（鉛線） | `--diag-edge` | `#2B2140` | `#7A6B9E` | 結線・セパレーション境界 |
-| 文字（主） | `--text-primary` | `#1F1830` | `#F7F5FC` | 本文・見出し・ノード文字 |
-| 光彩（グロウ） | `--vs-glow` | `#38BDF8` | `#7DD3FC` | シグナル・ライト・スポットライト |
+<table>
+<thead>
+<tr><th>役割</th><th>トークン例</th><th>Light</th><th>Dark</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>第 1 色（主役・瑠璃）</td><td><code>--vs-c1</code></td><td><span style="background-color: #2A9AD6; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#2A9AD6</span></td><td><span style="background-color: #4FB5EC; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#4FB5EC</span></td><td>見出しアクセント・主ノード・カード 1</td></tr>
+<tr><td>第 2 色（副色・萌黄）</td><td><code>--vs-c2</code></td><td><span style="background-color: #9CC65A; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#9CC65A</span></td><td><span style="background-color: #B2D678; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#B2D678</span></td><td>カード 2・手順 2・補助グラフ</td></tr>
+<tr><td>第 3 色（展開・柘榴）</td><td><code>--vs-c3</code></td><td><span style="background-color: #E0287A; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#E0287A</span></td><td><span style="background-color: #F0569B; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#F0569B</span></td><td>カード 3・手順 3・分岐</td></tr>
+<tr><td>第 4 色（締め・山吹）</td><td><code>--vs-c4</code></td><td><span style="background-color: #F7B04A; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#F7B04A</span></td><td><span style="background-color: #FAC36E; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#FAC36E</span></td><td>カード 4・手順 4・補足</td></tr>
+<tr><td>ベース背景</td><td><code>--diag-canvas</code></td><td><span style="background-color: #FFFFFF; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#FFFFFF</span></td><td><span style="background-color: #120E1D; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#120E1D</span></td><td>図・スラブの背景面</td></tr>
+<tr><td>補助面（カード）</td><td><code>--vs-card-bg</code></td><td><span style="background-color: #F8F7FC; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#F8F7FC</span></td><td><span style="background-color: #1C162E; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#1C162E</span></td><td>カード・ノードの面</td></tr>
+<tr><td>境界・線（鉛線）</td><td><code>--diag-edge</code></td><td><span style="background-color: #FFFFFF; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 2px solid #2B2140;">#2B2140</span></td><td><span style="background-color: #120E1D; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 2px solid #7A6B9E;">#7A6B9E</span></td><td>結線・セパレーション境界</td></tr>
+<tr><td>文字（主）</td><td><code>--text-primary</code></td><td><span style="background-color: #FFFFFF; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#1F1830</span></td><td><span style="background-color: #120E1D; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#F7F5FC</span></td><td>本文・見出し・ノード文字</td></tr>
+<tr><td>光彩（グロウ）</td><td><code>--vs-glow</code></td><td><span style="background-color: #38BDF8; color: #1F1830; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #2B2140;">#38BDF8</span></td><td><span style="background-color: #7DD3FC; color: #F7F5FC; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #7A6B9E;">#7DD3FC</span></td><td>シグナル・ライト・スポットライト</td></tr>
+</tbody>
+</table>
