@@ -1885,7 +1885,7 @@ async function testCoverAndTables(browser) {
     && badgeFastCount === 0;
   record('TC-VTPL-033', badgeOk, JSON.stringify({ badgeLight: { count: badgeLight.badges.length, noteHasBadge: badgeLight.noteHasBadge, sample: badgeLight.badges[0] }, badgeDarkSample: badgeDark.badges[0], badgeFastCount }));
 
-  // TC-VTPL-034 長い標準章の 2 段組み（FR-061, DD-VTPL-049, #233, #263）
+  // TC-VTPL-034 長い標準章の 2 段組み（FR-061, DD-VTPL-049, #233, #263, #352）
   const longPara = 'これは本文が長い標準章の段組み表示を検証するための日本語の段落です。広い画面では 2 段組みに切り替えて 1 行を短くし、左右の視線移動を減らして読みやすくします。'.repeat(2);
   const twoColMd = [
     '# 2 段組みのテスト',
@@ -1910,7 +1910,31 @@ async function testCoverAndTables(browser) {
     '',
     '短い導入の段落です。',
     '',
-    'もう一つの短い段落です。'
+    'もう一つの短い段落です。',
+    '',
+    '## 第 3 章 列の多い表を含む長文の章',
+    '',
+    longPara,
+    '',
+    longPara,
+    '',
+    longPara,
+    '',
+    '| No. | トーン名 | ID | 区分 | 技法 | 印象 | パレット |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| 1 | 朝霧 | `morning-mist` | 淡い | トーンオントーン | 静かな朝の空気 | `#E9EFF4` `#51505D` |',
+    '',
+    '## 第 4 章 列の少ない表を含む長文の章',
+    '',
+    longPara,
+    '',
+    longPara,
+    '',
+    longPara,
+    '',
+    '| 項目 | 値 |',
+    '| --- | --- |',
+    '| 間隔 | 広め |'
   ].join('\n');
   await setMode(page, { style: 'shapes', appearance: 'light' });
   await setDocument(page, twoColMd);
@@ -1921,6 +1945,10 @@ async function testCoverAndTables(browser) {
     const pre = body?.querySelector('pre');
     const math = body?.querySelector('.lucivo-math[data-display="true"]');
     const katex = math?.querySelector('.katex');
+    const wideTableBody = slabs[2]?.querySelector('.vs-two-col-body');
+    const narrowTableBody = slabs[3]?.querySelector('.vs-two-col-body');
+    const narrowTableEl = narrowTableBody?.querySelector('table');
+    const narrowTableWrap = narrowTableEl?.parentElement;
     return {
       longHasClass: slabs[0]?.classList.contains('vs-long-prose') ?? false,
       shortHasClass: slabs[1]?.classList.contains('vs-long-prose') ?? false,
@@ -1931,7 +1959,12 @@ async function testCoverAndTables(browser) {
       mathFits: math && katex ? katex.scrollWidth <= math.clientWidth + 1 : false,
       mathClient: math ? math.clientWidth : 0,
       mathScroll: katex ? katex.scrollWidth : 0,
-      mathScaled: katex ? katex.style.fontSize : ''
+      mathScaled: katex ? katex.style.fontSize : '',
+      wideTableHasClass: slabs[2]?.classList.contains('vs-has-wide-table') ?? false,
+      wideTableColCount: wideTableBody ? getComputedStyle(wideTableBody).columnCount : null,
+      narrowTableHasClass: slabs[3]?.classList.contains('vs-has-wide-table') ?? false,
+      narrowTableColCount: narrowTableBody ? getComputedStyle(narrowTableBody).columnCount : null,
+      narrowTableFits: narrowTableEl && narrowTableWrap ? narrowTableEl.scrollWidth <= narrowTableWrap.clientWidth + 1 : false
     };
   });
   await page.setViewportSize({ width: 1600, height: 900 });
@@ -1954,7 +1987,11 @@ async function testCoverAndTables(browser) {
   const twoColOk = twoColWideCanvas.longHasClass && !twoColWideCanvas.shortHasClass && twoColWideCanvas.hasBody
     && twoColWideCanvas.columnCount === '2' && twoColWideCanvas.preColumnSpan === 'none'
     && twoColWideCanvas.mathColumnSpan === 'none' && twoColWideCanvas.mathFits
+    && twoColWideCanvas.wideTableHasClass && twoColWideCanvas.wideTableColCount === 'auto'
+    && !twoColWideCanvas.narrowTableHasClass && twoColWideCanvas.narrowTableColCount === '2'
+    && twoColWideCanvas.narrowTableFits
     && twoColNarrowCanvas.columnCount === 'auto'
+    && !twoColNarrowCanvas.wideTableHasClass
     && twoColWideSplit.columnCount === 'auto'
     && twoColPrint.columnCount === 'auto'
     && twoColFastCount === 0;
