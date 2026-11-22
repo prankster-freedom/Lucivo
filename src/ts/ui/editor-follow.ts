@@ -51,6 +51,22 @@ export function rebuildFollowIndex(container: HTMLElement | null) {
   }));
 }
 
+// 差分描画キャッシュの各エントリが保持する見出し要素と行番号から DOM 走査なしで見出し一覧を再構築する（#329）
+export function rebuildFollowIndexFromEntries(
+  entries: Array<{ headingLines: number[]; headingEls: HTMLElement[] }>
+) {
+  const next: { line: number; el: HTMLElement }[] = [];
+  for (const entry of entries) {
+    const els = entry.headingEls;
+    const lines = entry.headingLines;
+    const len = Math.min(els.length, lines.length);
+    for (let i = 0; i < len; i++) {
+      next.push({ line: lines[i], el: els[i] });
+    }
+  }
+  runtime.followIndex = next;
+}
+
 // caretState の位置を targetPos まで差分移動して行番号を更新する
 export function moveCaretLine(text: string, targetPos: number) {
   const caretState = runtime.caretState;

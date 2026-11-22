@@ -38,7 +38,10 @@ import {
   postProcessConnectedScope
 } from './fragment-renderer';
 import { applyToneToVisualStage } from './view-controls';
-import { rebuildFollowIndex, scheduleFollow } from './editor-follow';
+import { rebuildFollowIndex, rebuildFollowIndexFromEntries, scheduleFollow } from './editor-follow';
+import { resolveFolderImages } from '../markdown/local-images';
+import { renderMath } from '../markdown/math-and-headings';
+import { renderEmoji } from '../markdown/emoji';
 import {
   setModalOpen,
   EMPTY_GUIDE_HTML,
@@ -82,6 +85,7 @@ interface StdBlockEntry {
   key: string;
   nodes: ChildNode[];
   headingLines: number[];
+  headingEls: HTMLElement[];
 }
 
 interface VisSlabGroup {
@@ -98,6 +102,44 @@ interface VisSlabEntry {
   key: string;
   el: HTMLElement | null;
   headingLines: number[];
+  headingEls: HTMLElement[];
+}
+
+function collectNodesHeadings(nodes: ChildNode[]): HTMLElement[] {
+  const out: HTMLElement[] = [];
+  for (const node of nodes) {
+    if (node.nodeType !== 1) continue;
+    const el = node as HTMLElement;
+    if (el.hasAttribute('data-src-line')) {
+      out.push(el);
+    } else if (el.childElementCount > 0) {
+      el.querySelectorAll('[data-src-line]').forEach(h => out.push(h as HTMLElement));
+    }
+  }
+  return out;
+}
+
+function collectSlabHeadings(el: HTMLElement | null): HTMLElement[] {
+  if (!el) return [];
+  return Array.from(el.querySelectorAll('[data-src-line]')) as HTMLElement[];
+}
+
+// 脚注参照（footnoteRef）を含むトークンの場合、割り当てられた番号（num:occ:seg）を差分キーに含める（#329）
+function tokenFootnoteSig(token: any): string {
+  if (!token || typeof token.raw !== 'string' || !token.raw.includes('[^')) return '';
+  const parts: string[] = [];
+  const walk = (list: any[]) => {
+    for (const t of list || []) {
+      if (!t) continue;
+      if (t.type === 'footnoteRef') parts.push(`${t.id}:${t.num || 0}:${t.occ || 0}:${t.seg || 0}`);
+      if (t.tokens) walk(t.tokens);
+      if (t.items) walk(t.items);
+      if (t.header) t.header.forEach((c: any) => c.tokens && walk(c.tokens));
+      if (t.rows) t.rows.forEach((r: any[]) => r.forEach((c: any) => c.tokens && walk(c.tokens)));
+    }
+  };
+  walk([token]);
+  return parts.length ? `\0fn:${parts.join(',')}` : '';
 }
 
 function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
@@ -173,9 +215,10 @@ function buildStdBlockGroups(
   for (const token of tokensToKeep) {
     if (token.type === 'space' && htmlDepth === 0) continue;
     buf.push(token);
+    const fnSig = tokenFootnoteSig(token);
     if (token.type === 'heading' && Number.isInteger(token.srcLine)) {
       headingLines.push(token.srcLine);
-      const part = `h:${token.depth}:${token.raw}`;
+      const part = `h:${token.depth}:${token.raw}${fnSig}`;
       stableParts.push(part);
       matchParts.push(part);
     } else if (token.__mermaid) {
@@ -186,11 +229,11 @@ function buildStdBlockGroups(
       // svgCache から消えた図は未変更スキップさせず再描画対象にする（保存は安定キーで行う）
       matchParts.push(svgCache.has(cacheKey) ? stable : `miss:${generation}:${m.index}`);
     } else {
-      const part = `${token.type}:${token.raw}`;
+      const part = `${token.type}:${token.raw}${fnSig}`;
       stableParts.push(part);
       matchParts.push(part);
     }
-    if (token.type === 'html' && !token.__mermaid && !token.__isTree) {
+    if (token.type === 'html' && !token.__mermaid && !token.__isTree && !token.__isFootnotes) {
       htmlDepth += htmlTagBalance(token.raw || '');
       if (htmlDepth < 0) return null;
     }
@@ -229,30 +272,36 @@ function splitContainerNodesBySep(container: HTMLElement, groupCount: number, se
 
 function updateGroupHeadingLines(entry: StdBlockEntry, nextLines: number[]) {
   if (entry.headingLines.length === nextLines.length && entry.headingLines.every((v, i) => v === nextLines[i])) return;
-  let k = 0;
-  for (const node of entry.nodes) {
-    if (node.nodeType !== 1) continue;
-    const el = node as HTMLElement;
-    if (el.hasAttribute('data-src-line')) {
-      if (k < nextLines.length) el.dataset.srcLine = String(nextLines[k++]);
-    } else {
-      el.querySelectorAll('[data-src-line]').forEach(h => {
-        if (k < nextLines.length) (h as HTMLElement).dataset.srcLine = String(nextLines[k++]);
-      });
-    }
+  const els = entry.headingEls;
+  const len = Math.min(els.length, nextLines.length);
+  for (let k = 0; k < len; k++) {
+    els[k].dataset.srcLine = String(nextLines[k]);
   }
   entry.headingLines = nextLines;
 }
 
+const headingTextCache = new Map<string, string>();
+
 // 1 見出しトークンから描画後のプレーンテキストを取り出す（buildVisualStageHtml と完全一致させるため）
-function headingTokenText(token: any, links: Record<string, any>): string {
+// インライン記法・HTML・エスケープを含まない通常の見出しは DOMPurify・DOM 生成を省き、それ以外もキャッシュする（#329）
+function headingTokenText(token: any, links: Record<string, any>, linksSig: string): string {
+  const rawText = typeof token.text === 'string' ? token.text : '';
+  if (rawText && !/[*_`~<\[&\\!:]/.test(rawText)) {
+    return rawText;
+  }
+  const cacheKey = `${linksSig}\0${token.raw || rawText}`;
+  const cached = headingTextCache.get(cacheKey);
+  if (cached !== undefined) return cached;
   const slice: any = [token];
   slice.links = links;
   const clean = sanitizeMarkdownHtml(marked.parser(slice));
   const tmp = document.createElement('div');
   tmp.innerHTML = clean;
   const heading = tmp.querySelector('h1, h2, h3, h4, h5, h6');
-  return (heading || tmp).textContent || '';
+  const text = (heading || tmp).textContent || '';
+  if (headingTextCache.size > 1000) headingTextCache.clear();
+  headingTextCache.set(cacheKey, text);
+  return text;
 }
 
 // Visualモード用に最上位トークン列を章（H2 区切り）単位のスラブグループへ分割する（#251）
@@ -260,6 +309,7 @@ function buildVisSlabGroups(
   tokensToKeep: any[],
   frontMatterHtml: string,
   links: Record<string, any>,
+  linksSig: string,
   generation: number,
   modeTag: string
 ): { groups: VisSlabGroup[]; h1Title: string; agenda: { no: string; title: string }[] } | null {
@@ -302,7 +352,7 @@ function buildVisSlabGroups(
   };
 
   for (const token of tokensToKeep) {
-    if (token.type === 'html' && !token.__mermaid && !token.__isTree) {
+    if (token.type === 'html' && !token.__mermaid && !token.__isTree && !token.__isFootnotes) {
       // 生 HTML 内に見出しが含まれる場合は DOM 分割とずれうるため全体描画へフォールバック
       if (/<h[12]\b/i.test(token.raw || '')) return null;
       htmlDepth += htmlTagBalance(token.raw || '');
@@ -314,7 +364,7 @@ function buildVisSlabGroups(
       sectionCounter++;
       curStageNo = sectionCounter;
       const numStr = String(sectionCounter).padStart(2, '0');
-      const rawTitle = headingTokenText(token, links).replace(/^\d+\.\s*/, '');
+      const rawTitle = headingTokenText(token, links, linksSig).replace(/^\d+\.\s*/, '');
       agenda.push({ no: numStr, title: rawTitle });
     }
 
@@ -328,13 +378,14 @@ function buildVisSlabGroups(
       seenFirstH1 = true;
       curStripFirstH1 = true;
       isStrippedH1 = true;
-      h1Title = headingTokenText(token, links);
+      h1Title = headingTokenText(token, links, linksSig);
     }
 
     curTokens.push(token);
+    const fnSig = tokenFootnoteSig(token);
     if (token.type === 'heading' && Number.isInteger(token.srcLine)) {
       if (!isStrippedH1) curLines.push(token.srcLine);
-      const part = `h:${token.depth}:${token.raw}`;
+      const part = `h:${token.depth}:${token.raw}${fnSig}`;
       curStable.push(part);
       curMatch.push(part);
     } else if (token.__mermaid) {
@@ -344,7 +395,7 @@ function buildVisSlabGroups(
       curStable.push(stable);
       curMatch.push(svgCache.has(cacheKey) ? stable : `miss:${generation}:${m.index}`);
     } else {
-      const part = `${token.type}:${token.raw}`;
+      const part = `${token.type}:${token.raw}${fnSig}`;
       curStable.push(part);
       curMatch.push(part);
     }
@@ -395,10 +446,11 @@ function updateVisualSlabHeadingLines(entry: VisSlabEntry, nextLines: number[]) 
     return;
   }
   if (entry.headingLines.length === nextLines.length && entry.headingLines.every((v, i) => v === nextLines[i])) return;
-  let k = 0;
-  entry.el.querySelectorAll('[data-src-line]').forEach(h => {
-    if (k < nextLines.length) (h as HTMLElement).dataset.srcLine = String(nextLines[k++]);
-  });
+  const els = entry.headingEls;
+  const len = Math.min(els.length, nextLines.length);
+  for (let k = 0; k < len; k++) {
+    els[k].dataset.srcLine = String(nextLines[k]);
+  }
   entry.headingLines = nextLines;
 }
 
@@ -436,7 +488,7 @@ export function renderApp() {
   let usedIncremental = false;
   let visualPatchedScopes: HTMLElement[] | null = null;
 
-  if (!isVisual && !isEmpty && !hasFootnotes) {
+  if (!isVisual && !isEmpty) {
     runtime.prevVisCache = null;
     runtime.visPendingGeneration = 0;
     if (window.LucivoStage) LucivoStage.resetLights();
@@ -489,6 +541,7 @@ export function renderApp() {
 
         // 変更区間のみ HTML 化・サニタイズ・後処理を行って挿入
         const addedEntries: StdBlockEntry[] = [];
+        const insertedElements: HTMLElement[] = [];
         if (addedStart < addedEnd) {
           const sliceGroups = groups.slice(addedStart, addedEnd);
           const sepAttr = `b${generation}`;
@@ -509,8 +562,17 @@ export function renderApp() {
           const buckets = splitContainerNodesBySep(tmp, sliceGroups.length, sepAttr);
           const frag = document.createDocumentFragment();
           sliceGroups.forEach((g, idx) => {
-            buckets[idx].forEach(n => frag.appendChild(n));
-            addedEntries.push({ key: g.stableKey, nodes: buckets[idx], headingLines: g.headingLines });
+            const nodes = buckets[idx];
+            nodes.forEach(n => {
+              frag.appendChild(n);
+              if (n.nodeType === 1) insertedElements.push(n as HTMLElement);
+            });
+            addedEntries.push({
+              key: g.stableKey,
+              nodes,
+              headingLines: g.headingLines,
+              headingEls: collectNodesHeadings(nodes)
+            });
           });
           stdContainer.insertBefore(frag, anchorNode);
         }
@@ -529,7 +591,15 @@ export function renderApp() {
         }
         runtime.prevStdCache = { envKey, linksSig, mermaidCount: mermaidBlocks.length, blocks: nextBlocks };
         stdContainer.classList.toggle('has-content-visibility', stdContainer.children.length >= 200);
-        postProcessConnectedScope(stdContainer, { cachedKeys, fitRoot: stdContainer });
+        // 接続後の解決系は変更区間の要素とキャッシュ済み図に対してのみ実行し、全文 DOM 走査を避ける（#329）
+        for (const el of insertedElements) {
+          resolveFolderImages(el);
+          if (!window.katex) renderMath(el);
+          if (!window.LucivoEmoji) renderEmoji(el);
+        }
+        cachedKeys.forEach((cacheKey, idx) => {
+          applyReadableFit(stdContainer.querySelector(`[data-stage-index="${idx}"] > svg`), cacheKey);
+        });
         usedIncremental = true;
       } else {
         // 初回または全体フォールバック時もセパレータ付き 1 回 sanitize でグループ境界を記録する
@@ -550,7 +620,12 @@ export function renderApp() {
           envKey,
           linksSig,
           mermaidCount: mermaidBlocks.length,
-          blocks: groups.map((g, idx) => ({ key: g.stableKey, nodes: buckets[idx], headingLines: g.headingLines }))
+          blocks: groups.map((g, idx) => ({
+            key: g.stableKey,
+            nodes: buckets[idx],
+            headingLines: g.headingLines,
+            headingEls: collectNodesHeadings(buckets[idx])
+          }))
         };
         stdContainer.classList.toggle('has-content-visibility', stdContainer.children.length >= 200);
         postProcessConnectedScope(stdContainer, { cachedKeys, fitRoot: stdContainer });
@@ -560,17 +635,18 @@ export function renderApp() {
     }
   }
 
-  // Visualモードの章（スラブ）単位の差分組み直しと content-visibility（#251）
-  if (isVisual && !isEmpty && !hasFootnotes) {
+  // Visualモードの章（スラブ）単位の差分組み直しと content-visibility（#251, #329）
+  if (isVisual && !isEmpty) {
     runtime.prevStdCache = null;
     runtime.stdPendingGeneration = 0;
-    const visPlan = buildVisSlabGroups(tokensToKeep, frontMatterHtml, links, generation, modeTag);
+    const linksSig = JSON.stringify(links);
+    const visPlan = buildVisSlabGroups(tokensToKeep, frontMatterHtml, links, linksSig, generation, modeTag);
     if (visPlan) {
       const { groups, h1Title, agenda } = visPlan;
       const envKey = `${state.appearance}|${state.palette}|${state.tone}|${state.infographicStyle}|${state.ambientEffectsEnabled ? 1 : 0}|${state.showFrontMatter ? 1 : 0}|${runtime.openedFolder ? 'f' : ''}|${runtime.currentFileName}`;
-      const linksSig = JSON.stringify(links);
       const { heroHtml, endCardHtml } = buildVisualHeroAndEndCard(h1Title, yaml, agenda, mermaidBlocks.length);
       const heroKey = heroHtml;
+      const heroStructKey = `${h1Title}\0${yaml || ''}\0${agenda.length}\0${mermaidBlocks.length}`;
       const endCardKey = endCardHtml;
       const prevVisCache = runtime.prevVisCache;
       const canPatchVis = Boolean(
@@ -595,17 +671,31 @@ export function renderApp() {
         let heroEl = prevVisCache.heroEl;
         let endCardEl = prevVisCache.endCardEl;
 
-        // 1. 表紙（hero）の差分更新
+        // 1. 表紙（hero）の差分更新（H2 見出し文字列だけが変わった場合は目次項目のみその場で更新して表紙要素を保つ #329）
         if (prevVisCache.heroKey !== heroKey) {
-          const nextHero = htmlToSingleElement(heroHtml);
-          if (heroEl && nextHero) {
-            heroEl.replaceWith(nextHero);
-          } else if (heroEl && !nextHero) {
-            heroEl.remove();
-          } else if (!heroEl && nextHero) {
-            wrap.insertBefore(nextHero, wrap.firstChild);
+          let updatedInPlace = false;
+          if (heroEl && heroHtml && prevVisCache.heroStructKey === heroStructKey) {
+            const titleEls = heroEl.querySelectorAll('.vs-cover-agenda-item .vs-cover-agenda-title');
+            if (titleEls.length === agenda.length) {
+              for (let k = 0; k < agenda.length; k++) {
+                if (titleEls[k].textContent !== agenda[k].title) {
+                  titleEls[k].textContent = agenda[k].title;
+                }
+              }
+              updatedInPlace = true;
+            }
           }
-          heroEl = nextHero;
+          if (!updatedInPlace) {
+            const nextHero = htmlToSingleElement(heroHtml);
+            if (heroEl && nextHero) {
+              heroEl.replaceWith(nextHero);
+            } else if (heroEl && !nextHero) {
+              heroEl.remove();
+            } else if (!heroEl && nextHero) {
+              wrap.insertBefore(nextHero, wrap.firstChild);
+            }
+            heroEl = nextHero;
+          }
         }
 
         // 2. スラブ列の prefix / suffix マッチング
@@ -655,7 +745,12 @@ export function renderApp() {
               frag.appendChild(el);
               insertedEls.push(el);
             }
-            addedEntries.push({ key: g.stableKey, el, headingLines: g.headingLines });
+            addedEntries.push({
+              key: g.stableKey,
+              el,
+              headingLines: g.headingLines,
+              headingEls: collectSlabHeadings(el)
+            });
           }
           wrap.insertBefore(frag, anchorNode);
         }
@@ -692,13 +787,14 @@ export function renderApp() {
           mermaidCount: mermaidBlocks.length,
           wrap,
           heroKey,
+          heroStructKey,
           heroEl,
           endCardKey,
           endCardEl,
           slabs: nextSlabs
         };
 
-        wrap.classList.toggle('has-content-visibility', wrap.querySelectorAll(':scope > .exhibition-slab').length >= 20);
+        wrap.classList.toggle('has-content-visibility', nextSlabs.length >= 20);
         // 接続後に解決系（ローカル画像・数式・絵文字・Fit）を追加スラブに対してのみ実行
         const emptyKeys = new Map<number, string>();
         insertedEls.forEach(el => {
@@ -723,7 +819,12 @@ export function renderApp() {
         groups.forEach(g => {
           const el = renderVisualSlabElement(g, links, mermaidBlocks, dirtyBlocks, cachedKeys, modeTag, visContainer);
           if (el) wrap.appendChild(el);
-          slabEntries.push({ key: g.stableKey, el, headingLines: g.headingLines });
+          slabEntries.push({
+            key: g.stableKey,
+            el,
+            headingLines: g.headingLines,
+            headingEls: collectSlabHeadings(el)
+          });
         });
 
         const endCardEl = htmlToSingleElement(endCardHtml);
@@ -732,7 +833,7 @@ export function renderApp() {
         visContainer.innerHTML = '';
         visContainer.appendChild(wrap);
         applyToneToVisualStage(visContainer);
-        wrap.classList.toggle('has-content-visibility', wrap.querySelectorAll(':scope > .exhibition-slab').length >= 20);
+        wrap.classList.toggle('has-content-visibility', slabEntries.length >= 20);
 
         runtime.prevVisCache = {
           envKey,
@@ -740,6 +841,7 @@ export function renderApp() {
           mermaidCount: mermaidBlocks.length,
           wrap,
           heroKey,
+          heroStructKey,
           heroEl,
           endCardKey,
           endCardEl,
@@ -793,7 +895,12 @@ export function renderApp() {
     postProcessConnectedScope(activeContainer, { cachedKeys, fitRoot: activeContainer, forceMathEmoji: true });
   }
 
-  rebuildFollowIndex(activeContainer);
+  if (usedIncremental) {
+    const entries = isVisual ? runtime.prevVisCache?.slabs : runtime.prevStdCache?.blocks;
+    rebuildFollowIndexFromEntries(entries || []);
+  } else {
+    rebuildFollowIndex(activeContainer);
+  }
   if (visualPatchedScopes !== null) {
     visualPatchedScopes.forEach(scope => mountStage(scope));
   } else {

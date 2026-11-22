@@ -108,7 +108,7 @@ export function applyFootnotes(tokens, splitAtH2) {
       return `<div class="fn-item" id="fn-${num}-${segIndex}"><span class="fn-num">${num}</span><span class="fn-text">${text}</span><a class="fn-back" href="#fnref-${num}-${firstOcc.get(`${segIndex}:${id}`)}" aria-label="本文へ戻る">↩</a></div>`;
     }).join('');
     const html = `<div class="lucivo-footnotes" role="doc-endnotes" aria-label="脚注">${items}</div>\n`;
-    return { type: 'html', raw: html, text: html };
+    return { type: 'html', raw: html, text: html, __isFootnotes: true };
   };
 
   // 挿入位置は、各章の最後のトークンの後（Visualモード）、または文書の最後（高速モード）

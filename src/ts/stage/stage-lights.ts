@@ -390,8 +390,8 @@ export function mountLights(root) {
     resizeObserver.observe(svg);
     resizeObserver.observe(host);
   });
-  // 手順型の CSS 繰り返しアニメーションも、画面外では止めて負荷を抑える（#253）
-  root.querySelectorAll('.exhibition-slab .vs-steps').forEach(steps => {
+  // 手順型の CSS 繰り返しアニメーションも、画面外では止めて負荷を抑える（#253, #329）
+  root.querySelectorAll('.vs-steps').forEach(steps => {
     stepVisibilityObserver.observe(steps);
   });
 }

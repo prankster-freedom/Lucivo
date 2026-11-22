@@ -842,6 +842,165 @@ async function testPerfOptimizations(browser) {
     JSON.stringify({ fast15, raw15, visual15, consoleErrors: p15.consoleErrors })
   );
   await p15.close();
+
+  // TC-PERF-017 (#329): 脚注を含む文書での差分再描画（高速モード・Visualモード）と、
+  // H2 見出し編集時の表紙 DOM 保持（目次タイトルその場更新）、および追従時の [data-src-line] 全文 DOM 再走査 0 回
+  const p17 = await openApp(browser);
+  await p17.setViewportSize({ width: 1280, height: 800 });
+
+  const fnDocInitial = [
+    '# 脚注と差分再描画の検証',
+    '',
+    '## 1. 第 1 章: 背景',
+    '',
+    '第 1 章の本文です[^a]。',
+    '',
+    '## 2. 第 2 章: 編集対象',
+    '',
+    '第 2 章の元の本文です。',
+    '',
+    '## 3. 第 3 章: 結論',
+    '',
+    '第 3 章の本文です[^b]。',
+    '',
+    '[^a]: 第 1 章の脚注テキスト。',
+    '[^b]: 第 3 章の脚注テキスト。'
+  ].join('\n');
+
+  const fnDocEdited = fnDocInitial
+    .replace('## 2. 第 2 章: 編集対象', '## 2. 第 2 章: 改題後の見出し')
+    .replace('第 2 章の元の本文です。', '第 2 章の追記後の本文です。\n\n新しい段落を追加しました。');
+
+  // 1) 高速モード（脚注あり）での差分再描画と DOM ノード参照保持
+  await p17.evaluate(t => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = t;
+    lastLoadedMarkdown = t;
+    renderApp();
+  }, fnDocInitial);
+  await p17.waitForTimeout(100);
+
+  const fastFnInc = await p17.evaluate(nextMd => {
+    const std = document.getElementById('standard-doc-container');
+    const firstH2Before = std.querySelectorAll('h2')[0];
+    const thirdH2Before = std.querySelectorAll('h2')[2];
+    const fnSectionBefore = std.querySelector('.lucivo-footnotes');
+    const lineBefore = Number(thirdH2Before.getAttribute('data-src-line'));
+
+    let containerSrcLineQsaCalls = 0;
+    const origQsa = Element.prototype.querySelectorAll;
+    Element.prototype.querySelectorAll = function(sel) {
+      if (this === std && typeof sel === 'string' && sel.includes('data-src-line')) containerSrcLineQsaCalls++;
+      return origQsa.call(this, sel);
+    };
+
+    const editor = document.getElementById('markdown-editor');
+    editor.value = nextMd;
+    isInputRender = true;
+    renderApp();
+
+    Element.prototype.querySelectorAll = origQsa;
+
+    const firstH2After = std.querySelectorAll('h2')[0];
+    const thirdH2After = std.querySelectorAll('h2')[2];
+    const fnSectionAfter = std.querySelector('.lucivo-footnotes');
+    const lineAfter = Number(thirdH2After.getAttribute('data-src-line'));
+    const incHtml = std.innerHTML;
+
+    // 全体再描画と innerHTML が完全一致するか確認
+    prevStdCache = null;
+    renderApp();
+    const fullHtml = std.innerHTML;
+
+    return {
+      sameFirstH2: firstH2Before === firstH2After,
+      sameThirdH2: thirdH2Before === thirdH2After,
+      sameFnSection: fnSectionBefore === fnSectionAfter,
+      lineDelta: lineAfter - lineBefore,
+      containerSrcLineQsaCalls,
+      htmlExactMatch: incHtml === fullHtml
+    };
+  }, fnDocEdited);
+
+  // 2) Visualモード（脚注あり・3 章の表紙目次あり）での差分再描画・H2 改題時の表紙 DOM 保持
+  await selectVisualStyle(p17, 'shapes');
+  await p17.evaluate(t => {
+    const editor = document.getElementById('markdown-editor');
+    editor.value = t;
+    lastLoadedMarkdown = t;
+    renderApp();
+  }, fnDocInitial);
+  await p17.waitForTimeout(150);
+
+  const visFnInc = await p17.evaluate(nextMd => {
+    const vis = document.getElementById('visual-stage-container');
+    const heroBefore = vis.querySelector('.exhibition-hero');
+    const slabsBefore = vis.querySelectorAll('.exhibition-slab');
+    const firstSlabBefore = slabsBefore[0];
+    const thirdSlabBefore = slabsBefore[2];
+    const lineBefore = Number(thirdSlabBefore.querySelector('h2').getAttribute('data-src-line'));
+
+    let unchangedSrcLineQsaCalls = 0;
+    const origQsa = Element.prototype.querySelectorAll;
+    Element.prototype.querySelectorAll = function(sel) {
+      if (
+        (this === vis || this === firstSlabBefore || this === thirdSlabBefore)
+        && typeof sel === 'string'
+        && sel.includes('data-src-line')
+      ) {
+        unchangedSrcLineQsaCalls++;
+      }
+      return origQsa.call(this, sel);
+    };
+
+    const editor = document.getElementById('markdown-editor');
+    editor.value = nextMd;
+    isInputRender = true;
+    renderApp();
+
+    Element.prototype.querySelectorAll = origQsa;
+
+    const heroAfter = vis.querySelector('.exhibition-hero');
+    const slabsAfter = vis.querySelectorAll('.exhibition-slab');
+    const firstSlabAfter = slabsAfter[0];
+    const thirdSlabAfter = slabsAfter[2];
+    const lineAfter = Number(thirdSlabAfter.querySelector('h2').getAttribute('data-src-line'));
+    const agendaSecondTitle = heroAfter.querySelectorAll('.vs-cover-agenda-title')[1]?.textContent;
+    const incHtml = vis.innerHTML;
+
+    prevVisCache = null;
+    renderApp();
+    const fullHtml = vis.innerHTML;
+
+    return {
+      sameHeroOnH2Rename: heroBefore === heroAfter,
+      agendaSecondTitle,
+      sameFirstSlab: firstSlabBefore === firstSlabAfter,
+      sameThirdSlab: thirdSlabBefore === thirdSlabAfter,
+      lineDelta: lineAfter - lineBefore,
+      unchangedSrcLineQsaCalls,
+      htmlExactMatch: incHtml === fullHtml
+    };
+  }, fnDocEdited);
+
+  record('TC-PERF-017',
+    fastFnInc.sameFirstH2 &&
+    fastFnInc.sameThirdH2 &&
+    fastFnInc.sameFnSection &&
+    fastFnInc.lineDelta === 2 &&
+    fastFnInc.containerSrcLineQsaCalls === 0 &&
+    fastFnInc.htmlExactMatch &&
+    visFnInc.sameHeroOnH2Rename &&
+    visFnInc.agendaSecondTitle === '第 2 章: 改題後の見出し' &&
+    visFnInc.sameFirstSlab &&
+    visFnInc.sameThirdSlab &&
+    visFnInc.lineDelta === 2 &&
+    visFnInc.unchangedSrcLineQsaCalls === 0 &&
+    visFnInc.htmlExactMatch &&
+    p17.consoleErrors.length === 0,
+    JSON.stringify({ fastFnInc, visFnInc, consoleErrors: p17.consoleErrors })
+  );
+  await p17.close();
 }
 
 module.exports = { testPerfBudget, testPerfOptimizations };
