@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640" font-family="'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif">
+  <title>イメージスケールと、基本的な感情の配色</title>
+  <desc>左の図は横軸 WARM−COOL、縦軸 SOFT−HARD の 4 領域に、6 つの感情の代表の 3 色配色を置いたもの。喜びと愛情はウォーム・ソフト、ここちよさはクール・ソフト、悲しみはクールの中ほど、怒りと不快感の一部（しつこい）はウォーム・ハード、不快感はクール・ハードにある。右の図は横軸を CLEAR−GRAYISH に替えたもので、喜び・愛情・ここちよさがクリア・ソフトの「快」の領域に集まる。</desc>
+  <rect width="1000" height="640" fill="#ffffff"/>
+
+  <!-- ===== left: WARM-COOL x SOFT-HARD ===== -->
+  <text x="40" y="34" font-size="18" font-weight="bold" fill="#222">WARM−COOL × SOFT−HARD</text>
+  <rect x="40" y="56" width="600" height="540" fill="#fbfbfb" stroke="#999"/>
+  <line x1="340" y1="56" x2="340" y2="596" stroke="#999"/>
+  <line x1="40" y1="326" x2="640" y2="326" stroke="#999"/>
+  <text x="44" y="616" font-size="14" fill="#555">WARM</text>
+  <text x="596" y="616" font-size="14" fill="#555">COOL</text>
+  <text x="322" y="52" font-size="14" fill="#555">SOFT</text>
+  <text x="320" y="616" font-size="14" fill="#555">HARD</text>
+  <text x="52" y="78" font-size="13" fill="#888">ウォーム・ソフト</text>
+  <text x="532" y="78" font-size="13" fill="#888">クール・ソフト</text>
+  <text x="52" y="584" font-size="13" fill="#888">ウォーム・ハード</text>
+  <text x="532" y="584" font-size="13" fill="#888">クール・ハード</text>
+
+  <!-- 喜び -->
+  <g transform="translate(70,150)">
+    <text y="-8" font-size="15" fill="#222">喜び</text>
+    <rect width="30" height="30" fill="#ee7b1f"/><rect x="30" width="30" height="30" fill="#d61f2c"/><rect x="60" width="30" height="30" fill="#f5d800"/>
+  </g>
+  <!-- 愛情 -->
+  <g transform="translate(200,120)">
+    <text y="-8" font-size="15" fill="#222">愛情</text>
+    <rect width="30" height="30" fill="#e8799b"/><rect x="30" width="30" height="30" fill="#f0a8bf"/><rect x="60" width="30" height="30" fill="#f6e36a"/>
+  </g>
+  <!-- ここちよさ -->
+  <g transform="translate(450,150)">
+    <text y="-8" font-size="15" fill="#222">ここちよさ</text>
+    <rect width="30" height="30" fill="#92cba7"/><rect x="30" width="30" height="30" fill="#f6efc2"/><rect x="60" width="30" height="30" fill="#9fcbe1"/>
+  </g>
+  <!-- 悲しみ -->
+  <g transform="translate(460,300)">
+    <text y="-8" font-size="15" fill="#222">悲しみ</text>
+    <rect width="30" height="30" fill="#8e8e8e"/><rect x="30" width="30" height="30" fill="#7f6b86"/><rect x="60" width="30" height="30" fill="#c6c6c6"/>
+  </g>
+  <!-- 怒り -->
+  <g transform="translate(70,420)">
+    <text y="-8" font-size="15" fill="#222">怒り</text>
+    <rect width="30" height="30" fill="#d61f2c"/><rect x="30" width="30" height="30" fill="#9c1a2c"/><rect x="60" width="30" height="30" fill="#262323"/>
+  </g>
+  <!-- 不快感（しつこい） -->
+  <g transform="translate(200,480)">
+    <text y="-8" font-size="15" fill="#222">不快感（しつこい）</text>
+    <rect width="30" height="30" fill="#9c1a2c"/><rect x="30" width="30" height="30" fill="#9b4f1e"/><rect x="60" width="30" height="30" fill="#8c1d4b"/>
+  </g>
+  <!-- 不快感 -->
+  <g transform="translate(460,450)">
+    <text y="-8" font-size="15" fill="#222">不快感</text>
+    <rect width="30" height="30" fill="#3b2558"/><rect x="30" width="30" height="30" fill="#6f578b"/><rect x="60" width="30" height="30" fill="#262323"/>
+  </g>
+
+  <!-- ===== right: CLEAR-GRAYISH x SOFT-HARD ===== -->
+  <text x="680" y="34" font-size="18" font-weight="bold" fill="#222">CLEAR−GRAYISH × SOFT−HARD</text>
+  <rect x="680" y="56" width="290" height="540" fill="#fbfbfb" stroke="#999"/>
+  <line x1="825" y1="56" x2="825" y2="596" stroke="#999"/>
+  <line x1="680" y1="326" x2="970" y2="326" stroke="#999"/>
+  <text x="684" y="616" font-size="14" fill="#555">CLEAR</text>
+  <text x="906" y="616" font-size="14" fill="#555">GRAYISH</text>
+  <text x="807" y="52" font-size="14" fill="#555">SOFT</text>
+  <text x="805" y="616" font-size="14" fill="#555">HARD</text>
+
+  <ellipse cx="752" cy="190" rx="64" ry="112" fill="#fff4d6" stroke="#d9b75a" stroke-dasharray="5 4"/>
+  <text x="712" y="110" font-size="15" font-weight="bold" fill="#8a6a10">快</text>
+  <text x="700" y="160" font-size="14" fill="#222">喜び</text>
+  <text x="700" y="200" font-size="14" fill="#222">愛情</text>
+  <text x="700" y="240" font-size="14" fill="#222">ここちよさ</text>
+
+  <text x="836" y="240" font-size="14" fill="#222">悲しみの一部</text>
+
+  <text x="700" y="420" font-size="14" fill="#222">怒り</text>
+
+  <text x="836" y="400" font-size="14" fill="#222">不快感</text>
+  <text x="836" y="440" font-size="14" fill="#222">悲しみ</text>
+</svg>
