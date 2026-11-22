@@ -7,7 +7,7 @@
   "scripts": {
     "pretest": "node tools/build-app.cjs --prod && node tools/build-app.cjs --prod --channel standalone",
     "test": "node tests/e2e.cjs",
-    "test:unit": "node tests/document-model.test.cjs && node tests/align-tables.test.cjs && node tests/analytics.test.cjs",
+    "test:unit": "node tests/document-model.test.cjs && node tests/align-tables.test.cjs && node tests/analytics.test.cjs && node tests/resolve-affected-suites.test.cjs",
     "build": "node tools/build-app.cjs",
     "build:prod": "node tools/build-app.cjs --prod",
     "build:standalone": "node tools/build-app.cjs --prod --channel standalone",

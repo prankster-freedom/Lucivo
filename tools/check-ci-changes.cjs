@@ -14,6 +14,7 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
+const { resolveAffectedSuites } = require('./resolve-affected-suites.cjs');
 
 const DOC_PATTERNS = [
   /^doc\//,
@@ -139,10 +140,28 @@ async function main() {
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
 
   const result = await evaluateE2E({ base, head, before, repo, token });
+  let suitesOutput = '';
+  if (result.e2e && base && head) {
+    try {
+      const diffOut = execSync(`git diff --name-only "${base}" "${head}"`, {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore']
+      });
+      const files = diffOut.split('\n').map(f => f.trim()).filter(Boolean);
+      const resolved = resolveAffectedSuites(files);
+      if (resolved.mode === 'partial' && resolved.suites.length > 0) {
+        suitesOutput = resolved.suites.join(' ');
+      }
+      console.log(`Affected suites: mode=${resolved.mode} (${resolved.reason}) suites="${suitesOutput}"`);
+    } catch (err) {
+      console.warn(`Failed to resolve affected suites, falling back to all: ${err.message}`);
+      suitesOutput = '';
+    }
+  }
   console.log(`Result: e2e=${result.e2e} (${result.reason})`);
 
   if (process.env.GITHUB_OUTPUT) {
-    fs.appendFileSync(process.env.GITHUB_OUTPUT, `e2e=${result.e2e}\n`);
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, `e2e=${result.e2e}\nsuites=${suitesOutput}\n`);
   }
 }
 
@@ -150,7 +169,7 @@ if (require.main === module) {
   main().catch(err => {
     console.error('Unexpected error in check-ci-changes:', err);
     if (process.env.GITHUB_OUTPUT) {
-      fs.appendFileSync(process.env.GITHUB_OUTPUT, 'e2e=true\n');
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, 'e2e=true\nsuites=\n');
     }
     process.exit(0); // 判定失敗時もワークフロー自体を落とさず安全側に倒す
   });
