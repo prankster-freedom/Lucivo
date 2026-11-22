@@ -643,9 +643,9 @@ async function testUrlLoading(browser) {
     await p44.route('https://raw.githubusercontent.com/**', ghRelRoute);
     const startBlob = 'https://github.com/prankster-freedom/Lucivo/blob/main/public/samples/notation_sample_extra1.md';
     await p44.goto(`${server.url}?url=${encodeURIComponent(startBlob)}`);
-    await p44.waitForFunction(() => document.querySelector('#standard-doc-container img')?.complete, null, { timeout: 10000 });
+    await p44.waitForFunction(() => document.querySelector('#standard-doc-container img[src*="raw.githubusercontent.com"]')?.complete, null, { timeout: 10000 });
     const relImg = await p44.evaluate(() => {
-      const img = document.querySelector('#standard-doc-container img');
+      const img = document.querySelector('#standard-doc-container img[src*="raw.githubusercontent.com"]');
       return { src: img?.getAttribute('src') || '', naturalWidth: img?.naturalWidth || 0 };
     });
     await p44.click('#standard-doc-container a[href="notation_sample.md#target-sec"]');
