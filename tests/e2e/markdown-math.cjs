@@ -476,9 +476,6 @@ async function testTree(browser) {
   await page.context().close();
 }
 
-// Web 版（http://）として public/ を配る、テスト用の小さなサーバー。Web 版だけの機能（#61・#62）を確かめる
-
-// ズーミング・マップ（TC-SHOW-015〜019、FR-054、#61）
 async function testFormatter(browser) {
   const page = await openStagePage(browser);
   const dialogs = [];

@@ -1,9 +1,8 @@
 // 発表モードの登録と、本体とモードの境界（host API）。doc/2.ARCHITECTURE.md 4.16（ARC-MODE-001〜006）
 // モードは src/ts/modes/<id>/ に独立して置き、発表のドロップダウンで選ばれたときに js/modes/<id>.js・css/modes/<id>.css を読み込む。
 // メニューに出すモードの一覧は、ビルド（tools/build-app.cjs）が配布先で絞って埋め込む。実行時に file:// かどうかは調べない。
-import { state, runtime } from './state';
+import { state } from './state';
 import { showToast } from './toast';
-import { updateAllSlabSplits } from '../diagram/svg-postprocess';
 import { trackWebEvent } from './analytics';
 
 // ビルドが埋め込む、この配布先で出すモードの表（modes.json の行から stage を除いたもの）
@@ -15,10 +14,7 @@ const PRESENT_MODES: Array<{ id: string; label: string }> =
 export interface ModeHost {
   showVisualCanvas(): Promise<HTMLElement | null>;
   restoreView(): void;
-  previewRoot(): HTMLElement | null;
   isDocumentEmpty(): boolean;
-  relayoutSlabs(): void;
-  getMermaidSource(index: number): string | null;
   setLights(on: boolean): void;
   toast(message: string): void;
   appearance(): 'dark' | 'light';
@@ -106,17 +102,8 @@ const host: ModeHost = {
     const scroller = document.getElementById('preview-scroll');
     if (scroller) scroller.scrollTop = r.scrollTop;
   },
-  previewRoot() {
-    return document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
-  },
   isDocumentEmpty() {
     return (document.getElementById('markdown-editor') as HTMLTextAreaElement).value.trim() === '';
-  },
-  relayoutSlabs() {
-    updateAllSlabSplits(document.getElementById('visual-stage-container'));
-  },
-  getMermaidSource(index) {
-    return runtime.lastMermaidSources[index] ?? null;
   },
   setLights: toggleLights,
   toast: showToast,

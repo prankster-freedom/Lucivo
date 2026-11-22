@@ -2021,8 +2021,6 @@ window.addEventListener('DOMContentLoaded', () => {
 // E2E テストおよび外部連携用グローバル公開
 (window as any).state = state;
 (window as any).renderApp = renderApp;
-// 図の番号（data-stage-index）の Mermaid の原文。プレイアブル・ダイアグラム（#62）が使う
-(window as any).getMermaidSource = (index: number) => runtime.lastMermaidSources[index] ?? null;
 (window as any).closeFileMenu = closeFileMenu;
 
 Object.defineProperty(window, 'openedFolder', {

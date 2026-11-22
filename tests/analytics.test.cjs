@@ -67,10 +67,10 @@ function loadAnalyticsModule(versionString) {
 {
   const { exports: mod, window: win } = loadAnalyticsModule('0.12.0-canary (build id: 987654)');
   assert.strictEqual(mod.trackWebEvent('tone_select', { tone: 'warm' }), true);
-  assert.strictEqual(mod.trackWebEvent('present_mode_select', { present_mode: 'zoom-map' }), true);
+  assert.strictEqual(mod.trackWebEvent('present_mode_select', { present_mode: 'museum-walk' }), true);
   assert.deepStrictEqual(JSON.parse(JSON.stringify(win.dataLayer)), [
     { event: 'tone_select', release_channel: 'preview', tone: 'warm' },
-    { event: 'present_mode_select', release_channel: 'preview', present_mode: 'zoom-map' }
+    { event: 'present_mode_select', release_channel: 'preview', present_mode: 'museum-walk' }
   ]);
 }
 
