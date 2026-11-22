@@ -63,6 +63,8 @@ const {
   testOffline
 } = require('./e2e/modes-and-ui.cjs');
 
+const { testI18n } = require('./e2e/i18n.cjs');
+
 const { testPerfBudget, testPerfOptimizations } = require('./e2e/perf-budget.cjs');
 
 // 発表モードのテスト（tests/e2e/modes/<id>.cjs）は、フォルダから自動で集める（doc/2.ARCHITECTURE.md 4.16 ARC-MODE-008）。
@@ -81,6 +83,7 @@ const SUITES = [
   { name: 'testUrlLoading', tcPrefix: ['TC-FILE-035', 'TC-FILE-041', 'TC-FILE-042', 'TC-FILE-043', 'TC-FILE-044', 'TC-FILE-045'], fn: testUrlLoading },
   { name: 'testAutoReload', tcPrefix: ['TC-FILE-046'], fn: testAutoReload },
   { name: 'testWebAnalytics', tcPrefix: ['TC-FILE-048'], fn: testWebAnalytics },
+  { name: 'testI18n', tcPrefix: ['TC-I18N-'], fn: testI18n },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },
@@ -177,6 +180,11 @@ async function runSuite(suite, browser) {
   console.log(`E2E: ${parallel.length} suites in parallel (workers=${workers}), then ${serial.length} serial suites`);
   const runStartedAt = Date.now();
   const browser = await chromium.launch();
+  // 既存の日本語前提 E2E が英語環境（CI の ubuntu-latest 等）で揺れないよう、明示指定がないコンテキストの既定ロケールを ja-JP にそろえる
+  const origNewContext = browser.newContext.bind(browser);
+  browser.newContext = (opts = {}) => origNewContext({ locale: 'ja-JP', ...opts });
+  const origNewPage = browser.newPage.bind(browser);
+  browser.newPage = (opts = {}) => origNewPage({ locale: 'ja-JP', ...opts });
   try {
     // 上限（timeoutMs）の長いスイートほど所要時間も長いため、先に始めて全体の終わりを早める。同じ上限の中では登録順を保つ
     const queue = parallel
