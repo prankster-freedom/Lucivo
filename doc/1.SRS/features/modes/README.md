@@ -10,8 +10,6 @@ tags: ["Lucivo", "SRS", "発表モード"]
 
 | モード                                   | 要求     | 要求仕様                         |
 | :--------------------------------------- | :------- | :------------------------------- |
-| ズーミング・マップ（`zoom-map`）         | `FR-054` | [zoom-map.md](zoom-map.md)       |
-| プレイアブル・ダイアグラム（`playable`） | `FR-055` | [playable.md](playable.md)       |
 | ミュージアム・ウォーク（`museum-walk`）  | `FR-056` | [museum-walk.md](museum-walk.md) |
 
 - 全体要求仕様書: [1.SRS.md](../../../1.SRS.md)

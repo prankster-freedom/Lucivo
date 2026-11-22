@@ -10,8 +10,6 @@ tags: ["Lucivo", "詳細設計", "発表モード"]
 
 | モード                                   | 略号   | 詳細設計                   | 対応する要求                                                         |
 | :--------------------------------------- | :----- | :------------------------- | :------------------------------------------------------------------- |
-| ズーミング・マップ（`zoom-map`）         | `SHOW` | [zoom-map.md](zoom-map.md) | [zoom-map.md](../../../1.SRS/features/modes/zoom-map.md)（`FR-054`） |
-| プレイアブル・ダイアグラム（`playable`） | `SHOW` | [playable.md](playable.md) | [playable.md](../../../1.SRS/features/modes/playable.md)（`FR-055`） |
 | ミュージアム・ウォーク（`museum-walk`）  | `MWLK` | [museum-walk.md](museum-walk.md) | [museum-walk.md](../../../1.SRS/features/modes/museum-walk.md)（`FR-056`） |
 
-- ズーミング・マップとプレイアブル・ダイアグラムの設計 ID は `DD-SHOW-<nnn>` を引き継ぐ（110〜114、120〜124）。ミュージアム・ウォークは、デザイン仕様（`DTP-MWLK-<nnn>`）と同じ略号で `DD-MWLK-<nnn>` とする。
+- ミュージアム・ウォークは、デザイン仕様（`DTP-MWLK-<nnn>`）と同じ略号で `DD-MWLK-<nnn>` とする。

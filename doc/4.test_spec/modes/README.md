@@ -10,8 +10,6 @@ tags: ["Lucivo", "テスト仕様", "発表モード"]
 
 | モード                                   | テスト仕様                 | 対応する詳細設計                                                  |
 | :--------------------------------------- | :------------------------- | :---------------------------------------------------------------- |
-| ズーミング・マップ（`zoom-map`）         | [zoom-map.md](zoom-map.md) | [zoom-map.md](../../3.sw_design_notes/features/modes/zoom-map.md) |
-| プレイアブル・ダイアグラム（`playable`） | [playable.md](playable.md) | [playable.md](../../3.sw_design_notes/features/modes/playable.md) |
 | ミュージアム・ウォーク（`museum-walk`）  | [museum-walk.md](museum-walk.md) | [museum-walk.md](../../3.sw_design_notes/features/modes/museum-walk.md) |
 
 ## 共通の品質の関門（`ARC-MODE-007`）
