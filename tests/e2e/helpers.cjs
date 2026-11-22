@@ -120,8 +120,10 @@ async function scrollToSlab(page, index) {
 }
 
 async function seekLight(page, t) {
-  await page.evaluate(v => LucivoStage.seekLights(v), t);
-  await page.waitForTimeout(90);
+  await page.evaluate(async v => {
+    LucivoStage.seekLights(v);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  }, t);
 }
 
 

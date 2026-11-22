@@ -46,4 +46,4 @@ flowchart TD
 - **並列実行**: スイートは 1 つのブラウザの上で、同時に複数を流す。同時に流す数は環境変数 `E2E_WORKERS` で指定する（既定は CPU の数から 1 を引いた数、上限 3。`E2E_WORKERS=1` で従来どおり直列）。上限（`timeoutMs`）の長いスイートから先に始め、全体の終わりを早める。各スイートは `browser.newPage()` で別のコンテキストを使い、手元のサーバーはポート 0 で起動するため、`localStorage` やポートは衝突しない。ローカル（4 コア）の所要時間は、直列で約 744 秒、並列（workers=3）で約 480 秒。
   - **`serial: true` のスイート**: 並列の分が終わった後に 1 つずつ流す。対象は、時間を測るスイート（`testStartupAndCache`・`testPerfBudget`・`testPerfOptimizations`。他のスイートの負荷で値が乱れるため）と、アニメーションの終わりを決め打ちの待ち時間（`waitForTimeout`）で待つスイート（`testStageShow`・`testMuseumWalk`。並列で CPU が混むとアニメーションが待ち時間内に終わらず、`TC-SHOW-004`・`TC-MWLK-009` が失敗したため）。待ち方を条件待ちに直したら、後者の `serial: true` を外す（#341）。スイートを足すときに、時間を測る・決め打ちの待ち時間で動きを待つ場合は `serial: true` を付ける
   - **記録の順番**: 記録（`record()`）には、`AsyncLocalStorage` で実行中のスイート名を付ける。`results.json` は、スイートの登録順に並べ直して書き出す（並列では記録の順番が実行のたびに変わるため）。コンソールの `PASS`・`FAIL` の行は、末尾にスイート名を `[testXxx]` の形で付ける
-  - **所要時間の上限**: 並列では各スイートが遅くなる。`testDiagramRendering` は並列で約 135〜210 秒かかるため、上限を 360 秒にしている
+  - **所要時間の上限**: 並列では各スイートが遅くなる。`testDiagramRendering` は並列で約 135〜210 秒かかるため上限を 360 秒に、`testCoverAndTables` は直列で約 44 秒、CI の並列で約 73 秒かかるため上限を 150 秒にしている
