@@ -29,10 +29,14 @@ const MODES = [
 const SHOWCASE_SCENES = 19;
 const sceneCount = n => `${String(n).padStart(2, '0')} / ${String(SHOWCASE_SCENES).padStart(2, '0')}`;
 
+// スイートは並列に流れるため、どのスイートの記録かを AsyncLocalStorage で引き継ぐ（tests/e2e.cjs が設定する）
+const { AsyncLocalStorage } = require('async_hooks');
+const suiteContext = new AsyncLocalStorage();
 const results = [];
 function record(id, ok, detail) {
-  results.push({ id, ok, detail });
-  console.log(`${ok ? 'PASS' : 'FAIL'} ${id} ${detail || ''}`);
+  const suite = suiteContext.getStore();
+  results.push({ id, ok, detail, suite });
+  console.log(`${ok ? 'PASS' : 'FAIL'} ${id} ${detail || ''}${suite ? ` [${suite}]` : ''}`);
 }
 
 async function openApp(browser) {
@@ -116,8 +120,10 @@ async function scrollToSlab(page, index) {
 }
 
 async function seekLight(page, t) {
-  await page.evaluate(v => LucivoStage.seekLights(v), t);
-  await page.waitForTimeout(90);
+  await page.evaluate(async v => {
+    LucivoStage.seekLights(v);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  }, t);
 }
 
 
@@ -168,8 +174,42 @@ async function selectScale(page, selector) {
   await page.click(selector);
 }
 
+// 有限アニメーション／トランジションの完了と、対象要素のスクロール位置・矩形座標が連続 N フレーム変化しないことを待つ（#341）
+async function waitForSettled(page, { selector = '#preview-scroll', frames = 3, timeout = 15000 } = {}) {
+  await page.waitForFunction(
+    ({ sel }) => {
+      const finiteRunning = document.getAnimations().some(a => {
+        if (a.playState !== 'running') return false;
+        const t = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming() : null;
+        return t && t.iterations !== Infinity;
+      });
+      return !finiteRunning && Boolean(document.querySelector(sel) || document.scrollingElement);
+    },
+    { sel: selector },
+    { timeout }
+  ).catch(() => {});
+
+  await page.evaluate(async ({ sel, requiredFrames }) => {
+    const el = document.querySelector(sel) || document.scrollingElement;
+    let stable = 0;
+    let prev = '';
+    let guard = 0;
+    while (stable < requiredFrames && guard < 240) {
+      guard++;
+      await new Promise(r => requestAnimationFrame(r));
+      const rect = el ? el.getBoundingClientRect() : { top: 0, left: 0, width: 0, height: 0 };
+      const sig = el
+        ? `${Math.round(el.scrollTop)}:${Math.round(el.scrollLeft)}:${Math.round(rect.top)}:${Math.round(rect.left)}:${el.style.transform || ''}`
+        : '';
+      if (sig === prev) stable++;
+      else { stable = 0; prev = sig; }
+    }
+  }, { sel: selector, requiredFrames: frames });
+}
+
 module.exports = {
   selectScale,
+  waitForSettled,
   ENCODING_FIXTURE,
   FORMAT_FIXTURE,
   MD_MODES,
@@ -191,6 +231,7 @@ module.exports = {
   sceneCount,
   results,
   record,
+  suiteContext,
   openApp,
   waitRendered,
   formattedForLoad,

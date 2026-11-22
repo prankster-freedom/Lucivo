@@ -4,7 +4,8 @@
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
-const { OUT_DIR, SHOT_DIR, results, record } = require('./e2e/helpers.cjs');
+const os = require('os');
+const { OUT_DIR, SHOT_DIR, results, record, suiteContext } = require('./e2e/helpers.cjs');
 
 const {
   testFileLoading,
@@ -88,8 +89,8 @@ const SUITES = [
   ...MODE_SUITES,
   ...GATE_SUITES,
   { name: 'testFolder', tcPrefix:['TC-FILE-021', 'TC-FILE-022', 'TC-FILE-023', 'TC-FILE-024', 'TC-FILE-025', 'TC-FILE-027', 'TC-FILE-049'], fn: testFolder },
-  // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、ローカルで約 90 秒かかる。CI の揺らぎを見込んで既定より長くする
-  { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 240000 },
+  // 10 モード × 全図のスクリーンショット（TC-DIAG-005）を撮るため、直列でローカル約 90 秒、並列（workers=3）では約 210 秒かかる。CI の揺らぎを見込んで既定より長くする
+  { name: 'testDiagramRendering', tcPrefix: ['TC-DIAG-'], fn: testDiagramRendering, timeoutMs: 360000 },
   { name: 'testMarkdownTypography', tcPrefix: ['TC-MD-001', 'TC-MD-002', 'TC-MD-003', 'TC-MD-004', 'TC-MD-005', 'TC-MD-006', 'TC-MD-007', 'TC-MD-008', 'TC-MD-009', 'TC-MD-010', 'TC-MD-011', 'TC-MD-022', 'TC-MD-023'], fn: testMarkdownTypography },
   { name: 'testLocalImages', tcPrefix: ['TC-MD-013', 'TC-MD-014', 'TC-MD-015'], fn: testLocalImages },
   { name: 'testTree', tcPrefix: ['TC-MD-017', 'TC-MD-018', 'TC-MD-019'], fn: testTree },
@@ -99,7 +100,7 @@ const SUITES = [
   { name: 'testDiagramScaleModes', tcPrefix: ['TC-DIAG-039', 'TC-DIAG-040'], fn: testDiagramScaleModes },
   { name: 'testVisualStageQuality', tcPrefix: ['TC-STAGE-', 'TC-DIAG-021', 'TC-DIAG-032', 'TC-DIAG-033', 'TC-DIAG-034', 'TC-DIAG-035', 'TC-DIAG-036', 'TC-DIAG-038'], fn: testVisualStageQuality },
   { name: 'testVisualTemplates', tcPrefix: ['TC-VTPL-001', 'TC-VTPL-002', 'TC-VTPL-003', 'TC-VTPL-004', 'TC-VTPL-005', 'TC-VTPL-006', 'TC-VTPL-007', 'TC-VTPL-008', 'TC-VTPL-009', 'TC-VTPL-010', 'TC-VTPL-011', 'TC-VTPL-012', 'TC-VTPL-013', 'TC-VTPL-014'], fn: testVisualTemplates, timeoutMs: 150000 },
-  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024', 'TC-VTPL-025', 'TC-VTPL-026', 'TC-VTPL-027', 'TC-VTPL-030', 'TC-VTPL-031', 'TC-VTPL-032', 'TC-VTPL-033', 'TC-VTPL-034', 'TC-VTPL-035', 'TC-VTPL-036', 'TC-VTPL-038', 'TC-VTPL-039'], fn: testCoverAndTables },
+  { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024', 'TC-VTPL-025', 'TC-VTPL-026', 'TC-VTPL-027', 'TC-VTPL-030', 'TC-VTPL-031', 'TC-VTPL-032', 'TC-VTPL-033', 'TC-VTPL-034', 'TC-VTPL-035', 'TC-VTPL-036', 'TC-VTPL-038', 'TC-VTPL-039'], fn: testCoverAndTables, timeoutMs: 150000 },
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007', 'TC-SHOW-026', 'TC-SHOW-027'], fn: testStageShow, timeoutMs: 180000 },
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025'], fn: testStageOverviewPointer },
@@ -111,9 +112,11 @@ const SUITES = [
   { name: 'testNodeLabelWrap', tcPrefix: ['TC-DIAG-037'], fn: testNodeLabelWrap },
   { name: 'testDiagramUserStyles', tcPrefix: ['TC-DIAG-030'], fn: testDiagramUserStyles },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
-  { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-', 'TC-PERF-001', 'TC-PERF-002', 'TC-PERF-003', 'TC-PERF-004', 'TC-PERF-005', 'TC-PERF-006', 'TC-PERF-007'], fn: testStartupAndCache },
-  { name: 'testPerfBudget', tcPrefix: ['TC-PERF-008'], fn: testPerfBudget, timeoutMs: 120000 },
-  { name: 'testPerfOptimizations', tcPrefix: ['TC-PERF-009', 'TC-PERF-010', 'TC-PERF-011', 'TC-PERF-012', 'TC-PERF-013', 'TC-PERF-014', 'TC-PERF-015', 'TC-PERF-017'], fn: testPerfOptimizations },
+  // 時間を測るスイートと、アニメーションの終わりを決め打ちの時間で待つスイート（testStageShow、testMuseumWalk）は serial: true にし、
+  // 並列の分が終わった後に 1 つずつ流す（他のスイートの負荷で値が乱れたり、アニメーションが待ち時間内に終わらなかったりしないようにする）
+  { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-', 'TC-PERF-001', 'TC-PERF-002', 'TC-PERF-003', 'TC-PERF-004', 'TC-PERF-005', 'TC-PERF-006', 'TC-PERF-007'], fn: testStartupAndCache, serial: true },
+  { name: 'testPerfBudget', tcPrefix: ['TC-PERF-008'], fn: testPerfBudget, timeoutMs: 120000, serial: true },
+  { name: 'testPerfOptimizations', tcPrefix: ['TC-PERF-009', 'TC-PERF-010', 'TC-PERF-011', 'TC-PERF-012', 'TC-PERF-013', 'TC-PERF-014', 'TC-PERF-015', 'TC-PERF-017'], fn: testPerfOptimizations, serial: true },
   { name: 'testResponsiveAndWebUi', tcPrefix: ['TC-UI-001', 'TC-UI-002', 'TC-UI-003', 'TC-UI-004'], fn: testResponsiveAndWebUi },
   { name: 'testInteractionDetails', tcPrefix: ['TC-UI-005'], fn: testInteractionDetails },
   { name: 'testOffline', tcPrefix: ['TC-OFF-'], fn: testOffline }
@@ -127,6 +130,29 @@ function runWithTimeout(fn, ms, label) {
       err => { clearTimeout(timer); reject(err); }
     );
   });
+}
+
+// 同時に流すスイートの数。E2E_WORKERS で指定する（1 なら従来どおり直列）。
+// 既定は CPU の数から 1 を引いた数（上限 3）。1 つはブラウザの描画と Node の処理のために残す
+const DEFAULT_MAX_WORKERS = 3;
+function resolveWorkers() {
+  const fromEnv = Number.parseInt(process.env.E2E_WORKERS || '', 10);
+  if (Number.isInteger(fromEnv) && fromEnv >= 1) return fromEnv;
+  return Math.max(1, Math.min(DEFAULT_MAX_WORKERS, os.cpus().length - 1));
+}
+
+// 1 つのスイートが例外・タイムアウトで止まっても、残りのスイートは実行する（失敗が後続のテストの結果を隠さないようにする）
+async function runSuite(suite, browser) {
+  const startedAt = Date.now();
+  await suiteContext.run(suite.name, async () => {
+    try {
+      await runWithTimeout(() => suite.fn(browser), suite.timeoutMs || SUITE_TIMEOUT_MS, suite.name);
+    } catch (e) {
+      record(`RUNTIME ${suite.name}`, false, e.stack);
+    }
+  });
+  // 上限（timeoutMs）を見直すための所要時間
+  console.log(`SUITE ${suite.name} ${((Date.now() - startedAt) / 1000).toFixed(1)}s / ${((suite.timeoutMs || SUITE_TIMEOUT_MS) / 1000).toFixed(0)}s`);
 }
 
 (async () => {
@@ -143,22 +169,30 @@ function runWithTimeout(fn, ms, label) {
     return;
   }
   fs.mkdirSync(SHOT_DIR, { recursive: true });
+  const workers = resolveWorkers();
+  const parallel = selected.filter(s => !s.serial);
+  const serial = selected.filter(s => s.serial);
+  console.log(`E2E: ${parallel.length} suites in parallel (workers=${workers}), then ${serial.length} serial suites`);
+  const runStartedAt = Date.now();
   const browser = await chromium.launch();
   try {
-    // 1 つのスイートが例外・タイムアウトで止まっても、残りのスイートは実行する（失敗が後続のテストの結果を隠さないようにする）
-    for (const suite of selected) {
-      const startedAt = Date.now();
-      try {
-        await runWithTimeout(() => suite.fn(browser), suite.timeoutMs || SUITE_TIMEOUT_MS, suite.name);
-      } catch (e) {
-        record(`RUNTIME ${suite.name}`, false, e.stack);
-      }
-      // 上限（timeoutMs）を見直すための所要時間
-      console.log(`SUITE ${suite.name} ${((Date.now() - startedAt) / 1000).toFixed(1)}s / ${((suite.timeoutMs || SUITE_TIMEOUT_MS) / 1000).toFixed(0)}s`);
-    }
+    // 上限（timeoutMs）の長いスイートほど所要時間も長いため、先に始めて全体の終わりを早める。同じ上限の中では登録順を保つ
+    const queue = parallel
+      .map((suite, index) => ({ suite, index }))
+      .sort((a, b) => ((b.suite.timeoutMs || SUITE_TIMEOUT_MS) - (a.suite.timeoutMs || SUITE_TIMEOUT_MS)) || (a.index - b.index))
+      .map(item => item.suite);
+    await Promise.all(Array.from({ length: Math.min(workers, queue.length) }, async () => {
+      while (queue.length > 0) await runSuite(queue.shift(), browser);
+    }));
+    for (const suite of serial) await runSuite(suite, browser);
   } finally {
     await browser.close();
   }
+  console.log(`E2E total ${((Date.now() - runStartedAt) / 1000).toFixed(1)}s`);
+  // 並列で流すと記録の順番が実行のたびに変わるため、スイートの登録順に並べ直して書き出す（差分を比べやすくする）
+  const suiteOrder = new Map(selected.map((s, i) => [s.name, i]));
+  results.sort((a, b) => (suiteOrder.get(a.suite) ?? Infinity) - (suiteOrder.get(b.suite) ?? Infinity));
+  for (const r of results) delete r.suite;
   const resultsPath = path.join(OUT_DIR, 'results.json');
   let mergedResults = results;
   if (filters.length > 0 && fs.existsSync(resultsPath)) {

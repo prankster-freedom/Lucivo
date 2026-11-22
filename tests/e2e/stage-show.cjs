@@ -27,7 +27,8 @@ const {
   FORMAT_FIXTURE,
   MD_MODES,
   startWebServer,
-  openWebPageWithSample
+  openWebPageWithSample,
+  waitForSettled
 } = require('./helpers.cjs');
 
 function inspectLightHead({ flowIndex, edgeIndex, t }) {
@@ -390,7 +391,7 @@ async function testStageShow(browser) {
 
   // TC-SHOW-005 図は舞台の高さに収まり、操作部品は隠れ、光も図に重なる
   await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-split'));
-  await page.waitForTimeout(900);
+  await waitForSettled(page, { selector: '#visual-stage-container', frames: 4 });
   await seekLight(page, 1.0);
   const diagram = await page.evaluate(() => {
     const scene = document.querySelector('.is-scene');
@@ -473,14 +474,14 @@ async function testStageShow(browser) {
 
   // TC-SHOW-004 画面に収まらない章は、次の章へ進む前に残りをスクロールする
   await pressUntil(page, () => document.getElementById('visual-stage-container').scrollHeight - innerHeight > 200);
-  await page.waitForTimeout(800);
+  await waitForSettled(page, { selector: '#visual-stage-container', frames: 4 });
   const tall = await page.evaluate(inspectShow);
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-tall.png') });
   await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(900);
+  await waitForSettled(page, { selector: '#visual-stage-container', frames: 4 });
   const scrolled = await page.evaluate(inspectShow);
   await page.keyboard.press('ArrowLeft');
-  await page.waitForTimeout(900);
+  await waitForSettled(page, { selector: '#visual-stage-container', frames: 4 });
   const returned = await page.evaluate(inspectShow);
   record('TC-SHOW-004', scrolled.index === tall.index && scrolled.scrollTop > 100 && returned.index === tall.index && returned.scrollTop <= 4, JSON.stringify({ index: tall.index, overflow: tall.overflow, scrolled: scrolled.scrollTop, returned: returned.scrollTop }));
 
