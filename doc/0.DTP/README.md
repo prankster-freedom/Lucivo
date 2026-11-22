@@ -36,12 +36,17 @@ Lucivo の Visualモード（Visual Stage）の誌面設計の全体方針を定
 
 雛形のアクセント色とベクター素材（`AST-005`〜`008`）の塗りは、インフォグラフィックスタイル（`FR-003`）ごとに 4 色（`--vs-c1`〜`--vs-c4`）を持ち、図の配色と同じ調子で誌面をまとめる。ブランドカラー（ダークスレート基調）は Visualモードの配色には使わない（[ブランドコンセプト](../1.SRS.md#12-ブランドコンセプトlucivo--brand-concept-sheet)）。ただし、発表の操作のための光（光のポインター、俯瞰の選択の輪。`DTP-SHOW-070`, `080`）は文書の中身ではなく Lucivo 自身の表現のため、ブランドのアクセントライト（ペールシアン・ルミナスホワイト）を使う。
 
-| スタイル    | `--vs-c1` | `--vs-c2` | `--vs-c3` | `--vs-c4` | 見本（文字＋背景）                           | 調子の出どころ |
-| :---------- | :-------- | :-------- | :-------- | :-------- | :------------------------------------------- | :------------- |
-| `shapes`    | `#E29578` | `#EBB453` | `#6CC4C9` | `#9CCB86` | Pastel Shapes のノードのグラデーション（コーラル、アンバー、アクア、ライム） |  |
-| `cards`     | `#E29578` | `#E6B34B` | `#A3B4E4` | `#6DB1B4` | 2-Tier Cards の 4 色バー                     |                |
-| `circles`   | `#D45D53` | `#7EA6BF` | `#ECB674` | `#7D9763` | Vibrant Circles の 5 色サークル（先頭 4 色） |                |
-| `editorial` | `#D68C8C` | `#8FA876` | `#C9A66B` | `#8FA3B8` | Editorial Cream のダスティローズとセージ     |                |
+<table>
+<thead>
+<tr><th>スタイル</th><th><code>--vs-c1</code></th><th><code>--vs-c2</code></th><th><code>--vs-c3</code></th><th><code>--vs-c4</code></th><th>調子の出どころ</th></tr>
+</thead>
+<tbody>
+<tr><td><code>shapes</code></td><td><span style="background-color: #E29578; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#E29578</span></td><td><span style="background-color: #EBB453; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#EBB453</span></td><td><span style="background-color: #6CC4C9; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#6CC4C9</span></td><td><span style="background-color: #9CCB86; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#9CCB86</span></td><td>Pastel Shapes のノードのグラデーション（コーラル、アンバー、アクア、ライム）</td></tr>
+<tr><td><code>cards</code></td><td><span style="background-color: #E29578; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#E29578</span></td><td><span style="background-color: #E6B34B; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#E6B34B</span></td><td><span style="background-color: #A3B4E4; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#A3B4E4</span></td><td><span style="background-color: #6DB1B4; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#6DB1B4</span></td><td>2-Tier Cards の 4 色バー</td></tr>
+<tr><td><code>circles</code></td><td><span style="background-color: #D45D53; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#D45D53</span></td><td><span style="background-color: #7EA6BF; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#7EA6BF</span></td><td><span style="background-color: #ECB674; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#ECB674</span></td><td><span style="background-color: #7D9763; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#7D9763</span></td><td>Vibrant Circles の 5 色サークル（先頭 4 色）</td></tr>
+<tr><td><code>editorial</code></td><td><span style="background-color: #D68C8C; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#D68C8C</span></td><td><span style="background-color: #8FA876; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#8FA876</span></td><td><span style="background-color: #C9A66B; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#C9A66B</span></td><td><span style="background-color: #8FA3B8; color: #1E293B; padding: 2px 6px; border-radius: 4px; font-weight: 500; border: 1px solid #64748B;">#8FA3B8</span></td><td>Editorial Cream のダスティローズとセージ</td></tr>
+</tbody>
+</table>
 
 - Light の 4 象限チャート（#151）: 4 つの象限を、この 4 色を白で半分に薄めた色で 1 象限ずつ塗り（右上から反時計回りに `--vs-c1`〜`c4`）、象限の違いが色で伝わるようにする。点は濃紺で、点の名前は点の右上（右端の近くでは左上）に `14px`・600 で置く。点の真下・中央に置く既定の位置は、文字が点に重なって欠けるため使わない。
 - 文字に色を使うとき（カードの番号など）は、アクセント色 70% に、Light では濃紺（`#0F172A`）、Dark では白を 30% 混ぜた色（`color-mix`）にして、背景とのコントラスト比 3:1 以上（大きな太字の基準）を確保する。
@@ -76,12 +81,12 @@ Lucivo の Visualモード（Visual Stage）の誌面設計の全体方針を定
   | `editorial` | 落ち着いた編集者       | Noto Serif JP（明朝・可変フォント） | 700      | `0.04em`  | Web 版のみ遅延読込 |
 - **スタイル別の見出し書体（声色）と人物像（`#218`）**: Visualモードの 4 スタイルは、配色や図形だけでなく「人に例えた人物像」に見出し（表紙の題名・章見出し `h2`・小見出し `h1`, `h3`〜`h6`・エンドカードの結び）の書体・太さ・字間をそろえる。本文と図（Mermaid）の書体は可読性とノード幅計算の安定性（`NFR-005`）を保つため共通のまま変えない。和文の丸ゴシック・明朝はファイルサイズが大きいため Web 版のみで遅延読み込みとし、スタンドアロン版（ZIP）には同梱せず共通の同梱書体で表示する。
 
-  | スタイル    | 人物像                 | 見出し書体（Web 版）                | ウェイト | 字間      | 配布区分           |
-  | :---------- | :--------------------- | :---------------------------------- | :------- | :-------- | :----------------- |
-  | `shapes`    | 明るく親しみやすい講師 | Plus Jakarta Sans / Noto Sans JP    | 800      | `0.015em` | 共通（同梱）       |
-  | `cards`     | 理路整然としたプレゼンター | Inter / Noto Sans JP            | 700      | `-0.015em` | 共通（同梱）      |
-  | `circles`   | 元気な司会者           | M PLUS Rounded 1c（丸ゴシック）     | 800      | `0.025em` | Web 版のみ遅延読込 |
-  | `editorial` | 落ち着いた編集者       | Noto Serif JP（明朝・可変フォント） | 700      | `0.04em`  | Web 版のみ遅延読込 |
+  | スタイル    | 人物像                     | 見出し書体（Web 版）                    | ウェイト | 字間       | 配布区分 |
+  | :---------- | :------------------------- | :-------------------------------------- | :------- | :--------- | :------- |
+  | `shapes`    | 明るく親しみやすい講師     | Plus Jakarta Sans / Noto Sans JP        | 800      | `0.015em`  | 共通（同梱） |
+  | `cards`     | 理路整然としたプレゼンター | Inter / Noto Sans JP                    | 700      | `-0.015em` | 共通（同梱） |
+  | `circles`   | 元気な司会者               | M PLUS Rounded 1c（丸ゴシック）         | 800      | `0.025em`  | Web 版のみ遅延読込 |
+  | `editorial` | 落ち着いた編集者           | Noto Serif JP（明朝・可変フォント）     | 700      | `0.04em`   | Web 版のみ遅延読込 |
 - 図の中の文字（Visualモードのガント・タイムライン・ジャーニー。#149）: 図そのものの大きさで、ガントの作業名・区分名は `15px`（軸の日付は `12.5px`、題は `21px`・800）、タイムラインの年とイベント名は `17px`、ジャーニーの区分は `18px`・700、作業は `17px`・600 とする。Mermaid の既定（10〜13px）のままでは、図が枠の幅に合わせて縮むと文字の下限（`NFR-005`、10px）まで小さくなり、講演の投影で読めない。ガントの縦の罫線は薄く（不透明度 0.28）し、バーと文字を主役にする。ジャーニーの登場人物の丸は、スタイルの 4 色を少し沈めた色にする（既定の蛍光の黄緑を使わない）。
 - ジャンプ率: 本文 1 に対し、ステートメント 1.2〜1.6、リード 1.1〜1.35。章の見出しより大きくなるのはステートメントだけで、章の主役が「その一文」であることを示す。
 - 行の折り返し: ステートメントは `text-wrap: balance`、リードおよび Visualモードの段落・リスト項目・定義説明は `text-wrap: pretty` で、最後の行に 1〜2 文字だけが残る折り返しを避ける。雛形の文字（リード、カード、手順、ステートメント）は `word-break: auto-phrase` で文節の区切りで折り返し、「切り／替える」のような語の途中の改行を避ける（対応していないブラウザでは通常の折り返し）。禁則は `line-break: strict`（全体）に従う。
