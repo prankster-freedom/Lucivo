@@ -2812,10 +2812,256 @@ async function testDiagramScaleModes(browser) {
   await page.context().close();
 }
 
+// TC-VTPL-041: 量子化レイアウト＆計算済みスタイル指紋（#337）
+const BASELINE_PATH = path.join(ROOT_DIR, 'tests', 'visual-baseline.json');
+const TARGET_STAGE_NOS = ['01', '03', '04', '06', '08', '09', '10', '12', '13', '14', '15', '16', '17'];
+
+async function extractVisualFingerprint(page) {
+  return page.evaluate((stageNos) => {
+    const cvs = document.createElement('canvas');
+    cvs.width = 1;
+    cvs.height = 1;
+    const ctx = cvs.getContext('2d', { willReadFrequently: true });
+    function normRgba(cssColor) {
+      if (!cssColor || cssColor === 'none' || cssColor === 'transparent') return [0, 0, 0, 0];
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.fillStyle = '#00000000';
+      ctx.fillStyle = cssColor;
+      ctx.fillRect(0, 0, 1, 1);
+      return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+    }
+
+    function boxesOverlap(a, b) {
+      const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+      const iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      return ix * iy > 1;
+    }
+
+    function computeRowCounts(rects) {
+      if (!rects.length) return [];
+      const sorted = rects.slice().sort((a, b) => a.y - b.y || a.x - b.x);
+      const rows = [];
+      for (const r of sorted) {
+        const last = rows[rows.length - 1];
+        if (last && Math.abs(r.y - last.y) <= 8) {
+          last.count++;
+        } else {
+          rows.push({ y: r.y, count: 1 });
+        }
+      }
+      return rows.map(r => r.count);
+    }
+
+    const slabs = {};
+    const targets = [];
+    const hero = document.querySelector('#visual-stage-container .exhibition-hero');
+    if (hero) targets.push(['hero', hero]);
+    for (const no of stageNos) {
+      const el = document.querySelector(`#visual-stage-container .exhibition-slab[data-stage-no="${no}"]`);
+      if (el) targets.push([`STAGE_${no}`, el]);
+    }
+
+    for (const [key, slab] of targets) {
+      const sr = slab.getBoundingClientRect();
+      const scs = getComputedStyle(slab);
+      const entry = {
+        w: Math.round(sr.width),
+        h: Math.round(sr.height),
+        bg: normRgba(scs.backgroundColor),
+        overflowCount: 0,
+        overlapCount: 0
+      };
+
+      const itemEls = Array.from(slab.querySelectorAll('.vs-points > li, .vs-steps > li, .vs-glossary > dt'));
+      if (itemEls.length > 0) {
+        const itemRects = itemEls.map(el => {
+          const r = el.getBoundingClientRect();
+          return {
+            x: Math.round(r.left - sr.left),
+            y: Math.round(r.top - sr.top),
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+            _raw: r
+          };
+        });
+        entry.rowCounts = computeRowCounts(itemRects);
+        entry.items = itemRects.map(({ x, y, w, h }) => ({ x, y, w, h }));
+
+        const siblings = Array.from(slab.querySelectorAll('.vs-points > li, .vs-steps > li'));
+        for (let i = 0; i < siblings.length; i++) {
+          const ra = siblings[i].getBoundingClientRect();
+          for (let j = i + 1; j < siblings.length; j++) {
+            const rb = siblings[j].getBoundingClientRect();
+            if (boxesOverlap(ra, rb)) entry.overlapCount++;
+          }
+        }
+      }
+
+      const badge = slab.querySelector('.exhibition-stage-badge');
+      const heading = slab.querySelector('h1, h2');
+      if (badge && heading) {
+        const br = badge.getBoundingClientRect();
+        const hr = heading.getBoundingClientRect();
+        if (boxesOverlap(br, hr)) entry.overlapCount++;
+        const bcs = getComputedStyle(badge);
+        entry.badge = { bg: normRgba(bcs.backgroundColor), color: normRgba(bcs.color) };
+      }
+      if (heading) {
+        const hcs = getComputedStyle(heading);
+        entry.heading = {
+          color: normRgba(hcs.color),
+          fontSize: Math.round(parseFloat(hcs.fontSize)),
+          fontWeight: hcs.fontWeight
+        };
+      }
+
+      const firstCard = slab.querySelector('.vs-points > li');
+      if (firstCard) {
+        const ccs = getComputedStyle(firstCard);
+        entry.card = { bg: normRgba(ccs.backgroundColor), borderTop: normRgba(ccs.borderTopColor) };
+      }
+      const pre = slab.querySelector('pre');
+      if (pre) {
+        const pcs = getComputedStyle(pre);
+        entry.code = { bg: normRgba(pcs.backgroundColor), border: normRgba(pcs.borderTopColor) };
+      }
+      const th = slab.querySelector('table thead th');
+      if (th) {
+        const tcs = getComputedStyle(th);
+        entry.th = { borderBottom: normRgba(tcs.borderBottomColor) };
+      }
+
+      const maskTarget = slab.querySelector('.exhibition-hero-emblem, .vs-card-ornament, .vs-step-chevron');
+      if (maskTarget) {
+        const mcs = getComputedStyle(maskTarget);
+        const maskVal = mcs.maskImage || mcs.webkitMaskImage || 'none';
+        entry.hasMask = maskVal !== 'none';
+      } else if (slab.querySelector('blockquote.vs-quote')) {
+        const qcs = getComputedStyle(slab.querySelector('blockquote.vs-quote'), '::before');
+        const maskVal = qcs.maskImage || qcs.webkitMaskImage || 'none';
+        entry.hasMask = maskVal !== 'none';
+      }
+
+      const children = Array.from(slab.children).filter(c => {
+        const cs = getComputedStyle(c);
+        return cs.display !== 'none' && cs.position !== 'absolute';
+      });
+      for (const ch of children) {
+        const cr = ch.getBoundingClientRect();
+        if (cr.width > 0 && cr.height > 0) {
+          if (cr.right > sr.right + 1 || cr.bottom > sr.bottom + 1) {
+            entry.overflowCount++;
+          }
+        }
+      }
+
+      slabs[key] = entry;
+    }
+    return slabs;
+  }, TARGET_STAGE_NOS);
+}
+
+function diffFingerprints(baseline, current) {
+  const diffs = [];
+  for (const [modeKey, baseSlabs] of Object.entries(baseline)) {
+    const curSlabs = current[modeKey];
+    if (!curSlabs) {
+      diffs.push(`[${modeKey}] missing mode snapshot`);
+      continue;
+    }
+    for (const [slabKey, b] of Object.entries(baseSlabs)) {
+      const c = curSlabs[slabKey];
+      if (!c) {
+        diffs.push(`[${modeKey} / ${slabKey}] missing slab`);
+        continue;
+      }
+      if (c.overflowCount !== 0) diffs.push(`[${modeKey} / ${slabKey}] overflowCount=${c.overflowCount}`);
+      if (c.overlapCount !== 0) diffs.push(`[${modeKey} / ${slabKey}] overlapCount=${c.overlapCount}`);
+      if (JSON.stringify(b.rowCounts || []) !== JSON.stringify(c.rowCounts || [])) {
+        diffs.push(`[${modeKey} / ${slabKey}] rowCounts expected ${JSON.stringify(b.rowCounts)} got ${JSON.stringify(c.rowCounts)}`);
+      }
+      if (Boolean(b.hasMask) !== Boolean(c.hasMask)) {
+        diffs.push(`[${modeKey} / ${slabKey}] hasMask expected ${b.hasMask} got ${c.hasMask}`);
+      }
+      const hTol = Math.max(4, Math.round(b.h * 0.01));
+      if (Math.abs(b.w - c.w) > 4 || Math.abs(b.h - c.h) > hTol) {
+        diffs.push(`[${modeKey} / ${slabKey}] size expected ${b.w}x${b.h} got ${c.w}x${c.h}`);
+      }
+      const checkRgba = (label, ba, ca) => {
+        if (!ba || !ca) return;
+        for (let i = 0; i < 4; i++) {
+          if (Math.abs(ba[i] - ca[i]) > 3) {
+            diffs.push(`[${modeKey} / ${slabKey} / ${label}] rgba[${i}] expected ${ba[i]} got ${ca[i]}`);
+            break;
+          }
+        }
+      };
+      checkRgba('bg', b.bg, c.bg);
+      if (b.badge && c.badge) {
+        checkRgba('badge.bg', b.badge.bg, c.badge.bg);
+        checkRgba('badge.color', b.badge.color, c.badge.color);
+      }
+      if (b.heading && c.heading) {
+        checkRgba('heading.color', b.heading.color, c.heading.color);
+        if (Math.abs(b.heading.fontSize - c.heading.fontSize) > 4) {
+          diffs.push(`[${modeKey} / ${slabKey} / heading.fontSize] expected ${b.heading.fontSize} got ${c.heading.fontSize}`);
+        }
+        if (String(b.heading.fontWeight) !== String(c.heading.fontWeight)) {
+          diffs.push(`[${modeKey} / ${slabKey} / heading.fontWeight] expected ${b.heading.fontWeight} got ${c.heading.fontWeight}`);
+        }
+      }
+      if (b.card && c.card) {
+        checkRgba('card.bg', b.card.bg, c.card.bg);
+        checkRgba('card.borderTop', b.card.borderTop, c.card.borderTop);
+      }
+      if (b.code && c.code) {
+        checkRgba('code.bg', b.code.bg, c.code.bg);
+        checkRgba('code.border', b.code.border, c.code.border);
+      }
+      if (b.th && c.th) {
+        checkRgba('th.borderBottom', b.th.borderBottom, c.th.borderBottom);
+      }
+    }
+  }
+  return diffs;
+}
+
+async function testVisualBaseline(browser) {
+  const page = await openStagePage(browser, { viewport: { width: 1400, height: 900 } });
+  const visualSampleMd = fs.readFileSync(path.join(APP_DIR, 'samples', 'visual-sample.md'), 'utf8');
+  await setDocument(page, visualSampleMd);
+
+  const current = {};
+  for (const viewMode of ['canvas', 'split']) {
+    await page.click(`.view-mode-btn[data-view-mode="${viewMode}"]`);
+    await waitRendered(page);
+    for (const style of VISUAL_STYLES) {
+      for (const appearance of ['light', 'dark']) {
+        await setMode(page, { style, appearance });
+        current[`${viewMode}-${style}-${appearance}`] = await extractVisualFingerprint(page);
+      }
+    }
+  }
+
+  if (process.env.UPDATE_VISUAL_BASELINE === '1') {
+    fs.writeFileSync(BASELINE_PATH, JSON.stringify(current, null, 2) + '\n', 'utf8');
+    record('TC-VTPL-041', true, `Updated visual baseline (${Object.keys(current).length} views)`);
+  } else if (!fs.existsSync(BASELINE_PATH)) {
+    record('TC-VTPL-041', false, 'tests/visual-baseline.json not found; run npm run test:update-baseline');
+  } else {
+    const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+    const diffs = diffFingerprints(baseline, current);
+    record('TC-VTPL-041', diffs.length === 0, diffs.length === 0 ? `Matched ${Object.keys(current).length} views` : JSON.stringify(diffs.slice(0, 20)));
+  }
+
+  await page.context().close();
+}
+
 module.exports = {
   testDiagramScaleModes,
   testVisualStageQuality,
   testVisualTemplates,
+  testVisualBaseline,
   testCoverAndTables,
   testCalloutsGlossaryPrint
 };

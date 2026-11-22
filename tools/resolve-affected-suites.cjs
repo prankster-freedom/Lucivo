@@ -119,7 +119,7 @@ const DIRECT_SUITE_MAP = [
   },
   {
     match: /^src\/ts\/ui\/(?:visual-stage|slab-export)\.ts$|^src\/css\/visual-.*\.css$|^src\/css\/print\.css$/,
-    suites: () => ['testVisualStageQuality', 'testVisualTemplates', 'testCoverAndTables', 'testCalloutsGlossaryPrint']
+    suites: () => ['testVisualStageQuality', 'testVisualTemplates', 'testVisualBaseline', 'testCoverAndTables', 'testCalloutsGlossaryPrint']
   }
 ];
 

@@ -1,0 +1,8266 @@
+{
+  "canvas-shapes-light": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 713,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          226,
+          149,
+          120,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          247,
+          245,
+          245,
+          255
+        ],
+        "border": [
+          228,
+          212,
+          211,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "canvas-shapes-dark": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 713,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "canvas-cards-light": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 790,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          226,
+          149,
+          120,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          247,
+          245,
+          245,
+          255
+        ],
+        "border": [
+          228,
+          212,
+          211,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  },
+  "canvas-cards-dark": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 790,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  },
+  "canvas-circles-light": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 713,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          212,
+          93,
+          83,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          247,
+          242,
+          243,
+          255
+        ],
+        "border": [
+          227,
+          200,
+          201,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "canvas-circles-dark": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 713,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "canvas-editorial-light": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 713,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          214,
+          140,
+          140,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          247,
+          244,
+          246,
+          255
+        ],
+        "border": [
+          225,
+          210,
+          215,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  },
+  "canvas-editorial-dark": {
+    "hero": {
+      "w": 992,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 992,
+      "h": 297,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 992,
+      "h": 406,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        },
+        {
+          "x": 343,
+          "y": 153,
+          "w": 305,
+          "h": 223
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 992,
+      "h": 510,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 266,
+          "y": 176,
+          "w": 225,
+          "h": 304
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        },
+        {
+          "x": 740,
+          "y": 180,
+          "w": 220,
+          "h": 297
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 992,
+      "h": 355,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 269,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 504,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        },
+        {
+          "x": 740,
+          "y": 160,
+          "w": 220,
+          "h": 162
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 992,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 992,
+      "h": 713,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 992,
+      "h": 493,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 992,
+      "h": 1745,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 992,
+      "h": 1226,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 992,
+      "h": 377,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 347,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        },
+        {
+          "x": 661,
+          "y": 156,
+          "w": 298,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 992,
+      "h": 403,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        },
+        {
+          "x": 504,
+          "y": 180,
+          "w": 455,
+          "h": 190
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 992,
+      "h": 586,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 992,
+      "h": 527,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  },
+  "split-shapes-light": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 381,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 742,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2230,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          226,
+          149,
+          120,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          247,
+          245,
+          245,
+          255
+        ],
+        "border": [
+          228,
+          212,
+          211,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 430,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "split-shapes-dark": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 381,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 742,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2230,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 430,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "split-cards-light": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 381,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 800,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2240,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          226,
+          149,
+          120,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          247,
+          245,
+          245,
+          255
+        ],
+        "border": [
+          228,
+          212,
+          211,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 430,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  },
+  "split-cards-dark": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 381,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 800,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2240,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 430,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 180,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  },
+  "split-circles-light": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 381,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 742,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2230,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          212,
+          93,
+          83,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          247,
+          242,
+          243,
+          255
+        ],
+        "border": [
+          227,
+          200,
+          201,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 460,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "split-circles-dark": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 381,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 160,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 742,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2230,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 460,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "800"
+      }
+    }
+  },
+  "split-editorial-light": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 411,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 742,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2260,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          214,
+          140,
+          140,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          247,
+          244,
+          246,
+          255
+        ],
+        "border": [
+          225,
+          210,
+          215,
+          255
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 460,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          248,
+          250,
+          253,
+          209
+        ],
+        "borderTop": [
+          226,
+          232,
+          240,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  },
+  "split-editorial-dark": {
+    "hero": {
+      "w": 754,
+      "h": 540,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 42,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_01": {
+      "w": 754,
+      "h": 337,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_03": {
+      "w": 754,
+      "h": 457,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        },
+        {
+          "x": 265,
+          "y": 177,
+          "w": 224,
+          "h": 250
+        },
+        {
+          "x": 502,
+          "y": 180,
+          "w": 219,
+          "h": 244
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_04": {
+      "w": 754,
+      "h": 629,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2,
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 204,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 381,
+          "y": 202,
+          "w": 344,
+          "h": 193
+        },
+        {
+          "x": 33,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 408,
+          "w": 336,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_06": {
+      "w": 754,
+      "h": 411,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        4
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 209,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 385,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        },
+        {
+          "x": 561,
+          "y": 190,
+          "w": 160,
+          "h": 188
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_08": {
+      "w": 754,
+      "h": 419,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "hasMask": true
+    },
+    "STAGE_09": {
+      "w": 754,
+      "h": 742,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_10": {
+      "w": 754,
+      "h": 547,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_12": {
+      "w": 754,
+      "h": 2260,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "th": {
+        "borderBottom": [
+          51,
+          65,
+          85,
+          255
+        ]
+      }
+    },
+    "STAGE_13": {
+      "w": 754,
+      "h": 1381,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "code": {
+        "bg": [
+          15,
+          23,
+          42,
+          255
+        ],
+        "border": [
+          147,
+          163,
+          183,
+          64
+        ]
+      }
+    },
+    "STAGE_14": {
+      "w": 754,
+      "h": 459,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        3
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 268,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        },
+        {
+          "x": 502,
+          "y": 210,
+          "w": 219,
+          "h": 216
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          16,
+          27,
+          143
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_15": {
+      "w": 754,
+      "h": 460,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "rowCounts": [
+        2
+      ],
+      "items": [
+        {
+          "x": 33,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        },
+        {
+          "x": 385,
+          "y": 210,
+          "w": 336,
+          "h": 217
+        }
+      ],
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      },
+      "card": {
+        "bg": [
+          11,
+          15,
+          26,
+          117
+        ],
+        "borderTop": [
+          51,
+          65,
+          85,
+          255
+        ]
+      },
+      "hasMask": true
+    },
+    "STAGE_16": {
+      "w": 754,
+      "h": 776,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    },
+    "STAGE_17": {
+      "w": 754,
+      "h": 599,
+      "bg": [
+        22,
+        31,
+        48,
+        255
+      ],
+      "overflowCount": 0,
+      "overlapCount": 0,
+      "heading": {
+        "color": [
+          248,
+          250,
+          252,
+          255
+        ],
+        "fontSize": 20,
+        "fontWeight": "700"
+      }
+    }
+  }
+}
