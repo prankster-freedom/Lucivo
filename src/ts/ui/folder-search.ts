@@ -4,6 +4,7 @@ import { decodeMarkdown } from '../utils/text-decode';
 import { escapeHtml } from '../utils/escape';
 import { state, runtime } from './state';
 import { scrollBehavior, previewScrollTopOf, lineStartOffset, measureEditorLineTop } from './editor-follow';
+import { t } from '../i18n';
 
 export const SEARCH_MAX_TOTAL_MATCHES = 200;
 export const SEARCH_MAX_MATCHES_PER_FILE = 30;
@@ -389,7 +390,7 @@ export async function runFolderSearch(
   listEl.classList.add('hidden');
   resultsEl.classList.remove('hidden');
   statusEl.classList.remove('hidden');
-  statusEl.textContent = '検索中…';
+  statusEl.textContent = t('search.searching');
 
   const filesToScan = folder.isRemote
     ? folder.files.slice(0, REMOTE_SEARCH_FILE_LIMIT)
@@ -413,7 +414,7 @@ export async function runFolderSearch(
       fileResults.push(res);
     }
     if ((i + 1) % 25 === 0) {
-      statusEl.textContent = `検索中… (${i + 1} / ${filesToScan.length} ファイル)`;
+      statusEl.textContent = t('search.searchingProgress', { current: i + 1, total: filesToScan.length });
       await new Promise(r => setTimeout(r, 0));
     }
   }
@@ -422,19 +423,19 @@ export async function runFolderSearch(
 
   resultsEl.replaceChildren();
   const remoteNote = folder.isRemote && folder.files.length > REMOTE_SEARCH_FILE_LIMIT
-    ? `（先頭 ${REMOTE_SEARCH_FILE_LIMIT} ファイル対象）`
+    ? t('search.remoteLimitNote', { limit: REMOTE_SEARCH_FILE_LIMIT })
     : '';
 
   if (fileResults.length === 0) {
-    statusEl.textContent = `0 件${remoteNote}`;
+    statusEl.textContent = t('search.zeroMatches', { note: remoteNote });
     const empty = document.createElement('p');
     empty.className = 'folder-list-empty';
-    empty.textContent = `「${query}」に一致する箇所はありません`;
+    empty.textContent = t('search.noMatchesDetail', { query });
     resultsEl.appendChild(empty);
     return;
   }
 
-  statusEl.textContent = `${matchedFiles} ファイル・${totalMatches} 件一致${remoteNote}`;
+  statusEl.textContent = t('search.matchSummary', { files: matchedFiles, matches: totalMatches, note: remoteNote });
 
   let renderedCount = 0;
   for (const fRes of fileResults) {
@@ -459,7 +460,7 @@ export async function runFolderSearch(
       btn.className = 'folder-search-item';
       btn.dataset.path = m.path;
       btn.dataset.line = String(m.line);
-      btn.title = `${m.path} (${m.line + 1} 行目)`;
+      btn.title = t('search.lineTitle', { path: m.path, line: m.line + 1 });
 
       const head = document.createElement('div');
       head.className = 'folder-search-item-head';

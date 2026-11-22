@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { escapeHtml } from '../utils/escape';
+import { t } from '../i18n';
 
 // GFM の脚注（FR-057、DD-MD-060〜063）。`[^label]` を番号つきの上付きの参照に、`[^label]: 本文` を脚注の一覧にする。
 // 拡張は marked の自前の拡張として持つ（外部の拡張を同梱せずに、オフラインで動かすため）。
@@ -48,7 +49,7 @@ export const footnoteRefExtension = {
   },
   renderer(token) {
     if (!token.num) return escapeHtml(token.raw);
-    return `<sup class="fn-ref"><a href="#fn-${token.num}-${token.seg}" id="fnref-${token.num}-${token.occ}" aria-label="脚注 ${token.num}">${token.num}</a></sup>`;
+    return `<sup class="fn-ref"><a href="#fn-${token.num}-${token.seg}" id="fnref-${token.num}-${token.occ}" aria-label="${escapeHtml(t('render.footnoteRefAria', { num: token.num }))}">${token.num}</a></sup>`;
   }
 };
 
@@ -105,9 +106,9 @@ export function applyFootnotes(tokens, splitAtH2) {
       const def = ctx.defs.get(id);
       const num = numbers.get(id);
       const text = marked.parser([{ type: 'paragraph', raw: def.text, text: def.text, tokens: def.tokens }]).replace(/^<p>|<\/p>\s*$/g, '');
-      return `<div class="fn-item" id="fn-${num}-${segIndex}"><span class="fn-num">${num}</span><span class="fn-text">${text}</span><a class="fn-back" href="#fnref-${num}-${firstOcc.get(`${segIndex}:${id}`)}" aria-label="本文へ戻る">↩</a></div>`;
+      return `<div class="fn-item" id="fn-${num}-${segIndex}"><span class="fn-num">${num}</span><span class="fn-text">${text}</span><a class="fn-back" href="#fnref-${num}-${firstOcc.get(`${segIndex}:${id}`)}" aria-label="${escapeHtml(t('render.footnoteBackAria'))}">↩</a></div>`;
     }).join('');
-    const html = `<div class="lucivo-footnotes" role="doc-endnotes" aria-label="脚注">${items}</div>\n`;
+    const html = `<div class="lucivo-footnotes" role="doc-endnotes" aria-label="${escapeHtml(t('render.footnotesAria'))}">${items}</div>\n`;
     return { type: 'html', raw: html, text: html, __isFootnotes: true };
   };
 

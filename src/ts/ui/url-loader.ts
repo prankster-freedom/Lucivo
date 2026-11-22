@@ -2,7 +2,7 @@
 // パラメータが指定されていない通常起動では外部通信を行わない（NFR-008）
 
 const FETCH_TIMEOUT_MS = 10000;
-const MANAGED_PARAM_KEYS = ['url', 'mode', 'theme', 'style', 'tone', 'view', 'layout'];
+const MANAGED_PARAM_KEYS = ['url', 'mode', 'theme', 'style', 'tone', 'view', 'layout', 'lang'];
 
 export interface DisplayStateSnapshot {
   isVisualMode: boolean;
@@ -11,6 +11,7 @@ export interface DisplayStateSnapshot {
   tone: string;
   viewMode: string;
   visualLayout?: string;
+  lang?: 'ja' | 'en';
 }
 
 export interface DisplayStateParams {
@@ -20,6 +21,7 @@ export interface DisplayStateParams {
   tone?: string;
   viewMode?: 'split' | 'canvas' | 'editor';
   visualLayout?: 'page' | 'single';
+  lang?: 'ja' | 'en';
 }
 
 function getMergedParam(searchParams: URLSearchParams, hashParams: URLSearchParams, key: string): string | null {
@@ -86,6 +88,11 @@ export function parseDisplayStateParams(
   if (layout === 'single' || layout === 'page') {
     result.visualLayout = layout;
     if (layout === 'single' && result.isVisualMode === undefined) result.isVisualMode = true;
+  }
+
+  const lang = getMergedParam(searchParams, hashParams, 'lang')?.toLowerCase();
+  if (lang === 'ja' || lang === 'en') {
+    result.lang = lang;
   }
 
   return result;
@@ -280,6 +287,12 @@ export function buildAppUrlWithState(
     next.searchParams.set('layout', 'single');
   } else {
     next.searchParams.delete('layout');
+  }
+
+  if (displayState.lang === 'en') {
+    next.searchParams.set('lang', 'en');
+  } else if (displayState.lang === 'ja') {
+    next.searchParams.delete('lang');
   }
 
   // 旧ハッシュ形式のパラメータが混在している場合は、管理対象のキーのみハッシュから取り除く

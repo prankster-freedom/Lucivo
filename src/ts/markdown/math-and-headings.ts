@@ -4,6 +4,7 @@ import { fnv1aHash } from '../utils/hash';
 import { treeTokenFor } from './tree';
 import { MATH_PLOT_BOX, getTexPlotSpec, getCachedMathPlotDataUrl } from '../math/plot';
 import { state, mathCache, loadLibrary } from '../ui/state';
+import { t } from '../i18n';
 
 // 置き場所の中身は TeX の原文。KaTeX を読み込めない場合は原文がそのまま表示される（DD-MATH-012, 022）
 export function mathPlaceholder(tag, tex, isDisplay, raw) {
@@ -87,7 +88,7 @@ export function renderMath(container) {
     if (plotSpec) {
       const dataUrl = getCachedMathPlotDataUrl(plotSpec, isDisplay, state.infographicStyle, state.appearance, tex);
       const box = isDisplay ? MATH_PLOT_BOX.block : MATH_PLOT_BOX.inline;
-      const aria = `関数の補足グラフ: ${plotSpec.fns.map(f => f.label).join(', ')}`;
+      const aria = t('render.mathPlotAria', { labels: plotSpec.fns.map(f => f.label).join(', ') });
       el.classList.add('has-math-plot', isDisplay ? 'is-block-plot' : 'is-inline-plot');
       const tag = isDisplay ? 'div' : 'span';
       el.innerHTML = `<${tag} class="vs-math-formula">${katexHtml}</${tag}>`

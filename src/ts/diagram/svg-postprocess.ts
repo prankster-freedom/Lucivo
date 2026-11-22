@@ -3,6 +3,7 @@ import { hexToRgba } from '../utils/color';
 import { escapeHtml } from '../utils/escape';
 import { scopeSvgIds } from './scope';
 import { scalePickerHtml } from './scale-mode';
+import { t } from '../i18n';
 import { fitTwoColMath } from '../markdown/math-and-headings';
 import {
   NODE_DECORATED_TYPES,
@@ -342,8 +343,8 @@ export function createDiagramFrameHtml(index: number, isVisual: boolean, curve: 
   const viewportClass = isVisual ? 'exhibition-viewport' : 'diagram-viewport';
   const badgeLabel = isVisual ? `INFOGRAPHIC // 0${index + 1}` : `DIAGRAM 0${index + 1}`;
   const curvePicker = curve
-    ? `<div class="pill-container mr-1.5" role="group" aria-label="矢印の形状">${Object.entries(CURVE_LABELS).map(([key, label]) =>
-        `<button type="button" data-curve="${key}" data-index="${index}" aria-pressed="${key === curve}" class="edge-curve-btn pill-btn text-[10px]${key === curve ? ' is-active' : ''}">${label}</button>`).join('')}</div>`
+    ? `<div class="pill-container mr-1.5" role="group" aria-label="${t('curve.groupAria')}">${Object.keys(CURVE_LABELS).map(key =>
+        `<button type="button" data-curve="${key}" data-index="${index}" aria-pressed="${key === curve}" class="edge-curve-btn pill-btn text-[10px]${key === curve ? ' is-active' : ''}">${t(`curve.${key}` as any)}</button>`).join('')}</div>`
     : '';
 
   return `<div id="diagram-frame-${index}" class="${cardClass} lucivo-slot" data-slot="${index}"><div class="${headerClass}"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full ${isVisual ? 'bg-amber-500 shadow-sm' : 'bg-blue-500'}"></span><span class="font-mono text-[11px] font-bold tracking-wider" style="color: var(--text-primary);">${badgeLabel}</span></div><div class="flex items-center gap-1">${curvePicker}${scalePickerHtml(index)}<button type="button" data-action="png" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">PNG</button><button type="button" data-action="svg" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">SVG</button><button type="button" data-action="zoom" data-index="${index}" class="text-[11px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer">Expand</button></div></div><div class="${viewportClass} is-scale-fit" data-stage-index="${index}"></div></div>`;

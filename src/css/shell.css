@@ -584,7 +584,55 @@ body[data-appearance="light"] .brand-mark-dark {
   color: var(--text-secondary);
   font-size: 0.875rem;
   max-width: 44rem;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1rem;
+}
+.info-style-btn {
+  white-space: nowrap;
+}
+/* 起動画面の同梱サンプルリンク（FR-007, FR-067, DTP-005） */
+.empty-guide-samples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 auto 1.35rem;
+  max-width: 44rem;
+}
+.empty-guide-samples-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-right: 0.15rem;
+}
+.empty-guide-sample-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.empty-guide-sample-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 8%, var(--panel-sub));
+}
+.empty-guide-sample-btn-featured {
+  border-color: color-mix(in oklab, var(--accent) 42%, var(--border-subtle));
+  color: var(--text-primary);
+}
+.empty-guide-sample-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 .empty-guide-modes {
   display: grid;

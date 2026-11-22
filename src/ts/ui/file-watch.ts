@@ -3,6 +3,7 @@
 // 未編集ならスクロール位置を保って自動反映、編集中なら上書きせず通知バーで「読み込み直す」を案内する。
 import { isModalOpen, runtime, setModalOpen } from './state';
 import { showToast } from './toast';
+import { t } from '../i18n';
 
 export const AUTO_RELOAD_KEY = 'lucivo.autoReloadOnChange';
 const POLL_INTERVAL_MS = 2000;
@@ -50,13 +51,13 @@ export function hideExternalUpdateBanner(): void {
 function showExternalUpdateBanner(fileName: string): void {
   const banner = document.getElementById('external-update-banner');
   const label = document.getElementById('external-update-message');
-  if (label) label.textContent = `「${fileName}」が外部で更新されました（編集中のため自動反映を保留しています）`;
+  if (label) label.textContent = t('external.bannerHeld', { name: fileName });
   if (banner) banner.classList.remove('hidden');
 }
 
 function showExternalConflictModal(fileName: string): void {
   const msg = document.getElementById('external-conflict-message');
-  if (msg) msg.textContent = `「${fileName}」が外部で更新されました。Lucivo 上で編集中の内容があります。どうしますか？`;
+  if (msg) msg.textContent = t('external.conflictMessage', { name: fileName });
   if (!isModalOpen('external-conflict-modal')) {
     setModalOpen('external-conflict-modal', true);
   }
@@ -84,11 +85,11 @@ export async function reloadWatchedFile(): Promise<boolean> {
     target.size = file.size;
     await target.onReload(file);
     hideExternalUpdateBanner();
-    showToast(`「${target.fileName}」を読み込み直しました`);
+    showToast(t('external.reloadedToast', { name: target.fileName }));
     return true;
   } catch (err) {
     console.warn('Failed to reload watched file:', err);
-    showToast(`「${target.fileName}」を読み込み直せませんでした`);
+    showToast(t('external.reloadFailedToast', { name: target.fileName }));
     return false;
   }
 }
@@ -108,12 +109,12 @@ export async function checkWatchedFileNow(): Promise<boolean> {
     if (isDirty) {
       showExternalUpdateBanner(target.fileName);
       showExternalConflictModal(target.fileName);
-      showToast(`「${target.fileName}」が外部で更新されました（編集中のため確認待ち）`, 4000);
+      showToast(t('external.conflictToast', { name: target.fileName }), 4000);
       return true;
     }
     await target.onReload(file);
     hideExternalUpdateBanner();
-    showToast(`「${target.fileName}」の外部更新を反映しました`);
+    showToast(t('external.autoAppliedToast', { name: target.fileName }));
     return true;
   } catch (_) {
     // 権限切れや一時的な読み取り失敗では静かに待つ
@@ -129,7 +130,7 @@ export function setupFileWatch(): void {
     toggle.checked = isAutoReloadEnabled();
     toggle.addEventListener('change', () => {
       setAutoReloadEnabled(toggle.checked);
-      showToast(toggle.checked ? 'ローカルファイルの外部更新を自動で反映します' : 'ローカルファイルの外部更新の自動反映をオフにしました');
+      showToast(toggle.checked ? t('external.autoReloadOnToast') : t('external.autoReloadOffToast'));
     });
   }
   document.getElementById('btn-external-reload')?.addEventListener('click', () => {
@@ -141,7 +142,7 @@ export function setupFileWatch(): void {
   });
   const keepLocalEdits = () => {
     setModalOpen('external-conflict-modal', false);
-    if (activeTarget) showToast(`「${activeTarget.fileName}」の編集内容を維持しました`);
+    if (activeTarget) showToast(t('external.keptEditsToast', { name: activeTarget.fileName }));
   };
   document.getElementById('btn-close-external-conflict')?.addEventListener('click', keepLocalEdits);
   document.getElementById('btn-conflict-keep')?.addEventListener('click', keepLocalEdits);

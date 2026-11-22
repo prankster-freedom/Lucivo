@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { mixHex } from '../utils/color';
+import { t, getReadmeViewerUrl, type I18nKey } from '../i18n';
 export const APP_TITLE_SUFFIX = ' - Lucivo';
 export const DROPPABLE_FILE_PATTERN = /\.(md|markdown|txt)$/i;
 
@@ -452,36 +453,60 @@ export const README_VIEWER_URL = `https://prankster-freedom.github.io/Lucivo/pre
 export const REPOSITORY_LINK_ATTRS = `href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer"`;
 export const README_VIEWER_LINK_ATTRS = `href="${README_VIEWER_URL}" target="_blank" rel="noopener noreferrer"`;
 
-export const EMPTY_GUIDE_HTML = `
+export function getToneLabel(toneId = state.tone): string {
+  const key = `tone.${toneId}` as I18nKey;
+  const translated = t(key);
+  if (translated !== key) return translated;
+  return getToneEntry(toneId).label;
+}
+
+export function getLayoutLabel(layoutId = state.visualLayout): string {
+  return layoutId === 'single' ? t('layout.single') : t('layout.page');
+}
+
+export function getEmptyGuideHtml(): string {
+  const readmeAttrs = `href="${getReadmeViewerUrl()}" target="_blank" rel="noopener noreferrer"`;
+  const sampleIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5"/></svg>';
+  return `
 <div class="empty-guide">
   <div class="empty-guide-logo">
-    <a class="brand-link" ${README_VIEWER_LINK_ATTRS} title="Lucivo で README を開く（インターネットに接続します）">
-      <img class="brand-logo-light" src="./assets/logos/light/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —（公開リポジトリを開く）" width="264" height="72" />
-      <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —（公開リポジトリを開く）" width="264" height="72" />
+    <a class="brand-link" ${readmeAttrs} title="${t('brand.openReadmeTitle')}">
+      <img class="brand-logo-light" src="./assets/logos/light/logo_full.svg" alt="${t('brand.fullLogoAlt')}" width="264" height="72" />
+      <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="${t('brand.fullLogoAlt')}" width="264" height="72" />
     </a>
   </div>
-  <h3 class="empty-guide-title">Markdown を開いてください</h3>
-  <p class="empty-guide-desc">Markdown ファイルは、ウィンドウにドラッグ&ドロップするだけで簡単に開けます。別の文書へのリンクや画像を含む文書は、フォルダごとドラッグ&ドロップすれば、左の一覧から開けて、リンクと画像も表示できます。ヘッダーの「開く」メニューから「ファイルを開く…」や「フォルダを開く…」、同梱の <code>Visualモードサンプル (visual-sample.md)</code> / <code>記法サンプル (notation_sample.md)</code> をワンクリックで開くことも、左のエディタに直接入力することもできます。</p>
-  
+  <h3 class="empty-guide-title">${t('empty.title')}</h3>
+  <p class="empty-guide-desc">${t('empty.desc')}</p>
+
+  <div class="empty-guide-samples" role="group" aria-label="${t('menu.bundledSamples')}">
+    <span class="empty-guide-samples-label">${t('empty.samplesLabel')}</span>
+    <button type="button" class="empty-guide-sample-btn empty-guide-sample-btn-featured" data-empty-sample="visual-sample.md">${sampleIcon}<span>${t('sample.visual')}</span></button>
+    <button type="button" class="empty-guide-sample-btn" data-empty-sample="notation_sample.md">${sampleIcon}<span>${t('sample.notation')}</span></button>
+    <button type="button" class="empty-guide-sample-btn" data-empty-sample="notation_sample_extra1.md">${sampleIcon}<span>${t('sample.notationExtra')}</span></button>
+  </div>
+
   <div class="empty-guide-modes">
     <div class="empty-guide-card">
-      <h4><svg class="empty-guide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 3.5L6.5 13H12L10.5 20.5L17.5 11H12L13.5 3.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.14"/><path d="M3.5 8.5H6.5M3 15.5H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.5"/></svg><span>高速モード</span></h4>
-      <p>思考を邪魔しないミリ秒応答の軽快なプレビュー。仕様書の執筆や構造の確認に最適です。</p>
+      <h4><svg class="empty-guide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 3.5L6.5 13H12L10.5 20.5L17.5 11H12L13.5 3.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.14"/><path d="M3.5 8.5H6.5M3 15.5H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.5"/></svg><span>${t('empty.cardFastTitle')}</span></h4>
+      <p>${t('empty.cardFastDesc')}</p>
     </div>
     <div class="empty-guide-card empty-guide-card-featured">
-      <h4><svg class="empty-guide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="currentColor" stroke-width="1.75"/><path d="M7 9.5H12.5M7 13H10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><polygon points="16.5,8.5 19.2,12 16.5,15.5 13.8,12" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="currentColor" fill-opacity="0.22"/></svg><span>Visualモード (展示品質)</span></h4>
-      <p>講演資料や展示ブースの大画面で映えるプロ品質のインフォグラフィックへ瞬時に変換します。</p>
+      <h4><svg class="empty-guide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="currentColor" stroke-width="1.75"/><path d="M7 9.5H12.5M7 13H10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><polygon points="16.5,8.5 19.2,12 16.5,15.5 13.8,12" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="currentColor" fill-opacity="0.22"/></svg><span>${t('empty.cardVisualTitle')}</span></h4>
+      <p>${t('empty.cardVisualDesc')}</p>
     </div>
     <div class="empty-guide-card">
-      <h4><svg class="empty-guide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="12.5" rx="2.5" stroke="currentColor" stroke-width="1.75"/><path d="M10.25 8.25L14.75 10.5L10.25 12.75V8.25Z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 16.5V20M8.5 20H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg><span>ステージ発表 (発表モード)</span></h4>
-      <p>ヘッダーの「発表」ボタン（または <kbd class="kbd-key">P</kbd> キー）で全画面のプレゼンテーション舞台へ。章ごとのページ送り、光が伝わるシグナル・ライト、全シーン俯瞰 (Oキー)、光のポインター (Lキー)、幕間・質疑カーテン (B/Qキー)、自動進行ループ (Aキー) で魅せます。</p>
+      <h4><svg class="empty-guide-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="12.5" rx="2.5" stroke="currentColor" stroke-width="1.75"/><path d="M10.25 8.25L14.75 10.5L10.25 12.75V8.25Z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 16.5V20M8.5 20H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg><span>${t('empty.cardStageTitle')}</span></h4>
+      <p>${t('empty.cardStageDesc')}</p>
     </div>
   </div>
 
-  <p class="empty-guide-footer"><svg class="empty-guide-footer-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2V14M2 8H14" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-opacity="0.45"/><polygon points="8,3.2 9.4,6.6 12.8,8 9.4,9.4 8,12.8 6.6,9.4 3.2,8 6.6,6.6" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg><span>画面上部の <strong>[ 高速モード | Visualモード ]</strong> や <strong>[ 発表 ]</strong> ボタンからいつでもワンクリックで体験できます。キーボードの <kbd class="kbd-key">?</kbd> キーでショートカット一覧を表示できます。</span></p>
-  <p class="empty-guide-latest"><span class="empty-guide-latest-label">最新版はこちら</span>: <a class="empty-guide-latest-link" ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
-  <p class="empty-guide-update">Lucivo <span class="update-check-version"></span> <button type="button" class="btn-check-update" title="最新リリースを確認（インターネットに接続します）">更新を確認</button> <span class="update-check-result" role="status" aria-live="polite"></span></p>
+  <p class="empty-guide-footer"><svg class="empty-guide-footer-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2V14M2 8H14" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-opacity="0.45"/><polygon points="8,3.2 9.4,6.6 12.8,8 9.4,9.4 8,12.8 6.6,9.4 3.2,8 6.6,6.6" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/></svg><span>${t('empty.footer')}</span></p>
+  <p class="empty-guide-latest"><span class="empty-guide-latest-label">${t('update.latestHere')}</span>: <a class="empty-guide-latest-link" ${REPOSITORY_LINK_ATTRS}>github.com/prankster-freedom/Lucivo</a></p>
+  <p class="empty-guide-update">Lucivo <span class="update-check-version"></span> <button type="button" class="btn-check-update" title="${t('update.btnTitle')}">${t('update.btnLabel')}</button> <span class="update-check-result" role="status" aria-live="polite"></span></p>
 </div>`;
+}
+
+export const EMPTY_GUIDE_HTML = getEmptyGuideHtml();
 
 export const VISUAL_LAYOUTS = [
   { id: 'page', label: 'ページ単位', shortLabel: 'ページ単位', desc: '16:10 相当の章パネルで区切って表示' },

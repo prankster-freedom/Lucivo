@@ -19,9 +19,9 @@ interface ModeHost {
   toast(message: string): void;
   appearance(): 'dark' | 'light';
   setAppearance(appearance: 'dark' | 'light'): Promise<HTMLElement | null>;
+  lang?(): 'ja' | 'en';
 }
 
-const EMPTY_MESSAGE = 'ミュージアム・ウォークで見せる文書がありません';
 const APPEARANCE_KEY = 'lucivo-museum-walk-appearance';
 
 function loadAppearance(): 'dark' | 'light' {
@@ -147,16 +147,30 @@ function command(key: string): boolean {
   return true;
 }
 
-function buildChrome(root: HTMLElement): void {
+function isEnLang(host?: ModeHost | null): boolean {
+  if (host && typeof host.lang === 'function') return host.lang() === 'en';
+  return typeof document !== 'undefined' && document.documentElement.lang === 'en';
+}
+
+function emptyMessage(host?: ModeHost | null): string {
+  return isEnLang(host)
+    ? 'No document to show in Museum Walk'
+    : 'ミュージアム・ウォークで見せる文書がありません';
+}
+
+function buildChrome(root: HTMLElement, en: boolean): void {
   const hud = document.createElement('div');
   hud.className = 'mw-hud';
-  hud.innerHTML = '<span class="mw-hint-wide">スクロール・↑ ↓・スワイプで歩く ／ Ctrl+ホイール・+ - 近寄る ／ ドラッグで見回す ／ G 視線の自動 ／ T 明暗 ／ R 入口へ ／ Esc 終了</span>'
-    + '<span class="mw-hint-narrow">スワイプで歩く ・ ドラッグで見回す</span>';
+  hud.innerHTML = en
+    ? '<span class="mw-hint-wide">Scroll · ↑ ↓ · Swipe to walk / Ctrl+Wheel · + - Zoom / Drag to look / G Auto-gaze / T Theme / R Entrance / Esc Exit</span>'
+      + '<span class="mw-hint-narrow">Swipe to walk · Drag to look around</span>'
+    : '<span class="mw-hint-wide">スクロール・↑ ↓・スワイプで歩く ／ Ctrl+ホイール・+ - 近寄る ／ ドラッグで見回す ／ G 視線の自動 ／ T 明暗 ／ R 入口へ ／ Esc 終了</span>'
+      + '<span class="mw-hint-narrow">スワイプで歩く ・ ドラッグで見回す</span>';
   root.appendChild(hud);
   const close = document.createElement('button');
   close.type = 'button';
   close.className = 'mw-exit';
-  close.setAttribute('aria-label', 'ミュージアム・ウォークを終える');
+  close.setAttribute('aria-label', en ? 'Exit Museum Walk' : 'ミュージアム・ウォークを終える');
   close.textContent = '✕';
   close.addEventListener('click', () => exit());
   root.appendChild(close);
@@ -252,14 +266,17 @@ function buildPanel(root: HTMLElement): HTMLElement {
    ------------------------------------------------------------------------ */
 async function enter(host: ModeHost): Promise<boolean> {
   if (S.active || S.starting) return true;
+  const en = isEnLang(host);
   if (typeof window.matchMedia === 'function'
     && window.matchMedia('(pointer: coarse)').matches
     && Math.min(window.innerWidth, window.innerHeight) <= 768) {
-    host.toast('ミュージアム・ウォークは現在スマホでは利用できません（PC でご利用ください）');
+    host.toast(en
+      ? 'Museum Walk is currently unavailable on smartphones (please use on PC)'
+      : 'ミュージアム・ウォークは現在スマホでは利用できません（PC でご利用ください）');
     return false;
   }
   if (host.isDocumentEmpty()) {
-    host.toast(EMPTY_MESSAGE);
+    host.toast(emptyMessage(host));
     return false;
   }
   S.starting = true;
@@ -269,7 +286,7 @@ async function enter(host: ModeHost): Promise<boolean> {
   if (!outline || isOutlineEmpty(outline)) {
     S.starting = false;
     host.restoreView();
-    host.toast(EMPTY_MESSAGE);
+    host.toast(emptyMessage(host));
     return false;
   }
   const appearance = loadAppearance();
@@ -285,7 +302,7 @@ async function enter(host: ModeHost): Promise<boolean> {
   const root = document.createElement('div');
   root.id = 'museum-walk';
   root.setAttribute('role', 'application');
-  root.setAttribute('aria-label', 'ミュージアム・ウォーク');
+  root.setAttribute('aria-label', en ? 'Museum Walk' : 'ミュージアム・ウォーク');
   document.body.appendChild(root);
   document.documentElement.classList.add('is-museum-walk');
   S.root = root;
@@ -301,7 +318,7 @@ async function enter(host: ModeHost): Promise<boolean> {
   const initialFigs = outline.figures.map(svg => figureImages(svg));
   S.figuresByAppearance = { [appearance]: initialFigs };
   S.refs = buildWorld(root, S.plan, initialFigs, appearance);
-  buildChrome(root);
+  buildChrome(root, en);
   S.panel = /museum-tune/.test(location.search + location.hash) ? buildPanel(root) : null;
 
   S.cam = { z: S.plan.start, x: S.camera.x, y: elevationAt(S.plan, S.plan.start), yaw: 0, pitch: 0, userYaw: 0, vel: 0, bob: 0, zoom: 0, zoomTarget: 0, zoomPhase: 0, fov: S.camera.fov };

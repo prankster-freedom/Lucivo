@@ -1,4 +1,5 @@
 import { registerEscapeHandler } from '../ui/keymap';
+import { t, type I18nKey } from '../i18n';
 
 // 図の倍率（FR-005, DD-DIAG-045）。図のカードと Expand の画面で、同じ部品と同じ切替の処理を使う
 //   Fit  : 縦横が描画領域に収まる（scale-fit。既定）
@@ -9,13 +10,13 @@ import { registerEscapeHandler } from '../ui/keymap';
 
 export type ScaleAction = 'scale-fit' | 'scale-width' | 'scale-height' | 'scale-actual';
 
-const BUTTONS: Array<[ScaleAction, string, string]> = [
-  ['scale-fit', 'Fit', '縦横が描画領域に収まる'],
-  ['scale-width', '1:n', '横が描画領域に収まる']
+const BUTTONS: Array<[ScaleAction, string, I18nKey]> = [
+  ['scale-fit', 'Fit', 'scale.fitTitle'],
+  ['scale-width', '1:n', 'scale.widthTitle']
 ];
-const MENU_ITEMS: Array<[ScaleAction, string, string]> = [
-  ['scale-height', 'n:1', '縦が描画領域に収まる'],
-  ['scale-actual', '100%', '既定のサイズで描く']
+const MENU_ITEMS: Array<[ScaleAction, string, I18nKey]> = [
+  ['scale-height', 'n:1', 'scale.heightTitle'],
+  ['scale-actual', '100%', 'scale.actualTitle']
 ];
 const MORE_LABEL = '▾';
 
@@ -29,12 +30,12 @@ const VIEWPORT_CLASS: Record<ScaleAction, string> = {
 
 // index: 図のカードの番号。Expand の画面では空文字
 export function scalePickerHtml(index: number | string): string {
-  const btn = ([action, label, title]: [ScaleAction, string, string]) =>
-    `<button type="button" data-action="${action}" data-index="${index}" title="${title}" class="scale-btn pill-btn text-[10px]${action === 'scale-fit' ? ' is-active' : ''}">${label}</button>`;
-  const item = ([action, label, title]: [ScaleAction, string, string]) =>
-    `<button type="button" role="menuitemradio" aria-checked="false" data-action="${action}" data-index="${index}" title="${title}" class="scale-btn scale-menu-item">${label}</button>`;
-  return `<div class="pill-container scale-picker mr-1.5" role="group" aria-label="図の倍率">${BUTTONS.map(btn).join('')}`
-    + `<div class="scale-more"><button type="button" class="scale-more-toggle pill-btn text-[10px]" aria-haspopup="menu" aria-expanded="false" aria-label="その他の倍率（n:1・100%）">${MORE_LABEL}</button>`
+  const btn = ([action, label, titleKey]: [ScaleAction, string, I18nKey]) =>
+    `<button type="button" data-action="${action}" data-index="${index}" title="${t(titleKey)}" class="scale-btn pill-btn text-[10px]${action === 'scale-fit' ? ' is-active' : ''}">${label}</button>`;
+  const item = ([action, label, titleKey]: [ScaleAction, string, I18nKey]) =>
+    `<button type="button" role="menuitemradio" aria-checked="false" data-action="${action}" data-index="${index}" title="${t(titleKey)}" class="scale-btn scale-menu-item">${label}</button>`;
+  return `<div class="pill-container scale-picker mr-1.5" role="group" aria-label="${t('scale.groupAria')}">${BUTTONS.map(btn).join('')}`
+    + `<div class="scale-more"><button type="button" class="scale-more-toggle pill-btn text-[10px]" aria-haspopup="menu" aria-expanded="false" aria-label="${t('scale.moreAria')}">${MORE_LABEL}</button>`
     + `<div class="scale-menu" role="menu" hidden>${MENU_ITEMS.map(item).join('')}</div></div></div>`;
 }
 
