@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -77,38 +78,49 @@ jobs:
           rm -rf _site /tmp/lucivo-prod /tmp/lucivo-release
           mkdir -p _site _site/preview /tmp/lucivo-release
 
-          # 1. 本番（/）: 最新のタグからビルドし直す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-005）。
-          #    版の表記は、release.yml がタグの注釈に書いた "LUCIVO_VERSION: X.Y.Z (build id: <run_id>)" から読み、
-          #    GitHub Release の ZIP とビルド番号をそろえる。
-          #    注釈に版の表記がないタグ（lucivo-v0.9.2 以前）は、GitHub Release の Lucivo-v<版>.zip を展開する。
-          #    Pages の公開は毎回サイト全体を置き換えるため、Canary の公開のたびに本番も作り直す
-          PROD_BUILD_VERSION=""
-          if [ "$(git cat-file -t "refs/tags/${PROD_REF}" 2>/dev/null)" = "tag" ]; then
-            PROD_BUILD_VERSION="$(git for-each-ref "refs/tags/${PROD_REF}" --format='%(contents)' \
-              | sed -n 's/^LUCIVO_VERSION: *//p' | head -n 1)"
+          # 1. 本番（/）: まず Release ワークフローが保存した Web 版成果物の再利用を試み、
+          #    保存期限切れや古いタグで見つからない場合のみ、タグからビルドし直す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-005）。
+          WEB_ARTIFACT_RESTORED=false
+          if [[ "$PROD_REF" == lucivo-v* ]]; then
+            ARTIFACT_NAME="lucivo-web-prod-${PROD_REF}"
+            for RUN_ID in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml --status success --limit 20 --json databaseId -q '.[].databaseId'); do
+              if gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n "$ARTIFACT_NAME" -D _site 2>/dev/null; then
+                WEB_ARTIFACT_RESTORED=true
+                echo "Production: restored artifact ${ARTIFACT_NAME} from Release run ${RUN_ID}"
+                break
+              fi
+            done
           fi
 
-          if [ -n "$PROD_BUILD_VERSION" ]; then
-            echo "Production: tag build ${PROD_REF} -> ${PROD_BUILD_VERSION}"
-            git worktree add --detach /tmp/lucivo-prod "$PROD_REF"
-            (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_BUILD_VERSION" node tools/build-app.cjs --prod)
-            cp -R /tmp/lucivo-prod/public/. _site/
-            git worktree remove --force /tmp/lucivo-prod
-          else
-            ZIP_DIR="Lucivo-v${PROD_PKG_VER}"
-            ZIP_NAME="${ZIP_DIR}.zip"
-            rm -rf /tmp/lucivo-release && mkdir -p /tmp/lucivo-release
-            if gh release download "$PROD_REF" -p "$ZIP_NAME" -D /tmp/lucivo-release \
-              && unzip -oq "/tmp/lucivo-release/${ZIP_NAME}" -d /tmp/lucivo-release \
-              && [ -f "/tmp/lucivo-release/${ZIP_DIR}/index.html" ]; then
-              echo "Production: release artifact ${ZIP_NAME} from ${PROD_REF} (tag has no version annotation)"
-              cp -R "/tmp/lucivo-release/${ZIP_DIR}/." _site/
-            else
-              echo "Release artifact not found for ${PROD_REF}; falling back to tag build"
+          if [ "$WEB_ARTIFACT_RESTORED" = "false" ]; then
+            PROD_BUILD_VERSION=""
+            if [ "$(git cat-file -t "refs/tags/${PROD_REF}" 2>/dev/null)" = "tag" ]; then
+              PROD_BUILD_VERSION="$(git for-each-ref "refs/tags/${PROD_REF}" --format='%(contents)' \
+                | sed -n 's/^LUCIVO_VERSION: *//p' | head -n 1)"
+            fi
+
+            if [ -n "$PROD_BUILD_VERSION" ]; then
+              echo "Production: tag build ${PROD_REF} -> ${PROD_BUILD_VERSION}"
               git worktree add --detach /tmp/lucivo-prod "$PROD_REF"
-              (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_PKG_VER" node tools/build-app.cjs --prod)
+              (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_BUILD_VERSION" node tools/build-app.cjs --prod)
               cp -R /tmp/lucivo-prod/public/. _site/
               git worktree remove --force /tmp/lucivo-prod
+            else
+              ZIP_DIR="Lucivo-v${PROD_PKG_VER}"
+              ZIP_NAME="${ZIP_DIR}.zip"
+              rm -rf /tmp/lucivo-release && mkdir -p /tmp/lucivo-release
+              if gh release download "$PROD_REF" -p "$ZIP_NAME" -D /tmp/lucivo-release \
+                && unzip -oq "/tmp/lucivo-release/${ZIP_NAME}" -d /tmp/lucivo-release \
+                && [ -f "/tmp/lucivo-release/${ZIP_DIR}/index.html" ]; then
+                echo "Production: release artifact ${ZIP_NAME} from ${PROD_REF} (tag has no version annotation)"
+                cp -R "/tmp/lucivo-release/${ZIP_DIR}/." _site/
+              else
+                echo "Release artifact not found for ${PROD_REF}; falling back to tag build"
+                git worktree add --detach /tmp/lucivo-prod "$PROD_REF"
+                (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_PKG_VER" node tools/build-app.cjs --prod)
+                cp -R /tmp/lucivo-prod/public/. _site/
+                git worktree remove --force /tmp/lucivo-prod
+              fi
             fi
           fi
 
