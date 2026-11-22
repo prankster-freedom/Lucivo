@@ -1,6 +1,6 @@
 # リリースノート
 
-Lucivo の全版のリリースノートです。最新の 2 版は [README.md](README.md#リリースノート) にも載せています。
+Lucivo の全版のリリースノートです。最新の 2 版は [README.md](README.md#リリースノート) にも載せています。（[English](release-notes.en.md)）
 
 ## 0.13.0（2026-11-22）
 

@@ -19,6 +19,7 @@ tags: ["Lucivo", "テスト仕様"]
 | modes        | `MODE`, `SHOW`  | [modes/README.md](modes/README.md) | [modes/README.md](../3.sw_design_notes/features/modes/README.md) |
 | offline      | `OFF`           | [offline.md](offline.md)           | [offline.md](../3.sw_design_notes/features/offline.md)           |
 | performance  | `PERF`          | [performance.md](performance.md)   | [diagram-rendering.md](../3.sw_design_notes/features/diagram-rendering.md)、[math-rendering.md](../3.sw_design_notes/features/math-rendering.md) |
+| i18n         | `I18N`          | [i18n.md](i18n.md)                 | [2.ARCHITECTURE.md](../2.ARCHITECTURE.md#419-多言語対応i18nのアーキテクチャarc-i18n-001005fr-065067-nfr-001-nfr-008) |
 
 ## 実行方法
 
