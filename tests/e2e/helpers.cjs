@@ -29,10 +29,14 @@ const MODES = [
 const SHOWCASE_SCENES = 19;
 const sceneCount = n => `${String(n).padStart(2, '0')} / ${String(SHOWCASE_SCENES).padStart(2, '0')}`;
 
+// スイートは並列に流れるため、どのスイートの記録かを AsyncLocalStorage で引き継ぐ（tests/e2e.cjs が設定する）
+const { AsyncLocalStorage } = require('async_hooks');
+const suiteContext = new AsyncLocalStorage();
 const results = [];
 function record(id, ok, detail) {
-  results.push({ id, ok, detail });
-  console.log(`${ok ? 'PASS' : 'FAIL'} ${id} ${detail || ''}`);
+  const suite = suiteContext.getStore();
+  results.push({ id, ok, detail, suite });
+  console.log(`${ok ? 'PASS' : 'FAIL'} ${id} ${detail || ''}${suite ? ` [${suite}]` : ''}`);
 }
 
 async function openApp(browser) {
@@ -191,6 +195,7 @@ module.exports = {
   sceneCount,
   results,
   record,
+  suiteContext,
   openApp,
   waitRendered,
   formattedForLoad,

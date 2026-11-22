@@ -500,6 +500,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009'], fn: testMuseumWalk, timeoutMs: 180000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009'], fn: testMuseumWalk, timeoutMs: 180000, serial: true }
   ]
 };
