@@ -2,6 +2,7 @@
 import { downloadBlob } from '../utils/download';
 import { decodeMarkdown, normalizeText, isUtf8Family } from '../utils/text-decode';
 import { showToast, updateStatus } from './toast';
+import { getLang, setLang, t, resolveSampleFileName } from '../i18n';
 import { registerEscapeHandler } from './keymap';
 import { extractDroppedUrl } from './url-loader';
 import { watchFile, clearWatchedFile } from './file-watch';
@@ -36,6 +37,7 @@ import {
 export const HEADER_MENUS = [
   ['btn-file-menu', 'file-menu'],
   ['btn-save-menu', 'save-menu'],
+  ['btn-lang-menu', 'lang-menu'],
   ['btn-header-update', 'update-menu'],
   ['btn-mobile-file', 'mobile-file-menu'],
   ['btn-mobile-view', 'mobile-view-menu'],
@@ -56,7 +58,7 @@ export const closeFileMenu = closeHeaderMenus;
 export function confirmDiscardEdits(fileName) {
   const editor = document.getElementById('markdown-editor');
   if (editor.value === runtime.lastLoadedMarkdown) return true;
-  return window.confirm(`編集中の内容は失われます。「${fileName}」を読み込みますか？`);
+  return window.confirm(t('file.confirmDiscard', { name: fileName }));
 }
 
 // folderPath: フォルダから開いたときの、フォルダの中のパス（例: docs/a.md）。相対パスの画像の基準にする（DD-FILE-075）
@@ -95,10 +97,10 @@ export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSamp
   runtime.followedKey = null;
   if (opts.silentToast) return;
   // UTF-8 以外で読んだときは、何として読んだかと、保存すると UTF-8 になることを知らせる（DD-FILE-083）
-  const formatNote = formatted && formatted.changed ? `。${formatSummary(formatted)}を整えました` : '';
+  const formatNote = formatted && formatted.changed ? t('file.formatNote', { summary: formatSummary(formatted) }) : '';
   showToast(isUtf8Family(encoding)
-    ? `「${fileName}」を読み込みました${formatNote}`
-    : `「${fileName}」を ${encoding} として読み込みました（保存は UTF-8 になります）${formatNote}`);
+    ? t('file.loadedToast', { name: fileName, formatNote })
+    : t('file.loadedEncodingToast', { name: fileName, encoding, formatNote }));
 }
 
 /* ==========================================================================
@@ -124,9 +126,9 @@ export function setFormatOnLoadEnabled(enabled) {
 
 export function formatSummary(result) {
   const parts = [];
-  if (result.fixes > 0) parts.push(`記法 ${result.fixes} か所`);
-  if (result.tables > 0) parts.push(`表 ${result.tables} 個`);
-  return parts.length ? parts.join('と') : '空白';
+  if (result.fixes > 0) parts.push(t('file.formatFixes', { count: result.fixes }));
+  if (result.tables > 0) parts.push(t('file.formatTables', { count: result.tables }));
+  return parts.length ? parts.join(t('file.formatJoin')) : t('file.formatWhitespace');
 }
 
 // 文書を整える。整形の部品を読み込めないとき・失敗したときは、元の文書のまま返す（読み込みは止めない）
@@ -153,17 +155,17 @@ export async function formatCurrentDocument() {
   const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement;
   const result = await formatMarkdown(editor.value);
   if (!result) {
-    showToast('Markdown を整えられませんでした');
+    showToast(t('file.formatFailedToast'));
     return;
   }
   if (!result.changed) {
-    showToast('整える箇所はありませんでした');
+    showToast(t('file.formatNoChangeToast'));
     return;
   }
   editor.value = result.text;
   clearTimeout(runtime.renderDebounceTimer);
   runtime.renderApp();
-  showToast(`${formatSummary(result)}を整えました（保存すると反映されます）`);
+  showToast(t('file.formatAppliedToast', { summary: formatSummary(result) }));
 }
 
 export function setupFormatter() {
@@ -172,7 +174,7 @@ export function setupFormatter() {
     toggle.checked = isFormatOnLoadEnabled();
     toggle.addEventListener('change', () => {
       setFormatOnLoadEnabled(toggle.checked);
-      showToast(toggle.checked ? '読み込み時に Markdown を整えます' : '読み込み時に Markdown を整えません');
+      showToast(toggle.checked ? t('file.formatOnLoadOnToast') : t('file.formatOnLoadOffToast'));
     });
   }
   document.getElementById('btn-format-now')?.addEventListener('click', () => {
@@ -189,7 +191,7 @@ export async function loadMarkdownFile(file, fileHandle = null) {
     decoded = decodeMarkdown(await file.arrayBuffer());
   } catch (err) {
     console.error('Failed to read file:', err);
-    showToast(`「${file.name}」を読み込めませんでした`);
+    showToast(t('file.readFailedToast', { name: file.name }));
     return;
   }
   const prepared = await prepareLoadedText(decoded.text);
@@ -234,28 +236,37 @@ async function openMarkdownFileWithPicker(input: HTMLInputElement) {
   input.click();
 }
 
-// 開くメニューから同梱サンプルをワンクリックで読み込む（DD-FILE-015）
-export async function loadBundledSample(fileName) {
-  if (!confirmDiscardEdits(fileName)) return false;
-  let text = null;
+async function fetchOrLoadSampleText(targetFileName: string): Promise<string | null> {
   if (window.location.protocol !== 'file:') {
     try {
-      const res = await fetch(`./samples/${encodeURIComponent(fileName)}`);
-      if (res.ok) text = await res.text();
+      const res = await fetch(`./samples/${encodeURIComponent(targetFileName)}`);
+      if (res.ok) return await res.text();
     } catch (_) {
       // fetch 失敗時は samples-data.js にフォールバックする
     }
   }
-  if (text === null) {
-    if (await loadLibrary('samples') && window.LUCIVO_SAMPLES && typeof window.LUCIVO_SAMPLES[fileName] === 'string') {
-      text = window.LUCIVO_SAMPLES[fileName];
-    }
+  if (await loadLibrary('samples') && window.LUCIVO_SAMPLES && typeof window.LUCIVO_SAMPLES[targetFileName] === 'string') {
+    return window.LUCIVO_SAMPLES[targetFileName];
+  }
+  return null;
+}
+
+// 開くメニュー・起動画面から同梱サンプルをワンクリックで読み込む（DD-FILE-015, FR-067）
+export async function loadBundledSample(fileName, opts: { silentToast?: boolean } = {}) {
+  const resolvedName = resolveSampleFileName(fileName);
+  if (!confirmDiscardEdits(resolvedName)) return false;
+  let actualName = resolvedName;
+  let text = await fetchOrLoadSampleText(resolvedName);
+  // 英語版サンプルが未配置の場合は日本語版へ安全にフォールバックする
+  if (text === null && resolvedName !== fileName) {
+    actualName = fileName;
+    text = await fetchOrLoadSampleText(fileName);
   }
   if (text === null) {
-    showToast(`「${fileName}」を読み込めませんでした`);
+    showToast(t('file.readFailedToast', { name: resolvedName }));
     return false;
   }
-  applyLoadedMarkdown(text, fileName, null, true);
+  applyLoadedMarkdown(text, actualName, null, true, 'UTF-8', null, null, null, { silentToast: opts.silentToast });
   return true;
 }
 
@@ -279,8 +290,8 @@ export function saveMarkdownFile() {
   runtime.lastLoadedMarkdown = text;
   // ブラウザは UTF-8 でしか書き出せないため、元の文字コードと違うときは知らせる（DD-FILE-083）
   showToast(isUtf8Family(runtime.currentFileEncoding)
-    ? `「${runtime.currentFileName}」を保存しました`
-    : `「${runtime.currentFileName}」を UTF-8 で保存しました（元は ${runtime.currentFileEncoding}）`);
+    ? t('file.savedToast', { name: runtime.currentFileName })
+    : t('file.savedUtf8Toast', { name: runtime.currentFileName, encoding: runtime.currentFileEncoding }));
 }
 
 export function setupMobileMenus() {
@@ -317,6 +328,12 @@ export function setupMobileMenus() {
   document.getElementById('menu-more-theme')?.addEventListener('click', () => {
     closeHeaderMenus();
     document.getElementById('btn-theme-toggle')?.click();
+  });
+  document.getElementById('menu-more-language')?.addEventListener('click', () => {
+    closeHeaderMenus();
+    const next = getLang() === 'ja' ? 'en' : 'ja';
+    setLang(next);
+    showToast(t('lang.toastSwitched'));
   });
   document.getElementById('menu-more-update')?.addEventListener('click', () => {
     closeHeaderMenus();
@@ -357,6 +374,22 @@ export function setupFileMenu() {
       const fileName = btn.getAttribute('data-sample-file');
       closeHeaderMenus();
       if (fileName) loadBundledSample(fileName);
+    };
+  });
+  // 起動画面（.empty-guide）の同梱サンプルリンク（FR-007, FR-067）
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target.closest('[data-empty-sample]') : null;
+    if (!target) return;
+    const fileName = target.getAttribute('data-empty-sample');
+    if (fileName) void loadBundledSample(fileName);
+  });
+  // 言語切り替えメニュー（FR-065）
+  document.querySelectorAll('#lang-menu [data-lang-option]').forEach((btn: any) => {
+    btn.onclick = () => {
+      const next = btn.getAttribute('data-lang-option') === 'en' ? 'en' : 'ja';
+      closeHeaderMenus();
+      setLang(next);
+      showToast(t('lang.toastSwitched'));
     };
   });
   document.getElementById('menu-print').onclick = () => {
@@ -447,7 +480,7 @@ export async function handleDroppedDataTransfer(dt: DataTransfer) {
       setOpenedFolder(makeInputFolder(files));
     } catch (err) {
       console.error('Failed to read dropped folder entry:', err);
-      showToast(`「${fallbackDirEntry.name}」を読み込めませんでした`);
+      showToast(t('file.readFailedToast', { name: fallbackDirEntry.name }));
     }
     return;
   }
@@ -461,10 +494,10 @@ export async function handleDroppedDataTransfer(dt: DataTransfer) {
         await loadMarkdownFromPublicUrl(droppedUrl);
         return;
       }
-      showToast('開けるのは .md / .markdown / .txt のファイル、フォルダ、または http / https の公開 URL です');
+      showToast(t('drop.invalidWithUrlToast'));
       return;
     }
-    showToast('開けるのは .md / .markdown / .txt のファイルまたはフォルダです');
+    showToast(t('drop.invalidFileToast'));
     return;
   }
   const matchedHandle = handles.find(h => h && h.kind === 'file' && h.name === file.name) || null;

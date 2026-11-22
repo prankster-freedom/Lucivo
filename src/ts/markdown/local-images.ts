@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { escapeHtml } from '../utils/escape';
 import { runtime } from '../ui/state';
+import { t } from '../i18n';
 import { SAMPLES_DIR, folderImageUrls, folderDirOf, resolveFolderPath, getFolderImageUrl } from '../ui/folder-browser';
 
 export function toLocalImageUrl(value) {
@@ -23,13 +24,13 @@ export function makeMissingImageBox(src, alt, hint) {
   const box = document.createElement('span');
   box.className = 'img-missing';
   box.setAttribute('role', 'img');
-  box.setAttribute('aria-label', `画像を読み込めません: ${alt || src}`);
+  box.setAttribute('aria-label', t('render.missingImageAria', { target: alt || src }));
   const title = document.createElement('span');
   title.className = 'img-missing-title';
-  title.textContent = '画像を読み込めません';
+  title.textContent = t('render.missingImageTitle');
   const path = document.createElement('span');
   path.className = 'img-missing-path';
-  path.textContent = src || '（パスがありません）';
+  path.textContent = src || t('render.missingImageNoPath');
   box.append(title, path);
   if (hint) {
     const note = document.createElement('span');
@@ -108,7 +109,7 @@ export function setupLocalImages() {
     const src = img.getAttribute('data-folder-src') || img.getAttribute('src') || '';
     // 相対パスは、ファイルを開いた場合、ブラウザの制約で Markdown ファイルの場所を基準にできない（DD-MD-042）
     const hint = isRelativeSrc(src) && !img.hasAttribute('data-folder-src')
-      ? '相対パスの画像は、「開く」→「フォルダを開く…」で開いた文書で表示できます。または絶対パス（C:\\… など）で指定してください'
+      ? t('render.missingImageRelativeHint')
       : '';
     img.replaceWith(makeMissingImageBox(src, img.getAttribute('alt'), hint));
   }, true);
@@ -121,14 +122,14 @@ export function resolveFolderImages(container) {
   container.querySelectorAll('img[data-folder-src]:not([src])').forEach(async img => {
     const path = img.getAttribute('data-folder-src');
     if (img.hasAttribute('data-folder-outside')) {
-      img.replaceWith(makeMissingImageBox(path, img.getAttribute('alt'), '開いたフォルダの外の画像は表示できません。上の階層のフォルダを開いてください'));
+      img.replaceWith(makeMissingImageBox(path, img.getAttribute('alt'), t('render.missingImageOutsideHint')));
       return;
     }
     const url = await getFolderImageUrl(folder, path);
     // 待っている間にフォルダを閉じた・描き直した場合は何もしない
     if (!img.isConnected || folder !== runtime.openedFolder) return;
     if (url) img.setAttribute('src', url);
-    else img.replaceWith(makeMissingImageBox(path, img.getAttribute('alt'), 'フォルダの中に見つかりません'));
+    else img.replaceWith(makeMissingImageBox(path, img.getAttribute('alt'), t('render.missingImageNotFoundHint')));
   });
 }
 

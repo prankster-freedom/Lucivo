@@ -44,7 +44,7 @@ import { renderMath } from '../markdown/math-and-headings';
 import { renderEmoji } from '../markdown/emoji';
 import {
   setModalOpen,
-  EMPTY_GUIDE_HTML,
+  getEmptyGuideHtml,
   state,
   svgCache,
   lkgCache,
@@ -866,7 +866,7 @@ export function renderApp() {
       stdContainer.innerHTML = '';
       visContainer.classList.remove('hidden');
       visContainer.innerHTML = isEmpty
-        ? `<div class="exhibition-wrap"><section class="exhibition-slab">${EMPTY_GUIDE_HTML}</section></div>`
+        ? `<div class="exhibition-wrap"><section class="exhibition-slab">${getEmptyGuideHtml()}</section></div>`
         : buildVisualStageHtml(cleanHtml, yaml);
       applyToneToVisualStage(visContainer);
       const wrap = visContainer.querySelector('.exhibition-wrap');
@@ -877,7 +877,7 @@ export function renderApp() {
       visContainer.classList.add('hidden');
       visContainer.innerHTML = '';
       stdWrapper.classList.remove('hidden');
-      stdContainer.innerHTML = isEmpty ? EMPTY_GUIDE_HTML : cleanHtml;
+      stdContainer.innerHTML = isEmpty ? getEmptyGuideHtml() : cleanHtml;
       // 長い文書（200 ブロック以上）のみ画面外ブロックのレイアウト・描画を省く（#238）
       stdContainer.classList.toggle('has-content-visibility', !isEmpty && stdContainer.children.length >= 200);
     }

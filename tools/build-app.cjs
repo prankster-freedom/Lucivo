@@ -163,7 +163,7 @@ async function build() {
       define: {
         __LUCIVO_VERSION__: JSON.stringify(appVersion),
         // この配布先で発表のドロップダウンに出すモード（stage は配布先で決まったあとは要らない）
-        __LUCIVO_PRESENT_MODES__: JSON.stringify(MODES.map(({ id, label }) => ({ id, label }))),
+        __LUCIVO_PRESENT_MODES__: JSON.stringify(MODES.map(({ id, label, labelEn }) => ({ id, label, labelEn }))),
         // Web 版のみスタイル別の見出し書体を遅延読み込みする（#218）
         __LUCIVO_STYLE_FONTS__: JSON.stringify(channel === 'web')
       }

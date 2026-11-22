@@ -12,10 +12,13 @@ import {
   COLOR_TONES,
   VISUAL_LAYOUTS,
   getToneEntry,
+  getToneLabel,
+  getLayoutLabel,
   getEffectiveVisualPalette,
   state,
   runtime
 } from './state';
+import { getLang, setLang, t } from '../i18n';
 
 // モードの切替ボタンの選択状態と、スタイルバーの表示を揃える。
 // スタイルバーは Visualモードの配色・装飾にしか効かないため、Visualモードのときだけ表示する（DD-DIAG-063）
@@ -72,18 +75,20 @@ export function renderSwatchDotsHtml(colors: string[]) {
 }
 
 export function syncToneUi() {
-  const entry = getToneEntry(state.tone);
   const labelEl = document.getElementById('active-tone-name');
-  if (labelEl) labelEl.textContent = entry.label;
+  if (labelEl) labelEl.textContent = getToneLabel(state.tone);
   const swatchEl = document.getElementById('active-tone-swatches');
   if (swatchEl) {
     const colors = getEffectiveVisualPalette(state.infographicStyle, state.appearance);
     swatchEl.innerHTML = renderSwatchDotsHtml(colors);
   }
   document.querySelectorAll('#tone-menu .tone-menu-item').forEach(btn => {
-    const active = btn.getAttribute('data-tone-id') === state.tone;
+    const toneId = btn.getAttribute('data-tone-id') || 'default';
+    const active = toneId === state.tone;
     btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    const lbl = btn.querySelector('.tone-menu-label');
+    if (lbl) lbl.textContent = getToneLabel(toneId);
   });
 }
 
@@ -108,17 +113,19 @@ export function selectTone(toneId: string) {
   runtime.renderApp();
   syncUrlFromState();
   trackWebEvent('tone_select', { tone: toneId });
-  showToast(`トーン: ${getToneEntry(toneId).label}`);
+  showToast(t('toast.toneApplied', { label: getToneLabel(toneId) }));
 }
 
 export function syncLayoutUi() {
-  const entry = VISUAL_LAYOUTS.find(l => l.id === state.visualLayout) || VISUAL_LAYOUTS[0];
   const labelEl = document.getElementById('active-layout-name');
-  if (labelEl) labelEl.textContent = entry.shortLabel;
+  if (labelEl) labelEl.textContent = getLayoutLabel(state.visualLayout);
   document.querySelectorAll('#layout-menu .tone-menu-item').forEach(btn => {
-    const active = btn.getAttribute('data-layout-id') === state.visualLayout;
+    const layoutId = btn.getAttribute('data-layout-id') || 'page';
+    const active = layoutId === state.visualLayout;
     btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    const lbl = btn.querySelector('.tone-menu-label');
+    if (lbl) lbl.textContent = getLayoutLabel(layoutId);
   });
 }
 
@@ -146,8 +153,7 @@ export function selectVisualLayout(layoutId: string) {
     updateAllSlabSplits(document.getElementById('visual-stage-container'));
   }
   syncUrlFromState();
-  const entry = VISUAL_LAYOUTS.find(l => l.id === next) || VISUAL_LAYOUTS[0];
-  showToast(`誌面レイアウト: ${entry.label}`);
+  showToast(t('toast.layoutApplied', { label: getLayoutLabel(next) }));
 }
 
 export function setStageMode(isVisual: boolean) {
@@ -155,9 +161,9 @@ export function setStageMode(isVisual: boolean) {
   state.isVisualMode = isVisual;
   syncStageModeUi(isVisual);
   if (isVisual) {
-    showToast('🎨 Visualモードを起動');
+    showToast(t('toast.visualModeOn'));
   } else {
-    showToast('高速モードに戻りました');
+    showToast(t('toast.fastModeOn'));
   }
   runtime.renderApp();
   syncUrlFromState();
@@ -181,7 +187,7 @@ export function selectInfographicStyle(style: string) {
   trackWebEvent('design_style_select', { design_style: style });
   void ensureStyleFont(style);
   const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
-  showToast(`スタイル適用: ${activeBtn ? activeBtn.textContent.trim() : style}`);
+  showToast(t('toast.styleApplied', { label: activeBtn ? activeBtn.textContent.trim() : style }));
 }
 
 function setupSplitResizer(applySplitRatio: (pct: number, persist?: boolean) => number) {
@@ -306,7 +312,7 @@ export function syncUrlFromState() {
   if (!runtime.urlSyncReady) return;
   if (document.documentElement.classList.contains('is-stage-show')) return;
   // 人へリンクを共有した際に画面幅の違いで view=canvas 等が落ちないよう、既定値は常に 'split' 基準とする（#307）
-  syncBrowserUrl(state, runtime.currentRemoteUrl, 'split');
+  syncBrowserUrl({ ...state, lang: getLang() }, runtime.currentRemoteUrl, 'split');
 }
 
 export function applyInitialDisplayStateFromUrl() {
@@ -316,6 +322,9 @@ export function applyInitialDisplayStateFromUrl() {
     VISUAL_STYLE_KEYS,
     COLOR_TONES.map(t => t.id)
   );
+  if (params.lang) {
+    setLang(params.lang, { persist: false, notify: false });
+  }
   if (params.appearance) {
     state.appearance = params.appearance;
     document.body.setAttribute('data-appearance', state.appearance);

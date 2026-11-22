@@ -1,4 +1,5 @@
 import { escapeHtml } from '../utils/escape';
+import { t } from '../i18n';
 
 /* ==========================================================================
    フォルダ構成のツリー（FR-047, DD-MD-050〜054）: 罫線で書いた構成を、線を引き直したツリーにする
@@ -158,7 +159,7 @@ export function buildTreeHtml(nodes: TreeNode[]): string {
     const nameCell = `<div class="md-tree-row${n.depth === 0 ? ' is-root' : ''}${muted}">${guides}<span class="md-tree-icon is-${n.kind}" aria-hidden="true"></span><span class="md-tree-name">${escapeHtml(n.name)}</span></div>`;
     return hasNotes ? `${nameCell}<div class="md-tree-note">${escapeHtml(n.note)}</div>` : nameCell;
   });
-  return `<div class="md-tree${hasNotes ? ' has-notes' : ''}" role="group" aria-label="フォルダ構成">${rows.join('')}</div>\n`;
+  return `<div class="md-tree${hasNotes ? ' has-notes' : ''}" role="group" aria-label="${escapeHtml(t('render.folderTreeAria'))}">${rows.join('')}</div>\n`;
 }
 
 // Marked のトークンがツリーなら、差し替える HTML のトークンを返す。ツリーでなければ null（DD-MD-050）

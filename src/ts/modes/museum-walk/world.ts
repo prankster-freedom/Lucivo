@@ -219,7 +219,12 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
 
   // 突き当たりの壁
   const last = plan.sections[plan.sections.length - 1];
-  const end = el('mw-endwall', world, '<b>おわり</b><span>R で入口へ戻る ／ Esc で終える</span>');
+  const isEn = typeof document !== 'undefined' && document.documentElement.lang === 'en';
+  const end = el(
+    'mw-endwall',
+    world,
+    isEn ? '<b>END</b><span>R to Entrance / Esc to Exit</span>' : '<b>おわり</b><span>R で入口へ戻る ／ Esc で終える</span>'
+  );
   end.style.cssText = `transform:translate3d(${-last.half}px, ${last.ceil + last.elev}px, ${plan.end}px);width:${last.half * 2}px;height:${FLOOR - last.ceil}px;--tint:${TINTS[zoneAt(plan, plan.end) % TINTS.length]}`;
 
   // 壁のパーツ

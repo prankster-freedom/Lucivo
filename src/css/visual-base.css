@@ -100,6 +100,30 @@ html.has-style-font-circles .vs-theme-circles {
 html.has-style-font-editorial .vs-theme-editorial {
   --vs-heading-font: 'Noto Serif JP', Georgia, serif;
 }
+/* 英語表示（html[lang="en"]）の Visualモード組版調整（DTP-004, ARC-I18N-005） */
+html[lang="en"] .vs-theme-shapes {
+  --vs-heading-tracking: -0.01em;
+}
+html[lang="en"] .vs-theme-cards {
+  --vs-heading-tracking: -0.015em;
+}
+html[lang="en"] .vs-theme-circles {
+  --vs-heading-tracking: 0em;
+}
+html[lang="en"] .vs-theme-editorial {
+  --vs-heading-tracking: 0em;
+}
+html[lang="en"] .exhibition-wrap {
+  hyphens: none;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+html[lang="en"] .exhibition-wrap h1,
+html[lang="en"] .exhibition-wrap h2,
+html[lang="en"] .exhibition-wrap h3,
+html[lang="en"] .exhibition-wrap h4,
+html[lang="en"] .vs-cover-title {
+  font-feature-settings: "kern" 1, "liga" 1;
+}
 body[data-appearance="dark"] .exhibition-wrap {
   --vs-tone: #FFFFFF;
   --vs-slab-bg: #161F30;
