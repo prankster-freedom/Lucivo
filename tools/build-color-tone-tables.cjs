@@ -6,9 +6,35 @@ const path = require('path');
 
 const TONES_DIR = path.resolve(__dirname, '..', 'doc', '0.DTP', 'assets', 'color-tones');
 const SECTION_HEADING = '## カラーコード一覧';
-const CHIP_BASE = 'padding: 2px 6px; border-radius: 4px; font-weight: 500;';
+const TABLE_NOTE = 'セルは、背景色の色コード（上段）と、その上に置く文字色の色コード（下段 `文字`）の組。背景と文字は、この組で使う。「境界・線」と「文字（主）」の行は、その色の 1 つだけを示す。文字色は、「文字（主）」で読めるとき（コントラスト比 4.5 以上）はそれを使い、読めないときは濃紺（`#1E293B`）か白（`#F8FAFC`）の読みやすいほうにする。';
+const CHIP_BASE = 'display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: 500;';
 // 一覧の見本の文字（A〜G）に対応する、トーン文書の表のトークン（上から順）
 const LIST_TOKENS = ['--vs-c1', '--vs-c2', '--vs-c3', '--vs-c4', '--diag-canvas', '--vs-card-bg', '--vs-glow'];
+
+// 背景色の上に文字（「文字（主）」）を置いて読めない（コントラスト比が AA の 4.5 未満）ときの、代わりの文字色
+const INK_DARK = '#1E293B';
+const INK_LIGHT = '#F8FAFC';
+const MIN_CONTRAST = 4.5;
+
+function relLum(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  const lin = c => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin((v >> 16) & 255) + 0.7152 * lin((v >> 8) & 255) + 0.0722 * lin(v & 255);
+}
+
+function contrast(a, b) {
+  const [hi, lo] = [relLum(a), relLum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+// 背景色 bg の上に置く文字色。「文字（主）」で読めればそれを使い、読めなければ濃紺か白のうち、読みやすいほうを使う
+function pickInk(bg, text) {
+  if (contrast(bg, text) >= MIN_CONTRAST) return text;
+  return contrast(bg, INK_DARK) >= contrast(bg, INK_LIGHT) ? INK_DARK : INK_LIGHT;
+}
 
 const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const cellText = html => html.replace(/<[^>]+>/g, '').replace(/`/g, '').trim();
@@ -26,23 +52,38 @@ function readTableRows(text) {
   return rows;
 }
 
+const hexesOf = s => s.match(/#[0-9A-Fa-f]{6}/g) || [];
+// 「文字（主）」と「境界・線」の行は、背景に使う色ではないため、背景と文字の組を持たない
+const hasInkPair = token => token !== '--text-primary' && token !== '--diag-edge';
+
+// セルの文字は、背景色の色コードと、その上の文字色の色コード（この順）。文字色がないセル（Markdown の表のとき）は、読める色を選ぶ
 function readTone(text) {
   const rows = readTableRows(text.slice(text.indexOf(SECTION_HEADING)))
     .filter(cells => cells.length >= 5 && cells[1].startsWith('--'))
-    .map(cells => ({ role: cells[0], token: cells[1], light: cells[2], dark: cells[3], use: cells[4] }));
+    .map(cells => {
+      const [light, lightInk] = hexesOf(cells[2]);
+      const [dark, darkInk] = hexesOf(cells[3]);
+      if (!light || !dark) throw new Error(`${cells[1]} の色コードが読めません`);
+      return { role: cells[0], token: cells[1], light, dark, lightInk, darkInk, use: cells[4] };
+    });
   const byToken = Object.fromEntries(rows.map(r => [r.token, r]));
   for (const t of ['--diag-canvas', '--text-primary', '--diag-edge']) {
     if (!byToken[t]) throw new Error(`トークン ${t} の行がありません`);
   }
+  for (const r of rows) {
+    if (!hasInkPair(r.token)) continue;
+    r.lightInk = r.lightInk || pickInk(r.light, byToken['--text-primary'].light);
+    r.darkInk = r.darkInk || pickInk(r.dark, byToken['--text-primary'].dark);
+  }
   return { rows, byToken };
 }
 
-// 背景色にその色、文字色に「文字（主）」、枠線に「境界・線」を使った見本。
+// 背景色にその色、文字色にその行の文字色（セルに書いた色コード）、枠線に「境界・線」を使った見本。
 // 「文字（主）」と「境界・線」の行は、その色が地色と同じになって見えなくなるため、地色を「ベース背景」にして、その色を文字・枠線に使う
 function chip(tone, mode, token, label) {
   const c = t => tone.byToken[t][mode];
   let bg = c(token);
-  let fg = c('--text-primary');
+  let fg = tone.byToken[token][`${mode}Ink`] || c('--text-primary');
   let border = `1px solid ${c('--diag-edge')}`;
   if (token === '--text-primary') {
     bg = c('--diag-canvas');
@@ -54,10 +95,13 @@ function chip(tone, mode, token, label) {
   return `<span style="background-color: ${bg}; color: ${fg}; ${CHIP_BASE} border: ${border};">${label}</span>`;
 }
 
+// セルの文字: 背景色の色コード、その上の文字色の色コード（この順。文字色のない行は、色コードだけ）
+const cellLabel = (r, mode) => (r[`${mode}Ink`] ? `${r[mode]}<br><small>文字 ${r[`${mode}Ink`]}</small>` : r[mode]);
+
 function buildToneTable(tone) {
   const lines = ['<table>', '<thead>', '<tr><th>役割</th><th>トークン例</th><th>Light</th><th>Dark</th><th>用途</th></tr>', '</thead>', '<tbody>'];
   for (const r of tone.rows) {
-    lines.push(`<tr><td>${escapeHtml(r.role)}</td><td><code>${r.token}</code></td><td>${chip(tone, 'light', r.token, r.light)}</td><td>${chip(tone, 'dark', r.token, r.dark)}</td><td>${escapeHtml(r.use)}</td></tr>`);
+    lines.push(`<tr><td>${escapeHtml(r.role)}</td><td><code>${r.token}</code></td><td>${chip(tone, 'light', r.token, cellLabel(r, 'light'))}</td><td>${chip(tone, 'dark', r.token, cellLabel(r, 'dark'))}</td><td>${escapeHtml(r.use)}</td></tr>`);
   }
   lines.push('</tbody>', '</table>');
   return lines.join('\n');
@@ -87,7 +131,7 @@ function main() {
     const tone = readTone(text);
     tones[id] = tone;
     // 色コード一覧は文書の最後の節。節の見出しから後ろを、新しい表に置き換える
-    fs.writeFileSync(full, `${text.slice(0, idx)}${SECTION_HEADING}\n\n${buildToneTable(tone)}\n`, 'utf8');
+    fs.writeFileSync(full, `${text.slice(0, idx)}${SECTION_HEADING}\n\n${TABLE_NOTE}\n\n${buildToneTable(tone)}\n`, 'utf8');
   }
 
   const readmePath = path.join(TONES_DIR, 'README.md');
