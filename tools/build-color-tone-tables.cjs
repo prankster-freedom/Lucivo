@@ -11,7 +11,8 @@ const TABLE_NOTE = [
   '1 列目に、行ごとの配色の組（背景・文字・境界・線の色コード）を、Light と Dark に分けて書く。背景・文字・境界・線は、この組で使う。',
   'Light / Dark の列の見本は、上が「背景に使った場合」（その色の背景の上に、組の文字色）、下が「文字色に使った場合」（ベース背景の上に、その色の文字。基本色の行だけ）。',
   '見本の数字は、背景と文字のコントラスト比で、4.5 未満は、その使い方では文字が読みにくい。見本の枠は「境界」、中の短い線は「線」の色。',
-  '基本色は 2〜6 色で、使わない行は「未定義」にする。'
+  '基本色は 2〜6 色で、使わない行は「未定義」にする。',
+  '元の配色が Light 向きか Dark 向きかが決まっている配色は、向いているほうのモードだけに組を書き、もう一方のモードは「—」にする。'
 ].join('');
 const CHIP_BASE = 'display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap;';
 // 表の行の並び。基本色は 6 行の枠を用意し、使わない行は「未定義」にする
@@ -92,7 +93,7 @@ function readTone(text) {
         row[mode] = { bg, ink: ink || pickInk(bg, hexesOf(old[OLD_TEXT][2 + i])[0]), border: edge, line: edge };
       });
     } else {
-      row.role = cells[0].split(/\s*(?:Light\s*背景|未定義)/)[0].trim();
+      row.role = cells[0].split(/\s*(?:Light\s*背景|Dark\s*背景|未定義)/)[0].trim();
       MODES.forEach(([mode, label]) => { row[mode] = readSet(cells[0], label); });
     }
     return row;
@@ -104,7 +105,8 @@ function readTone(text) {
   }
   rows.sort((a, b) => ROW_ORDER.indexOf(a.token) - ROW_ORDER.indexOf(b.token));
   const byToken = Object.fromEntries(rows.map(r => [r.token, r]));
-  if (!byToken['--diag-canvas'] || !byToken['--diag-canvas'].light) throw new Error('ベース背景の行がありません');
+  // ベース背景は、Light か Dark の少なくとも一方に組が要る（片方のモードだけの配色もある）
+  if (!byToken['--diag-canvas'] || !(byToken['--diag-canvas'].light || byToken['--diag-canvas'].dark)) throw new Error('ベース背景の行がありません');
   return { rows, byToken };
 }
 
@@ -128,8 +130,9 @@ function sampleCell(tone, row, mode) {
 // 1 列目の配色の組: Light と Dark を、それぞれ 4 行（背景・文字・境界・線）の塊にして並べる。列が狭いときは、塊が縦に積まれる
 const SET_BLOCK = 'display: inline-block; vertical-align: top; margin: 4px 12px 0 0; white-space: nowrap;';
 const setBlock = (label, s) => `<small style="${SET_BLOCK}">${label}<br>背景 ${s.bg}<br>文字 ${s.ink}<br>境界 ${s.border}<br>線 ${s.line}</small>`;
-const firstCell = row => (row.light
-  ? `${escapeHtml(row.role)}<br>${setBlock('Light', row.light)}${setBlock('Dark', row.dark)}`
+// 組があるモードだけを並べる。どちらにもないときは「未定義」
+const firstCell = row => (row.light || row.dark
+  ? `${escapeHtml(row.role)}<br>${row.light ? setBlock('Light', row.light) : ''}${row.dark ? setBlock('Dark', row.dark) : ''}`
   : `${escapeHtml(row.role)}<br><small>未定義</small>`);
 
 function buildToneTable(tone) {
@@ -149,7 +152,7 @@ function letterChip(s, letter) {
 function buildListTable(entries) {
   const lines = ['<table>', '<thead>', '<tr><th>#</th><th>ID</th><th>イメージ名</th><th>トーン区分</th><th>配色技法</th><th>基本色</th><th>ファイル</th><th>見本（上段 Light・下段 Dark）</th></tr>', '</thead>', '<tbody>'];
   for (const e of entries) {
-    const baseCount = BASE_TOKENS.filter(t => e.tone.byToken[t] && e.tone.byToken[t].light).length;
+    const baseCount = BASE_TOKENS.filter(t => e.tone.byToken[t] && (e.tone.byToken[t].light || e.tone.byToken[t].dark)).length;
     const sampleText = MODES
       .map(([mode]) => ROW_ORDER
         .map((t, i) => (e.tone.byToken[t] && e.tone.byToken[t][mode] ? letterChip(e.tone.byToken[t][mode], String.fromCharCode(65 + i)) : ''))
