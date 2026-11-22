@@ -1,7 +1,7 @@
 // 割り付けから 3D の空間（DOM）を組み立て、毎フレーム更新する（DD-MWLK-006、DTP-MWLK-020〜070）。
 // 歩いている間に書き換えるのは、世界全体の transform、各要素の opacity と display、近づくと現れるパーツの transform だけで、
 // 値が変わったときだけ書く。壁・床・天井のタイルは、子要素と疑似要素を持たない 1 枚の要素にし、大きさと背景は 1 度だけ設定する。
-import { FLOOR, TINTS, tintAt, zoneAt, type Plan, type PartKind, type Measure } from './layout';
+import { FLOOR, TINTS, rampLengthFor, tintAt, zoneAt, type Plan, type PartKind, type Measure } from './layout';
 import { clamp, lerp, smooth, sectionAt, type Cam } from './camera';
 import type { FigureImages } from './figure';
 
@@ -32,6 +32,7 @@ interface StandRef {
   z: number;
   baseZ: number;
   dz: number;
+  elev: number;
   key: number;
   frame: boolean;
   figure: number;
@@ -134,28 +135,52 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   };
   plan.sections.forEach((s, i) => {
     const h = FLOOR - s.ceil;
+    const floorY = FLOOR + s.elev;
+    const ceilY = s.ceil + s.elev;
     for (let near = s.from; near > s.to; near -= TILE) {
       const far = Math.max(s.to, near - TILE);
       const len = near - far;
       const tint = tintAt(plan, (near + far) / 2);
-      surface('mw-wall', `translate3d(${-s.half}px, ${s.ceil}px, ${near}px) rotateY(90deg)`, len, h, near, far, tint, false);
-      surface('mw-wall', `translate3d(${s.half}px, ${s.ceil}px, ${far}px) rotateY(-90deg)`, len, h, near, far, tint, false);
-      surface('mw-floor', `translate3d(${-s.half}px, ${FLOOR}px, ${far}px) rotateX(90deg)`, s.half * 2, len, near, far, tint, false);
-      surface('mw-ceil', `translate3d(${-s.half}px, ${s.ceil}px, ${near}px) rotateX(-90deg)`, s.half * 2, len, near, far, tint, false);
+      surface('mw-wall', `translate3d(${-s.half}px, ${ceilY}px, ${near}px) rotateY(90deg)`, len, h, near, far, tint, false);
+      surface('mw-wall', `translate3d(${s.half}px, ${ceilY}px, ${far}px) rotateY(-90deg)`, len, h, near, far, tint, false);
+      surface('mw-floor', `translate3d(${-s.half}px, ${floorY}px, ${far}px) rotateX(90deg)`, s.half * 2, len, near, far, tint, false);
+      surface('mw-ceil', `translate3d(${-s.half}px, ${ceilY}px, ${near}px) rotateX(-90deg)`, s.half * 2, len, near, far, tint, false);
     }
-    // 断面が変わる境目の壁（左右の袖と、開口部の上の垂れ壁）
+    // 断面や高さが変わる境目の壁（左右の袖・開口部の上の垂れ壁・段差の蹴上げ・スロープ、#306）
     const n = plan.sections[i + 1];
     if (!n) return;
     const wide = Math.max(s.half, n.half);
     const narrow = Math.min(s.half, n.half);
-    const top = Math.min(s.ceil, n.ceil);
-    const low = Math.max(s.ceil, n.ceil);
+    const nCeilY = n.ceil + n.elev;
+    const nFloorY = FLOOR + n.elev;
+    const top = Math.min(ceilY, nCeilY);
+    const low = Math.max(ceilY, nCeilY);
+    const floorHigh = Math.min(floorY, nFloorY);
+    const floorLow = Math.max(floorY, nFloorY);
     const tint = tintAt(plan, s.to);
     if (wide > narrow) {
-      surface('mw-wall', `translate3d(${-wide}px, ${top}px, ${s.to}px)`, wide - narrow, FLOOR - top, s.to, s.to, tint, true);
-      surface('mw-wall', `translate3d(${narrow}px, ${top}px, ${s.to}px)`, wide - narrow, FLOOR - top, s.to, s.to, tint, true);
+      surface('mw-wall', `translate3d(${-wide}px, ${top}px, ${s.to}px)`, wide - narrow, floorLow - top, s.to, s.to, tint, true);
+      surface('mw-wall', `translate3d(${narrow}px, ${top}px, ${s.to}px)`, wide - narrow, floorLow - top, s.to, s.to, tint, true);
     }
     if (low > top) surface('mw-wall', `translate3d(${-narrow}px, ${top}px, ${s.to}px)`, narrow * 2, low - top, s.to, s.to, tint, true);
+    if (floorLow > floorHigh) {
+      surface('mw-riser', `translate3d(${-narrow}px, ${floorHigh}px, ${s.to}px)`, narrow * 2, floorLow - floorHigh, s.to, s.to, tint, true);
+      const rampLen = rampLengthFor(s, n);
+      const zNear = n.elev > s.elev ? s.to : s.to + rampLen;
+      const zFar = n.elev > s.elev ? s.to - rampLen : s.to;
+      const diag = Math.hypot(rampLen, floorY - nFloorY);
+      const angleDeg = (Math.atan2(rampLen, floorY - nFloorY) * 180) / Math.PI;
+      surface(
+        'mw-ramp',
+        `translate3d(${-narrow}px, ${nFloorY}px, ${zFar}px) rotateX(${angleDeg.toFixed(3)}deg)`,
+        narrow * 2,
+        diag,
+        zNear,
+        zFar,
+        tint,
+        false
+      );
+    }
   });
 
   // 突き当たりの闇（カメラと一緒に動く）
@@ -168,10 +193,11 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
     const fig = figures[s.figure];
     if (!fig) return;
     const g = standGeometry(fig);
+    const elev = sectionAt(plan, s.z).elev;
     const tint = tintAt(plan, s.z);
     const place = (node: HTMLElement, dz: number, role?: 'lines' | 'nodes' | 'all', img?: HTMLImageElement) => {
-      node.style.cssText = `transform:translate3d(${g.x}px, ${g.top}px, ${s.z + dz}px) scale(0.5);width:${g.fw * 2}px;height:${g.fh * 2}px;--tint:${tint}`;
-      stands.push({ el: node, z: s.z + dz, baseZ: s.z, dz, key: -1, frame: dz === 0, figure: s.figure, role, img });
+      node.style.cssText = `transform:translate3d(${g.x}px, ${g.top + elev}px, ${s.z + dz}px) scale(0.5);width:${g.fw * 2}px;height:${g.fh * 2}px;--tint:${tint}`;
+      stands.push({ el: node, z: s.z + dz, baseZ: s.z, dz, elev, key: -1, frame: dz === 0, figure: s.figure, role, img });
     };
     const frame = el(`mw-stand mw-fig-frame is-${figureAppearance}`, world);
     frame.dataset.label = s.label;
@@ -194,21 +220,22 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   // 突き当たりの壁
   const last = plan.sections[plan.sections.length - 1];
   const end = el('mw-endwall', world, '<b>おわり</b><span>R で入口へ戻る ／ Esc で終える</span>');
-  end.style.cssText = `transform:translate3d(${-last.half}px, ${last.ceil}px, ${plan.end}px);width:${last.half * 2}px;height:${FLOOR - last.ceil}px;--tint:${TINTS[zoneAt(plan, plan.end) % TINTS.length]}`;
+  end.style.cssText = `transform:translate3d(${-last.half}px, ${last.ceil + last.elev}px, ${plan.end}px);width:${last.half * 2}px;height:${FLOOR - last.ceil}px;--tint:${TINTS[zoneAt(plan, plan.end) % TINTS.length]}`;
 
   // 壁のパーツ
   const parts: PartRef[] = plan.parts.map(p => {
+    const sec = sectionAt(plan, p.z);
     const node = el(partClass(p.kind), world);
     fillPart(node, p.kind, p.html, p.w, p.label, p.small);
     node.style.setProperty('--tint', tintAt(plan, p.z));
-    return { el: node, kind: p.kind, side: p.side, z: p.z, y: p.y, w: p.w, half: sectionAt(plan, p.z).half, key: '', vis: true };
+    return { el: node, kind: p.kind, side: p.side, z: p.z, y: p.y + sec.elev, w: p.w, half: sec.half, key: '', vis: true };
   });
 
   // 通路の真ん中に立つ門（表紙と章の見出し）
   const gates: GateRef[] = plan.gates.map((g, i) => {
     const s = sectionAt(plan, g.z);
     const gh = 776;
-    const gy = FLOOR - gh - 2;
+    const gy = FLOOR + s.elev - gh - 2;
     const tint = TINTS[(i + 1) % TINTS.length];
     const node = el(`mw-gate${g.cover ? ' is-cover' : ''}`, world, '<div class="mw-scrim"></div><div class="mw-label"><div class="mw-no"></div><div class="mw-title"></div></div>');
     (node.querySelector('.mw-no') as HTMLElement).textContent = g.no;
@@ -258,7 +285,7 @@ export function updateStandAppearance(refs: WorldRefs, figures: FigureImages[], 
     }
     if (!fig) continue;
     const g = standGeometry(fig);
-    st.el.style.transform = `translate3d(${g.x}px, ${g.top}px, ${st.baseZ + st.dz}px) scale(0.5)`;
+    st.el.style.transform = `translate3d(${g.x}px, ${g.top + st.elev}px, ${st.baseZ + st.dz}px) scale(0.5)`;
     st.el.style.width = `${g.fw * 2}px`;
     st.el.style.height = `${g.fh * 2}px`;
     if (st.img) {
@@ -271,7 +298,7 @@ export function updateStandAppearance(refs: WorldRefs, figures: FigureImages[], 
 }
 
 export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, reduced: boolean): void {
-  refs.world.style.transform = `translateZ(${P}px) rotateX(${cam.pitch}deg) rotateY(${-cam.yaw}deg) translate3d(${-cam.x}px, ${-cam.bob}px, ${-cam.z}px)`;
+  refs.world.style.transform = `translateZ(${P}px) rotateX(${cam.pitch}deg) rotateY(${-cam.yaw}deg) translate3d(${-cam.x}px, ${-(cam.y + cam.bob)}px, ${-cam.z}px)`;
 
   // 門を通り抜ける瞬間の光
   let flashA = 0;
@@ -285,7 +312,7 @@ export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, re
   }
 
   // 突き当たりの闇と、各面の霞み（タイル自身の opacity だけを更新する）
-  refs.cap.style.transform = `translate3d(-2000px, -2600px, ${cam.z - FOG1}px)`;
+  refs.cap.style.transform = `translate3d(-2000px, ${cam.y - 2600}px, ${cam.z - FOG1}px)`;
   for (const t of refs.tiles) {
     const limit = t.wall ? cam.z - 20 : cam.z + 220;
     const vis = t.near > cam.z - FOG1 - 100 && t.far < limit;

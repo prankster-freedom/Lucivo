@@ -56,6 +56,20 @@ html.is-museum-walk body { overflow: hidden; }
   border-top: 1px solid rgba(255, 255, 255, .035);
   backface-visibility: hidden;
 }
+#museum-walk .mw-ramp {
+  background:
+    repeating-linear-gradient(180deg, rgba(var(--tint), .14) 0 2px, transparent 2px 36px),
+    linear-gradient(90deg, rgba(255, 255, 255, .10) 0%, transparent 18%, transparent 82%, rgba(255, 255, 255, .08) 100%),
+    linear-gradient(180deg, #13161d 0%, #0a0c11 100%);
+  border-top: 1px solid rgba(var(--tint), .24);
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+  backface-visibility: hidden;
+}
+#museum-walk .mw-riser {
+  background:
+    linear-gradient(180deg, rgba(var(--tint), .22) 0, rgba(var(--tint), .06) 3px, #12151b 8px, #07080b 100%);
+  backface-visibility: hidden;
+}
 #museum-walk .mw-ceil {
   background:
     radial-gradient(circle 6px at 20% 50%, #fffaf0 0, #ffe9c2 5px, transparent 8px),
@@ -289,6 +303,18 @@ html.is-museum-walk body { overflow: hidden; }
     linear-gradient(90deg, rgba(255, 255, 255, .45) 0%, transparent 18%, transparent 49.8%, rgba(26, 28, 34, .06) 50%, transparent 50.2%, transparent 82%, rgba(255, 255, 255, .35) 100%),
     #dad4c7;
   border-top-color: rgba(26, 28, 34, .08);
+}
+#museum-walk.is-light .mw-ramp {
+  background:
+    repeating-linear-gradient(180deg, rgba(26, 28, 34, .09) 0 2px, transparent 2px 36px),
+    linear-gradient(90deg, rgba(255, 255, 255, .45) 0%, transparent 18%, transparent 82%, rgba(255, 255, 255, .35) 100%),
+    linear-gradient(180deg, #dfd9cc 0%, #d0c9ba 100%);
+  border-top-color: rgba(26, 28, 34, .18);
+  border-bottom-color: rgba(26, 28, 34, .1);
+}
+#museum-walk.is-light .mw-riser {
+  background:
+    linear-gradient(180deg, rgba(26, 28, 34, .18) 0, rgba(26, 28, 34, .06) 3px, #c9c2b4 10px, #b8b0a1 100%);
 }
 #museum-walk.is-light .mw-ceil {
   background:

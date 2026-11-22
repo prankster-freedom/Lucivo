@@ -4,7 +4,7 @@
 // 本体のモジュールは import せず、enter(host) で受け取る host だけを使う（ARC-MODE-006）。
 // Visualモードの DOM は読むだけで書き換えない。空間は <body> の直下の重ね（#museum-walk）に作る。
 import { readOutline, isOutlineEmpty } from './outline';
-import { layout, type Plan } from './layout';
+import { layout, elevationAt, type Plan } from './layout';
 import { CAMERA_SPEC, REDUCED_MOTION, defaultCamera, loadCamera, direct, clamp, type Cam, type CameraValues } from './camera';
 import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, type WorldRefs } from './world';
 import { attachInput, stepWalk, type Input } from './input';
@@ -120,6 +120,7 @@ async function applyStandAppearance(target: 'dark' | 'light'): Promise<void> {
 function backToEntrance(): void {
   if (!S.cam || !S.plan) return;
   S.cam.z = S.plan.start;
+  S.cam.y = elevationAt(S.plan, S.plan.start);
   S.cam.vel = 0;
   S.cam.userYaw = 0;
   S.cam.zoom = 0;
@@ -303,7 +304,7 @@ async function enter(host: ModeHost): Promise<boolean> {
   buildChrome(root);
   S.panel = /museum-tune/.test(location.search + location.hash) ? buildPanel(root) : null;
 
-  S.cam = { z: S.plan.start, x: S.camera.x, yaw: 0, pitch: 0, userYaw: 0, vel: 0, bob: 0, zoom: 0, zoomTarget: 0, zoomPhase: 0, fov: S.camera.fov };
+  S.cam = { z: S.plan.start, x: S.camera.x, y: elevationAt(S.plan, S.plan.start), yaw: 0, pitch: 0, userYaw: 0, vel: 0, bob: 0, zoom: 0, zoomTarget: 0, zoomPhase: 0, fov: S.camera.fov };
   S.input = attachInput(root, { cam: S.cam, camera: () => S.camera, command });
   window.addEventListener('resize', fit);
   fit();
@@ -352,6 +353,7 @@ function info() {
     z: S.cam ? S.cam.z : 0,
     yaw: S.cam ? S.cam.yaw : 0,
     x: S.cam ? S.cam.x : 0,
+    y: S.cam ? S.cam.y : 0,
     zoom: S.cam ? S.cam.zoom : 0,
     zoomTarget: S.cam ? S.cam.zoomTarget : 0,
     fov: S.cam ? S.cam.fov : S.camera.fov,
@@ -362,7 +364,7 @@ function info() {
     gaze: S.gaze,
     reducedMotion: S.reduced,
     gates: plan ? plan.gates.map(g => ({ z: g.z, no: g.no, title: g.title, cover: !!g.cover })) : [],
-    sections: plan ? plan.sections.map(s => ({ name: s.name || 'passage', from: s.from, to: s.to })) : [],
+    sections: plan ? plan.sections.map(s => ({ name: s.name || 'passage', from: s.from, to: s.to, elev: s.elev })) : [],
     stands: plan ? plan.stands.length : 0,
     parts: plan ? plan.parts.map(p => ({ kind: p.kind, side: p.side, z: p.z, y: p.y, w: p.w })) : []
   };

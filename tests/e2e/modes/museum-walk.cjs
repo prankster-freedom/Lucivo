@@ -444,6 +444,55 @@ async function testMuseumWalk(browser) {
       walkBobSample,
       rmAfter: { zoom: rmAfter.zoom, zoomTarget: rmAfter.zoomTarget, bob: rmAfter.bob, rmWalkBob }
     }));
+
+    // TC-MWLK-010: 空間の起伏・段差スロープとカメラ高さ追従（#306）
+    const elevPage = await openWebPageWithSample(browser, server);
+    await start(elevPage);
+    const ei = await info(elevPage);
+    const elevs = ei.sections.map(s => s.elev);
+    const maxElev = Math.max(...elevs);
+    const maxIdx = elevs.indexOf(maxElev);
+    const lastElev = elevs[elevs.length - 1];
+    const rampCount = await elevPage.locator('#museum-walk .mw-ramp').count();
+    const riserCount = await elevPage.locator('#museum-walk .mw-riser').count();
+    // 最初の段差境目（下り）のスロープ途中と、最も深い区間へ移動してカメラ y の追従を確認
+    const firstStepIdx = ei.sections.findIndex((s, idx) => idx < ei.sections.length - 1 && s.elev !== ei.sections[idx + 1].elev);
+    const s0 = ei.sections[firstStepIdx];
+    const s1 = ei.sections[firstStepIdx + 1];
+    const midRampZ = s1.elev > s0.elev ? s0.to - 100 : s0.to + 100;
+    await walkTo(elevPage, midRampZ);
+    const atRamp = await info(elevPage);
+    const deepestSec = ei.sections[maxIdx];
+    await walkTo(elevPage, (deepestSec.from + deepestSec.to) / 2);
+    const atDeepest = await info(elevPage);
+    await shot(elevPage, 'elevation-deep');
+    // R キーで入口へ戻すと y === 0 に戻る
+    await elevPage.keyboard.press('r');
+    const backStart = await info(elevPage);
+    const mw10Ok = elevs[0] === 0
+      && maxElev > 100 && maxElev <= 360
+      && maxIdx > 0 && maxIdx < elevs.length - 1
+      && lastElev < maxElev
+      && rampCount > 0 && riserCount === rampCount
+      && atRamp.y > Math.min(s0.elev, s1.elev) && atRamp.y < Math.max(s0.elev, s1.elev)
+      && Math.abs(atDeepest.y - deepestSec.elev) < 1
+      && backStart.y === 0
+      && elevPage.consoleErrors.length === 0;
+    record('TC-MWLK-010', mw10Ok, JSON.stringify({
+      elevsCount: elevs.length,
+      startElev: elevs[0],
+      maxElev,
+      maxIdx,
+      lastElev,
+      rampCount,
+      riserCount,
+      atRampY: atRamp.y,
+      atDeepestY: atDeepest.y,
+      deepestElev: deepestSec.elev,
+      backStartY: backStart.y,
+      errors: elevPage.consoleErrors
+    }));
+    await elevPage.context().close();
   } finally {
     await server.close();
   }

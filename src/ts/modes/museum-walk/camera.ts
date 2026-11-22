@@ -1,7 +1,7 @@
 // ミュージアム・ウォークのカメラワーク（DD-MWLK-005、DTP-MWLK-060）。
 // 演出を見直すときは、このファイルの 3 つだけを直す: 値の表（CAMERA_SPEC）、場所ごとの指示（cues()）、組み合わせ方（direct()）。
 // 空間の組み立てや入力には触れない。場所は割り付け（layout.ts の Plan）から読む。
-import type { Plan, Section } from './layout';
+import { elevationAt, type Plan, type Section } from './layout';
 
 export const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(a, v));
 export const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -30,6 +30,7 @@ export const CAMERA_SPEC: SpecRow[] = [
   ['fov', '視野（小さいほど広角）', 800, 420, 1500, 10],
   ['bob', '歩きの揺れ（px）', 6, 0, 20, 0.5],
   ['bobStep', '歩きの揺れの周期（距離 px）', 95, 30, 300, 5],
+  ['elevEase', '段差の高さ追従の速さ（大きいほど速い）', 4.5, 1, 20, 0.5],
   ['門（通路の真ん中の見出し）'],
   ['gateFar', '正面を向き始める距離', 1350, 600, 3500, 50],
   ['gateNear', '正面を向き切る距離', 650, 100, 1600, 50],
@@ -55,7 +56,7 @@ export const CAMERA_SPEC: SpecRow[] = [
 ];
 
 // 動きを減らす設定のときに上書きする値（DD-MWLK-009）
-export const REDUCED_MOTION: Record<string, number> = { friction: 6, stride: 420, bob: 0, zoomBob: 0, zoomEase: 60 };
+export const REDUCED_MOTION: Record<string, number> = { friction: 6, stride: 420, bob: 0, zoomBob: 0, zoomEase: 60, elevEase: 60 };
 
 export type CameraValues = Record<string, number>;
 
@@ -78,6 +79,7 @@ export function loadCamera(target: CameraValues, values: Record<string, unknown>
 export interface Cam {
   z: number;
   x: number;
+  y: number;
   yaw: number;
   pitch: number;
   userYaw: number;
@@ -154,6 +156,10 @@ export function direct(cam: Cam, dt: number, plan: Plan, C: CameraValues, gaze: 
   cam.yaw += (targetYaw - cam.yaw) * k;
   cam.x += (clamp(x, -room, room) - cam.x) * kx;
   cam.pitch += (pitch - cam.pitch) * k;
+  const targetY = elevationAt(plan, cam.z);
+  const ky = C.elevEase >= 50 ? 1 : 1 - Math.exp(-dt * C.elevEase);
+  cam.y += (targetY - cam.y) * ky;
+  if (Math.abs(targetY - cam.y) < 0.05) cam.y = targetY;
   cam.fov = clamp(C.fov + cam.zoom * C.zoomFov, 360, 2200);
 
   const walkBob = C.bob * Math.sin((plan.start - cam.z) / Math.max(1, C.bobStep)) * Math.min(1, Math.abs(cam.vel) / 200);
