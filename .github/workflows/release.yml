@@ -74,7 +74,6 @@ jobs:
 
           node - <<'EOF'
           const fs = require('fs');
-          const notes = fs.readFileSync('release-notes.md', 'utf8');
           const ver = process.env.VERSION;
           const zipName = `Lucivo-v${ver}.zip`;
           const tag = process.env.TAG;
@@ -82,24 +81,45 @@ jobs:
           const dlUrl = `https://github.com/${repo}/releases/download/${tag}/${zipName}`;
           const escapedVer = ver.replace(/\./g, '\\.');
           const re = new RegExp(`(^##\\s+${escapedVer}(?:[^\\n]*)\\n[\\s\\S]*?)(?=^##\\s+|(?![\\s\\S]))`, 'm');
-          const m = notes.match(re);
-          if (!m) {
+
+          const notesJa = fs.readFileSync('release-notes.md', 'utf8');
+          const matchJa = notesJa.match(re);
+          if (!matchJa) {
             console.error(`Release notes section for ${ver} not found in release-notes.md`);
             process.exit(1);
           }
-          const section = m[1].trim();
-          const header = [
+
+          let sectionEn = '';
+          if (fs.existsSync('release-notes.en.md')) {
+            const notesEn = fs.readFileSync('release-notes.en.md', 'utf8');
+            const matchEn = notesEn.match(re);
+            if (matchEn) sectionEn = matchEn[1].trim();
+          }
+
+          const headerEn = [
+            '## How to Use the Standalone Edition (ZIP)',
+            '',
+            `- Download and extract [**${zipName}**](${dlUrl}), then open \`index.html\` in your browser.`,
+            `- Note: \`Source code (zip / tar.gz)\` below is the full developer repository. Please download **\`${zipName}\`**.`,
+            '- Web Edition (no installation required, full feature set): https://prankster-freedom.github.io/Lucivo/',
+            '- The Standalone Edition runs completely offline without internet access (Web-only presentation modes such as Museum Walk are excluded).',
+            ''
+          ].join('\n');
+
+          const headerJa = [
             '## スタンドアロン版（ZIP）の使い方',
             '',
             `- [**${zipName}**](${dlUrl}) をダウンロードして展開し、\`index.html\` をブラウザで開いてください。`,
             `- ※ 下部の \`Source code (zip / tar.gz)\` は仕様書やテストを含む開発者向けリポジトリ全体です。利用者は必ず **\`${zipName}\`** を選んでください。`,
             '- Web 版（インストール不要。最新の機能をすべて使えます）: https://prankster-freedom.github.io/Lucivo/',
-            '- スタンドアロン版は、一部の発表機能（ズーミング・マップ、プレイアブル・ダイアグラム、ミュージアム・ウォーク）を省く代わりに、インターネットに接続せずに使えます。',
-            '',
-            '---',
+            '- スタンドアロン版は、Web 版限定の発表機能（ミュージアム・ウォーク）を省く代わりに、インターネットに接続せずに使えます。',
             ''
           ].join('\n');
-          fs.writeFileSync('/tmp/release-notes.md', header + section + '\n', 'utf8');
+
+          const parts = [headerEn];
+          if (sectionEn) parts.push(sectionEn, '');
+          parts.push('---', '', headerJa, matchJa[1].trim(), '');
+          fs.writeFileSync('/tmp/release-notes.md', parts.join('\n'), 'utf8');
           EOF
 
           git config user.name "${{ github.actor }}"
