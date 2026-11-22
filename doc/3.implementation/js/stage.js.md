@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "JavaScript"]
 
 # js/stage.js
 
-ソース: [src/js/stage.js](../../../src/js/stage.js)（出力は `public/js/stage.js`。コミットしない）／設計: [stage-show.md](../../3.sw_design_notes/features/stage-show.md)（LIGHT, SHOW）
+ソース: [src/ts/stage/index.ts](../../../src/ts/stage/index.ts)（`stage-lights.ts`、`stage-overview.ts` を同梱。出力は `public/js/stage.js`。コミットしない）／設計: [stage-show.md](../../3.sw_design_notes/features/stage-show.md)（LIGHT, SHOW）
 
 ```mermaid
 flowchart LR

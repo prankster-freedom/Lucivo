@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "JavaScript"]
 
 # js/app.js
 
-ソース: [src/ts/app.ts](../../../src/ts/app.ts)（出力は `public/js/app.js`。コミットしない）／設計: [3.sw_design_notes/](../../3.sw_design_notes/README.md) の全 feature（FILE, DIAG, MD, MATH, FM, EDGE, VTPL, LIGHT, SHOW）
+ソース: [src/ts/app.ts](../../../src/ts/app.ts) および [src/ts/ui/](../../../src/ts/ui/)（`render-pipeline.ts`、`view-controls.ts`、`editor-follow.ts`、`state.ts` ほか。出力は `public/js/app.js`。コミットしない）／設計: [3.sw_design_notes/](../../3.sw_design_notes/README.md) の全 feature（FILE, DIAG, MD, MATH, FM, EDGE, VTPL, LIGHT, SHOW）
 
 ビルドなしで `file://` から動かすため（`NFR-001`）、モジュールに分けない単一のスクリプトで、関数と状態はグローバルに置いている。
 
