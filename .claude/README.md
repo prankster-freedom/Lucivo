@@ -30,7 +30,9 @@ tags: ["Claude Code", "Cursor", "GitHub Copilot", "AGENTS.md", "CLAUDE.md", "ski
     └── skills/
         ├── branch-strategy/                 # /branch-strategy（SKILL.md + github.md + self-approve.yml）
         ├── commit/                          # /commit
+        ├── color-image/                     # /color-image（SKILL.md + palettes.md + assets/）
         ├── cr/                              # /cr（SKILL.md + template.md）
+        ├── design-craft/                    # /design-craft（SKILL.md + assets/）
         ├── devenv/                          # /devenv
         ├── devtools-update/                 # /devtools-update
         ├── doc/                             # /doc
@@ -96,6 +98,8 @@ tags: ["Claude Code", "Cursor", "GitHub Copilot", "AGENTS.md", "CLAUDE.md", "ski
 | スキル                          | 説明 |
 | :------------------------------ | :--- |
 | markdown-plantuml-documentation | GitHub Flavored Markdown・PlantUML・Mermaid の書き方（記法、図の書式、構文エラーの回避）（v2.0.0） |
+| design-craft                    | 伝わるデザインの考え方と道具（要件の整理、6 つのステップ、意味と見た目の優先づけ、擬人化・連想・翻訳、細部の詰め方、文章の要素と書体・配色・写真・グラフの扱い方）（v1.0.0） |
+| color-image                     | 伝えたい感情・雰囲気・性格・キャラクターから配色を導く（色相とトーンの記号、色の 3 つの属性、イメージスケール、キー色から 3 色への組み立て、配色テクニックの 4 本の軸、感情ごとの配色見本）（v1.0.0） |
 | control-system-documentation    | 制御系のブロック線図（SVG 既定: 横一列矩形・矢印脇ラベル・白丸加え合せ・黒丸引き出し・直角帰還）と、数式に基づく時系列・周波数応答グラフ。Mermaid flowchart での掲載は非推奨（v2.0.0） |
 
 ### frontmatter
