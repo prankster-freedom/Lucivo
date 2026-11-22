@@ -33,6 +33,7 @@ jobs:
       checks: read
     outputs:
       e2e: ${{ steps.filter.outputs.e2e }}
+      suites: ${{ steps.filter.outputs.suites }}
     steps:
     - uses: actions/checkout@v7.0.1
       with:
@@ -69,13 +70,19 @@ jobs:
     - name: Install dependencies
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npm ci
+    - name: Cache Playwright browsers
+      if: ${{ needs.changes.outputs.e2e != 'false' }}
+      uses: actions/cache@v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
     - name: Install Chromium
       if: ${{ needs.changes.outputs.e2e != 'false' }}
       run: npx playwright install --with-deps chromium
-    # public/ と dist/ のビルドは npm test の pretest が行う（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-006）
+    # public/ と dist/ のビルドは pretest が行う（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-006）
     - name: Run E2E tests
       if: ${{ needs.changes.outputs.e2e != 'false' }}
-      run: npm test
+      run: npm run pretest && node tests/e2e.cjs ${{ needs.changes.outputs.suites }}
     - name: Report performance budget
       if: ${{ !cancelled() && needs.changes.outputs.e2e != 'false' }}
       run: node tools/report-perf-budget.cjs
