@@ -492,31 +492,35 @@
 
 /* ==================== 本文が長い標準章の 2 段組み（FR-061, DD-VTPL-048, #233） ==================== */
 /* 広い画面（1600px 以上）かつプレビュー領域に十分な幅があるとき（@container min-width: 56rem）のみ 2 段にする。
-   スマホ幅・Split の狭幅・ステージ発表（is-stage-show）・印刷（@media print）では 1 段のまま */
+   スマホ幅・Split の狭幅・ステージ発表（is-stage-show）・印刷（@media print）・段幅を超える表を含む章（vs-has-wide-table）では 1 段のまま */
 @media screen and (min-width: 1600px) {
   @container (min-width: 56rem) {
-    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body {
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose:not(.vs-has-wide-table) > .vs-two-col-body {
       column-count: 2;
       column-gap: 2.5rem;
       column-rule: 1px solid var(--border-subtle);
     }
-    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body > :first-child {
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose:not(.vs-has-wide-table) > .vs-two-col-body > :first-child {
       margin-top: 0;
     }
-    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body > :last-child {
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose:not(.vs-has-wide-table) > .vs-two-col-body > :last-child {
       margin-bottom: 0;
     }
-    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(p, blockquote, .md-alert, li) {
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose:not(.vs-has-wide-table) > .vs-two-col-body :is(p, blockquote, .md-alert, li) {
       break-inside: avoid;
     }
-    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(h1, h3, h4, h5, h6) {
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose:not(.vs-has-wide-table) > .vs-two-col-body :is(h1, h3, h4, h5, h6) {
       break-inside: avoid;
       break-after: avoid;
     }
     /* pre・図・表・ブロック数式も段の中に収め、前後の段の流れを分断しない（#263） */
-    html:not(.is-stage-show) .exhibition-slab.vs-long-prose > .vs-two-col-body :is(pre, .exhibition-diagram-card, .lucivo-slot, .table-container, .lucivo-math) {
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose:not(.vs-has-wide-table) > .vs-two-col-body :is(pre, .exhibition-diagram-card, .lucivo-slot, .table-container, .lucivo-math) {
       break-inside: avoid;
       max-width: 100%;
+    }
+    /* 段幅に収まる小さな表が typography.css の min-width: 560px で横スクロールしないようにする（#352） */
+    html:not(.is-stage-show) .exhibition-slab.vs-long-prose:not(.vs-has-wide-table) > .vs-two-col-body table {
+      min-width: 0 !important;
     }
   }
 }
