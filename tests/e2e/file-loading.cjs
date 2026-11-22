@@ -1254,6 +1254,119 @@ async function testFolder(browser) {
   const prefer = await page.evaluate(() => preferFolderInput);
   const unexpected = page.consoleErrors.filter(e => !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(e));
   record('TC-FILE-025', fellBack && prefer && unexpected.length === 0, JSON.stringify({ fellBack, prefer, errors: unexpected }));
+
+  // TC-FILE-049: フォルダ内文書の横断全文検索と該当箇所への移動・強調（FR-064, #331）
+  await page.evaluate(() => {
+    const file = (name, text, type) => ({ kind: 'file', name, getFile: async () => new File([text], name, { type }) });
+    const dir = (name, children) => ({
+      kind: 'directory', name,
+      async *entries() { for (const c of children) yield [c.name, c]; },
+      async getDirectoryHandle(n) { const c = children.find(x => x.name === n && x.kind === 'directory'); if (!c) throw new DOMException('', 'NotFoundError'); return c; },
+      async getFileHandle(n) { const c = children.find(x => x.name === n && x.kind === 'file'); if (!c) throw new DOMException('', 'NotFoundError'); return c; },
+      async queryPermission() { return 'granted'; },
+      async requestPermission() { return 'granted'; }
+    });
+    const filler = Array.from({ length: 18 }, (_, i) => `段落 ${i + 1}: 背景説明テキストです。`).join('\n\n');
+    window.__searchRoot = dir('検索資料', [
+      file('01-overview.md', `# 概要仕様\n\n## 1. 目的\n\n本システムは REQ-ALPHA-101 を満たします。\n`, 'text/markdown'),
+      dir('specs', [
+        file('02-detail.md', `# 詳細設計\n\n## 1. 前提\n\n${filler}\n\n## 2. 検索対象の章\n\nここで REQ-ALPHA-101 の詳細な振る舞いを定義します。\nさらに REQ-ALPHA-101 を検証します。\n`, 'text/markdown')
+      ])
+    ]);
+    window.showDirectoryPicker = async () => window.__searchRoot;
+    preferFolderInput = false;
+  });
+  await page.click('#btn-file-menu');
+  await page.click('#menu-open-folder');
+  await page.waitForFunction(() => openedFolder && openedFolder.name === '検索資料');
+
+  await page.fill('#folder-search-input', 'REQ-ALPHA-101');
+  await page.waitForFunction(() => {
+    const items = document.querySelectorAll('#folder-search-results .folder-search-item');
+    return items.length === 3;
+  });
+
+  const searchListState = await page.evaluate(() => ({
+    status: document.getElementById('folder-search-status').textContent,
+    listHidden: document.getElementById('folder-list').classList.contains('hidden'),
+    resultsVisible: !document.getElementById('folder-search-results').classList.contains('hidden'),
+    clearVisible: !document.getElementById('btn-folder-search-clear').classList.contains('hidden'),
+    groups: Array.from(document.querySelectorAll('#folder-search-results .folder-search-file-group')).map(g => ({
+      path: g.querySelector('.folder-search-file-path').textContent,
+      count: g.querySelector('.folder-search-file-count').textContent
+    })),
+    items: Array.from(document.querySelectorAll('#folder-search-results .folder-search-item')).map(it => ({
+      path: it.dataset.path,
+      line: Number(it.dataset.line),
+      heading: it.querySelector('.folder-search-item-heading').textContent,
+      mark: it.querySelector('mark.folder-search-mark')?.textContent || ''
+    }))
+  }));
+
+  // 2 つ目のファイル（specs/02-detail.md）の結果をクリックして文書が開き、該当箇所がハイライト・スクロールされることを確認
+  await page.click('#folder-search-results .folder-search-item[data-path="specs/02-detail.md"]');
+  await page.waitForFunction(() => document.title === '02-detail.md - Lucivo');
+  await waitRendered(page);
+  await page.waitForTimeout(300);
+
+  const fastJumpState = await page.evaluate(() => {
+    const std = document.getElementById('standard-doc-container');
+    const marks = Array.from(std.querySelectorAll('mark.lucivo-search-hit'));
+    const editor = document.getElementById('markdown-editor');
+    const selectedText = editor.value.slice(editor.selectionStart, editor.selectionEnd);
+    return {
+      title: document.title,
+      markCount: marks.length,
+      markText: marks[0]?.textContent || '',
+      selectedText,
+      scrollTop: Math.round(document.getElementById('preview-scroll').scrollTop)
+    };
+  });
+
+  // Visualモードでも検索結果クリックで該当スラブへ移動・ハイライトされることを確認
+  await page.click('#btn-visual-mode');
+  await waitRendered(page);
+  await page.waitForTimeout(300);
+  await page.click('#folder-search-results .folder-search-item[data-path="specs/02-detail.md"]');
+  await page.waitForTimeout(300);
+
+  const visualJumpState = await page.evaluate(() => {
+    const vis = document.getElementById('visual-stage-container');
+    const marks = Array.from(vis.querySelectorAll('mark.lucivo-search-hit'));
+    const activeSlab = marks[0]?.closest('.exhibition-slab');
+    return {
+      markCount: marks.length,
+      slabStageNo: activeSlab?.getAttribute('data-stage-no') || ''
+    };
+  });
+
+  // クリアボタンで通常一覧に戻り、プレビューのハイライトも消えることを確認
+  await page.click('#btn-folder-search-clear');
+  const clearedState = await page.evaluate(() => ({
+    inputVal: document.getElementById('folder-search-input').value,
+    listVisible: !document.getElementById('folder-list').classList.contains('hidden'),
+    resultsHidden: document.getElementById('folder-search-results').classList.contains('hidden'),
+    remainingMarks: document.querySelectorAll('mark.lucivo-search-hit').length
+  }));
+
+  record('TC-FILE-049',
+    searchListState.status === '2 ファイル・3 件一致'
+    && searchListState.listHidden && searchListState.resultsVisible && searchListState.clearVisible
+    && searchListState.groups.length === 2
+    && searchListState.items[1].path === 'specs/02-detail.md'
+    && searchListState.items[1].heading === '2. 検索対象の章'
+    && searchListState.items[1].mark === 'REQ-ALPHA-101'
+    && fastJumpState.title === '02-detail.md - Lucivo'
+    && fastJumpState.markCount === 2
+    && fastJumpState.markText === 'REQ-ALPHA-101'
+    && fastJumpState.selectedText === 'REQ-ALPHA-101'
+    && fastJumpState.scrollTop > 0
+    && visualJumpState.markCount === 2
+    && visualJumpState.slabStageNo === '02'
+    && clearedState.inputVal === ''
+    && clearedState.listVisible && clearedState.resultsHidden && clearedState.remainingMarks === 0,
+    JSON.stringify({ searchListState, fastJumpState, visualJumpState, clearedState })
+  );
   await page.context().close();
 }
 

@@ -17,6 +17,12 @@ import { state, DROPPABLE_FILE_PATTERN, runtime } from './state';
 import { isRelativeSrc } from '../markdown/local-images';
 import { scrollBehavior, previewScrollTopOf } from './editor-follow';
 import {
+  resetFolderSearchUi,
+  scheduleFolderSearch,
+  focusSearchMatchInCurrentDoc,
+  type FolderSearchMatch
+} from './folder-search';
+import {
   closeHeaderMenus,
   confirmDiscardEdits,
   prepareLoadedText,
@@ -214,6 +220,7 @@ export function clearFolderImageUrls() {
 
 export function setOpenedFolder(folder) {
   clearFolderImageUrls();
+  resetFolderSearchUi();
   runtime.openedFolder = folder;
   // 前に開いていた文書は、新しいフォルダの文書ではない
   runtime.currentFolderPath = null;
@@ -230,6 +237,7 @@ export function setOpenedFolder(folder) {
 export function closeFolder() {
   const wasRemote = Boolean(runtime.openedFolder && runtime.openedFolder.isRemote);
   clearFolderImageUrls();
+  resetFolderSearchUi();
   runtime.openedFolder = null;
   runtime.currentFolderPath = null;
   if (wasRemote) {
@@ -547,6 +555,16 @@ export async function reopenRecentFolder() {
   await openFolderFromHandle(handle);
 }
 
+export async function openFolderSearchResult(match: FolderSearchMatch, query: string) {
+  if (!runtime.openedFolder) return;
+  const needOpen = match.path !== runtime.currentFolderPath;
+  if (needOpen) {
+    const opened = await openFolderFile(match.path);
+    if (!opened) return;
+  }
+  focusSearchMatchInCurrentDoc(match, query);
+}
+
 export function setupFolder() {
   const input = document.getElementById('folder-input');
   input.onchange = () => {
@@ -558,6 +576,33 @@ export function setupFolder() {
   document.getElementById('btn-folder-hide').onclick = () => setFolderPaneCollapsed(true);
   document.getElementById('btn-folder-show').onclick = () => setFolderPaneCollapsed(false);
   document.getElementById('btn-folder-close').onclick = closeFolder;
+
+  const searchInput = document.getElementById('folder-search-input') as HTMLInputElement | null;
+  const searchClear = document.getElementById('btn-folder-search-clear');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      scheduleFolderSearch(searchInput.value, openFolderSearchResult);
+    });
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (searchInput.value) {
+          e.preventDefault();
+          e.stopPropagation();
+          resetFolderSearchUi();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        scheduleFolderSearch(searchInput.value, openFolderSearchResult, true);
+      }
+    });
+  }
+  if (searchClear && searchInput) {
+    searchClear.onclick = () => {
+      resetFolderSearchUi();
+      searchInput.focus();
+    };
+  }
+
   setupDocumentLinks();
   loadRecentFolderHandle();
 }

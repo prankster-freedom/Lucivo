@@ -148,7 +148,7 @@ export function scheduleFollow() {
 }
 
 // text 内の 0 始まり行番号 targetLine の先頭文字オフセットを返す
-function lineStartOffset(text: string, targetLine: number) {
+export function lineStartOffset(text: string, targetLine: number) {
   let offset = 0;
   for (let line = 0; line < targetLine; line++) {
     const nl = text.indexOf('\n', offset);
@@ -159,7 +159,7 @@ function lineStartOffset(text: string, targetLine: number) {
 }
 
 // textarea 内の prefix（先頭から対象行頭まで）の折り返しを考慮した上端 Y 座標を測る
-function measureEditorLineTop(editor: HTMLTextAreaElement, prefix: string) {
+export function measureEditorLineTop(editor: HTMLTextAreaElement, prefix: string) {
   const cs = getComputedStyle(editor);
   const mirror = document.createElement('div');
   mirror.style.cssText = 'position:fixed;top:-9999px;left:-9999px;visibility:hidden;pointer-events:none;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;box-sizing:border-box;';

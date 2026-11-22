@@ -221,6 +221,190 @@
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+/* フォルダ内横断検索バーと検索結果一覧（FR-064, #331） */
+.folder-search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  flex-shrink: 0;
+}
+.folder-search-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.folder-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 1.5rem;
+  padding: 0 0.25rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+.folder-search-input::placeholder {
+  color: var(--text-muted);
+}
+.folder-search-input:focus {
+  outline: none;
+}
+.folder-search-bar:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.folder-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+.folder-search-clear {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.folder-search-clear.hidden {
+  display: none;
+}
+.folder-search-clear svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+.folder-search-clear:hover,
+.folder-search-clear:focus-visible {
+  background: var(--panel-sub);
+  color: var(--text-primary);
+}
+.folder-search-status {
+  padding: 0.25rem 0.65rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.folder-search-status.hidden,
+.folder-search-results.hidden,
+.folder-list.hidden {
+  display: none;
+}
+.folder-search-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.35rem 0.35rem 1rem;
+  scrollbar-width: thin;
+}
+.folder-search-file-group {
+  margin-top: 0.45rem;
+  padding: 0.15rem 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.folder-search-file-group:first-child {
+  margin-top: 0.1rem;
+}
+.folder-search-file-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-search-file-count {
+  flex-shrink: 0;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--panel-sub);
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+.folder-search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+}
+.folder-search-item:hover,
+.folder-search-item:focus-visible {
+  background: var(--panel-sub);
+}
+.folder-search-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.folder-search-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.folder-search-item-line {
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  color: var(--text-muted);
+}
+.folder-search-item-heading {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-search-item-snippet {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-all;
+}
+.folder-search-mark,
+.lucivo-search-hit {
+  padding: 0.05em 0.18em;
+  border-radius: 3px;
+  background: rgba(245, 158, 11, 0.28);
+  color: inherit;
+  font-weight: 600;
+}
+body[data-appearance="dark"] .folder-search-mark,
+body[data-appearance="dark"] .lucivo-search-hit {
+  background: rgba(251, 191, 36, 0.32);
+}
+.lucivo-search-hit-active {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+@media print {
+  .lucivo-search-hit {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-weight: inherit !important;
+  }
+}
 /* 一覧を隠したときの細い帯。フォルダのアイコンと、開く向きの矢印を縦に並べる */
 .folder-rail {
   width: 1.75rem;

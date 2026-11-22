@@ -268,6 +268,15 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
+      <div id="folder-search-bar" class="folder-search-bar">
+        <svg class="folder-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="folder-search-input" type="search" class="folder-search-input" placeholder="フォルダ内を検索…" aria-label="フォルダ内の文書を検索" autocomplete="off" spellcheck="false">
+        <button id="btn-folder-search-clear" type="button" class="folder-search-clear hidden" title="検索をクリア" aria-label="検索をクリア">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div id="folder-search-status" class="folder-search-status hidden" role="status" aria-live="polite"></div>
+      <div id="folder-search-results" class="folder-search-results hidden" role="region" aria-label="フォルダ内検索結果"></div>
       <nav id="folder-list" class="folder-list" aria-label="Markdown ファイル"></nav>
     </aside>
     <!-- 一覧を隠したときに残す細い帯。押すと一覧を戻す -->
