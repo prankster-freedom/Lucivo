@@ -1,4 +1,4 @@
-// doc/0.DTP/assets/color-tones/ のカラートーン文書（01〜20）と一覧（README.md）の表を、HTML の表（色の見本つき）に書き直す（#351, #355）。
+// doc/0.DTP/assets/color-tones/ のカラートーン文書（番号つきの `NN-<ID>.md`。3 桁の番号も読む）と一覧（README.md）の表を、HTML の表（色の見本つき）に書き直す（#351, #355）。
 // 色の元は、各トーン文書の表の 1 列目に書いた、行ごとの配色の組（背景・文字・境界・線の色コード）。色を直すときは、
 // その色コードを直してから、このスクリプトを実行する（style の中の色は、スクリプトが合わせる）。
 // 旧形式の表（「境界・線」「文字（主）」の行がある表、Markdown の表）も読めるため、何度実行しても同じ結果になる。
@@ -163,7 +163,7 @@ function buildListTable(entries) {
 }
 
 function main() {
-  const files = fs.readdirSync(TONES_DIR).filter(f => /^\d{2}-.*\.md$/.test(f)).sort();
+  const files = fs.readdirSync(TONES_DIR).filter(f => /^\d{2,3}-.*\.md$/.test(f)).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
   const tones = {};
   for (const file of files) {
     const full = path.join(TONES_DIR, file);
