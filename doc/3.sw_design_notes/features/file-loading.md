@@ -336,3 +336,9 @@ sequenceDiagram
   2. `src/ts/app.ts` の `selectTone(toneId)`: `trackWebEvent('tone_select', { tone: toneId })`
   3. `src/ts/ui/present-modes.ts` の `loadMode(id)`: `trackWebEvent('present_mode_select', { present_mode: id })`
 - すべてのイベントに `{ event, release_channel, ...params }` のみを `window.dataLayer.push()` する。`public/index.html` の `LUCIVO_WEB_ANALYTICS_START`〜`END` では `gtm.js?id=GTM-KMQ3KLNT` 読み込み前に `{ 'gtm.start': new Date().getTime(), event: 'gtm.js' }` を `dataLayer` へ積む。
+
+### DD-FILE-096 フォルダ内文書の横断全文検索と移動・強調（`FR-064`, `#331`）
+
+- `src/ts/ui/folder-search.ts` に、行・見出し索引の作成（`indexMarkdownLines()`）、単一ファイルの検索（`searchInIndexedFile()`）、フォルダ全体の非同期横断検索（`runFolderSearch()` / `scheduleFolderSearch()`）、およびプレビュー・エディタへの移動と強調（`focusSearchMatchInCurrentDoc()` / `clearPreviewSearchHighlights()`）を置く。
+- **遅延索引キャッシュ**: フォルダを開いた時点では全ファイルを読み込まず、最初に検索語が入力されたときに `folder.getFile(path)` → `decodeMarkdown()` でテキストを読み、行配列とフェンス外の見出し一覧（`{ line, text }`）を `fileLinesCache`（キー: `path`、署名: `${lastModified}:${size}`）にキャッシュする。現在開いている文書（`path === runtime.currentFolderPath`）はエディタの最新テキストから索引を作る。25 ファイルごとに `setTimeout(0)` でメインスレッドに制御を返し、検索世代（`searchGeneration`）が変わったら古い検索を中断する。GitHub `tree` リモートフォルダでは大量の通信を防ぐため先頭 `REMOTE_SEARCH_FILE_LIMIT`（60 件）を検索対象とする。
+- **該当箇所への移動と強調**: 結果をクリックすると `openFolderSearchResult()` が必要なら `openFolderFile(match.path)` で文書を開いたうえで `focusSearchMatchInCurrentDoc()` を呼ぶ。エディタ側は `lineStartOffset()` と `measureEditorLineTop()` で該当行の一致語句を選択・スクロールする。プレビュー側は `[data-src-line]` から `match.line` 以前の直近見出し（Visualモードではその見出しを含む `.exhibition-slab`）を特定し、`TreeWalker` でテキストノードの一致箇所を `<mark class="lucivo-search-hit">` に包んで `previewScrollTopOf()` でスクロールする。
