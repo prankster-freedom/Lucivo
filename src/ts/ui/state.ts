@@ -322,6 +322,7 @@ export interface ToneModeSpec {
 }
 export interface ColorToneSpec {
   id: string;
+  analyticsId: string;
   label: string;
   light: ToneModeSpec;
   dark: ToneModeSpec;
@@ -329,48 +330,56 @@ export interface ColorToneSpec {
 export const COLOR_TONES: ColorToneSpec[] = [
   {
     id: 'default',
+    analyticsId: '000-default',
     label: 'スタイル準拠',
     light: { c1: '#2563EB', c2: '#0EA5E9', c3: '#10B981', c4: '#F59E0B', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#475569', text: '#0F172A', glow: '#38BDF8' },
     dark: { c1: '#38BDF8', c2: '#818CF8', c3: '#34D399', c4: '#FBBF24', canvasBg: '#0B101B', cardBg: '#161F30', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
   },
   {
     id: 'cobalt-workshop',
+    analyticsId: '010-cobalt-workshop',
     label: '晴天の工作舎',
     light: { c1: '#D42A44', c2: '#D99B00', c3: '#198038', c4: '#2266CC', canvasBg: '#F4F7FB', cardBg: '#FFFFFF', edge: '#334155', text: '#0F172A', glow: '#38BDF8' },
     dark: { c1: '#FF5C77', c2: '#FFD147', c3: '#4ADE80', c4: '#60A5FA', canvasBg: '#0B1220', cardBg: '#131E33', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
   },
   {
     id: 'morning-window',
+    analyticsId: '001-morning-window',
     label: '朝の窓辺',
     light: { c1: '#E57A89', c2: '#D9AE38', c3: '#5CB874', c4: '#6898DC', canvasBg: '#F8FAFC', cardBg: '#FFFFFF', edge: '#5A6D82', text: '#1E293B', glow: '#60A5FA' },
     dark: { c1: '#FF9EAA', c2: '#FFE066', c3: '#7EE89C', c4: '#8CC0FF', canvasBg: '#101622', cardBg: '#192233', edge: '#9BB0C9', text: '#F8FAFC', glow: '#BAE6FD' }
   },
   {
     id: 'matcha-wagashi',
+    analyticsId: '017-matcha-wagashi',
     label: '抹茶と和三盆',
     light: { c1: '#6D8C50', c2: '#C49A5C', c3: '#C27477', c4: '#6B5B4B', canvasBg: '#F4F1E8', cardBg: '#FBF9F4', edge: '#5E584B', text: '#24211B', glow: '#84B558' },
     dark: { c1: '#A3D175', c2: '#F2C97D', c3: '#F0989B', c4: '#C2AD94', canvasBg: '#121610', cardBg: '#1B2118', edge: '#A4A090', text: '#F4F1E8', glow: '#C2EB96' }
   },
   {
     id: 'nordic-frost',
+    analyticsId: '018-nordic-frost',
     label: '北欧の霜柱',
     light: { c1: '#4D8BB0', c2: '#5BA3C2', c3: '#7A86B8', c4: '#556D85', canvasBg: '#F0F6FA', cardBg: '#FAFDFE', edge: '#536A7D', text: '#162330', glow: '#38BDF8' },
     dark: { c1: '#70C4F0', c2: '#8EE0F8', c3: '#B4BEFA', c4: '#A2C0D9', canvasBg: '#0B131E', cardBg: '#142030', edge: '#93AEC4', text: '#F1F6FA', glow: '#A5F3FC' }
   },
   {
     id: 'amber-sunset',
+    analyticsId: '014-amber-sunset',
     label: '琥珀の夕暮れ',
     light: { c1: '#D9821E', c2: '#D95A4A', c3: '#B54269', c4: '#7A548C', canvasBg: '#FAF3EB', cardBg: '#FFFBF7', edge: '#6B525A', text: '#291C20', glow: '#F59E0B' },
     dark: { c1: '#FFB347', c2: '#FF7D6B', c3: '#F2729C', c4: '#C292DB', canvasBg: '#181016', cardBg: '#241821', edge: '#B0929D', text: '#FAF3EE', glow: '#FCD34D' }
   },
   {
     id: 'midnight-library',
+    analyticsId: '007-midnight-library',
     label: '夜を編む図書館',
     light: { c1: '#8F2D3E', c2: '#8F7018', c3: '#266E40', c4: '#2A4E85', canvasBg: '#ECEAE4', cardBg: '#F7F5F0', edge: '#3F4657', text: '#171A24', glow: '#D4A528' },
     dark: { c1: '#F07185', c2: '#F2C957', c3: '#5CD685', c4: '#78A8F5', canvasBg: '#0C101A', cardBg: '#151C2C', edge: '#8C9AB8', text: '#F3F1EB', glow: '#FFE073' }
   },
   {
     id: 'cyber-prism',
+    analyticsId: '020-cyber-prism',
     label: '分光プリズムと黒曜石',
     light: { c1: '#0369A1', c2: '#DB2777', c3: '#7C3AED', c4: '#059669', canvasBg: '#F1F5F9', cardBg: '#FFFFFF', edge: '#475569', text: '#0F172A', glow: '#06B6D4' },
     dark: { c1: '#38BDF8', c2: '#F472B6', c3: '#B494FF', c4: '#34D399', canvasBg: '#080C16', cardBg: '#111829', edge: '#8193B0', text: '#F8FAFC', glow: '#67E8F9' }
