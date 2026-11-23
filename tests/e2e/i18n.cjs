@@ -1,10 +1,11 @@
 // 多言語対応（日本語・英語）E2E テスト（FR-065〜067, FR-007, DTP-004, TC-I18N-001〜004）
 const path = require('path');
 const fs = require('fs');
-const { ROOT_DIR, record, openApp, waitRendered, startWebServer } = require('./helpers.cjs');
+const { ROOT_DIR, record, openApp, waitRendered, startWebServer, mockWebSamples } = require('./helpers.cjs');
 
 // 英語表示で残ってはいけない日本語文字（ひらがな・カタカナ・漢字・全角約物）
 const JP_CHAR_RE = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3001\u3002\u300C\u300D\uFF01-\uFF5E]/;
+const documentTitleToFile = title => (title || '').replace(/ - Lucivo$/, '');
 
 async function collectUiJapaneseLeaks(page, excludeSelectors = []) {
   return page.evaluate(({ jpPattern, excludes }) => {
@@ -92,14 +93,20 @@ async function testI18n(browser) {
       url: `${server.url}?lang=en`,
       viewport: { width: 1280, height: 900 }
     });
+    await mockWebSamples(page);
     await waitRendered(page);
 
     const startupLeaks = await collectUiJapaneseLeaks(page);
+    const startupThumbsEn = await page.evaluate(() => Array.from(document.querySelectorAll('.empty-guide-sample-thumb img')).map(img => ({
+      src: img.getAttribute('src') || '',
+      loaded: img.complete && img.naturalWidth > 0
+    })));
 
     // 起動画面サンプルリンクから visual-sample.en.md を開き、Visualモード + ステージ発表を検査
     await page.click('[data-empty-sample="visual-sample.md"]');
+    await page.waitForFunction(() => document.title === 'visual-sample.en.md - Lucivo', null, { timeout: 10000 });
     await waitRendered(page);
-    const loadedFile = await page.evaluate(() => window.currentSampleFile);
+    const loadedFile = documentTitleToFile(await page.title());
     await page.click('#btn-visual-mode');
     await waitRendered(page);
     const visualLeaks = await collectUiJapaneseLeaks(page, ['#markdown-editor']);
@@ -126,23 +133,26 @@ async function testI18n(browser) {
       allLeaks.length === 0 ? `sample=${loadedFile}, leaks=0` : `leaks(${allLeaks.length}): ${allLeaks.slice(0, 5).join(' | ')}`
     );
 
-    // TC-I18N-003: 言語切替による同梱サンプルの日英自動切替と起動画面リンク 3 件の確認
+    // TC-I18N-003: 言語切替による同梱サンプルの日英自動切替と起動画面カード 3 件の確認
     await page.click('#btn-lang-menu');
     await page.click('#menu-lang-ja');
-    await page.waitForFunction(() => window.currentSampleFile === 'visual-sample.md', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.title === 'visual-sample.md - Lucivo', null, { timeout: 10000 });
     await waitRendered(page);
-    const switchedToJa = await page.evaluate(() => window.currentSampleFile);
+    const switchedToJa = documentTitleToFile(await page.title());
 
     await page.click('#btn-lang-menu');
     await page.click('#menu-lang-en');
-    await page.waitForFunction(() => window.currentSampleFile === 'visual-sample.en.md', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.title === 'visual-sample.en.md - Lucivo', null, { timeout: 10000 });
     await waitRendered(page);
-    const switchedToEn = await page.evaluate(() => window.currentSampleFile);
+    const switchedToEn = documentTitleToFile(await page.title());
 
     record(
       'TC-I18N-003',
-      switchedToJa === 'visual-sample.md' && switchedToEn === 'visual-sample.en.md',
-      `ja=${switchedToJa}, en=${switchedToEn}`
+      switchedToJa === 'visual-sample.md'
+        && switchedToEn === 'visual-sample.en.md'
+        && startupThumbsEn.length === 3
+        && startupThumbsEn.every(t => t.src.endsWith('.en.webp') && t.loaded),
+      `ja=${switchedToJa}, en=${switchedToEn}, thumbs=${JSON.stringify(startupThumbsEn)}`
     );
 
     // TC-I18N-004: Visualモード英語表示の組版（html[lang="en"] の字間・横はみ出しなし・ゲラ保存）

@@ -149,6 +149,36 @@ async function run() {
     'HTTP 403 時は GITHUB_RATE_LIMIT エラーを送出すること'
   );
 
+  // 8. present パラメータの解析と URL 同期での削除（FR-069）
+  const { parseDisplayStateParams, buildAppUrlWithState } = loadUrlLoader();
+  const presentParsed = parseDisplayStateParams(
+    '?mode=visual&theme=dark&present=MUSEUM-WALK',
+    '',
+    ['shapes', 'cards'],
+    ['default'],
+    ['museum-walk']
+  );
+  assert.deepStrictEqual(
+    presentParsed,
+    { isVisualMode: true, appearance: 'dark', present: 'museum-walk' },
+    '登録された present ID が小文字正規化されて抽出されること'
+  );
+  const invalidPresent = parseDisplayStateParams(
+    '?present=unknown-mode',
+    '',
+    ['shapes'],
+    ['default'],
+    ['museum-walk']
+  );
+  assert.strictEqual(invalidPresent.present, undefined, '未登録の present 値は無視されること');
+  const syncedUrl = buildAppUrlWithState(
+    'https://example.com/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fo%2Fr%2Fmain%2Fa.md&mode=visual&theme=dark&present=museum-walk#present=museum-walk',
+    { isVisualMode: true, appearance: 'dark', infographicStyle: 'shapes', tone: 'default', viewMode: 'split', lang: 'ja' },
+    'https://raw.githubusercontent.com/o/r/main/a.md',
+    'split'
+  );
+  assert.ok(!syncedUrl.includes('present='), 'buildAppUrlWithState がクエリおよびハッシュから present を取り除くこと');
+
   console.log('url-loader.test.cjs: all assertions passed');
 }
 
