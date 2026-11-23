@@ -197,4 +197,7 @@ function main() {
   console.log(`Wrote ${files.length} tone documents and the list.`);
 }
 
-main();
+// 直接実行したときだけ書き出す。単体テスト（tests/build-color-tone-tables.test.cjs）は、読み込んで関数を呼ぶ
+if (require.main === module) main();
+
+module.exports = { readTableRows, readTone, buildToneTable, buildListTable };
