@@ -1,6 +1,8 @@
 // 起動画面用サムネイル（public/assets/thumbs/*.webp, 640x400）と
 // README 用スクリーンショット（doc/images/readme/*.png, 1280x800）を日英それぞれ撮影する（#378）。
 // 使い方: node tools/capture-sample-thumbs.cjs
+// 一部だけ撮り直すときは、環境変数で絞る（例: LANGS=ja TARGETS=color-museum）。
+//   LANGS: ja,en のうち撮る言語（既定は両方）／TARGETS: visual,notation,color-museum のうち撮る対象（既定はすべて）
 'use strict';
 
 const fs = require('fs');
@@ -12,7 +14,9 @@ const ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const THUMB_DIR = path.join(PUBLIC_DIR, 'assets', 'thumbs');
 const README_DIR = path.join(ROOT, 'doc', 'images', 'readme');
-const HIDE_CSS = '#telemetry-pill, .slab-actions, #toast, #toast-container, #toast-message, .toast { display: none !important; }';
+const LANGS = (process.env.LANGS || 'ja,en').split(',').map(s => s.trim()).filter(Boolean);
+const TARGETS = (process.env.TARGETS || 'visual,notation,color-museum').split(',').map(s => s.trim()).filter(Boolean);
+const HIDE_CSS ='#telemetry-pill, .slab-actions, #toast, #toast-container, #toast-message, .toast { display: none !important; }';
 
 function startStaticServer() {
   const mime = {
@@ -96,7 +100,7 @@ async function main() {
   const browser = await chromium.launch();
 
   try {
-    for (const lang of ['ja', 'en']) {
+    for (const lang of LANGS) {
       const suffix = lang === 'en' ? '.en.md' : '.md';
       const context = await browser.newContext({
         viewport: { width: 1280, height: 800 },
@@ -107,6 +111,7 @@ async function main() {
       await setupRoutes(page);
 
       // 1. Visualモード・Light サムネイル（日英とも 4列カード＆KPIメトリクスを 2段カードスタイルで撮影）
+      if (TARGETS.includes('visual')) {
       const visualUrl = `https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/visual-sample${suffix}`;
       const headingRe = lang === 'ja' ? /4列カード/ : /4-Column Cards/i;
       await page.goto(`${server.url}?url=${encodeURIComponent(visualUrl)}&mode=visual&theme=light&style=cards&view=canvas&lang=${lang}`);
@@ -136,8 +141,10 @@ async function main() {
         await slab.screenshot({ path: path.join(README_DIR, 'visual-cards.en.png') });
         await page.setViewportSize({ width: 1280, height: 800 });
       }
+      }
 
       // 2. 記法サンプル（Split 表示・Light・数式パート周辺）
+      if (TARGETS.includes('notation')) {
       const notationUrl = `https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/notation_sample${suffix}`;
       await page.goto(`${server.url}?url=${encodeURIComponent(notationUrl)}&mode=fast&theme=light&view=split&lang=${lang}`);
       await page.addStyleTag({ content: HIDE_CSS });
@@ -156,31 +163,60 @@ async function main() {
         path.join(README_DIR, `thumb-notation.${lang}.png`),
         path.join(THUMB_DIR, `notation.${lang}.webp`)
       );
+      }
 
       // 3. 配色ミュージアム（ミュージアム・ウォーク・Dark）
+      if (TARGETS.includes('color-museum')) {
       const museumUrl = `https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/color-museum-sample${suffix}`;
       await page.goto(`${server.url}?url=${encodeURIComponent(museumUrl)}&mode=visual&theme=dark&present=museum-walk&lang=${lang}`);
       await page.waitForFunction(() => document.documentElement.classList.contains('is-museum-walk'), null, { timeout: 25000 });
       await page.waitForTimeout(1200);
-      // 左壁の実色スウォッチ表プレートと、奥へ続く Dark 回廊・天井ダウンライト・床反射を一望するアングル
-      await page.keyboard.press('g');
-      await page.evaluate(() => {
+      // 「一日の光をたどる」の章に入った直後のアングル: 左の壁に小見出し「六つの窓」と本文、その先に窓の作品、
+      // 正面の奥に年表の広間が見える。立ち止まって左の壁を向いたあと、視線を進行方向へ少し回して撮る
+      const framed = await page.evaluate(() => {
         const m = window.LucivoModes?.get('museum-walk');
         const st = m?.info?.();
-        const plate = (st?.parts || []).find(p => p.kind === 'plate');
-        if (plate) m.walkTo(plate.z + 400);
+        const gate = (st?.gates || []).find(g => /一日の光|Light of a Day/i.test(g.title || ''));
+        if (!gate) return false;
+        // 進む向きは -z。門より奥（z が小さい）で、いちばん手前にある左の壁のパーツが、章の最初の小見出し
+        const first = (st.parts || []).filter(p => p.side === 'L' && p.z < gate.z && p.kind !== 'h3shadow').sort((a, b) => b.z - a.z)[0];
+        if (!first) return false;
+        // 止まって左の壁を向いたとき、パーツの真ん中が正面に来る位置（tests/e2e/modes/museum-walk.cjs の readingZ）より
+        // 220 だけ手前に立ち、見出しと、奥の窓の作品・年表の広間を同じ画面に入れる。
+        // 450 まで下げると門の通過直後の位置になり、視線が正面の回廊を向いてしまう
+        m.walkTo(first.z - first.w / 2 + 512 + 220);
+        return true;
       });
-      await page.waitForTimeout(1200);
-      await page.mouse.move(640, 400);
-      await page.mouse.down();
-      await page.mouse.move(850, 400, { steps: 10 });
-      await page.mouse.up();
-      await page.waitForTimeout(1000);
+      if (framed) {
+        // 視線を進行方向へ少し回す。左へドラッグすると右（進行方向）を向く。量は環境変数 THUMB_TURN で調整できる
+        const turn = Number(process.env.THUMB_TURN || -120);
+        await page.mouse.move(640, 400);
+        await page.mouse.down();
+        await page.mouse.move(640 + turn, 400, { steps: 10 });
+        await page.mouse.up();
+      }
+      if (!framed) {
+        // 該当する章のない版（英語版の旧構成）は、従来どおり、左の壁の表と奥へ続く回廊を一望するアングルで撮る
+        await page.keyboard.press('g');
+        await page.evaluate(() => {
+          const m = window.LucivoModes?.get('museum-walk');
+          const st = m?.info?.();
+          const plate = (st?.parts || []).find(p => p.kind === 'plate');
+          if (plate) m.walkTo(plate.z + 400);
+        });
+        await page.waitForTimeout(1200);
+        await page.mouse.move(640, 400);
+        await page.mouse.down();
+        await page.mouse.move(850, 400, { steps: 10 });
+        await page.mouse.up();
+      }
+      await page.waitForTimeout(1500);
       await savePngAndWebp(
         page,
         path.join(README_DIR, `thumb-color-museum.${lang}.png`),
         path.join(THUMB_DIR, `color-museum.${lang}.webp`)
       );
+      }
 
       await context.close();
     }

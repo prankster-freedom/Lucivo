@@ -95,7 +95,7 @@ Web 版は GitHub 上のサンプルを直接読み込み、ダウンロード�
 | [visual-sample.md](public/samples/visual-sample.md)                   | Visualモードの表紙・各種誌面雛形・表・光の流動演出・ステージ発表 |
 | [notation_sample.md](public/samples/notation_sample.md)               | Markdown と Mermaid の記法一覧（全図種・数式・コールアウト・脚注・絵文字など） |
 | [notation_sample_extra1.md](public/samples/notation_sample_extra1.md) | 発展的記法（CommonMark・GFM）、画像・文書間リンク、フォルダ構成ツリー、数式補足グラフ |
-| [color-museum-sample.md](public/samples/color-museum-sample.md)       | 配色ミュージアム（厳選 20 トーンと全 203 種の色票・図表・装飾素材。Dark ミュージアム・ウォーク向け） |
+| [color-museum-sample.md](public/samples/color-museum-sample.md)       | 配色ミュージアム（ポスター・窓・風景・色面・図で、色が人の心を動かす瞬間を巡る展示。Dark ミュージアム・ウォーク向け） |
 
 ## できること
 
