@@ -2,6 +2,12 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.15.0 (2026-11-23)
+
+- feat(ui): Expanded Visual Mode color tones to 20 presets (plus Style Default), made the tone selector menu scrollable, and improved text and accent contrast across Light and Dark appearances
+- feat(ui): Added a public URL paste input field on the start screen so users on mobile devices without drag-and-drop can open public Markdown files and GitHub folders directly
+- fix(url): Fixed loading GitHub `tree` URLs whose branch names contain slashes (such as `feature/...`)
+
 ## 0.14.0 (2026-11-23)
 
 - feat(i18n): Added Japanese and English UI language switching, localized bundled samples, and English documentation

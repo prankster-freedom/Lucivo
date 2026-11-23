@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.14.0`
+- **Version**: `0.15.0`
 - **Language**: [日本語](README.md) | English
 
 Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid diagrams. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
@@ -222,6 +222,12 @@ Licensed under the [MIT License](LICENSE). See [public/THIRD_PARTY_LICENSES.txt]
 
 The two most recent releases are listed below. For the complete version history, see [release-notes.en.md](release-notes.en.md).
 
+### 0.15.0 (2026-11-23)
+
+- feat(ui): Expanded Visual Mode color tones to 20 presets (plus Style Default), made the tone selector menu scrollable, and improved text and accent contrast across Light and Dark appearances
+- feat(ui): Added a public URL paste input field on the start screen so users on mobile devices without drag-and-drop can open public Markdown files and GitHub folders directly
+- fix(url): Fixed loading GitHub `tree` URLs whose branch names contain slashes (such as `feature/...`)
+
 ### 0.14.0 (2026-11-23)
 
 - feat(i18n): Added Japanese and English UI language switching, localized bundled samples, and English documentation
@@ -229,14 +235,3 @@ The two most recent releases are listed below. For the complete version history,
 - feat(code): Added theme-adaptive syntax highlighting for code blocks matching Light/Dark appearance and Visual styles
 - feat(perf): Expanded incremental rendering for edited blocks and chapters to keep typing and previewing responsive in large documents
 - fix(visual): Kept chapters containing tables wider than a two-column track in single-column layout on wide screens so tables remain readable
-
-### 0.13.0 (2026-11-22)
-
-- feat!(modes): Removed the "Playable Diagram" and "Zooming Map" presentation modes (breaking change)
-- feat(visual): Added toggling between 16:10 paged view and continuous single-page view in Visual Mode, with URL parameter sharing (`layout=single`)
-- feat(visual): Synchronized Mermaid diagram node palettes and diagram card backdrops with the active color tone, and added inline color swatches for color codes in text
-- feat(museum-walk): Added terrain elevation, stepped slopes, and camera height tracking to Museum Walk, along with walking head-bob motion, smoother zoom-in/out sway, and improved mouse wheel responsiveness
-- feat(file-loading): Added a confirmation dialog ("Save & Reload", "Discard & Reload", or "Keep Editing") when an externally edited local file has unsaved changes, plus direct access to the public README from the logo and Help menu
-- feat(analytics): Added Google Analytics telemetry to the Web Edition (Official and Preview) to measure usage of design styles, color tones, and presentation modes (never transmits filenames or document content; excluded from the Standalone Edition)
-- fix(url-loader): Preserved `view=canvas` and `view=code` in shared URLs regardless of viewport width
-- fix(museum-walk): Aligned forward/backward mouse wheel direction in Museum Walk with standard zoom-in/zoom-out controls
