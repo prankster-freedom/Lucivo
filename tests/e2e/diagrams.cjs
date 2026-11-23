@@ -770,8 +770,8 @@ async function testStyleBar(browser) {
   await page.click('#btn-tone-menu');
   await page.click('.tone-menu-item[data-tone-id="default"]');
   await waitRendered(page);
-  const diag41Ok = toneMenuInfo.opened && toneMenuInfo.itemCount === 8 && toneMenuInfo.swatchCount === 4
-    && afterTone.c1 === '#6d8c50' && afterTone.toneName === '抹茶と和三盆'
+  const diag41Ok = toneMenuInfo.opened && toneMenuInfo.itemCount === 21 && toneMenuInfo.swatchCount === 4
+    && afterTone.c1 === '#7d9763' && afterTone.toneName === '抹茶と和三盆'
     && afterTone.settingsBtnText === 'その他' && afterTone.oldPaletteCount === 0 && afterTone.hasFormatToggle;
   record('TC-DIAG-041', diag41Ok, JSON.stringify({ toneMenuInfo, afterTone }));
   await page.context().close();

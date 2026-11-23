@@ -997,7 +997,10 @@ body[data-appearance="dark"] .tone-swatch-dot {
 .tone-menu {
   position: fixed;
   z-index: 60;
-  min-width: 14rem;
+  min-width: 15.5rem;
+  max-height: min(65vh, 26rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.35rem;
   border-radius: 0.75rem;
   border: 1px solid var(--border-subtle);

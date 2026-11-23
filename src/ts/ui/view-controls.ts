@@ -98,8 +98,10 @@ export function setToneMenuOpen(open: boolean) {
   if (!btn || !menu) return;
   if (open) {
     const rect = btn.getBoundingClientRect();
-    menu.style.top = `${Math.round(rect.bottom + 6)}px`;
-    menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
+    const top = Math.round(rect.bottom + 6);
+    menu.style.top = `${top}px`;
+    menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 260)))}px`;
+    menu.style.maxHeight = `${Math.max(160, Math.min(440, Math.round(window.innerHeight - top - 16)))}px`;
   }
   menu.classList.toggle('hidden', !open);
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');

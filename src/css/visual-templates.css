@@ -299,7 +299,7 @@
   width: 16px;
   height: 16px;
   pointer-events: none;
-  background-color: color-mix(in oklab, var(--vs-c) 76%, var(--vs-tone));
+  background-color: color-mix(in oklab, var(--vs-c) 62%, var(--vs-tone));
   opacity: 0.94;
   filter: drop-shadow(0 0 2px var(--vs-slab-bg)) drop-shadow(0 0 1px var(--vs-slab-bg));
   -webkit-mask: var(--motif-step-arrow) no-repeat center / contain;
