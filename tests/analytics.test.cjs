@@ -109,4 +109,65 @@ function loadAnalyticsModule(versionString) {
   assert.ok(indexHtml.includes("event: 'gtm.js'"));
 }
 
+// 6. tone_select で tone / tone_id / appearance を送信できること、および selectTone の実装確認
+{
+  const { exports: mod, window: win } = loadAnalyticsModule('0.14.0 (build id: 222)');
+  assert.strictEqual(
+    mod.trackWebEvent('tone_select', {
+      tone: 'morning-window',
+      tone_id: '001-morning-window',
+      appearance: 'dark'
+    }),
+    true
+  );
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(win.dataLayer)), [
+    {
+      event: 'tone_select',
+      release_channel: 'production',
+      tone: 'morning-window',
+      tone_id: '001-morning-window',
+      appearance: 'dark'
+    }
+  ]);
+
+  const vcSrc = fs.readFileSync(path.join(ROOT, 'src', 'ts', 'ui', 'view-controls.ts'), 'utf8');
+  assert.ok(vcSrc.includes("tone_id: toneEntry.analyticsId"));
+  assert.ok(vcSrc.includes("appearance: state.appearance"));
+}
+
+// 7. tools/check-tones.cjs の整合性検査（正常系・重複・廃止済み ID 再利用・不一致）
+{
+  const { validateTones } = require('../tools/check-tones.cjs');
+  const realRes = validateTones();
+  assert.deepStrictEqual(realRes.errors, []);
+
+  // 番号重複
+  const dupNumRes = validateTones({
+    stock: [
+      { file: '01-a.md', number: 1, id: 'a', analyticsId: '001-a' },
+      { file: '01-b.md', number: 1, id: 'b', analyticsId: '001-b' }
+    ],
+    retiredData: { retired: [] },
+    productTones: [{ id: 'default', analyticsId: '000-default' }]
+  });
+  assert.ok(dupNumRes.errors.some(e => e.includes('通し番号 1 が重複')));
+
+  // 廃止済み ID 再利用
+  const retiredReuseRes = validateTones({
+    stock: [{ file: '02-old-tone.md', number: 2, id: 'old-tone', analyticsId: '002-old-tone' }],
+    retiredData: { retired: [{ number: 2, id: 'old-tone', analyticsId: '002-old-tone', retiredAt: '2026-11-23' }] },
+    productTones: [{ id: 'default', analyticsId: '000-default' }]
+  });
+  assert.ok(retiredReuseRes.errors.some(e => e.includes('廃止済み番号 2')));
+  assert.ok(retiredReuseRes.errors.some(e => e.includes('廃止済み ID "old-tone"')));
+
+  // 製品の analyticsId 不一致
+  const mismatchRes = validateTones({
+    stock: [{ file: '01-morning-window.md', number: 1, id: 'morning-window', analyticsId: '001-morning-window' }],
+    retiredData: { retired: [] },
+    productTones: [{ id: 'morning-window', analyticsId: '999-morning-window' }]
+  });
+  assert.ok(mismatchRes.errors.some(e => e.includes('analyticsId がストック定義と一致しません')));
+}
+
 console.log('analytics.test.cjs: all assertions passed');
