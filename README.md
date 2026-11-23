@@ -80,13 +80,22 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
    - **外部更新の自動反映**: Chrome / Edge 等の対応ブラウザで開いたローカルファイルが外部エディタで更新されたとき、未編集ならスクロール位置を保って自動反映します。編集中は上書きせず、通知バーから再読み込みできます（設定でオフにできます）。
 2. **モードを切り替える**: ヘッダー中央の「高速モード」「Visualモード」ボタンを押すだけで、表示スタイルが即座に切り替わります。
 
-### 同梱サンプル
+### サンプル
 
-| サンプル                                                | 内容 |
-| :------------------------------------------------------ | :--- |
-| [visual-sample.md](public/samples/visual-sample.md)     | Visualモードの表紙・各種誌面雛形・表・光の流動演出・ステージ発表 |
-| [notation_sample.md](public/samples/notation_sample.md) | Markdown と Mermaid の記法一覧（全図種・数式・コールアウト・脚注・絵文字など） |
+Web 版は GitHub 上のサンプルを直接読み込み、ダウンロード版（ZIP）は同じサンプルを同梱しています。
+
+<p align="center">
+  <img src="doc/images/readme/thumb-visual.ja.png" alt="Visualモードサンプル（Light）" width="32%">
+  <img src="doc/images/readme/thumb-notation.ja.png" alt="記法サンプル（Split 表示・Light・数式）" width="32%">
+  <img src="doc/images/readme/thumb-color-museum.ja.png" alt="配色ミュージアム（ミュージアム・ウォーク・Dark）" width="32%">
+</p>
+
+| サンプル                                                              | 内容 |
+| :-------------------------------------------------------------------- | :--- |
+| [visual-sample.md](public/samples/visual-sample.md)                   | Visualモードの表紙・各種誌面雛形・表・光の流動演出・ステージ発表 |
+| [notation_sample.md](public/samples/notation_sample.md)               | Markdown と Mermaid の記法一覧（全図種・数式・コールアウト・脚注・絵文字など） |
 | [notation_sample_extra1.md](public/samples/notation_sample_extra1.md) | 発展的記法（CommonMark・GFM）、画像・文書間リンク、フォルダ構成ツリー、数式補足グラフ |
+| [color-museum-sample.md](public/samples/color-museum-sample.md)       | 配色ミュージアム（厳選 20 トーンと全 203 種の色票・図表・装飾素材。Dark ミュージアム・ウォーク向け） |
 
 ## できること
 
