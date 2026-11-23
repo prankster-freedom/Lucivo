@@ -26,6 +26,7 @@ const {
   FORMAT_FIXTURE,
   MD_MODES,
   startWebServer,
+  mockWebSamples,
   openWebPageWithSample
 } = require('./helpers.cjs');
 
@@ -278,7 +279,7 @@ async function testFileLoading(browser) {
   const closedByEsc = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   record('TC-FILE-002',
     menuState.opened && closedByOutside && closedByEsc
-    && JSON.stringify(menuState.items) === JSON.stringify(['ファイルを開く…', 'フォルダを開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)', 'ミュージアム・ウォーク サンプル (museum-walk-sample.md)', '印刷・PDF の確認サンプル (print-sample.md)']),
+    && JSON.stringify(menuState.items) === JSON.stringify(['ファイルを開く…', 'フォルダを開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)', 'ミュージアム・ウォーク サンプル (museum-walk-sample.md)', '配色ミュージアム (color-museum-sample.md)', '印刷・PDF の確認サンプル (print-sample.md)']),
     JSON.stringify({ ...menuState, closedByOutside, closedByEsc }));
 
   // TC-FILE-003 未編集の状態での読み込みと同梱サンプル選択
@@ -510,13 +511,18 @@ async function testUrlLoading(browser) {
     const ctx41 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
     const p41 = await ctx41.newPage();
     await p41.route('https://raw.githubusercontent.com/**', ghRoute);
+    await mockWebSamples(p41);
     await p41.goto(`${server.url}?url=${encodeURIComponent(blobUrl)}`);
     await p41.waitForFunction(() => document.getElementById('markdown-editor')?.value.includes('# Blob Rewritten'), null, { timeout: 10000 });
     const blobLoadedUrl = await p41.evaluate(() => new URL(window.location.href).searchParams.get('url'));
     await p41.click('#btn-file-menu');
     await p41.click('#menu-sample-notation');
     await p41.waitForFunction(() => document.title === 'notation_sample.md - Lucivo', null, { timeout: 10000 });
-    const afterSampleHasUrl = await p41.evaluate(() => new URL(window.location.href).searchParams.has('url'));
+    const sampleRawUrl = await p41.evaluate(() => new URL(window.location.href).searchParams.get('url'));
+    await p41.click('#btn-file-menu');
+    await p41.setInputFiles('#file-input', SAMPLE);
+    await p41.waitForFunction(() => !new URL(window.location.href).searchParams.has('url'), null, { timeout: 10000 });
+    const afterLocalHasUrl = await p41.evaluate(() => new URL(window.location.href).searchParams.has('url'));
     await ctx41.close();
 
     const ctx41Err = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -528,8 +534,11 @@ async function testUrlLoading(browser) {
     await ctx41Err.close();
 
     record('TC-FILE-041',
-      blobLoadedUrl === blobUrl && afterSampleHasUrl === false && blobErrToast.includes('raw URL'),
-      JSON.stringify({ blobLoadedUrl, afterSampleHasUrl, blobErrToast }));
+      blobLoadedUrl === blobUrl
+        && Boolean(sampleRawUrl && sampleRawUrl.endsWith('/public/samples/notation_sample.md'))
+        && afterLocalHasUrl === false
+        && blobErrToast.includes('raw URL'),
+      JSON.stringify({ blobLoadedUrl, sampleRawUrl, afterLocalHasUrl, blobErrToast }));
 
     // TC-FILE-042: 公開 URL のドラッグ&ドロップ
     const ctx42 = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -843,6 +852,97 @@ async function testUrlLoading(browser) {
       sharedQuery.includes('view=canvas') && sharedQuery.includes('mode=visual')
       && sharedQuery.includes('style=cards') && sharedQuery.includes('tone=cobalt-workshop'),
       JSON.stringify({ sharedQuery }));
+
+    // TC-FILE-051: 起動画面サムネイルカード（Web 版 3 枚 / スタンドアロン版 2 枚 / Web 版 GitHub 参照、FR-007, FR-068）
+    const ctx51 = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'ja-JP' });
+    const p51 = await ctx51.newPage();
+    await mockWebSamples(p51);
+    await p51.goto(server.url);
+    await p51.waitForFunction(() => document.querySelectorAll('.empty-guide-sample-card').length === 3, null, { timeout: 10000 });
+    const webCards = await p51.evaluate(() => ({
+      ids: Array.from(document.querySelectorAll('.empty-guide-sample-card')).map(c => c.getAttribute('data-sample-card')),
+      thumbsOk: Array.from(document.querySelectorAll('.empty-guide-sample-thumb img')).every(img => img.complete && img.naturalWidth > 0),
+      notationLinks: document.querySelectorAll('[data-sample-card="notation"] .empty-guide-sample-link').length,
+      museumHref: document.querySelector('[data-sample-card="color-museum"] .empty-guide-sample-link')?.getAttribute('href') || ''
+    }));
+    await p51.click('[data-sample-card="notation"] [data-empty-sample="notation_sample.md"]');
+    await p51.waitForFunction(() => document.title === 'notation_sample.md - Lucivo', null, { timeout: 10000 });
+    const webSampleUrl = await p51.evaluate(() => new URL(window.location.href).searchParams.get('url') || '');
+    await ctx51.close();
+
+    // スマホ幅 390px で起動画面のカードが横はみ出ししないこと
+    const ctx51Mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ja-JP' });
+    const p51Mobile = await ctx51Mobile.newPage();
+    await p51Mobile.goto(server.url);
+    await p51Mobile.waitForFunction(() => document.querySelectorAll('.empty-guide-sample-card').length === 3, null, { timeout: 10000 });
+    const narrowOverflow = await p51Mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+    await ctx51Mobile.close();
+
+    const p51Dist = await openApp(browser, { viewport: { width: 1280, height: 900 }, locale: 'ja-JP' });
+    const distCards = await p51Dist.evaluate(() => ({
+      ids: Array.from(document.querySelectorAll('.empty-guide-sample-card')).map(c => c.getAttribute('data-sample-card')),
+      thumbsOk: Array.from(document.querySelectorAll('.empty-guide-sample-thumb img')).every(img => img.complete && img.naturalWidth > 0)
+    }));
+    await p51Dist.close();
+
+    record('TC-FILE-051',
+      JSON.stringify(webCards.ids) === JSON.stringify(['visual', 'notation', 'color-museum'])
+        && webCards.thumbsOk
+        && webCards.notationLinks === 2
+        && webCards.museumHref.includes('present=museum-walk') && webCards.museumHref.includes('theme=dark')
+        && !narrowOverflow
+        && webSampleUrl.endsWith('/public/samples/notation_sample.md')
+        && JSON.stringify(distCards.ids) === JSON.stringify(['visual', 'notation'])
+        && distCards.thumbsOk,
+      JSON.stringify({ webCards, narrowOverflow, webSampleUrl, distCards }));
+
+    // TC-FILE-052: present=museum-walk による自動起動と Esc 復帰・スマホ抑止・スタンドアロン無視（FR-069）
+    const ctx52 = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'ja-JP' });
+    const p52 = await ctx52.newPage();
+    await mockWebSamples(p52);
+    const museumRaw = 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/color-museum-sample.md';
+    await p52.goto(`${server.url}?url=${encodeURIComponent(museumRaw)}&mode=visual&theme=dark&present=museum-walk`);
+    await p52.waitForFunction(() => document.documentElement.classList.contains('is-museum-walk'), null, { timeout: 15000 });
+    const startedState = await p52.evaluate(() => ({
+      appearance: document.body.getAttribute('data-appearance'),
+      hasPresentParam: new URL(window.location.href).searchParams.has('present'),
+      hasUrlParam: new URL(window.location.href).searchParams.get('url') === 'https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/color-museum-sample.md'
+    }));
+    await p52.keyboard.press('Escape');
+    await p52.waitForFunction(() => !document.documentElement.classList.contains('is-museum-walk'), null, { timeout: 10000 });
+    const afterEsc = await p52.evaluate(() => ({
+      appearance: document.body.getAttribute('data-appearance'),
+      isVisual: document.getElementById('btn-visual-mode')?.classList.contains('is-active') === true
+    }));
+    await ctx52.close();
+
+    // スマホ端末（pointer: coarse + 幅 390px）では起動せずトースト通知
+    const ctx52Mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, locale: 'ja-JP' });
+    const p52Mobile = await ctx52Mobile.newPage();
+    await mockWebSamples(p52Mobile);
+    await p52Mobile.goto(`${server.url}?url=${encodeURIComponent(museumRaw)}&mode=visual&theme=dark&present=museum-walk`);
+    await p52Mobile.waitForFunction(() => (document.getElementById('toast-message')?.textContent || '').includes('スマホでは利用できません'), null, { timeout: 10000 });
+    const mobileBlocked = await p52Mobile.evaluate(() => !document.documentElement.classList.contains('is-museum-walk'));
+    await ctx52Mobile.close();
+
+    // スタンドアロン版では present=museum-walk を無視して通常表示になる
+    const p52Dist = await openApp(browser, {
+      url: `${APP_URL}?mode=visual&theme=dark&present=museum-walk`,
+      viewport: { width: 1280, height: 900 },
+      locale: 'ja-JP'
+    });
+    await p52Dist.waitForTimeout(400);
+    const distIgnored = await p52Dist.evaluate(() => !document.documentElement.classList.contains('is-museum-walk'));
+    await p52Dist.close();
+
+    record('TC-FILE-052',
+      startedState.appearance === 'dark'
+        && startedState.hasPresentParam === false
+        && startedState.hasUrlParam
+        && afterEsc.appearance === 'dark' && afterEsc.isVisual
+        && mobileBlocked
+        && distIgnored,
+      JSON.stringify({ startedState, afterEsc, mobileBlocked, distIgnored }));
   } finally {
     await server.close();
   }

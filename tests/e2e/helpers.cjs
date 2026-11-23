@@ -145,7 +145,7 @@ const MD_MODES = [
 
 async function startWebServer() {
   const http = require('http');
-  const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.md': 'text/markdown; charset=utf-8', '.png': 'image/png' };
+  const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.woff2': 'font/woff2', '.md': 'text/markdown; charset=utf-8', '.png': 'image/png' };
   const server = http.createServer((req, res) => {
     const rel = ((req.url || '/').split('?')[0].replace(/^\/+/, '')) || 'index.html';
     const fp = path.join(WEB_DIR, decodeURIComponent(rel));
@@ -157,6 +157,31 @@ async function startWebServer() {
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   return { url: `http://127.0.0.1:${server.address().port}/`, close: () => new Promise(resolve => server.close(resolve)) };
+}
+
+// Web 版で GitHub 上のサンプル（raw.githubusercontent.com/.../public/samples/...）を読むリクエストを、
+// 実通信せずに手元の public/samples/ で応答する（FR-068, ARC-PUB-007）
+async function mockWebSamples(page) {
+  await page.route('https://raw.githubusercontent.com/prankster-freedom/Lucivo/*/public/samples/**', route => {
+    const reqUrl = route.request().url();
+    const match = reqUrl.match(/\/public\/samples\/([^?#]+)/);
+    if (!match) return route.fulfill({ status: 404, body: 'Not Found' });
+    const relPath = decodeURIComponent(match[1]);
+    const fp = path.join(WEB_DIR, 'samples', relPath);
+    if (!fp.startsWith(path.join(WEB_DIR, 'samples')) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
+      return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Not Found' });
+    }
+    const ext = path.extname(fp).toLowerCase();
+    const contentType = ext === '.svg' ? 'image/svg+xml'
+      : ext === '.png' ? 'image/png'
+      : ext === '.webp' ? 'image/webp'
+      : 'text/markdown; charset=utf-8';
+    return route.fulfill({
+      status: 200,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': contentType },
+      body: fs.readFileSync(fp)
+    });
+  });
 }
 
 async function openWebPageWithSample(browser, server, contextOptions = {}, sampleName = 'visual-sample.md') {
@@ -223,6 +248,7 @@ module.exports = {
   FORMAT_FIXTURE,
   MD_MODES,
   startWebServer,
+  mockWebSamples,
   openWebPageWithSample,
   openStagePage,
   setDocument,

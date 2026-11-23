@@ -80,7 +80,7 @@ const { suites: GATE_SUITES } = require('./e2e/present-modes.cjs');
 const SUITE_TIMEOUT_MS = 90000;
 const SUITES = [
   { name: 'testFileLoading', tcPrefix: ['TC-FILE-001', 'TC-FILE-002', 'TC-FILE-003', 'TC-FILE-004', 'TC-FILE-005', 'TC-FILE-006', 'TC-FILE-007', 'TC-FILE-008', 'TC-FILE-011', 'TC-FILE-012', 'TC-FILE-013', 'TC-FILE-014', 'TC-FILE-015', 'TC-FILE-034'], fn: testFileLoading },
-  { name: 'testUrlLoading', tcPrefix: ['TC-FILE-035', 'TC-FILE-041', 'TC-FILE-042', 'TC-FILE-043', 'TC-FILE-044', 'TC-FILE-045'], fn: testUrlLoading },
+  { name: 'testUrlLoading', tcPrefix: ['TC-FILE-035', 'TC-FILE-041', 'TC-FILE-042', 'TC-FILE-043', 'TC-FILE-044', 'TC-FILE-045', 'TC-FILE-047', 'TC-FILE-050', 'TC-FILE-051', 'TC-FILE-052'], fn: testUrlLoading },
   { name: 'testAutoReload', tcPrefix: ['TC-FILE-046'], fn: testAutoReload },
   { name: 'testWebAnalytics', tcPrefix: ['TC-FILE-048'], fn: testWebAnalytics },
   { name: 'testI18n', tcPrefix: ['TC-I18N-'], fn: testI18n },
