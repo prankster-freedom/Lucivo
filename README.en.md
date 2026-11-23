@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.16.0`
+- **Version**: `0.16.1`
 - **Language**: [日本語](README.md) | English
 
 Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid diagrams. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
@@ -231,6 +231,11 @@ Licensed under the [MIT License](LICENSE). See [public/THIRD_PARTY_LICENSES.txt]
 
 The two most recent releases are listed below. For the complete version history, see [release-notes.en.md](release-notes.en.md).
 
+### 0.16.1 (2026-11-24)
+
+- fix(stage): The Presentation mode background now follows the background color of the color tone selected in Visual mode, including the bottom edge of chapter titles and the overview slides.
+- fix(visual): Text on hero cards highlighted with "★" now switches automatically between dark navy and white to stay readable against the card color, even with light tones.
+
 ### 0.16.0 (2026-11-23)
 
 - feat(samples): Added a new sample, "Color Museum": walk a 3D corridor of posters, windows, seasonal landscapes, color fields, and diagrams, and see the moments color moves people (Japanese and English editions)
@@ -240,9 +245,3 @@ The two most recent releases are listed below. For the complete version history,
 - fix(ui): Samples opened from the start screen can now return to it with the browser's Back button, and samples meant for Visual Mode switch to it automatically
 - fix(ui): Fixed duplicate items in the Present menu
 - fix(ui): Added to the drop guide that a public URL can be pasted to open a file
-
-### 0.15.0 (2026-11-23)
-
-- feat(ui): Expanded Visual Mode color tones to 20 presets (plus Style Default), made the tone selector menu scrollable, and improved text and accent contrast across Light and Dark appearances
-- feat(ui): Added a public URL paste input field on the start screen so users on mobile devices without drag-and-drop can open public Markdown files and GitHub folders directly
-- fix(url): Fixed loading GitHub `tree` URLs whose branch names contain slashes (such as `feature/...`)

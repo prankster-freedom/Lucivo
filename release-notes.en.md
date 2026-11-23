@@ -2,6 +2,11 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.16.1 (2026-11-24)
+
+- fix(stage): The Presentation mode background now follows the background color of the color tone selected in Visual mode, including the bottom edge of chapter titles and the overview slides.
+- fix(visual): Text on hero cards highlighted with "★" now switches automatically between dark navy and white to stay readable against the card color, even with light tones.
+
 ## 0.16.0 (2026-11-23)
 
 - feat(samples): Added a new sample, "Color Museum": walk a 3D corridor of posters, windows, seasonal landscapes, color fields, and diagrams, and see the moments color moves people (Japanese and English editions)
