@@ -28,18 +28,18 @@ Furthermore, even when inline elements such as `inline code`, **bold emphasis**,
 
 When a bulleted list has 2–6 items of up to 100 characters each, it transforms into a grid of numbered cards. Starting a bullet item with `★` elevates it to a full-bleed, enlarged hero card (`FR-059`). Clicking any card spotlights it individually.
 
-- **Snappy Responsiveness**: Fast Mode strips away unnecessary ornamentation to preview changes in milliseconds.
-- ★ **Exhibition-Grade Layouts**: Visual Mode delivers top-designer polish built for large-screen keynotes and exhibitions.
-- **Pure Standard Syntax**: No proprietary extensions required—just write plain Markdown to generate rich layouts.
+- **Snappy Responsiveness**: Fast Mode strips away ornaments to preview edits in milliseconds.
+- ★ **Exhibition-Grade Layouts**: Visual Mode delivers designer polish for talks and exhibitions.
+- **Pure Standard Syntax**: No proprietary syntax—write plain Markdown to get rich layouts.
 
 ## 4. Key Points Template (`points`): 4-Column Cards & KPI Metrics Showcase
 
 With 4 items, cards arrange into 4 columns (1 row) on wide screens and a 2×2 grid on medium widths. Moreover, cards whose bold title is a numerical metric (`120ms`, `99.98%`, `3.2x`, etc.) automatically promote to **KPI Metric Cards** (`FR-027`) with large monospaced typography. KPI cards can also be designated as hero cards with `★`.
 
-- **120ms**: Delivers millisecond responsiveness from initial render to cached redraws without interrupting your flow of thought.
-- ★ **99.98%**: Preserves the Last Known Good (LKG) diagram even during syntax errors, preventing broken visuals on stage.
-- **3.2x**: Dramatically reduces the turnaround time from writing a manuscript to preparing for a live presentation compared to traditional slide tools.
-- **0 Requests**: Zero external network calls—operates 100% offline directly via `file://` with no CDNs or backend APIs.
+- **120ms**: Instant millisecond response from initial render to cached redraws.
+- ★ **99.98%**: Preserves the Last Known Good (LKG) diagram even on syntax errors.
+- **3.2x**: Cuts preparation time from Markdown draft to live presentation.
+- **0 Requests**: Zero network calls—runs 100% offline directly via `file://`.
 
 ## 5. [Volume Comparison] High Item Count or Long Bullet Descriptions (Auto-Fallback to Standard List)
 
