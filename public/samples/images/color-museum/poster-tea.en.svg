@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820" role="img" aria-label="Poster for Winter Tea">
+  <style>
+    .fall { animation: fall linear infinite; }
+    .twinkle { animation: twinkle 3.2s ease-in-out infinite; }
+    .breathe { animation: breathe 5s ease-in-out infinite; }
+    .flicker { animation: flicker 4.5s ease-in-out infinite; }
+    .rise { animation: rise 4s ease-out infinite; }
+    .scroll { animation: scroll 1.6s linear infinite; }
+    .glitch { animation: glitch 3.6s steps(1) infinite; }
+    .spin { transform-box: fill-box; transform-origin: center; animation: spin 40s linear infinite; }
+    .drift { animation: drift 9s ease-in-out infinite alternate; }
+    @keyframes fall { from { transform: translate(-30px, -720px); } to { transform: translate(60px, 720px); } }
+    @keyframes twinkle { 0%, 100% { opacity: .2; } 50% { opacity: 1; } }
+    @keyframes breathe { 0%, 100% { opacity: .3; } 50% { opacity: .75; } }
+    @keyframes flicker { 0%, 100% { opacity: 1; } 42% { opacity: .82; } 46% { opacity: .95; } 70% { opacity: .88; } }
+    @keyframes rise { 0% { transform: translateY(30px); opacity: 0; } 35% { opacity: .35; } 100% { transform: translateY(-70px); opacity: 0; } }
+    @keyframes scroll { from { transform: translateY(-30px); } to { transform: translateY(0); } }
+    @keyframes glitch { 0% { opacity: 0; } 88% { opacity: .9; } 92% { opacity: 0; } 95% { opacity: .7; } 97% { opacity: 0; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes drift { from { transform: translateX(-40px); } to { transform: translateX(40px); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .09"/></feComponentTransfer></filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="haze" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="40"/></filter>
+    <filter id="edge" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="3.5"/></filter>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="140%"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity=".55"/></filter>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22281F"/><stop offset="1" stop-color="#3B4336"/></linearGradient>
+  </defs>
+  <rect width="1200" height="820" fill="url(#paper)"/>
+  <circle cx="1120" cy="60" r="260" fill="#B8E0A4" opacity=".18" filter="url(#haze)"/>
+
+  <circle cx="930" cy="400" r="215" fill="none" stroke="#EAD6B5" stroke-width="40" stroke-linecap="round" stroke-dasharray="1150 200" transform="rotate(-70 930 400)" opacity=".9"/>
+  <circle cx="936" cy="394" r="205" fill="none" stroke="#EAD6B5" stroke-width="8" stroke-linecap="round" stroke-dasharray="900 400" transform="rotate(-40 936 394)" opacity=".45"/>
+  <path d="M790,480 H1070 C1060,620 990,670 930,670 C870,670 800,620 790,480 Z" fill="#99B37F"/>
+  <path d="M790,480 H1070 C1066,520 1050,555 1030,580 C980,560 880,560 830,580 C810,555 794,520 790,480 Z" fill="#DAA3A4" opacity=".35"/>
+  <ellipse cx="930" cy="480" rx="140" ry="20" fill="#DAA3A4"/>
+  <ellipse cx="930" cy="482" rx="124" ry="14" fill="#99B37F" opacity=".9"/>
+  <path class="rise" style="animation-delay:-0s" d="M890,440 C870,400 910,380 890,330" fill="none" stroke="#B9C8B1" stroke-width="5" stroke-linecap="round"/><path class="rise" style="animation-delay:-1.3s" d="M935,440 C915,390 955,370 935,300" fill="none" stroke="#B9C8B1" stroke-width="5" stroke-linecap="round"/><path class="rise" style="animation-delay:-2.6s" d="M980,440 C960,405 1000,385 980,340" fill="none" stroke="#B9C8B1" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="1105" cy="640" r="30" fill="#EAD6B5"/><circle cx="1105" cy="640" r="30" fill="#B8E0A4" opacity=".25"/>
+  <rect x="24" y="24" width="1152" height="772" rx="10" fill="none" stroke="#7B8374" stroke-width="2" opacity=".7"/>
+  <text x="80" y="130" font-family="Consolas,'JetBrains Mono',ui-monospace,monospace" font-size="22" letter-spacing="8" fill="#EAD6B5">TEA CEREMONY</text>
+  <text x="76" y="262" font-family="'Yu Mincho','Hiragino Mincho ProN','Noto Serif JP',serif" font-size="100" font-weight="700" letter-spacing="4" fill="#B9C8B1">Winter Tea</text>
+  <text x="80" y="330" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="30" fill="#B9C8B1" opacity=".85">The green of matcha, the cream of wasanbon.</text>
+  <rect x="80" y="548" width="85" height="46" rx="23" fill="#DAA3A4" stroke="#8B7E72" stroke-width="2"/><text x="122.5" y="579" text-anchor="middle" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="24" font-weight="700" fill="#58302C">Tea</text><rect x="179" y="548" width="130" height="46" rx="23" fill="#9F9383" stroke="#696755" stroke-width="2"/><text x="244" y="579" text-anchor="middle" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="24" font-weight="700" fill="#2F2102">Sweets</text><rect x="323" y="548" width="145" height="46" rx="23" fill="#99B37F" stroke="#7B8374" stroke-width="2"/><text x="395.5" y="579" text-anchor="middle" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="24" font-weight="700" fill="#2B3B19">Booking</text>
+  <rect x="80" y="650" width="336" height="12" fill="#99B37F"/><rect x="416" y="650" width="96" height="12" fill="#EAD6B5"/><rect x="512" y="650" width="48" height="12" fill="#B8E0A4"/>
+  <text x="80" y="720" font-family="Consolas,'JetBrains Mono',ui-monospace,monospace" font-size="30" letter-spacing="4" fill="#B8E0A4">01.12 SUN 14:00</text>
+  <rect width="1200" height="820" filter="url(#grain)"/>
+</svg>
