@@ -333,8 +333,9 @@ sequenceDiagram
 - `getReleaseChannel(version)` は `APP_VERSION`（`__LUCIVO_VERSION__`）に `'(build id:'` が含まれない場合 `null`、`'-canary'` が含まれる場合 `'preview'`、それ以外を `'production'` と判定する。`resolveReleaseChannel()` はさらに `window.location.protocol === 'file:'` または `navigator.webdriver === true` を `null` とし、ローカル開発・スタンドアロン版・E2E 実行時のイベント送信を抑止する。
 - 送信箇所は次の 3 か所とし、起動時の `applyInitialDisplayStateFromUrl()` からは呼び出さない。
   1. `src/ts/app.ts` の `selectInfographicStyle(style)`: `trackWebEvent('design_style_select', { design_style: style })`
-  2. `src/ts/app.ts` の `selectTone(toneId)`: `trackWebEvent('tone_select', { tone: toneId })`
+  2. `src/ts/ui/view-controls.ts` の `selectTone(toneId)`: `getToneEntry(toneId)` から不変の集計用 ID `analyticsId`（`000-default` または `NNN-<id>` 形式）を取得し、`trackWebEvent('tone_select', { tone: toneEntry.id, tone_id: toneEntry.analyticsId, appearance: state.appearance })` を送信する
   3. `src/ts/ui/present-modes.ts` の `loadMode(id)`: `trackWebEvent('present_mode_select', { present_mode: id })`
+- **カラートーン集計用 ID の一意性管理**: `src/ts/ui/state.ts` の `ColorToneSpec` に `analyticsId` を持たせ、廃止済みトーンの番号・ID・`analyticsId` は `doc/0.DTP/assets/color-tones/retired.json` に永久予約する。`tools/check-tones.cjs`（`npm run lint` に組み込み）により、ストック文書（`doc/0.DTP/assets/color-tones/`）内の番号・ID 重複、`retired.json` との重複・再利用、および製品 `COLOR_TONES` の `analyticsId` とストック番号・ID の整合を自動検査する。
 - すべてのイベントに `{ event, release_channel, ...params }` のみを `window.dataLayer.push()` する。`public/index.html` の `LUCIVO_WEB_ANALYTICS_START`〜`END` では `gtm.js?id=GTM-KMQ3KLNT` 読み込み前に `{ 'gtm.start': new Date().getTime(), event: 'gtm.js' }` を `dataLayer` へ積む。
 
 ### DD-FILE-096 フォルダ内文書の横断全文検索と移動・強調（`FR-064`, `#331`）

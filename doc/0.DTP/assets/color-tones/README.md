@@ -12,6 +12,7 @@ tags: ["Lucivo", "DTP", "カラートーン", "配色"]
 
 - この一覧と各トーン文書の表は、`tools/build-color-tone-tables.cjs` が書き出す。色を直すときは、トーン文書の表の 1 列目の色コード（背景・文字・境界・線）を直してから、`node tools/build-color-tone-tables.cjs` を実行する。`style` の中の色は手で直さない。
 - 表は HTML で書く。`style` 属性は、Lucivo では表示されるが、GitHub では取り除かれ、色が付かない。
+- **集計用 ID（`analyticsId`）と廃止・追加時の永久欠番ルール**: Web 版の利用状況計測（`FR-063`）では、各トーンの識別子として `000-default`（スタイル準拠）および `NNN-<id>`（3 桁ゼロ埋め番号＋ID、例: `001-morning-window`）を用いる。新しいトーンを追加するときは既存の最大番号 + 1 と未使用の ID を割り当て、トーンを廃止するときは `retired.json` に `{ number, id, analyticsId, retiredAt }` を記録して**永久欠番**とする（一度使った番号・ID・集計用 ID は別のトーンへ再利用しない）。重複および再利用は `node tools/check-tones.cjs`（`npm run lint`）で自動検査する。
 
 <table>
 <thead>

@@ -214,8 +214,9 @@ tags: ["Lucivo", "SRS", "file-loading"]
 - Web 版（正式版およびプレビュー版）において、利用者がデザインスタイル・カラー トーン・発表モードを選んだときに、Google Tag Manager（`dataLayer`）経由で Google Analytics（GA4）へイベントを送信すること（#321）。
 - 計測対象は次の 3 操作とし、起動時の既定値や URL パラメータによる初期適用では送信しないこと。
   - デザインスタイルの選択（`design_style_select`、パラメータ `design_style`）
-  - カラー トーンの選択（`tone_select`、パラメータ `tone`）
+  - カラー トーンの選択（`tone_select`、パラメータ `tone`、不変の集計用 ID `tone_id`、および外観 `appearance`: `'light'` / `'dark'`）
   - 発表モードの選択（`present_mode_select`、パラメータ `present_mode`、モードを読み込む `loadMode` 時点）
+- カラートーンの集計用 ID（`tone_id`）は、`000-default`（スタイル準拠）および `doc/0.DTP/assets/color-tones/` の通し番号・ID に紐づく `NNN-<id>`（3 桁ゼロ埋め番号＋ケバブケース ID、例: `001-morning-window`）とし、今後の追加・廃止において一度割り当てた番号・ID・集計用 ID は永久欠番として再利用しないこと。重複および廃止済み ID の再利用は自動検査で検出すること。
 - すべてのイベントに配布種別パラメータ `release_channel`（正式版: `production`、プレビュー版: `preview`）を付与すること。判定は URL パスではなく、ビルド時に埋め込まれるバージョン文字列（`-canary` の有無および `(build id:` の有無）で行うこと。
 - ローカル開発ビルド（`(build id:` を含まない版文字列）、スタンドアロン版（`file://` およびビルド時に計測スニペットを除去した `dist/index.html`）、E2E 自動テスト実行時（`navigator.webdriver === true`）には送信しないこと。
 - 送信する情報は選択された識別子と `release_channel` のみとし、ファイル名・文書内容・ローカルパス・閲覧 URL 等は送信しないこと。
