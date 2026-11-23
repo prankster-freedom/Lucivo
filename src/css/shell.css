@@ -40,6 +40,11 @@
   white-space: nowrap;
   cursor: pointer;
 }
+/* 外部更新のバナー。表示するときだけ flex にする。`hidden` と `flex` を同じ要素に付けると、どちらが効くかが
+   Tailwind のユーティリティの定義順で決まるため、`flex` は HTML に書かず、ここで表示のときだけ指定する */
+#external-update-banner:not(.hidden) {
+  display: flex;
+}
 /* 前回のフォルダの項目は、覚えたフォルダがないときは隠す。.file-menu-item の display: block が Tailwind の .hidden より後に効くため、ここで隠す */
 .file-menu-item.hidden {
   display: none;

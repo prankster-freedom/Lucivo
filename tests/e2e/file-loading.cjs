@@ -1768,6 +1768,8 @@ async function testAutoReload(browser) {
   const dirtyRes = await page.evaluate(() => ({
     val: document.getElementById('markdown-editor').value,
     bannerShown: !document.getElementById('external-update-banner').classList.contains('hidden'),
+    // 表示のときは flex（子の項目が横に並ぶ）、隠すときは none。display は CSS の定義順に頼らない
+    bannerDisplay: getComputedStyle(document.getElementById('external-update-banner')).display,
     modalShown: !document.getElementById('external-conflict-modal').classList.contains('hidden')
   }));
   await page.click('#btn-conflict-keep');
@@ -1780,7 +1782,8 @@ async function testAutoReload(browser) {
   await page.waitForFunction(() => document.getElementById('markdown-editor').value === '# Updated While Dirty\n', null, { timeout: 5000 });
   const manualReload = await page.evaluate(() => ({
     val: document.getElementById('markdown-editor').value,
-    bannerHidden: document.getElementById('external-update-banner').classList.contains('hidden')
+    bannerHidden: document.getElementById('external-update-banner').classList.contains('hidden'),
+    bannerDisplay: getComputedStyle(document.getElementById('external-update-banner')).display
   }));
 
   // 設定で自動反映をオフにすると、外部更新しても自動反映されない
@@ -1798,9 +1801,9 @@ async function testAutoReload(browser) {
 
   record('TC-FILE-046',
     autoRes.val.startsWith('# Updated Externally') && autoRes.scrollTop > 0 && autoRes.bannerHidden && autoRes.toast.includes('外部更新を反映しました')
-    && dirtyRes.val === '# Local Unsaved Edit\n' && dirtyRes.bannerShown && dirtyRes.modalShown
+    && dirtyRes.val === '# Local Unsaved Edit\n' && dirtyRes.bannerShown && dirtyRes.bannerDisplay === 'flex' && dirtyRes.modalShown
     && afterKeep.val === '# Local Unsaved Edit\n' && afterKeep.modalHidden && afterKeep.bannerStillShown
-    && manualReload.val === '# Updated While Dirty\n' && manualReload.bannerHidden
+    && manualReload.val === '# Updated While Dirty\n' && manualReload.bannerHidden && manualReload.bannerDisplay === 'none'
     && checkedWhenOff === false && offVal === '# Updated While Dirty\n'
     && page.consoleErrors.length === 0,
     JSON.stringify({ beforeScroll, autoRes, dirtyRes, afterKeep, manualReload, checkedWhenOff, offVal, errors: page.consoleErrors }));
