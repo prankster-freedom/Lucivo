@@ -106,14 +106,19 @@ export function setToneMenuOpen(open: boolean) {
 }
 
 export function selectTone(toneId: string) {
-  state.tone = toneId;
+  const toneEntry = getToneEntry(toneId);
+  state.tone = toneEntry.id;
   setToneMenuOpen(false);
   syncToneUi();
   setupMermaid();
   runtime.renderApp();
   syncUrlFromState();
-  trackWebEvent('tone_select', { tone: toneId });
-  showToast(t('toast.toneApplied', { label: getToneLabel(toneId) }));
+  trackWebEvent('tone_select', {
+    tone: toneEntry.id,
+    tone_id: toneEntry.analyticsId,
+    appearance: state.appearance
+  });
+  showToast(t('toast.toneApplied', { label: getToneLabel(toneEntry.id) }));
 }
 
 export function syncLayoutUi() {
