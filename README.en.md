@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.13.0`
+- **Version**: `0.14.0`
 - **Language**: [日本語](README.md) | English
 
 Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid diagrams. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
@@ -222,6 +222,14 @@ Licensed under the [MIT License](LICENSE). See [public/THIRD_PARTY_LICENSES.txt]
 
 The two most recent releases are listed below. For the complete version history, see [release-notes.en.md](release-notes.en.md).
 
+### 0.14.0 (2026-11-23)
+
+- feat(i18n): Added Japanese and English UI language switching, localized bundled samples, and English documentation
+- feat(folder): Added full-text search across all Markdown files in an open folder with jump-to-match navigation
+- feat(code): Added theme-adaptive syntax highlighting for code blocks matching Light/Dark appearance and Visual styles
+- feat(perf): Expanded incremental rendering for edited blocks and chapters to keep typing and previewing responsive in large documents
+- fix(visual): Kept chapters containing tables wider than a two-column track in single-column layout on wide screens so tables remain readable
+
 ### 0.13.0 (2026-11-22)
 
 - feat!(modes): Removed the "Playable Diagram" and "Zooming Map" presentation modes (breaking change)
@@ -232,11 +240,3 @@ The two most recent releases are listed below. For the complete version history,
 - feat(analytics): Added Google Analytics telemetry to the Web Edition (Official and Preview) to measure usage of design styles, color tones, and presentation modes (never transmits filenames or document content; excluded from the Standalone Edition)
 - fix(url-loader): Preserved `view=canvas` and `view=code` in shared URLs regardless of viewport width
 - fix(museum-walk): Aligned forward/backward mouse wheel direction in Museum Walk with standard zoom-in/zoom-out controls
-
-### 0.12.0 (2026-11-22)
-
-- feat(url-loader): Added drag-and-drop support for public URLs and loading files/folders from GitHub `blob` and `tree` URLs, with relative image/link resolution and address-bar `?url=` synchronization
-- feat(url-loader): Added sharing and restoration of display state (Fast/Visual mode, appearance, style, tone, and view layout) via URL query parameters
-- feat(file-watch): Added automatic background reloading preserving scroll position when an unedited local file changes on disk, and a reload notification banner when unsaved edits exist
-- feat(museum-walk): Added stepping closer, stepping back, and resetting viewing distance in Museum Walk via `Ctrl` + scroll wheel or `+` / `-` / `0` keys
-- feat(perf): Scoped incremental parsing during editing and reduced rendering, scrolling, and zooming overhead for long documents and diagram-heavy files
