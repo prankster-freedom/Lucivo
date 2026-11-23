@@ -2026,11 +2026,11 @@ async function testCoverAndTables(browser) {
   await setDocument(page, TONE_CHECK_MD);
   const toneIds = [
     'default',
-    'cobalt-workshop', 'morning-window', 'garden-party', 'color-pencils', 'sunflower-harbor',
-    'blush-chambray', 'cotton-candy', 'butterfly-sketch',
-    'matcha-wagashi', 'plum-mint-dusk', 'terracotta-courtyard', 'banana-leaf',
-    'nordic-frost', 'sea-glass-shore', 'twilight-iris',
-    'amber-sunset', 'seventies-vase',
+    'cotton-candy', 'spring-mist', 'lavender-apricot', 'dried-rose',
+    'peach-blossom', 'lime-aqua-dune', 'lemon-meringue', 'lilac-snow',
+    'cobalt-workshop', 'morning-window', 'blush-chambray', 'butterfly-sketch',
+    'matcha-wagashi', 'terracotta-courtyard',
+    'nordic-frost', 'sea-glass-shore', 'amber-sunset',
     'midnight-library', 'black-blossom', 'cyber-prism'
   ];
   const toneResults = [];

@@ -336,7 +336,64 @@ export const COLOR_TONES: ColorToneSpec[] = [
     light: { c1: '#2563EB', c2: '#0EA5E9', c3: '#10B981', c4: '#F59E0B', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#475569', text: '#0F172A', glow: '#38BDF8' },
     dark: { c1: '#38BDF8', c2: '#818CF8', c3: '#34D399', c4: '#FBBF24', canvasBg: '#0B101B', cardBg: '#161F30', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
   },
-  // 1. 明快・ビジネス・ポップ
+  // 1. パステル・フェミニン・ニュアンス（綿菓子＋新選定 3 種）
+  {
+    id: 'cotton-candy',
+    analyticsId: '171-cotton-candy',
+    label: '綿菓子',
+    light: { c1: '#BDB5DA', c2: '#FCDBC3', c3: '#CEEAF5', c4: '#FDF0F7', canvasBg: '#FDF0F7', cardBg: '#F8EBF5', edge: '#878299', text: '#855070', glow: '#FCDBC3' },
+    dark: { c1: '#B6A9E3', c2: '#F5C9A8', c3: '#C5EDFD', c4: '#EBD1DF', canvasBg: '#3D3948', cardBg: '#534E62', edge: '#ACA6BE', text: '#DACFF7', glow: '#F1CCB1' }
+  },
+  {
+    id: 'spring-mist',
+    analyticsId: '002-spring-mist',
+    label: '春霞のさくら',
+    light: { c1: '#F2D7DA', c2: '#F4ECD2', c3: '#D9EADC', c4: '#D8E2F0', canvasBg: '#FBF0F2', cardBg: '#FFF8F9', edge: '#997E81', text: '#8B4F5D', glow: '#F4B8C4' },
+    dark: { c1: '#E8BCC2', c2: '#E6DBB5', c3: '#BCE0C3', c4: '#BCCCE6', canvasBg: '#42363D', cardBg: '#5D4D56', edge: '#93787B', text: '#EFC7DE', glow: '#F9D5DC' }
+  },
+  {
+    id: 'lavender-apricot',
+    analyticsId: '054-lavender-apricot',
+    label: 'ラベンダーと杏',
+    light: { c1: '#FAC294', c2: '#DBB5C9', c3: '#DEDCE4', c4: '#FDEADF', canvasBg: '#FDEADF', cardBg: '#FDE7D9', edge: '#928379', text: '#765744', glow: '#FAC294' },
+    dark: { c1: '#FFBB82', c2: '#DDA0C1', c3: '#D3CDE2', c4: '#FFE3D2', canvasBg: '#383029', cardBg: '#52473D', edge: '#8B7D72', text: '#D8C3AF', glow: '#FFC79A' }
+  },
+  {
+    id: 'dried-rose',
+    analyticsId: '106-dried-rose',
+    label: 'ドライローズ',
+    light: { c1: '#D68942', c2: '#7B3341', c3: '#CA9790', c4: '#F7E3E1', canvasBg: '#F7E3E1', cardBg: '#F4DCD4', edge: '#918378', text: '#5B3B38', glow: '#D68942' },
+    dark: { c1: '#EEA669', c2: '#D57F8C', c3: '#E3ABA4', c4: '#F2D4D1', canvasBg: '#211A14', cardBg: '#3F342C', edge: '#8B7D72', text: '#D8C4B2', glow: '#E29857' }
+  },
+  {
+    id: 'peach-blossom',
+    analyticsId: '052-peach-blossom',
+    label: '桃の花',
+    light: { c1: '#F8C1B8', c2: '#FEECD9', c3: '#FCE0DE', c4: '#FEECD9', canvasBg: '#FFFCF9', cardBg: '#FFF8F2', edge: '#9A7F7A', text: '#875E2F', glow: '#F8C1B8' },
+    dark: { c1: '#F4A295', c2: '#FEE5C9', c3: '#F4C9C6', c4: '#FEE5C9', canvasBg: '#483734', cardBg: '#644E4A', edge: '#947974', text: '#F9CAC1', glow: '#FFC4BA' }
+  },
+  {
+    id: 'lime-aqua-dune',
+    analyticsId: '066-lime-aqua-dune',
+    label: 'ライムとアクアの砂丘',
+    light: { c1: '#F4ED87', c2: '#D9C6A4', c3: '#CDE8EC', c4: '#FDEADF', canvasBg: '#FDEADF', cardBg: '#FCEAD8', edge: '#8F8476', text: '#765744', glow: '#F4ED87' },
+    dark: { c1: '#E5DA4A', c2: '#D2B379', c3: '#B0DCE2', c4: '#FFE3D2', canvasBg: '#3D3C32', cardBg: '#535244', edge: '#828171', text: '#D9D7BC', glow: '#E0D978' }
+  },
+  {
+    id: 'lemon-meringue',
+    analyticsId: '093-lemon-meringue',
+    label: 'レモンメレンゲ',
+    light: { c1: '#E5E460', c2: '#F8F09B', c3: '#D4DCEF', c4: '#F7F8F6', canvasBg: '#F7F8F6', cardBg: '#F6F6EA', edge: '#878871', text: '#555519', glow: '#E5E460' },
+    dark: { c1: '#DCD900', c2: '#E6DA68', c3: '#C3D0EF', c4: '#D6DDCF', canvasBg: '#3D3D2E', cardBg: '#53533F', edge: '#82836B', text: '#E6E6BD', glow: '#DFDC33' }
+  },
+  {
+    id: 'lilac-snow',
+    analyticsId: '160-lilac-snow',
+    label: 'ライラックと雪',
+    light: { c1: '#ECDDEE', c2: '#FFFAFB', c3: '#ECDDEE', c4: '#FFFAFB', canvasBg: '#FFFAFB', cardBg: '#FDF8FA', edge: '#908093', text: '#905463', glow: '#ECDDEE' },
+    dark: { c1: '#E2C9E5', c2: '#E9D5D9', c3: '#E2C9E5', c4: '#E9D5D9', canvasBg: '#423844', cardBg: '#5A4D5D', edge: '#8A7A8C', text: '#E8CCED', glow: '#DFCEE1' }
+  },
+  // 2. 明快・ビジネス・ポップ
   {
     id: 'cobalt-workshop',
     analyticsId: '010-cobalt-workshop',
@@ -351,28 +408,7 @@ export const COLOR_TONES: ColorToneSpec[] = [
     light: { c1: '#F3A7B0', c2: '#F6E08E', c3: '#A8DBB0', c4: '#A9C4EC', canvasBg: '#EEF5FB', cardBg: '#F9FCFE', edge: '#997E81', text: '#25577B', glow: '#7DD3FC' },
     dark: { c1: '#F5B7BF', c2: '#F8E7A6', c3: '#B8E3BF', c4: '#B9CFF0', canvasBg: '#263345', cardBg: '#3C4D64', edge: '#9BB0CC', text: '#BCD4F5', glow: '#BAE6FD' }
   },
-  {
-    id: 'garden-party',
-    analyticsId: '033-garden-party',
-    label: '春のガーデンパーティー',
-    light: { c1: '#21A48F', c2: '#67C5DE', c3: '#D6E18D', c4: '#F4AFCF', canvasBg: '#F9FBEE', cardBg: '#F1F5D7', edge: '#718D86', text: '#373B01', glow: '#21A48F' },
-    dark: { c1: '#46CCB4', c2: '#68D9F6', c3: '#D3DF7D', c4: '#FFB5D7', canvasBg: '#071613', cardBg: '#1F342F', edge: '#6B8780', text: '#AEDCD1', glow: '#28C5AC' }
-  },
-  {
-    id: 'color-pencils',
-    analyticsId: '140-color-pencils',
-    label: '色鉛筆',
-    light: { c1: '#FFDD23', c2: '#EB5B44', c3: '#EF85B0', c4: '#91D3F0', canvasBg: '#FFFADE', cardBg: '#FFF3B2', edge: '#8B8770', text: '#3C3400', glow: '#FFDD23' },
-    dark: { c1: '#FAD700', c2: '#FF907C', c3: '#FF98C1', c4: '#8EDBFD', canvasBg: '#0E0B01', cardBg: '#302C18', edge: '#85816A', text: '#D8D0AC', glow: '#F5D300' }
-  },
-  {
-    id: 'sunflower-harbor',
-    analyticsId: '043-sunflower-harbor',
-    label: '向日葵の港',
-    light: { c1: '#F4E100', c2: '#05A5D2', c3: '#D79327', c4: '#3A737D', canvasBg: '#FDFBD9', cardBg: '#FBF5A6', edge: '#898870', text: '#393400', glow: '#F4E100' },
-    dark: { c1: '#EEDC00', c2: '#2FC7F9', c3: '#F4A934', c4: '#73B2BD', canvasBg: '#0D0C01', cardBg: '#2F2D19', edge: '#83826A', text: '#D4D3AE', glow: '#EAD800' }
-  },
-  // 2. ペール・淡色・フェミニン
+  // 3. ペール・淡色
   {
     id: 'blush-chambray',
     analyticsId: '023-blush-chambray',
@@ -381,20 +417,13 @@ export const COLOR_TONES: ColorToneSpec[] = [
     dark: { c1: '#DBA787', c2: '#FFD9CC', c3: '#C9CEDD', c4: '#E9D4BC', canvasBg: '#382F2A', cardBg: '#52463F', edge: '#A8988E', text: '#DBC0B2', glow: '#F6C9B9' }
   },
   {
-    id: 'cotton-candy',
-    analyticsId: '171-cotton-candy',
-    label: '綿菓子',
-    light: { c1: '#BDB5DA', c2: '#FCDBC3', c3: '#CEEAF5', c4: '#FDF0F7', canvasBg: '#FDF0F7', cardBg: '#F8EBF5', edge: '#878299', text: '#855070', glow: '#FCDBC3' },
-    dark: { c1: '#B6A9E3', c2: '#F5C9A8', c3: '#C5EDFD', c4: '#EBD1DF', canvasBg: '#3D3948', cardBg: '#534E62', edge: '#ACA6BE', text: '#DACFF7', glow: '#F1CCB1' }
-  },
-  {
     id: 'butterfly-sketch',
     analyticsId: '107-butterfly-sketch',
     label: '蝶のスケッチ',
     light: { c1: '#94376B', c2: '#642430', c3: '#FDD59C', c4: '#F2BCD7', canvasBg: '#FFF9F0', cardBg: '#FEF0DC', edge: '#977E89', text: '#62440D', glow: '#FDD59C' },
     dark: { c1: '#E478B1', c2: '#CF717E', c3: '#FDCF8D', c4: '#FBBCDC', canvasBg: '#1A0F14', cardBg: '#3C2C33', edge: '#917883', text: '#E0B7C9', glow: '#FACC8A' }
   },
-  // 3. ナチュラル・和・アース・ミニマル
+  // 4. ナチュラル・和・アース・ミニマル
   {
     id: 'matcha-wagashi',
     analyticsId: '017-matcha-wagashi',
@@ -403,27 +432,13 @@ export const COLOR_TONES: ColorToneSpec[] = [
     dark: { c1: '#99B37F', c2: '#EAD6B5', c3: '#DAA3A4', c4: '#9F9383', canvasBg: '#22281F', cardBg: '#3B4336', edge: '#7B8374', text: '#B9C8B1', glow: '#B8E0A4' }
   },
   {
-    id: 'plum-mint-dusk',
-    analyticsId: '026-plum-mint-dusk',
-    label: 'プラムと薄荷の夕べ',
-    light: { c1: '#E7D4AD', c2: '#77666A', c3: '#C0C1C4', c4: '#E7F3EA', canvasBg: '#E7F3EA', cardBg: '#F7FAF7', edge: '#8D8576', text: '#43624C', glow: '#E7D4AD' },
-    dark: { c1: '#E8D2A5', c2: '#B4A1A5', c3: '#B4BACD', c4: '#DDEFE1', canvasBg: '#1F1B13', cardBg: '#3C362A', edge: '#877F70', text: '#C5B9A0', glow: '#E8D2A5' }
-  },
-  {
     id: 'terracotta-courtyard',
     analyticsId: '019-terracotta-courtyard',
     label: 'テラコッタの中庭',
     light: { c1: '#D46A52', c2: '#D69F4E', c3: '#839760', c4: '#B89F8D', canvasBg: '#F5ECE2', cardBg: '#FCF7F1', edge: '#94817D', text: '#705A3F', glow: '#EA6A47' },
     dark: { c1: '#E48670', c2: '#E6B56A', c3: '#9EB37B', c4: '#CBB5A6', canvasBg: '#271E19', cardBg: '#463932', edge: '#8E7B77', text: '#D1B7A9', glow: '#FF9D80' }
   },
-  {
-    id: 'banana-leaf',
-    analyticsId: '132-banana-leaf',
-    label: 'バナナの葉',
-    light: { c1: '#B9C965', c2: '#588194', c3: '#162A41', c4: '#D6E4E7', canvasBg: '#F9FBFB', cardBg: '#F1F6F7', edge: '#848972', text: '#414810', glow: '#B9C965' },
-    dark: { c1: '#C5D760', c2: '#85B4C9', c3: '#6E8FB6', c4: '#C6DFE4', canvasBg: '#0A0D02', cardBg: '#2A2F1B', edge: '#7E836D', text: '#BDC7A2', glow: '#C5D760' }
-  },
-  // 4. クール・マリン・紫
+  // 5. クール・マリン・レトロ・夕暮れ
   {
     id: 'nordic-frost',
     analyticsId: '018-nordic-frost',
@@ -439,26 +454,11 @@ export const COLOR_TONES: ColorToneSpec[] = [
     dark: { c1: '#8297FD', c2: '#52A9BE', c3: '#49C48F', c4: '#BFE063', canvasBg: '#1B313A', cardBg: '#2E4B57', edge: '#75828E', text: '#B8D5E2', glow: '#4FD8E8' }
   },
   {
-    id: 'twilight-iris',
-    analyticsId: '075-twilight-iris',
-    label: '黄昏のアイリス',
-    light: { c1: '#55447F', c2: '#7480B8', c3: '#B174A9', c4: '#79A3C1', canvasBg: '#F0EEF8', cardBg: '#F6F5FA', edge: '#878493', text: '#554D6B', glow: '#7480BB' },
-    dark: { c1: '#C1ACFF', c2: '#808CC5', c3: '#BE80B6', c4: '#96BCD7', canvasBg: '#150C28', cardBg: '#352D4C', edge: '#817E8D', text: '#BAB4D1', glow: '#808CC5' }
-  },
-  // 5. レトロ・夕暮れ
-  {
     id: 'amber-sunset',
     analyticsId: '014-amber-sunset',
     label: '琥珀の夕暮れ',
     light: { c1: '#E89B3C', c2: '#E06A5A', c3: '#B84D6F', c4: '#6D597A', canvasBg: '#F9EFE4', cardBg: '#FFF8F1', edge: '#908477', text: '#735B41', glow: '#F59E0B' },
     dark: { c1: '#F2AF5C', c2: '#EB8678', c3: '#D16F8E', c4: '#9983A9', canvasBg: '#231921', cardBg: '#433540', edge: '#8A7E71', text: '#C9B1C4', glow: '#FCD34D' }
-  },
-  {
-    id: 'seventies-vase',
-    analyticsId: '191-seventies-vase',
-    label: '70 年代の花瓶',
-    light: { c1: '#0099A1', c2: '#EFBB3F', c3: '#C47550', c4: '#FAE5D6', canvasBg: '#FEFBF9', cardBg: '#FDF6F1', edge: '#768B8C', text: '#5A412E', glow: '#EFBB3F' },
-    dark: { c1: '#41C5CE', c2: '#FFC322', c3: '#EF9A73', c4: '#F3D7C2', canvasBg: '#0A1516', cardBg: '#243436', edge: '#708586', text: '#AECCCF', glow: '#F5CA6F' }
   },
   // 6. 重厚・シック・サイバー
   {
@@ -573,10 +573,10 @@ export function getLayoutLabel(layoutId = state.visualLayout): string {
 
 // 起動画面のサンプルのカード（FR-007, ARC-PUB-008）。サムネイルは assets/thumbs/ に同梱し、表示言語に合わせる（起動時に外部通信しない）
 interface SampleLink { file: string; label: I18nKey }
-interface SampleCard { id: string; thumbAlt: I18nKey; desc: I18nKey; links: SampleLink[]; presentMode?: string }
+interface SampleCard { id: string; thumbAlt: I18nKey; desc: I18nKey; links: SampleLink[]; mode?: 'visual'; presentMode?: string }
 
 const SAMPLE_CARDS: SampleCard[] = [
-  { id: 'visual', thumbAlt: 'sample.visual', desc: 'empty.sampleVisualDesc', links: [{ file: 'visual-sample.md', label: 'sample.visual' }] },
+  { id: 'visual', thumbAlt: 'sample.visual', desc: 'empty.sampleVisualDesc', mode: 'visual', links: [{ file: 'visual-sample.md', label: 'sample.visual' }] },
   {
     id: 'notation', thumbAlt: 'sample.notation', desc: 'empty.sampleNotationDesc',
     links: [
@@ -584,7 +584,7 @@ const SAMPLE_CARDS: SampleCard[] = [
       { file: 'notation_sample_extra1.md', label: 'sample.notationExtra' }
     ]
   },
-  { id: 'color-museum', thumbAlt: 'sample.colorMuseum', desc: 'empty.sampleColorMuseumDesc', links: [{ file: 'color-museum-sample.md', label: 'sample.colorMuseum' }], presentMode: 'museum-walk' }
+  { id: 'color-museum', thumbAlt: 'sample.colorMuseum', desc: 'empty.sampleColorMuseumDesc', mode: 'visual', links: [{ file: 'color-museum-sample.md', label: 'sample.colorMuseum' }], presentMode: 'museum-walk' }
 ];
 
 function escapeAttr(value: string): string {
@@ -592,28 +592,33 @@ function escapeAttr(value: string): string {
 }
 
 // リンク先。Web 版は GitHub 上のサンプルを開く URL、スタンドアロン版は同梱を開くので移動しない
-function sampleCardHref(file: string, presentMode?: string): string {
+function sampleCardHref(file: string, presentMode?: string, mode?: 'visual'): string {
   const lang = getLang();
   if (hasBundledSamples()) return '#';
   const params = [`url=${encodeURIComponent(samplesRawUrl(resolveSampleFileName(file)))}`];
   if (presentMode) params.push('mode=visual', 'theme=dark', `present=${presentMode}`);
+  else if (mode === 'visual') params.push('mode=visual');
   if (lang === 'en') params.push('lang=en');
   return `./?${params.join('&')}`;
 }
 
 export function getSampleCardsHtml(): string {
   const lang = getLang();
+  const web = !hasBundledSamples();
   return SAMPLE_CARDS
-    .filter(card => !card.presentMode || (!hasBundledSamples() && isPresentModeAvailable(card.presentMode)))
+    .filter(card => !card.presentMode || (web && isPresentModeAvailable(card.presentMode)))
     .map(card => {
-      // 発表モードで始めるカードは data-empty-sample を付けず、href のとおりに移動する（FR-069）
-      const attr = (file: string) => (card.presentMode ? '' : ` data-empty-sample="${escapeAttr(file)}"`);
+      const modeAttr = card.mode ? ` data-empty-mode="${card.mode}"` : '';
+      // Web 版は新しいタブ（別ウィンドウ）で開き、スタンドアロン版はアプリ内で開く（pushState + popstate 対応）
+      const attr = (file: string) => (web
+        ? ' target="_blank" rel="noopener noreferrer"'
+        : ` data-empty-sample="${escapeAttr(file)}"${modeAttr}`);
       const first = card.links[0];
       const links = card.links
-        .map(link => `<a class="empty-guide-sample-link" href="${escapeAttr(sampleCardHref(link.file, card.presentMode))}"${attr(link.file)}>${t(link.label)}</a>`)
+        .map(link => `<a class="empty-guide-sample-link" href="${escapeAttr(sampleCardHref(link.file, card.presentMode, card.mode))}"${attr(link.file)}>${t(link.label)}</a>`)
         .join('');
       return `      <div class="empty-guide-sample-card" data-sample-card="${card.id}">
-        <a class="empty-guide-sample-thumb" href="${escapeAttr(sampleCardHref(first.file, card.presentMode))}"${attr(first.file)} tabindex="-1" aria-hidden="true">
+        <a class="empty-guide-sample-thumb" href="${escapeAttr(sampleCardHref(first.file, card.presentMode, card.mode))}"${attr(first.file)} tabindex="-1" aria-hidden="true">
           <img src="./assets/thumbs/${card.id}.${lang}.webp" width="640" height="400" loading="lazy" decoding="async" alt="${escapeAttr(t(card.thumbAlt))}" />
         </a>
         <div class="empty-guide-sample-body">
