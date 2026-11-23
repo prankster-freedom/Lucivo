@@ -95,7 +95,7 @@ The Web Edition loads these samples directly from GitHub, while the Standalone E
 | [visual-sample.en.md](public/samples/visual-sample.en.md)     | Visual Mode cover page, editorial templates, tables, Luminous Flow effects, and Stage Presentation |
 | [notation_sample.en.md](public/samples/notation_sample.en.md) | Comprehensive Markdown & Mermaid reference (all diagram types, math, callouts, footnotes, emoji, etc.) |
 | [notation_sample_extra1.en.md](public/samples/notation_sample_extra1.en.md) | Extended syntax (CommonMark & GFM), images, cross-document links, directory trees, and supplementary math plots |
-| [color-museum-sample.en.md](public/samples/color-museum-sample.en.md) | Color Museum (20 curated product tones, all 203 stock palettes, diagrams & motifs; optimized for Dark Museum Walk) |
+| [color-museum-sample.en.md](public/samples/color-museum-sample.en.md) | Color Museum (a gallery of the moments color moves us: posters, windows, landscapes, color fields, and diagrams; made for Dark Museum Walk) |
 
 ## Capabilities
 
