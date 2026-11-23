@@ -2,6 +2,14 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.14.0 (2026-11-23)
+
+- feat(i18n): Added Japanese and English UI language switching, localized bundled samples, and English documentation
+- feat(folder): Added full-text search across all Markdown files in an open folder with jump-to-match navigation
+- feat(code): Added theme-adaptive syntax highlighting for code blocks matching Light/Dark appearance and Visual styles
+- feat(perf): Expanded incremental rendering for edited blocks and chapters to keep typing and previewing responsive in large documents
+- fix(visual): Kept chapters containing tables wider than a two-column track in single-column layout on wide screens so tables remain readable
+
 ## 0.13.0 (2026-11-22)
 
 - feat!(modes): Removed the "Playable Diagram" and "Zooming Map" presentation modes (breaking change)
