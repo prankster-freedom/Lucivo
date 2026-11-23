@@ -68,6 +68,7 @@
 }
 .exhibition-slab .vs-points > li {
   --vs-c: var(--vs-c1);
+  --vs-c-ink: var(--vs-c1-ink, #ffffff);
   counter-increment: vs-point;
   position: relative;
   margin: 0;
@@ -85,9 +86,9 @@
   transform: translateY(-2px);
   box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.2);
 }
-.exhibition-slab .vs-points > li:nth-child(4n + 2) { --vs-c: var(--vs-c2); }
-.exhibition-slab .vs-points > li:nth-child(4n + 3) { --vs-c: var(--vs-c3); }
-.exhibition-slab .vs-points > li:nth-child(4n + 4) { --vs-c: var(--vs-c4); }
+.exhibition-slab .vs-points > li:nth-child(4n + 2) { --vs-c: var(--vs-c2); --vs-c-ink: var(--vs-c2-ink, #ffffff); }
+.exhibition-slab .vs-points > li:nth-child(4n + 3) { --vs-c: var(--vs-c3); --vs-c-ink: var(--vs-c3-ink, #ffffff); }
+.exhibition-slab .vs-points > li:nth-child(4n + 4) { --vs-c: var(--vs-c4); --vs-c-ink: var(--vs-c4-ink, #ffffff); }
 .exhibition-slab .vs-points > li::before {
   content: counter(vs-point, decimal-leading-zero);
   display: block;
@@ -142,7 +143,7 @@
 .exhibition-slab .vs-points > li.vs-point-featured {
   background: var(--vs-c);
   border-color: color-mix(in oklab, var(--vs-c) 80%, #ffffff);
-  color: #ffffff;
+  color: var(--vs-c-ink);
   transform: scale(1.025);
   box-shadow: 0 12px 28px -6px color-mix(in srgb, var(--vs-c) 40%, rgba(15, 23, 42, 0.28)), 0 4px 12px -2px rgba(0, 0, 0, 0.15);
   z-index: 2;
@@ -156,15 +157,15 @@
   box-shadow: 0 20px 40px -8px color-mix(in srgb, var(--vs-c) 55%, rgba(15, 23, 42, 0.4)), 0 8px 18px -2px rgba(0, 0, 0, 0.24);
 }
 .exhibition-slab .vs-points > li.vs-point-featured::before {
-  color: rgba(255, 255, 255, 0.85);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  color: color-mix(in srgb, var(--vs-c-ink) 85%, transparent);
+  text-shadow: none;
 }
 .exhibition-slab .vs-points > li.vs-point-featured::after {
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+  background: color-mix(in srgb, var(--vs-c-ink) 45%, transparent);
+  box-shadow: none;
 }
 .exhibition-slab .vs-points > li.vs-point-featured .vs-card-ornament {
-  background-color: #ffffff;
+  background-color: var(--vs-c-ink);
   opacity: 0.35;
 }
 .exhibition-slab .vs-points > li.vs-point-featured:hover .vs-card-ornament,
@@ -172,17 +173,17 @@
   opacity: 0.7;
 }
 .exhibition-slab .vs-points > li.vs-point-featured .vs-point-title {
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: var(--vs-c-ink);
+  text-shadow: none;
 }
 .exhibition-slab .vs-points > li.vs-point-featured.vs-metric-item .vs-point-title.vs-metric-value {
-  color: #ffffff;
+  color: var(--vs-c-ink);
 }
 .exhibition-slab .vs-points > li.vs-point-featured.vs-metric-item .vs-point-title.vs-metric-value .vs-metric-unit {
-  color: rgba(255, 255, 255, 0.85);
+  color: color-mix(in srgb, var(--vs-c-ink) 85%, transparent);
 }
 .exhibition-slab .vs-points > li.vs-point-featured.vs-metric-item .vs-point-title.vs-metric-value::after {
-  background: #ffffff;
+  background: var(--vs-c-ink);
 }
 
 .exhibition-slab .vs-point-title {
