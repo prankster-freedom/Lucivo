@@ -30,7 +30,14 @@ export function contrastRatio(hexA: string, hexB: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-// 背景色に対して高いコントラスト比を得られる文字色（濃色または白）を選ぶ（#258, #260）
+// 背景色に対して高いコントラスト比を得られる文字色（濃色または白）を選ぶ（#258, #260, #369）
+// 既定の濃色（#0F172A）と白のいずれも WCAG AA（4.5）に届かない中明度帯のみ、より深い濃色（#020617）へフォールバックする
 export function pickContrastInk(bgHex: string, darkInk = '#0F172A', lightInk = '#FFFFFF'): string {
-  return contrastRatio(bgHex, lightInk) >= contrastRatio(bgHex, darkInk) ? lightInk : darkInk;
+  const lightCr = contrastRatio(bgHex, lightInk);
+  const darkCr = contrastRatio(bgHex, darkInk);
+  if (lightCr < 4.5 && darkCr < 4.5) {
+    const deepDark = '#020617';
+    return contrastRatio(bgHex, deepDark) >= lightCr ? deepDark : lightInk;
+  }
+  return lightCr >= darkCr ? lightInk : darkInk;
 }

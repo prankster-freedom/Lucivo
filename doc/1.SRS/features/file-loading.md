@@ -192,7 +192,7 @@ tags: ["Lucivo", "SRS", "file-loading"]
   - `mode`: `fast`（既定・高速モード）/ `visual`（Visualモード）
   - `theme`: `light`（既定）/ `dark`
   - `style`: `shapes`（既定）/ `cards` / `circles` / `editorial`（`style` が指定されて `mode` が省略された場合は `visual` として開く）
-  - `tone`: `default`（既定）/ `cobalt-workshop` / `morning-window` / `matcha-wagashi` / `nordic-frost` / `amber-sunset` / `midnight-library` / `cyber-prism`
+  - `tone`: `default`（既定）および製品メニュー登録の 20 トーン（`cobalt-workshop` / `morning-window` / `garden-party` / `color-pencils` / `sunflower-harbor` / `blush-chambray` / `cotton-candy` / `butterfly-sketch` / `matcha-wagashi` / `plum-mint-dusk` / `terracotta-courtyard` / `banana-leaf` / `nordic-frost` / `sea-glass-shore` / `twilight-iris` / `amber-sunset` / `seventies-vase` / `midnight-library` / `black-blossom` / `cyber-prism`）
   - `view`: `split` / `canvas` / `code`（`editor` も同義として受け付ける。省略時は画面幅に応じた既定値）
   - `layout`: `page`（既定・16:10 ページ単位）/ `single`（ページ区切りなしのシングルページ表示。`layout=single` が指定されて `mode` が省略された場合は `visual` として開く、#308）
 - 不正な値や存在しない識別名が指定されたパラメータは無視し、既定値（または他の有効な状態）で起動を継続すること。

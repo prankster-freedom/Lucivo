@@ -335,54 +335,151 @@ export const COLOR_TONES: ColorToneSpec[] = [
     light: { c1: '#2563EB', c2: '#0EA5E9', c3: '#10B981', c4: '#F59E0B', canvasBg: '#FFFFFF', cardBg: '#F8FAFC', edge: '#475569', text: '#0F172A', glow: '#38BDF8' },
     dark: { c1: '#38BDF8', c2: '#818CF8', c3: '#34D399', c4: '#FBBF24', canvasBg: '#0B101B', cardBg: '#161F30', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
   },
+  // 1. 明快・ビジネス・ポップ
   {
     id: 'cobalt-workshop',
     analyticsId: '010-cobalt-workshop',
     label: '晴天の工作舎',
-    light: { c1: '#D42A44', c2: '#D99B00', c3: '#198038', c4: '#2266CC', canvasBg: '#F4F7FB', cardBg: '#FFFFFF', edge: '#334155', text: '#0F172A', glow: '#38BDF8' },
-    dark: { c1: '#FF5C77', c2: '#FFD147', c3: '#4ADE80', c4: '#60A5FA', canvasBg: '#0B1220', cardBg: '#131E33', edge: '#94A3B8', text: '#F8FAFC', glow: '#7DD3FC' }
+    light: { c1: '#D42A44', c2: '#E0B414', c3: '#22A046', c4: '#2266CC', canvasBg: '#ECF3FB', cardBg: '#F7FAFE', edge: '#9A7E7E', text: '#173B5F', glow: '#38BDF8' },
+    dark: { c1: '#EB576D', c2: '#ECC63E', c3: '#45BD68', c4: '#4D8AE6', canvasBg: '#101B30', cardBg: '#2A3854', edge: '#877B8F', text: '#C3D6F7', glow: '#7DD3FC' }
   },
   {
     id: 'morning-window',
     analyticsId: '001-morning-window',
     label: '朝の窓辺',
-    light: { c1: '#E57A89', c2: '#D9AE38', c3: '#5CB874', c4: '#6898DC', canvasBg: '#F8FAFC', cardBg: '#FFFFFF', edge: '#5A6D82', text: '#1E293B', glow: '#60A5FA' },
-    dark: { c1: '#FF9EAA', c2: '#FFE066', c3: '#7EE89C', c4: '#8CC0FF', canvasBg: '#101622', cardBg: '#192233', edge: '#9BB0C9', text: '#F8FAFC', glow: '#BAE6FD' }
+    light: { c1: '#F3A7B0', c2: '#F6E08E', c3: '#A8DBB0', c4: '#A9C4EC', canvasBg: '#EEF5FB', cardBg: '#F9FCFE', edge: '#997E81', text: '#25577B', glow: '#7DD3FC' },
+    dark: { c1: '#F5B7BF', c2: '#F8E7A6', c3: '#B8E3BF', c4: '#B9CFF0', canvasBg: '#263345', cardBg: '#3C4D64', edge: '#9BB0CC', text: '#BCD4F5', glow: '#BAE6FD' }
   },
+  {
+    id: 'garden-party',
+    analyticsId: '033-garden-party',
+    label: '春のガーデンパーティー',
+    light: { c1: '#21A48F', c2: '#67C5DE', c3: '#D6E18D', c4: '#F4AFCF', canvasBg: '#F9FBEE', cardBg: '#F1F5D7', edge: '#718D86', text: '#373B01', glow: '#21A48F' },
+    dark: { c1: '#46CCB4', c2: '#68D9F6', c3: '#D3DF7D', c4: '#FFB5D7', canvasBg: '#071613', cardBg: '#1F342F', edge: '#6B8780', text: '#AEDCD1', glow: '#28C5AC' }
+  },
+  {
+    id: 'color-pencils',
+    analyticsId: '140-color-pencils',
+    label: '色鉛筆',
+    light: { c1: '#FFDD23', c2: '#EB5B44', c3: '#EF85B0', c4: '#91D3F0', canvasBg: '#FFFADE', cardBg: '#FFF3B2', edge: '#8B8770', text: '#3C3400', glow: '#FFDD23' },
+    dark: { c1: '#FAD700', c2: '#FF907C', c3: '#FF98C1', c4: '#8EDBFD', canvasBg: '#0E0B01', cardBg: '#302C18', edge: '#85816A', text: '#D8D0AC', glow: '#F5D300' }
+  },
+  {
+    id: 'sunflower-harbor',
+    analyticsId: '043-sunflower-harbor',
+    label: '向日葵の港',
+    light: { c1: '#F4E100', c2: '#05A5D2', c3: '#D79327', c4: '#3A737D', canvasBg: '#FDFBD9', cardBg: '#FBF5A6', edge: '#898870', text: '#393400', glow: '#F4E100' },
+    dark: { c1: '#EEDC00', c2: '#2FC7F9', c3: '#F4A934', c4: '#73B2BD', canvasBg: '#0D0C01', cardBg: '#2F2D19', edge: '#83826A', text: '#D4D3AE', glow: '#EAD800' }
+  },
+  // 2. ペール・淡色・フェミニン
+  {
+    id: 'blush-chambray',
+    analyticsId: '023-blush-chambray',
+    label: '頬紅とシャンブレー',
+    light: { c1: '#D4B6A4', c2: '#FBD3C5', c3: '#D5D6D9', c4: '#FBEFE1', canvasBg: '#FBEFE1', cardBg: '#F8E8DD', edge: '#928379', text: '#725C40', glow: '#FBD3C5' },
+    dark: { c1: '#DBA787', c2: '#FFD9CC', c3: '#C9CEDD', c4: '#E9D4BC', canvasBg: '#382F2A', cardBg: '#52463F', edge: '#A8988E', text: '#DBC0B2', glow: '#F6C9B9' }
+  },
+  {
+    id: 'cotton-candy',
+    analyticsId: '171-cotton-candy',
+    label: '綿菓子',
+    light: { c1: '#BDB5DA', c2: '#FCDBC3', c3: '#CEEAF5', c4: '#FDF0F7', canvasBg: '#FDF0F7', cardBg: '#F8EBF5', edge: '#878299', text: '#855070', glow: '#FCDBC3' },
+    dark: { c1: '#B6A9E3', c2: '#F5C9A8', c3: '#C5EDFD', c4: '#EBD1DF', canvasBg: '#3D3948', cardBg: '#534E62', edge: '#ACA6BE', text: '#DACFF7', glow: '#F1CCB1' }
+  },
+  {
+    id: 'butterfly-sketch',
+    analyticsId: '107-butterfly-sketch',
+    label: '蝶のスケッチ',
+    light: { c1: '#94376B', c2: '#642430', c3: '#FDD59C', c4: '#F2BCD7', canvasBg: '#FFF9F0', cardBg: '#FEF0DC', edge: '#977E89', text: '#62440D', glow: '#FDD59C' },
+    dark: { c1: '#E478B1', c2: '#CF717E', c3: '#FDCF8D', c4: '#FBBCDC', canvasBg: '#1A0F14', cardBg: '#3C2C33', edge: '#917883', text: '#E0B7C9', glow: '#FACC8A' }
+  },
+  // 3. ナチュラル・和・アース・ミニマル
   {
     id: 'matcha-wagashi',
     analyticsId: '017-matcha-wagashi',
     label: '抹茶と和三盆',
-    light: { c1: '#6D8C50', c2: '#C49A5C', c3: '#C27477', c4: '#6B5B4B', canvasBg: '#F4F1E8', cardBg: '#FBF9F4', edge: '#5E584B', text: '#24211B', glow: '#84B558' },
-    dark: { c1: '#A3D175', c2: '#F2C97D', c3: '#F0989B', c4: '#C2AD94', canvasBg: '#121610', cardBg: '#1B2118', edge: '#A4A090', text: '#F4F1E8', glow: '#C2EB96' }
+    light: { c1: '#7D9763', c2: '#DFC69E', c3: '#C78A8B', c4: '#5E5448', canvasBg: '#F3EFE2', cardBg: '#FAF8F0', edge: '#81897A', text: '#685E3E', glow: '#9CCB86' },
+    dark: { c1: '#99B37F', c2: '#EAD6B5', c3: '#DAA3A4', c4: '#9F9383', canvasBg: '#22281F', cardBg: '#3B4336', edge: '#7B8374', text: '#B9C8B1', glow: '#B8E0A4' }
   },
+  {
+    id: 'plum-mint-dusk',
+    analyticsId: '026-plum-mint-dusk',
+    label: 'プラムと薄荷の夕べ',
+    light: { c1: '#E7D4AD', c2: '#77666A', c3: '#C0C1C4', c4: '#E7F3EA', canvasBg: '#E7F3EA', cardBg: '#F7FAF7', edge: '#8D8576', text: '#43624C', glow: '#E7D4AD' },
+    dark: { c1: '#E8D2A5', c2: '#B4A1A5', c3: '#B4BACD', c4: '#DDEFE1', canvasBg: '#1F1B13', cardBg: '#3C362A', edge: '#877F70', text: '#C5B9A0', glow: '#E8D2A5' }
+  },
+  {
+    id: 'terracotta-courtyard',
+    analyticsId: '019-terracotta-courtyard',
+    label: 'テラコッタの中庭',
+    light: { c1: '#D46A52', c2: '#D69F4E', c3: '#839760', c4: '#B89F8D', canvasBg: '#F5ECE2', cardBg: '#FCF7F1', edge: '#94817D', text: '#705A3F', glow: '#EA6A47' },
+    dark: { c1: '#E48670', c2: '#E6B56A', c3: '#9EB37B', c4: '#CBB5A6', canvasBg: '#271E19', cardBg: '#463932', edge: '#8E7B77', text: '#D1B7A9', glow: '#FF9D80' }
+  },
+  {
+    id: 'banana-leaf',
+    analyticsId: '132-banana-leaf',
+    label: 'バナナの葉',
+    light: { c1: '#B9C965', c2: '#588194', c3: '#162A41', c4: '#D6E4E7', canvasBg: '#F9FBFB', cardBg: '#F1F6F7', edge: '#848972', text: '#414810', glow: '#B9C965' },
+    dark: { c1: '#C5D760', c2: '#85B4C9', c3: '#6E8FB6', c4: '#C6DFE4', canvasBg: '#0A0D02', cardBg: '#2A2F1B', edge: '#7E836D', text: '#BDC7A2', glow: '#C5D760' }
+  },
+  // 4. クール・マリン・紫
   {
     id: 'nordic-frost',
     analyticsId: '018-nordic-frost',
     label: '北欧の霜柱',
-    light: { c1: '#4D8BB0', c2: '#5BA3C2', c3: '#7A86B8', c4: '#556D85', canvasBg: '#F0F6FA', cardBg: '#FAFDFE', edge: '#536A7D', text: '#162330', glow: '#38BDF8' },
-    dark: { c1: '#70C4F0', c2: '#8EE0F8', c3: '#B4BEFA', c4: '#A2C0D9', canvasBg: '#0B131E', cardBg: '#142030', edge: '#93AEC4', text: '#F1F6FA', glow: '#A5F3FC' }
+    light: { c1: '#7EA6BF', c2: '#A5C7D9', c3: '#B2B8D6', c4: '#CBD5E1', canvasBg: '#EBF3F8', cardBg: '#F6FAFC', edge: '#798993', text: '#436478', glow: '#A5F3FC' },
+    dark: { c1: '#9EC1D6', c2: '#BDD9E8', c3: '#C8CDE6', c4: '#9EAEC3', canvasBg: '#2F3B4B', cardBg: '#445368', edge: '#9EB0C6', text: '#C4D5EB', glow: '#CFFAFE' }
   },
+  {
+    id: 'sea-glass-shore',
+    analyticsId: '013-sea-glass-shore',
+    label: 'シーグラスの浜辺',
+    light: { c1: '#3A4A9A', c2: '#2A6A7A', c3: '#2A9A6A', c4: '#A8C84A', canvasBg: '#E8F5F7', cardBg: '#F4FBFC', edge: '#818695', text: '#38636A', glow: '#0EA5B7' },
+    dark: { c1: '#8297FD', c2: '#52A9BE', c3: '#49C48F', c4: '#BFE063', canvasBg: '#1B313A', cardBg: '#2E4B57', edge: '#75828E', text: '#B8D5E2', glow: '#4FD8E8' }
+  },
+  {
+    id: 'twilight-iris',
+    analyticsId: '075-twilight-iris',
+    label: '黄昏のアイリス',
+    light: { c1: '#55447F', c2: '#7480B8', c3: '#B174A9', c4: '#79A3C1', canvasBg: '#F0EEF8', cardBg: '#F6F5FA', edge: '#878493', text: '#554D6B', glow: '#7480BB' },
+    dark: { c1: '#C1ACFF', c2: '#808CC5', c3: '#BE80B6', c4: '#96BCD7', canvasBg: '#150C28', cardBg: '#352D4C', edge: '#817E8D', text: '#BAB4D1', glow: '#808CC5' }
+  },
+  // 5. レトロ・夕暮れ
   {
     id: 'amber-sunset',
     analyticsId: '014-amber-sunset',
     label: '琥珀の夕暮れ',
-    light: { c1: '#D9821E', c2: '#D95A4A', c3: '#B54269', c4: '#7A548C', canvasBg: '#FAF3EB', cardBg: '#FFFBF7', edge: '#6B525A', text: '#291C20', glow: '#F59E0B' },
-    dark: { c1: '#FFB347', c2: '#FF7D6B', c3: '#F2729C', c4: '#C292DB', canvasBg: '#181016', cardBg: '#241821', edge: '#B0929D', text: '#FAF3EE', glow: '#FCD34D' }
+    light: { c1: '#E89B3C', c2: '#E06A5A', c3: '#B84D6F', c4: '#6D597A', canvasBg: '#F9EFE4', cardBg: '#FFF8F1', edge: '#908477', text: '#735B41', glow: '#F59E0B' },
+    dark: { c1: '#F2AF5C', c2: '#EB8678', c3: '#D16F8E', c4: '#9983A9', canvasBg: '#231921', cardBg: '#433540', edge: '#8A7E71', text: '#C9B1C4', glow: '#FCD34D' }
   },
+  {
+    id: 'seventies-vase',
+    analyticsId: '191-seventies-vase',
+    label: '70 年代の花瓶',
+    light: { c1: '#0099A1', c2: '#EFBB3F', c3: '#C47550', c4: '#FAE5D6', canvasBg: '#FEFBF9', cardBg: '#FDF6F1', edge: '#768B8C', text: '#5A412E', glow: '#EFBB3F' },
+    dark: { c1: '#41C5CE', c2: '#FFC322', c3: '#EF9A73', c4: '#F3D7C2', canvasBg: '#0A1516', cardBg: '#243436', edge: '#708586', text: '#AECCCF', glow: '#F5CA6F' }
+  },
+  // 6. 重厚・シック・サイバー
   {
     id: 'midnight-library',
     analyticsId: '007-midnight-library',
     label: '夜を編む図書館',
-    light: { c1: '#8F2D3E', c2: '#8F7018', c3: '#266E40', c4: '#2A4E85', canvasBg: '#ECEAE4', cardBg: '#F7F5F0', edge: '#3F4657', text: '#171A24', glow: '#D4A528' },
-    dark: { c1: '#F07185', c2: '#F2C957', c3: '#5CD685', c4: '#78A8F5', canvasBg: '#0C101A', cardBg: '#151C2C', edge: '#8C9AB8', text: '#F3F1EB', glow: '#FFE073' }
+    light: { c1: '#6E2A35', c2: '#6E5C1F', c3: '#265A35', c4: '#26406A', canvasBg: '#ECE7DC', cardBg: '#F6F3EC', edge: '#9A7E80', text: '#4C3800', glow: '#D4AF37' },
+    dark: { c1: '#CC6B79', c2: '#C2A64B', c3: '#549E6A', c4: '#6389C6', canvasBg: '#121826', cardBg: '#2D3548', edge: '#877B8F', text: '#BBCBEE', glow: '#F3D56B' }
+  },
+  {
+    id: 'black-blossom',
+    analyticsId: '113-black-blossom',
+    label: '黒と白い花',
+    light: { c1: '#F3AE93', c2: '#3A4F59', c3: '#353439', c4: '#D5D6D9', canvasBg: '#F9F9F9', cardBg: '#F0F1F2', edge: '#93827B', text: '#56392E', glow: '#F3AE93' },
+    dark: { c1: '#FFB99E', c2: '#7C9AA9', c3: '#918BA6', c4: '#D1D5E0', canvasBg: '#19100D', cardBg: '#3A2D29', edge: '#8D7C75', text: '#DFC4BC', glow: '#FFBCA1' }
   },
   {
     id: 'cyber-prism',
     analyticsId: '020-cyber-prism',
     label: '分光プリズムと黒曜石',
-    light: { c1: '#0369A1', c2: '#DB2777', c3: '#7C3AED', c4: '#059669', canvasBg: '#F1F5F9', cardBg: '#FFFFFF', edge: '#475569', text: '#0F172A', glow: '#06B6D4' },
-    dark: { c1: '#38BDF8', c2: '#F472B6', c3: '#B494FF', c4: '#34D399', canvasBg: '#080C16', cardBg: '#111829', edge: '#8193B0', text: '#F8FAFC', glow: '#67E8F9' }
+    light: { c1: '#0284C7', c2: '#DB2777', c3: '#7C3AED', c4: '#059669', canvasBg: '#EBF2F8', cardBg: '#F6FAFD', edge: '#728797', text: '#00314F', glow: '#00F0FF' },
+    dark: { c1: '#38BDF8', c2: '#F472B6', c3: '#A78BFA', c4: '#34D399', canvasBg: '#0E1422', cardBg: '#2C3548', edge: '#738295', text: '#C8D8F9', glow: '#67E8F9' }
   }
 ];
 

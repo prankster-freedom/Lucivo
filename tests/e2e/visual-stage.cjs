@@ -2024,7 +2024,15 @@ async function testCoverAndTables(browser) {
   ].join('\n');
   await setMode(page, { style: 'shapes', appearance: 'light' });
   await setDocument(page, TONE_CHECK_MD);
-  const toneIds = ['default', 'cobalt-workshop', 'morning-window', 'matcha-wagashi', 'nordic-frost', 'amber-sunset', 'midnight-library', 'cyber-prism'];
+  const toneIds = [
+    'default',
+    'cobalt-workshop', 'morning-window', 'garden-party', 'color-pencils', 'sunflower-harbor',
+    'blush-chambray', 'cotton-candy', 'butterfly-sketch',
+    'matcha-wagashi', 'plum-mint-dusk', 'terracotta-courtyard', 'banana-leaf',
+    'nordic-frost', 'sea-glass-shore', 'twilight-iris',
+    'amber-sunset', 'seventies-vase',
+    'midnight-library', 'black-blossom', 'cyber-prism'
+  ];
   const toneResults = [];
   const shotTargets = new Set(['midnight-library:light', 'amber-sunset:light', 'matcha-wagashi:light', 'default:dark', 'midnight-library:dark', 'amber-sunset:dark', 'matcha-wagashi:dark', 'default:light']);
   for (const appearance of ['light', 'dark']) {
@@ -2095,7 +2103,7 @@ async function testCoverAndTables(browser) {
   const toneBad = toneResults.filter(r =>
     r.minStepRatio < 4.5 || r.badgeRatio < 4.5 || r.chevronZ <= r.cometZ || r.chevronRatio < 2.2
   );
-  record('TC-VTPL-035', toneResults.length === 16 && toneBad.length === 0 && darkSlabSet.size >= 5,
+  record('TC-VTPL-035', toneResults.length === 42 && toneBad.length === 0 && darkSlabSet.size >= 15,
     JSON.stringify(toneBad.length ? { toneBad, darkSlabs: darkSlabSet.size } : { checked: toneResults.length, minStepAcrossAll: Math.min(...toneResults.map(r => r.minStepRatio)), minBadgeAcrossAll: Math.min(...toneResults.map(r => r.badgeRatio)), minChevronAcrossAll: Math.min(...toneResults.map(r => r.chevronRatio)), darkSlabs: darkSlabSet.size }));
 
   // TC-VTPL-039 カラートーン選択時の Mermaid 配色連動（#311）とインラインコードカラーコードスウォッチ（#312）
