@@ -589,6 +589,81 @@ body[data-appearance="light"] .brand-mark-dark {
 .info-style-btn {
   white-space: nowrap;
 }
+/* 起動画面の公開 URL 貼り付けフォーム（FR-050, #373） */
+.empty-guide-url-form {
+  display: flex;
+  align-items: stretch;
+  gap: 0.45rem;
+  max-width: 36rem;
+  margin: 0 auto 1.15rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.empty-guide-url-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.empty-guide-url-input::placeholder {
+  color: var(--text-muted);
+}
+.empty-guide-url-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+.empty-guide-url-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--border-subtle));
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.empty-guide-url-btn:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 18%, var(--panel-bg));
+  border-color: var(--accent);
+}
+.empty-guide-url-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.empty-guide-url-btn svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+@container (max-width: 28rem) {
+  .empty-guide-url-form {
+    flex-direction: column;
+  }
+  .empty-guide-url-input {
+    font-size: 1rem;
+  }
+  .empty-guide-url-btn {
+    width: 100%;
+    min-height: 2.6rem;
+    font-size: 0.9rem;
+  }
+}
 /* 起動画面の同梱サンプルリンク（FR-007, FR-067, DTP-005） */
 .empty-guide-samples {
   display: flex;

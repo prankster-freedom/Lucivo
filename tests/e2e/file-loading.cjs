@@ -724,14 +724,106 @@ async function testUrlLoading(browser) {
     const rateToast = await p45Err.evaluate(() => document.getElementById('toast-message')?.textContent || '');
     await ctx45Err.close();
 
+    // スラッシュ入りブランチ名の GitHub tree URL 解決（#370）
+    const slashTreeUrl = 'https://github.com/prankster-freedom/Lucivo/tree/feature/Gemini-color-tones-review/doc/0.DTP';
+    const ctx45Slash = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+    const p45Slash = await ctx45Slash.newPage();
+    const slashApiHits = [];
+    await p45Slash.route('https://api.github.com/repos/**', route => {
+      const u = route.request().url();
+      slashApiHits.push(u);
+      if (u.includes('/git/matching-refs/heads/feature')) {
+        return route.fulfill({
+          status: 200,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+          body: JSON.stringify([
+            { ref: 'refs/heads/feature/pre-test' },
+            { ref: 'refs/heads/feature/Gemini-color-tones-review' }
+          ])
+        });
+      }
+      if (u.includes('/git/trees/feature/Gemini-color-tones-review?recursive=1')) {
+        return route.fulfill({
+          status: 200,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            truncated: false,
+            tree: [
+              { path: 'doc/0.DTP/README.md', type: 'blob' },
+              { path: 'doc/0.DTP/notes.md', type: 'blob' }
+            ]
+          })
+        });
+      }
+      return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: '{}' });
+    });
+    await p45Slash.route('https://raw.githubusercontent.com/**', route => {
+      const u = route.request().url();
+      if (u.includes('/feature/Gemini-color-tones-review/doc/0.DTP/README.md')) {
+        return route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' }, body: '# Slash Branch OK\n' });
+      }
+      return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Not Found' });
+    });
+    await p45Slash.goto(`${server.url}?url=${encodeURIComponent(slashTreeUrl)}`);
+    await p45Slash.waitForFunction(() => document.title === 'README.md - Lucivo', null, { timeout: 10000 });
+    const slashResult = await p45Slash.evaluate(() => ({
+      items: Array.from(document.querySelectorAll('#folder-list .folder-list-item')).map(el => el.textContent.trim()),
+      val: document.getElementById('markdown-editor')?.value,
+      urlParam: new URL(window.location.href).searchParams.get('url')
+    }));
+    await ctx45Slash.close();
+
     record('TC-FILE-045',
       treeInit.items.includes('README.md') && treeInit.items.includes('guide.md') && treeInit.items.includes('detail.md')
       && !treeInit.items.some(t => t.includes('secret') || t.includes('skip'))
       && treeInit.imgWidth === 120 && treeInit.urlParam === treeUrl
       && afterSub.val === '# Sub Detail\n' && afterSub.urlParam === treeUrl
       && afterCloseUrl === false
-      && rateToast.includes('利用回数制限'),
-      JSON.stringify({ treeInit, afterSub, afterCloseUrl, rateToast }));
+      && rateToast.includes('利用回数制限')
+      && slashApiHits.some(u => u.includes('/git/matching-refs/heads/feature'))
+      && slashResult.items.includes('README.md') && slashResult.items.includes('notes.md')
+      && slashResult.val === '# Slash Branch OK\n' && slashResult.urlParam === slashTreeUrl,
+      JSON.stringify({ treeInit, afterSub, afterCloseUrl, rateToast, slashResult }));
+
+    // TC-FILE-050: 起動画面の公開 URL 貼り付け入力欄（スマホ幅 390px 含む、#373）
+    const ctx50 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const p50 = await ctx50.newPage();
+    let p50UnexpectedFetch = false;
+    await p50.route('https://example.test/**', route => {
+      if (route.request().url().endsWith('/mobile-url.md')) {
+        return route.fulfill({
+          status: 200,
+          headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/markdown; charset=utf-8' },
+          body: '# Mobile URL Opened\n'
+        });
+      }
+      p50UnexpectedFetch = true;
+      return route.fulfill({ status: 404, headers: { 'Access-Control-Allow-Origin': '*' }, body: 'Not Found' });
+    });
+    await p50.goto(server.url);
+    await p50.waitForSelector('.empty-guide-url-form [data-empty-url-input]');
+    const mobileLayout = await p50.evaluate(() => ({
+      noOverflow: document.documentElement.scrollWidth <= window.innerWidth + 1,
+      formVisible: Boolean(document.querySelector('#standard-doc-container [data-empty-url-form]'))
+    }));
+    await p50.fill('#standard-doc-container [data-empty-url-input]', 'javascript:alert(1)');
+    await p50.click('#standard-doc-container [data-empty-url-form] button[type="submit"]');
+    await p50.waitForFunction(() => (document.getElementById('toast-message')?.textContent || '').includes('http / https'), null, { timeout: 5000 });
+    const invalidToast50 = await p50.evaluate(() => document.getElementById('toast-message')?.textContent || '');
+    const targetUrl50 = 'https://example.test/docs/mobile-url.md';
+    await p50.fill('#standard-doc-container [data-empty-url-input]', targetUrl50);
+    await p50.click('#standard-doc-container [data-empty-url-form] button[type="submit"]');
+    await p50.waitForFunction(() => document.title === 'mobile-url.md - Lucivo', null, { timeout: 10000 });
+    const loaded50 = await p50.evaluate(() => ({
+      val: document.getElementById('markdown-editor')?.value,
+      urlParam: new URL(window.location.href).searchParams.get('url')
+    }));
+    await ctx50.close();
+    record('TC-FILE-050',
+      mobileLayout.noOverflow && mobileLayout.formVisible && !p50UnexpectedFetch
+      && invalidToast50.includes('http / https')
+      && loaded50.val === '# Mobile URL Opened\n' && loaded50.urlParam === targetUrl50,
+      JSON.stringify({ mobileLayout, invalidToast50, loaded50, p50UnexpectedFetch }));
 
     // TC-FILE-047: 狭い画面（< 1024px）でも view=canvas 等のカスタマイズ済み URL パラメータが保持される（#307）
     const ctx47 = await browser.newContext({ viewport: { width: 900, height: 800 } });

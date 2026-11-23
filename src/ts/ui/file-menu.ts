@@ -383,6 +383,25 @@ export function setupFileMenu() {
     const fileName = target.getAttribute('data-empty-sample');
     if (fileName) void loadBundledSample(fileName);
   });
+  // 起動画面（.empty-guide）の公開 URL 貼り付けフォーム（FR-050, #373）
+  document.addEventListener('submit', event => {
+    const form = event.target instanceof Element ? event.target.closest('[data-empty-url-form]') : null;
+    if (!form) return;
+    event.preventDefault();
+    const urlInput = form.querySelector<HTMLInputElement>('[data-empty-url-input]');
+    const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const rawUrl = (urlInput?.value || '').trim();
+    if (!rawUrl) {
+      showToast(t('url.invalidUrl'), 4000);
+      urlInput?.focus();
+      return;
+    }
+    if (submitBtn?.disabled) return;
+    if (submitBtn) submitBtn.disabled = true;
+    void loadMarkdownFromPublicUrl(rawUrl).finally(() => {
+      if (submitBtn) submitBtn.disabled = false;
+    });
+  });
   // 言語切り替えメニュー（FR-065）
   document.querySelectorAll('#lang-menu [data-lang-option]').forEach((btn: any) => {
     btn.onclick = () => {

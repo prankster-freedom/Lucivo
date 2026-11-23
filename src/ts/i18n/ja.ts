@@ -266,7 +266,10 @@ export const ja = {
 
   // 起動画面（EMPTY_GUIDE_HTML）
   'empty.title': 'Markdown を開いてください',
-  'empty.desc': 'Markdown ファイルは、ウィンドウにドラッグ&ドロップするだけで簡単に開けます。別の文書へのリンクや画像を含む文書は、フォルダごとドラッグ&ドロップすれば、左の一覧から開けて、リンクと画像も表示できます。下の同梱サンプルやヘッダーの「開く」メニューからワンクリックで試すことも、左のエディタに直接入力することもできます。',
+  'empty.desc': 'Markdown ファイルは、ウィンドウにドラッグ&ドロップするだけで簡単に開けます。別の文書へのリンクや画像を含む文書は、フォルダごとドラッグ&ドロップすれば、左の一覧から開けて、リンクと画像も表示できます。公開 URL の貼り付けや、下の同梱サンプル・ヘッダーの「開く」メニューからもすぐ試せます。',
+  'empty.urlLabel': '公開 URL から Markdown を開く',
+  'empty.urlPlaceholder': 'https://...（Markdown や GitHub の URL を貼り付け）',
+  'empty.urlOpen': 'URL を開く',
   'empty.samplesLabel': 'サンプルをすぐ試す:',
   'empty.cardFastTitle': '高速モード',
   'empty.cardFastDesc': '思考を邪魔しないミリ秒応答の軽快なプレビュー。仕様書の執筆や構造の確認に最適です。',

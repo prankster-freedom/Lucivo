@@ -268,7 +268,10 @@ export const en: I18nDict = {
 
   // Empty guide (EMPTY_GUIDE_HTML)
   'empty.title': 'Open a Markdown Document',
-  'empty.desc': 'Simply drag & drop a Markdown file anywhere on this window to open it. For documents with local images or links, drag & drop the entire folder to browse files in the sidebar. You can also try a bundled sample below, use the "Open" menu, or type directly in the editor.',
+  'empty.desc': 'Simply drag & drop a Markdown file anywhere on this window to open it. For documents with local images or links, drag & drop the entire folder to browse files in the sidebar. You can also paste a public URL below, try a bundled sample, use the "Open" menu, or type directly in the editor.',
+  'empty.urlLabel': 'Open Markdown from a public URL',
+  'empty.urlPlaceholder': 'https://… (Paste a Markdown or GitHub URL)',
+  'empty.urlOpen': 'Open URL',
   'empty.samplesLabel': 'Try a sample:',
   'empty.cardFastTitle': 'Fast Mode',
   'empty.cardFastDesc': 'Millisecond-response, distraction-free preview built for reading and writing technical specs.',

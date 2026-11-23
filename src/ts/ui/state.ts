@@ -573,6 +573,7 @@ export function getLayoutLabel(layoutId = state.visualLayout): string {
 export function getEmptyGuideHtml(): string {
   const readmeAttrs = `href="${getReadmeViewerUrl()}" target="_blank" rel="noopener noreferrer"`;
   const sampleIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5"/></svg>';
+  const urlIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';
   return `
 <div class="empty-guide">
   <div class="empty-guide-logo">
@@ -583,6 +584,11 @@ export function getEmptyGuideHtml(): string {
   </div>
   <h3 class="empty-guide-title">${t('empty.title')}</h3>
   <p class="empty-guide-desc">${t('empty.desc')}</p>
+
+  <form class="empty-guide-url-form" data-empty-url-form novalidate>
+    <input type="url" inputmode="url" class="empty-guide-url-input" data-empty-url-input aria-label="${t('empty.urlLabel')}" placeholder="${t('empty.urlPlaceholder')}" autocomplete="off" autocapitalize="off" spellcheck="false" />
+    <button type="submit" class="empty-guide-url-btn">${urlIcon}<span>${t('empty.urlOpen')}</span></button>
+  </form>
 
   <div class="empty-guide-samples" role="group" aria-label="${t('menu.bundledSamples')}">
     <span class="empty-guide-samples-label">${t('empty.samplesLabel')}</span>
