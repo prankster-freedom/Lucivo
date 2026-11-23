@@ -5,6 +5,7 @@ import {
   validatePublicMarkdownUrl,
   rewriteGitHubBlobUrl,
   parseGitHubTreeUrl,
+  resolveGitHubTreeSpec,
   makeGitHubRawUrl,
   fetchGitHubTreeFiles,
   fetchMarkdownFromUrl
@@ -720,9 +721,10 @@ function makeRemoteFolder(name, treeSpec, remoteTreeUrl, rawFiles, truncated) {
   };
 }
 
-async function loadGitHubTreeFolder(validUrl, treeSpec) {
+async function loadGitHubTreeFolder(validUrl, initialSpec) {
   showToast(t('url.loadingGitHubFolder'));
   try {
+    const treeSpec = (await resolveGitHubTreeSpec(validUrl)) || initialSpec;
     const { files, truncated } = await fetchGitHubTreeFiles(
       treeSpec,
       DROPPABLE_FILE_PATTERN,

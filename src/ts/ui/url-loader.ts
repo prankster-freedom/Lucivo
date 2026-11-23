@@ -141,18 +141,123 @@ export interface GitHubTreeSpec {
   basePath: string;
 }
 
+const MATCHING_REFS_PER_PAGE = 100;
+const MATCHING_REFS_MAX_PAGES = 5;
+
+function decodeSegment(seg: string): string {
+  try { return decodeURIComponent(seg); } catch (_) { return seg; }
+}
+
+function encodePathSegments(pathStr: string): string {
+  return pathStr.split('/').filter(Boolean).map(seg => encodeURIComponent(seg)).join('/');
+}
+
 export function parseGitHubTreeUrl(url: URL): GitHubTreeSpec | null {
   if (url.hostname !== 'github.com') return null;
   const segments = url.pathname.split('/').filter(Boolean);
   if (segments.length < 4 || segments[2] !== 'tree') return null;
   const [owner, repo, , ref, ...pathParts] = segments;
   return {
-    owner: decodeURIComponent(owner),
-    repo: decodeURIComponent(repo),
-    ref: decodeURIComponent(ref),
-    basePath: pathParts.map(p => {
-      try { return decodeURIComponent(p); } catch (_) { return p; }
-    }).join('/')
+    owner: decodeSegment(owner),
+    repo: decodeSegment(repo),
+    ref: decodeSegment(ref),
+    basePath: pathParts.map(decodeSegment).join('/')
+  };
+}
+
+/**
+ * `/tree/` 以降のセグメント列と GitHub ブランチ名一覧から、`/` 境目で一致する最長ブランチ名を特定する（#370）。
+ * 一致するブランチがない場合は null を返す。
+ */
+export function matchLongestBranchRef(
+  restSegments: string[],
+  refNames: string[]
+): { ref: string; basePath: string } | null {
+  if (restSegments.length === 0 || refNames.length === 0) return null;
+  const fullRest = restSegments.join('/');
+  let bestBranch: string | null = null;
+  for (const rawName of refNames) {
+    if (typeof rawName !== 'string' || !rawName) continue;
+    const branch = rawName.startsWith('refs/heads/') ? rawName.slice('refs/heads/'.length) : rawName;
+    if (!branch) continue;
+    const exact = fullRest === branch;
+    const prefixed = fullRest.startsWith(`${branch}/`);
+    if ((exact || prefixed) && (!bestBranch || branch.length > bestBranch.length)) {
+      bestBranch = branch;
+    }
+  }
+  if (!bestBranch) return null;
+  const basePath = fullRest === bestBranch ? '' : fullRest.slice(bestBranch.length + 1);
+  return { ref: bestBranch, basePath };
+}
+
+/**
+ * GitHub の `tree` URL について、スラッシュを含むブランチ名（`feature/...` 等）の境目を
+ * `matching-refs` API（最大 5 ページ・500 件）で解決する（FR-050, DD-FILE-087, #370）。
+ * `/tree/<ref>` のように 1 セグメントのみの場合や、一致するブランチがない・取得失敗時は
+ * `parseGitHubTreeUrl()` の既定解釈へフォールバックする。
+ */
+export async function resolveGitHubTreeSpec(
+  url: URL,
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs = FETCH_TIMEOUT_MS,
+  maxPages = MATCHING_REFS_MAX_PAGES
+): Promise<GitHubTreeSpec | null> {
+  const fallback = parseGitHubTreeUrl(url);
+  if (!fallback) return null;
+  const segments = url.pathname.split('/').filter(Boolean);
+  const restSegments = segments.slice(3).map(decodeSegment);
+  if (restSegments.length <= 1) {
+    return fallback;
+  }
+
+  const firstSeg = restSegments[0];
+  const refNames: string[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const apiUrl = `https://api.github.com/repos/${encodeURIComponent(fallback.owner)}/${encodeURIComponent(fallback.repo)}/git/matching-refs/heads/${encodeURIComponent(firstSeg)}?per_page=${MATCHING_REFS_PER_PAGE}&page=${page}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetchImpl(apiUrl, {
+        headers: { Accept: 'application/vnd.github+json' },
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      if (res.status === 403 || res.status === 429) {
+        throw new Error('GITHUB_RATE_LIMIT');
+      }
+      if (!res.ok) {
+        break;
+      }
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        break;
+      }
+      for (const item of data) {
+        if (item && typeof item.ref === 'string') {
+          refNames.push(item.ref);
+        }
+      }
+      if (data.length < MATCHING_REFS_PER_PAGE) {
+        break;
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message === 'GITHUB_RATE_LIMIT') {
+        throw err;
+      }
+      break;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  const matched = matchLongestBranchRef(restSegments, refNames);
+  if (!matched) return fallback;
+  return {
+    owner: fallback.owner,
+    repo: fallback.repo,
+    ref: matched.ref,
+    basePath: matched.basePath
   };
 }
 
@@ -160,8 +265,9 @@ export function parseGitHubTreeUrl(url: URL): GitHubTreeSpec | null {
  * GitHub のリポジトリ内パスから raw.githubusercontent.com の URL を組み立てる。
  */
 export function makeGitHubRawUrl(owner: string, repo: string, ref: string, fullRepoPath: string): string {
-  const encodedPath = fullRepoPath.split('/').filter(Boolean).map(seg => encodeURIComponent(seg)).join('/');
-  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(ref)}/${encodedPath}`;
+  const encodedRef = encodePathSegments(ref);
+  const encodedPath = encodePathSegments(fullRepoPath);
+  return `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodedRef}/${encodedPath}`;
 }
 
 /**
@@ -174,7 +280,7 @@ export async function fetchGitHubTreeFiles(
   maxDepth = 12,
   timeoutMs = FETCH_TIMEOUT_MS
 ): Promise<{ files: Array<{ path: string; name: string; dir: string }>; truncated: boolean }> {
-  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(spec.owner)}/${encodeURIComponent(spec.repo)}/git/trees/${encodeURIComponent(spec.ref)}?recursive=1`;
+  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(spec.owner)}/${encodeURIComponent(spec.repo)}/git/trees/${encodePathSegments(spec.ref)}?recursive=1`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
