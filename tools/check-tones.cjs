@@ -36,7 +36,7 @@ function parseColorTonesFromState(stateSource) {
 
 function loadActiveStockTones(tonesDir) {
   const files = fs.readdirSync(tonesDir)
-    .filter(f => /^\d{2,3}-.*\.md$/.test(f))
+    .filter(f => /^\d{2,3}-.*\.md$/.test(f) && parseInt(f, 10) > 0)
     .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
   const stock = [];
   for (const file of files) {

@@ -94,7 +94,7 @@ function readSet(plainCol1, label) {
 
 function parseToneFiles() {
   const files = fs.readdirSync(TONES_DIR)
-    .filter(f => /^\d{2,3}-.*\.md$/.test(f))
+    .filter(f => /^\d{2,3}-.*\.md$/.test(f) && parseInt(f, 10) > 0)
     .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
   const tones = [];
