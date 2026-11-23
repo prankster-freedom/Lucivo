@@ -36,6 +36,7 @@ async function checkMode(page, mode) {
   const errorsBefore = page.consoleErrors.length;
 
   await page.click('#btn-present-menu');
+  const menuDuplicates = await page.evaluate(id => document.querySelectorAll(`#present-menu #menu-present-${id}`).length, mode.id);
   await page.click(`#menu-present-${mode.id}`);
   let started = true;
   await page.waitForFunction(id => {
@@ -43,7 +44,7 @@ async function checkMode(page, mode) {
     return m && m.info && m.info().active;
   }, mode.id, { timeout: 15000 }).catch(() => { started = false; });
   await page.waitForTimeout(300);
-  out.start = { ok: started, detail: JSON.stringify({ started }) };
+  out.start = { ok: started && menuDuplicates === 1, detail: JSON.stringify({ started, menuDuplicates }) };
 
   // Esc で元の表示（高速 / Visual、Split / Canvas、スクロール位置）に戻る
   await page.keyboard.press('Escape');
@@ -69,6 +70,7 @@ async function checkNarrow(page, mode) {
   await page.setViewportSize(NARROW);
   await page.waitForTimeout(500);
   await page.click('#btn-present-menu');
+  const menuDuplicates = await page.evaluate(id => document.querySelectorAll(`#present-menu #menu-present-${id}`).length, mode.id);
   await page.click(`#menu-present-${mode.id}`);
   await page.waitForFunction(id => {
     const m = window.LucivoModes.get(id);

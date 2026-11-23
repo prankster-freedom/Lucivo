@@ -198,6 +198,7 @@ export function setupPresentModes(closeMenus: () => void): void {
   if (!menu) return;
   const syncRestrictions: Array<() => void> = [];
   PRESENT_MODES.forEach(({ id, label, labelEn }) => {
+    if (document.getElementById(`menu-present-${id}`)) return;
     const item = document.createElement('button');
     item.id = `menu-present-${id}`;
     item.type = 'button';
