@@ -272,7 +272,7 @@ async function testFileLoading(browser) {
     // 前回のフォルダの項目（ハンドルを覚えたときだけ出る）は、表示中の項目だけを数える
     items: Array.from(document.querySelectorAll('#file-menu [role="menuitem"]:not(.hidden)')).map(el => el.textContent.trim())
   }));
-  await page.mouse.click(700, 600);
+  await page.mouse.click(20, 400);
   const closedByOutside = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   await page.click('#btn-file-menu');
   await page.keyboard.press('Escape');
