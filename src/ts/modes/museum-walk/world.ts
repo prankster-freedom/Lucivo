@@ -23,7 +23,7 @@ const KIND: Record<PartKind, { off: number; range: [number, number] }> = {
 };
 
 // 立体図の層（DTP-MWLK-050）。dz は進む向きと逆へずらす量（大きいほど手前）
-const STAND = { maxW: 1100, maxH: 520, padX: 60, padTop: 70, padBottom: 90, bottom: 180, dzLines: 70, dzNodes: 210 };
+const STAND = { maxW: 1100, maxH: 520, padX: 60, padTop: 104, padBottom: 90, bottom: 180, dzLines: 70, dzNodes: 210 };
 
 interface Tile { el: HTMLElement; near: number; far: number; vis: boolean; key: number; wall: boolean; }
 interface PartRef { el: HTMLElement; kind: PartKind; side: 'L' | 'R'; z: number; y: number; w: number; half: number; key: string; vis: boolean; }

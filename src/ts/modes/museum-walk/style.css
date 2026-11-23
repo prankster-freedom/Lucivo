@@ -217,8 +217,8 @@ html.is-museum-walk body { overflow: hidden; }
 }
 #museum-walk .mw-gate.is-cover .mw-title { letter-spacing: .04em; }
 #museum-walk .mw-sub {
-  max-width: 100%; margin-top: 22px; font-size: 28px; line-height: 1.6; letter-spacing: .08em; color: rgba(236, 232, 223, .88);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+  width: 82%; max-width: 82%; margin-top: 22px; font-size: 28px; line-height: 1.6; letter-spacing: .08em; color: rgba(236, 232, 223, .88);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 #museum-walk .mw-endwall {
   background: radial-gradient(ellipse 60% 50% at 50% 55%, rgba(var(--tint), .22), transparent 75%), #111216;

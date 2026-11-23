@@ -1,4 +1,4 @@
-// ミュージアム・ウォーク（TC-MWLK-001〜008、FR-056）のテスト。tests/e2e.cjs が tests/e2e/modes/ のファイルを自動で集める（ARC-MODE-008）。
+// ミュージアム・ウォーク（TC-MWLK-001〜011、FR-056）のテスト。tests/e2e.cjs が tests/e2e/modes/ のファイルを自動で集める（ARC-MODE-008）。
 // 共通の品質（始められる・エラーがない・スマホの幅ではみ出さない・Esc で戻る）は present-modes.cjs の関門で確かめる。ここでは体験の核心だけを確かめる。
 // 確かめた場面のスクリーンショット（ゲラ）を SHOT_DIR に mw-*.png で残す（dtp の校正で使う）。
 const path = require('path');
@@ -527,6 +527,60 @@ async function testMuseumWalk(browser) {
       errors: elevPage.consoleErrors
     }));
     await elevPage.context().close();
+
+    // TC-MWLK-011: 長い概要文の表紙の門と、広間の額縁の札（#386, #388）
+    const longDeckDoc = [
+      '---',
+      'title: 長い概要文の確認',
+      'description: Lucivo のカラートーンを、ポスター・窓・風景・色面・図に仕立てて歩いて巡る展示サンプル。色の一覧ではなく、色が誌面や空間でどう働き、人の心をどう動かすかを問いかける。',
+      '---',
+      '',
+      '# 長い概要文の確認',
+      '',
+      '導入の文。',
+      '',
+      '## 章',
+      '',
+      '### 見出し',
+      '',
+      '```mermaid',
+      'flowchart TB',
+      '  A[はじめ] --> B[つぎ]',
+      '```'
+    ].join('\n');
+    const deckPage = await openWebPageWithSample(browser, server);
+    await setDocument(deckPage, longDeckDoc);
+    await start(deckPage);
+    const deck = await deckPage.evaluate(() => {
+      const sub = document.querySelector('#museum-walk .mw-gate.is-cover .mw-sub');
+      const label = sub && sub.closest('.mw-label');
+      if (!sub || !label) return null;
+      const innerW = label.clientWidth - 140;
+      return {
+        subW: sub.offsetWidth, innerW,
+        overflowX: sub.scrollWidth > sub.clientWidth + 1,
+        lines: Math.round(sub.clientHeight / parseFloat(getComputedStyle(sub).lineHeight)),
+        clamp: getComputedStyle(sub).webkitLineClamp
+      };
+    });
+    const di = await info(deckPage);
+    const hallSec = di.sections.find(s => s.name === 'hall');
+    await walkTo(deckPage, hallSec.from - 200);
+    await shot(deckPage, 'long-deck-hall');
+    // 札（::before）の下端と、図の画像（ノードの層は 2 倍の大きさで組み、scale(0.5) で置く）の上端は、額縁の中の位置で比べる。
+    // 札は left/top 64/44px・字の高さ 32px（2 倍の組み）で、図は padTop（STAND.padTop）の 2 倍だけ下から始まる
+    const stand = await deckPage.evaluate(() => {
+      const frame = document.querySelector('#museum-walk .mw-fig-frame');
+      const img = document.querySelector('#museum-walk .mw-fig-layer img');
+      const before = getComputedStyle(frame, '::before');
+      const labelBottom = parseFloat(before.top) + parseFloat(before.fontSize);
+      return frame && img ? { labelBottom, imgTop: parseFloat(img.style.top) } : null;
+    });
+    const mw11Ok = !!deck && deck.subW <= deck.innerW * 0.85 && !deck.overflowX && deck.lines <= 3 && String(deck.clamp) === '3'
+      && !!stand && stand.imgTop - stand.labelBottom >= 40
+      && deckPage.consoleErrors.length === 0;
+    record('TC-MWLK-011', mw11Ok, JSON.stringify({ deck, stand, errors: deckPage.consoleErrors }));
+    await deckPage.context().close();
   } finally {
     await server.close();
   }
@@ -534,6 +588,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009'], fn: testMuseumWalk, timeoutMs: 240000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011'], fn: testMuseumWalk, timeoutMs: 240000 }
   ]
 };
