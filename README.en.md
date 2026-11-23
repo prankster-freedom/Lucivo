@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.15.0`
+- **Version**: `0.16.0`
 - **Language**: [日本語](README.md) | English
 
 Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid diagrams. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
@@ -231,16 +231,18 @@ Licensed under the [MIT License](LICENSE). See [public/THIRD_PARTY_LICENSES.txt]
 
 The two most recent releases are listed below. For the complete version history, see [release-notes.en.md](release-notes.en.md).
 
+### 0.16.0 (2026-11-23)
+
+- feat(samples): Added a new sample, "Color Museum": walk a 3D corridor of posters, windows, seasonal landscapes, color fields, and diagrams, and see the moments color moves people (Japanese and English editions)
+- feat(ui): Added sample thumbnail cards to the start screen on the web edition; choosing one opens the sample from GitHub. The `present` URL parameter now starts Museum Walk as soon as the document opens
+- feat(ui): Replaced seven of the product color tones in the Color Tone menu and moved seven pastel tones, including Cotton Candy, to the top
+- fix(museum-walk): Fixed a long cover description spilling out of the gate on both sides, and the exhibit label overlapping a diagram's title in the hall
+- fix(ui): Samples opened from the start screen can now return to it with the browser's Back button, and samples meant for Visual Mode switch to it automatically
+- fix(ui): Fixed duplicate items in the Present menu
+- fix(ui): Added to the drop guide that a public URL can be pasted to open a file
+
 ### 0.15.0 (2026-11-23)
 
 - feat(ui): Expanded Visual Mode color tones to 20 presets (plus Style Default), made the tone selector menu scrollable, and improved text and accent contrast across Light and Dark appearances
 - feat(ui): Added a public URL paste input field on the start screen so users on mobile devices without drag-and-drop can open public Markdown files and GitHub folders directly
 - fix(url): Fixed loading GitHub `tree` URLs whose branch names contain slashes (such as `feature/...`)
-
-### 0.14.0 (2026-11-23)
-
-- feat(i18n): Added Japanese and English UI language switching, localized bundled samples, and English documentation
-- feat(folder): Added full-text search across all Markdown files in an open folder with jump-to-match navigation
-- feat(code): Added theme-adaptive syntax highlighting for code blocks matching Light/Dark appearance and Visual styles
-- feat(perf): Expanded incremental rendering for edited blocks and chapters to keep typing and previewing responsive in large documents
-- fix(visual): Kept chapters containing tables wider than a two-column track in single-column layout on wide screens so tables remain readable

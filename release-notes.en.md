@@ -2,6 +2,16 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.16.0 (2026-11-23)
+
+- feat(samples): Added a new sample, "Color Museum": walk a 3D corridor of posters, windows, seasonal landscapes, color fields, and diagrams, and see the moments color moves people (Japanese and English editions)
+- feat(ui): Added sample thumbnail cards to the start screen on the web edition; choosing one opens the sample from GitHub. The `present` URL parameter now starts Museum Walk as soon as the document opens
+- feat(ui): Replaced seven of the product color tones in the Color Tone menu and moved seven pastel tones, including Cotton Candy, to the top
+- fix(museum-walk): Fixed a long cover description spilling out of the gate on both sides, and the exhibit label overlapping a diagram's title in the hall
+- fix(ui): Samples opened from the start screen can now return to it with the browser's Back button, and samples meant for Visual Mode switch to it automatically
+- fix(ui): Fixed duplicate items in the Present menu
+- fix(ui): Added to the drop guide that a public URL can be pasted to open a file
+
 ## 0.15.0 (2026-11-23)
 
 - feat(ui): Expanded Visual Mode color tones to 20 presets (plus Style Default), made the tone selector menu scrollable, and improved text and accent contrast across Light and Dark appearances
