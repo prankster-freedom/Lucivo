@@ -4,7 +4,7 @@
  * GitHub Actions (e2e.yml) で E2E テストを実行すべきか判定するスクリプト。
  * 
  * 判定ルール:
- * 1. PR 全体 (BASE..HEAD) の差分がすべてドキュメントまたは package.json/lock の版番号のみの場合 -> SKIP (e2e=false)
+ * 1. PR 全体 (BASE..HEAD) の差分がすべてドキュメント（配布物に関係しない道具を含む。DOC_PATTERNS）または package.json/lock の版番号のみの場合 -> SKIP (e2e=false)
  * 2. 直前の push (BEFORE..HEAD) の増分差分がすべてドキュメントまたは版番号のみであり、
  *    かつ直前コミット (BEFORE) で test チェックが成功 (success) していた場合 -> SKIP (e2e=false)
  * 3. それ以外 (コード変更あり、直前テスト未完了/失敗、判定不能など) -> RUN (e2e=true)
@@ -14,15 +14,8 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
-const { resolveAffectedSuites } = require('./resolve-affected-suites.cjs');
-
-const DOC_PATTERNS = [
-  /^doc\//,
-  /^\.claude\//,
-  /^\.agent\//,
-  /^\.github\/(?!workflows\/)/,
-  /^[^/]+\.md$/
-];
+// ドキュメントとみなすパス（E2E を走らせないファイル）の一覧は、resolve-affected-suites.cjs と共有する
+const { resolveAffectedSuites, DOC_PATTERNS } = require('./resolve-affected-suites.cjs');
 
 function isDocPath(filePath) {
   return DOC_PATTERNS.some(re => re.test(filePath));
