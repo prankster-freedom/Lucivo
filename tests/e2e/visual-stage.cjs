@@ -1648,7 +1648,8 @@ async function testCoverAndTables(browser) {
       s2Metric,
       s2NoStarInText,
       s2Texts,
-      s2KpiValueColor: s2KpiValueCs ? s2KpiValueCs.color : ''
+      s2KpiValueColor: s2KpiValueCs ? s2KpiValueCs.color : '',
+      s2KpiBg: s2Items[1] ? getComputedStyle(s2Items[1]).backgroundColor : ''
     };
   });
 
@@ -1672,17 +1673,36 @@ async function testCoverAndTables(browser) {
     };
   });
 
+  // 主役カードの文字色は背景色に応じて自動選択される（#404）。固定の白ではなく、背景に対して WCAG の 4.5:1 以上あることを確かめる
+  const luminanceOf = (css) => {
+    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(css || '');
+    if (!m) return NaN;
+    const [r, g, b] = [m[1], m[2], m[3]].map(v => {
+      const c = Number(v) / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrastOf = (fg, bg) => {
+    const a = luminanceOf(fg);
+    const b = luminanceOf(bg);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  };
+  vtpl30Visual.s1Contrast = contrastOf(vtpl30Visual.s1FeaturedColor, vtpl30Visual.s1FeaturedBg);
+  vtpl30Visual.s1TitleContrast = contrastOf(vtpl30Visual.s1FeaturedTitleColor, vtpl30Visual.s1FeaturedBg);
+  vtpl30Visual.s2KpiContrast = contrastOf(vtpl30Visual.s2KpiValueColor, vtpl30Visual.s2KpiBg);
+
   const vtpl30Ok = vtpl30Visual.s1Count === 3
     && JSON.stringify(vtpl30Visual.s1Featured) === JSON.stringify([false, true, false])
     && vtpl30Visual.s1TitleTexts[1] === '展示品質'
     && vtpl30Visual.s1NoStarInText
-    && vtpl30Visual.s1FeaturedColor === 'rgb(255, 255, 255)'
-    && vtpl30Visual.s1FeaturedTitleColor === 'rgb(255, 255, 255)'
+    && vtpl30Visual.s1Contrast >= 4.5
+    && vtpl30Visual.s1TitleContrast >= 4.5
     && vtpl30Visual.s2Count === 4
     && JSON.stringify(vtpl30Visual.s2Featured) === JSON.stringify([true, true, true, false])
     && vtpl30Visual.s2Metric[1] === true
     && vtpl30Visual.s2NoStarInText
-    && vtpl30Visual.s2KpiValueColor === 'rgb(255, 255, 255)'
+    && vtpl30Visual.s2KpiContrast >= 4.5
     && vtpl30Fast.featuredCount === 0
     && vtpl30Fast.starCount === 4;
 
