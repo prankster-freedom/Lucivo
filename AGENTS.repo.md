@@ -39,7 +39,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
   - ツールの警告（Python の `SyntaxWarning` など）は誤りとして扱い、原因を直してから進める
   - この規則に反した場合は、いつ気付いたか（書いた直後か、後か）と、内容が壊れていないかをユーザーに報告する。書いた直後に気付いて内容を確かめられた場合は、それで足りる。直後に気付けなかった失敗（コミット後やレビューで見つかったもの、内容が壊れていたもの）は、報告だけで済ませず、再発を防ぐワークフローの改善（検査の追加など）を提案する
   - `npm run lint` で、制御文字と見えない文字（BOM、置き換え文字、幅のない空白など。全角の空白は除く）を、すべてのテキストファイル（`src/ts/` を含み、まだコミットしていない新しいファイルも）について検出し、eslint で正規表現の中の制御文字を検出する（CI の `lint` ジョブ）。見えない文字が必要なときは `\uFEFF` のようにエスケープで書く
-- ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`dist/index.html` を `file://` で開き、Playwright（Chromium）で確認する（`npm test` の前に `pretest` が `public/` と `dist/` をビルドする。Web 版のテストは手元のサーバーで `public/` を配る）。`node tests/e2e.cjs` を直接実行するときは、先に `npm run build:prod` と `npm run build:standalone` でビルドする
+- ブラウザでの動作確認は `npm test`（`node tests/e2e.cjs`）で行う。`dist/index.html` を `file://` で開き、Playwright（Chromium）で確認する（`npm test` の前に `pretest` が `public/` と `dist/` をビルドする。Web 版のテストは手元のサーバーで `public/` を配る）。`node tests/e2e.cjs` を直接実行するときは、先に `npm run build:standalone`（Web 版も確認する場合は `npm run build:prod`）でビルドする。なお、`npm run build` や `npm run build:prod` で生成された `public/js/` 等が存在すると `npm run lint` の `eslint` が失敗することがあるため、`npm run lint` はビルド生成物を除いたクリーンな状態で実行する
   - 特定の機能やテストケースだけを確認・再テストするときは、`node tests/e2e.cjs <関数名またはTC ID>`（例: `node tests/e2e.cjs TC-SHOW-011`、`node tests/e2e.cjs testCoverAndTables`）で対象スイートだけを部分実行する（`work/test/results.json` は該当 TC の結果だけが差分更新される）。`node -e` のワンライナーでテストコードを実行しない
 - Markdown ファイル内の表整形には `node agents-support-tools/md-table-align/align-tables.cjs <Markdown ファイル>` を使用する
 
@@ -81,8 +81,8 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 
 - リリース前に複数の変更をまとめて試すときは、各 feature ブランチの PR を `feature/pre-test` に向けて出す。E2E テスト（`.github/workflows/e2e.yml`）は、`main` と `feature/pre-test` への PR で実行する
 - 試し終えたら、`feature/pre-test` から `main` への PR を出して反映する
-- Claude Code が行う作業のブランチは、`feature/Claude-Code-<変更内容>`（ケバブケース。例: `feature/Claude-Code-devtools-update`）とする。`main` と同じ位置の `feature/pre-test` から作り、作業が終わったら `feature/pre-test` 向けの PR で取り込む。他のツール（Antigravity など）の作業と、ブランチ名で見分けるため
-- Antigravity（Gemini）が行う作業のブランチは、`feature/Gemini-<変更内容>`（ケバブケース）とする。`main` と同じ位置の `feature/pre-test` から作り、作業が終わったら `feature/pre-test` 向けの PR で取り込む。他のツール（Claude Code など）の作業と、ブランチ名で見分けるため
+- Claude Code が行う作業のブランチは、`feature/Claude-Code-<変更内容>`（ケバブケース。例: `feature/Claude-Code-devtools-update`）とする。`main` と同じ位置の `feature/pre-test`（なければ `origin/main` から作成する）から作り、作業が終わったら `feature/pre-test` 向けの PR で取り込む。他のツール（Antigravity など）の作業と、ブランチ名で見分けるため
+- Antigravity（Gemini）が行う作業のブランチは、`feature/Gemini-<変更内容>`（ケバブケース）とする。`main` と同じ位置の `feature/pre-test`（なければ `origin/main` から作成する）から作り、作業が終わったら `feature/pre-test` 向けの PR で取り込む。他のツール（Claude Code など）の作業と、ブランチ名で見分けるため
 - 背景: `main` の履歴を書き換えずに、きれいに保つため。不具合の見つかった変更を `main` に入れてしまうと、直すために `main` の履歴を書き換えるか、修正のコミットを重ねることになる。`main` の手前の `feature/pre-test` で受け止め、`main` には確かめ終えた変更だけを入れる
 
 ### 6.2 feature ブランチの履歴整理
@@ -146,6 +146,6 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 
 本リポジトリでは `main` 向け PR を作成・更新すると、`E2E Tests`（約 8〜10 分、文書のみの変更は約 20 秒）→ `Canary Auto Merge` → `Deploy`（Canary 環境 `/preview/` への反映）が自動で実行される。
 
-- ユーザーから「PR 作成まで」と明示的に限定されていない限り、**PR を作成しただけで作業完了とみなさず、CI の通過・自動マージ・`Deploy` 完了・ローカル `main` の同期までを見届ける**。
+- ユーザーから「PR 作成まで」と明示的に限定されていない限り、**PR を作成しただけで作業完了とみなさず、CI の通過・自動マージ（または `/self-approve` によるマージ後の `Release` 実行）・`Deploy` 完了・ローカル `main` の同期までを見届ける**。
 - PR 作成後や push 後に待機が必要な場合は、「CI 通過後に自動マージされます」といった報告だけでターンを終了せず、**必ず `schedule` 等のタイマー（Markdown のみの場合は 1 分、E2E を含む場合は 6〜10 分程度）を起動してからターンを終了する**。
 - タイマー起床時に別の PR が先にマージされて `BEHIND` になっていた場合は、`gh pr update-branch <PR番号> --rebase` 等で最新の `main` へ追従させ、再度タイマーを起動してマージ・デプロイ完了まで追跡する。
