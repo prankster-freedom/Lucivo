@@ -165,7 +165,10 @@ async function build() {
         // この配布先で発表のドロップダウンに出すモード（stage は配布先で決まったあとは要らない）
         __LUCIVO_PRESENT_MODES__: JSON.stringify(MODES.map(({ id, label, labelEn }) => ({ id, label, labelEn }))),
         // Web 版のみスタイル別の見出し書体を遅延読み込みする（#218）
-        __LUCIVO_STYLE_FONTS__: JSON.stringify(channel === 'web')
+        __LUCIVO_STYLE_FONTS__: JSON.stringify(channel === 'web'),
+        // standalone だけがサンプルを同梱する。Web 版は GitHub 上のサンプルを読む（ARC-PUB-007）
+        __LUCIVO_BUNDLED_SAMPLES__: JSON.stringify(channel === 'standalone'),
+        __LUCIVO_SAMPLES_REF__: JSON.stringify((process.env.LUCIVO_SAMPLES_REF || '').trim() || 'main')
       }
     }),
     ...STAGE_MODE_ENTRIES.map(({ entry, outfile }) =>
@@ -212,8 +215,12 @@ async function build() {
     })
   ));
 
-  // file:// 直開き用の同梱サンプルのデータ（コミットしない出力）
-  buildSamplesData(OUT_DIR);
+  // file:// 直開き用の同梱サンプルのデータ（コミットしない出力）。Web 版は同梱しないため、前回のビルドの残りも消す
+  if (channel === 'standalone') {
+    buildSamplesData(OUT_DIR);
+  } else {
+    fs.rmSync(path.join(OUT_DIR, 'samples', 'samples-data.js'), { force: true });
+  }
 
   const duration = Date.now() - start;
   console.log(`App build completed in ${duration}ms.`);

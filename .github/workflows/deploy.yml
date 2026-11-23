@@ -102,8 +102,10 @@ jobs:
             if [ -n "$PROD_BUILD_VERSION" ]; then
               echo "Production: tag build ${PROD_REF} -> ${PROD_BUILD_VERSION}"
               git worktree add --detach /tmp/lucivo-prod "$PROD_REF"
-              (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_BUILD_VERSION" node tools/build-app.cjs --prod)
+              (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_BUILD_VERSION" LUCIVO_SAMPLES_REF="$PROD_REF" node tools/build-app.cjs --prod)
               cp -R /tmp/lucivo-prod/public/. _site/
+              # サンプルを同梱しない版（LUCIVO_SAMPLES_REF に対応したタグ）だけ samples/ を取り除く。古いタグは同梱のまま動かす
+              if grep -q LUCIVO_SAMPLES_REF /tmp/lucivo-prod/tools/build-app.cjs; then rm -rf _site/samples; fi
               git worktree remove --force /tmp/lucivo-prod
             else
               ZIP_DIR="Lucivo-v${PROD_PKG_VER}"
@@ -117,16 +119,19 @@ jobs:
               else
                 echo "Release artifact not found for ${PROD_REF}; falling back to tag build"
                 git worktree add --detach /tmp/lucivo-prod "$PROD_REF"
-                (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_PKG_VER" node tools/build-app.cjs --prod)
+                (cd /tmp/lucivo-prod && npm ci && LUCIVO_VERSION_OVERRIDE="$PROD_PKG_VER" LUCIVO_SAMPLES_REF="$PROD_REF" node tools/build-app.cjs --prod)
                 cp -R /tmp/lucivo-prod/public/. _site/
+              # サンプルを同梱しない版（LUCIVO_SAMPLES_REF に対応したタグ）だけ samples/ を取り除く。古いタグは同梱のまま動かす
+              if grep -q LUCIVO_SAMPLES_REF /tmp/lucivo-prod/tools/build-app.cjs; then rm -rf _site/samples; fi
                 git worktree remove --force /tmp/lucivo-prod
               fi
             fi
           fi
 
           # 2. Canary（/preview/）を main からビルド
-          LUCIVO_VERSION_OVERRIDE="$CANARY_VERSION" node tools/build-app.cjs --prod
+          LUCIVO_VERSION_OVERRIDE="$CANARY_VERSION" LUCIVO_SAMPLES_REF="main" node tools/build-app.cjs --prod
           cp -R public/. _site/preview/
+          rm -rf _site/preview/samples
       - uses: actions/configure-pages@v6.0.0
       - uses: actions/upload-pages-artifact@v5.0.0
         with:
