@@ -6,7 +6,8 @@
 'use strict';
 
 const assert = require('assert');
-const { resolveAffectedSuites, buildReverseDependencyGraph } = require('../tools/resolve-affected-suites.cjs');
+const { resolveAffectedSuites, buildReverseDependencyGraph, DOC_PATTERNS } = require('../tools/resolve-affected-suites.cjs');
+const { isDocPath } = require('../tools/check-ci-changes.cjs');
 
 const graph = buildReverseDependencyGraph();
 
@@ -48,6 +49,21 @@ const graph = buildReverseDependencyGraph();
   assert.strictEqual(res.mode, 'partial');
   assert.ok(res.suites.includes('testWebAnalytics'));
   assert.ok(!res.suites.includes('testDiagramRendering'));
+}
+
+// 6. カラートーンの書き出しの道具は、配布物に関係しないため、E2E の対象にしない（ドキュメントと同じ扱い）
+{
+  assert.ok(isDocPath('tools/build-color-tone-tables.cjs'), 'カラートーンの書き出しの道具は、ドキュメントとみなす');
+  assert.ok(DOC_PATTERNS.some(re => re.test('tools/build-color-tone-tables.cjs')), 'check-ci-changes と resolve-affected-suites は同じ一覧を使う');
+  // 配布物のビルドに使う道具は、これまでどおり、変更すると全スイートを走らせる
+  assert.ok(!isDocPath('tools/build-app.cjs'), 'build-app.cjs はドキュメントではない');
+  assert.strictEqual(resolveAffectedSuites(['tools/build-app.cjs'], graph).mode, 'all', 'build-app.cjs の変更は全スイート');
+  // 道具だけを混ぜても、コードの変更から絞り込める（unknown-file として全スイートに倒れない）
+  const res = resolveAffectedSuites(['tools/build-color-tone-tables.cjs', 'src/ts/ui/analytics.ts'], graph);
+  assert.strictEqual(res.mode, 'partial');
+  assert.ok(res.suites.includes('testWebAnalytics'));
+  // 他の tools/ の道具は、これまでどおり未知のファイルとして全スイートに倒れる
+  assert.strictEqual(resolveAffectedSuites(['tools/some-unknown-script.cjs'], graph).mode, 'all');
 }
 
 console.log('resolve-affected-suites.test.cjs: all assertions passed');

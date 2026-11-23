@@ -16,12 +16,16 @@ const MODES_DIR = path.join(ROOT_DIR, 'tests', 'e2e', 'modes');
 
 const GATE_SUITES = ['testPresentModeGateWeb', 'testPresentModeGateStandalone'];
 
+// 変更しても E2E を走らせないファイル（ドキュメントと同じ扱い）。check-ci-changes.cjs もこの一覧を使う
+// - tools/build-color-tone-tables.cjs: カラートーンの文書（doc/0.DTP/assets/color-tones/）を書き出す道具で、配布物のビルドには使わない。
+//   名前が tools/build-*.cjs に当たるが、全スイートの対象にしない。変更の確認は、tests/build-color-tone-tables.test.cjs（npm run lint の test:unit）で行う
 const DOC_PATTERNS = [
   /^doc\//,
   /^\.claude\//,
   /^\.agent\//,
   /^\.github\/(?!workflows\/)/,
-  /^[^/]+\.md$/
+  /^[^/]+\.md$/,
+  /^tools\/build-color-tone-tables\.cjs$/
 ];
 
 // 変更時に全スイート実行（mode: 'all'）へ倒す安全対象
@@ -347,6 +351,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DOC_PATTERNS,
   DIRECT_SUITE_MAP,
   GATE_SUITES,
   MAX_AFFECTED_MODULES,
