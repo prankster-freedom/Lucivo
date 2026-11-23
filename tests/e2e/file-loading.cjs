@@ -853,7 +853,7 @@ async function testUrlLoading(browser) {
       && sharedQuery.includes('style=cards') && sharedQuery.includes('tone=cobalt-workshop'),
       JSON.stringify({ sharedQuery }));
 
-    // TC-FILE-051: 起動画面サムネイルカード（Web 版 3 枚 / スタンドアロン版 2 枚 / Web 版 GitHub 参照、FR-007, FR-068）
+    // TC-FILE-051: 起動画面サムネイルカード（Web 版 3 枚・別タブ遷移 / スタンドアロン版 2 枚・戻る対応、FR-007, FR-068）
     const ctx51 = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'ja-JP' });
     const p51 = await ctx51.newPage();
     await mockWebSamples(p51);
@@ -863,11 +863,30 @@ async function testUrlLoading(browser) {
       ids: Array.from(document.querySelectorAll('.empty-guide-sample-card')).map(c => c.getAttribute('data-sample-card')),
       thumbsOk: Array.from(document.querySelectorAll('.empty-guide-sample-thumb img')).every(img => img.complete && img.naturalWidth > 0),
       notationLinks: document.querySelectorAll('[data-sample-card="notation"] .empty-guide-sample-link').length,
+      allBlankTarget: Array.from(document.querySelectorAll('.empty-guide-sample-link')).every(a => a.getAttribute('target') === '_blank'),
+      visualHref: document.querySelector('[data-sample-card="visual"] .empty-guide-sample-link')?.getAttribute('href') || '',
       museumHref: document.querySelector('[data-sample-card="color-museum"] .empty-guide-sample-link')?.getAttribute('href') || ''
     }));
-    await p51.click('[data-sample-card="notation"] [data-empty-sample="notation_sample.md"]');
-    await p51.waitForFunction(() => document.title === 'notation_sample.md - Lucivo', null, { timeout: 10000 });
-    const webSampleUrl = await p51.evaluate(() => new URL(window.location.href).searchParams.get('url') || '');
+    const [p51NotationTab] = await Promise.all([
+      ctx51.waitForEvent('page'),
+      p51.click('[data-sample-card="notation"] .empty-guide-sample-link')
+    ]);
+    await mockWebSamples(p51NotationTab);
+    await p51NotationTab.waitForFunction(() => document.title === 'notation_sample.md - Lucivo', null, { timeout: 10000 });
+    const webSampleUrl = await p51NotationTab.evaluate(() => new URL(window.location.href).searchParams.get('url') || '');
+    await p51NotationTab.close();
+
+    const [p51VisualTab] = await Promise.all([
+      ctx51.waitForEvent('page'),
+      p51.click('[data-sample-card="visual"] .empty-guide-sample-link')
+    ]);
+    await mockWebSamples(p51VisualTab);
+    await p51VisualTab.waitForFunction(() => document.title === 'visual-sample.md - Lucivo' && document.getElementById('btn-visual-mode')?.classList.contains('is-active'), null, { timeout: 10000 });
+    const visualOpened = await p51VisualTab.evaluate(() => ({
+      isVisual: document.getElementById('btn-visual-mode')?.classList.contains('is-active') === true,
+      hasModeParam: new URL(window.location.href).searchParams.get('mode') === 'visual'
+    }));
+    await p51VisualTab.close();
     await ctx51.close();
 
     // スマホ幅 390px で起動画面のカードが横はみ出ししないこと
@@ -883,18 +902,27 @@ async function testUrlLoading(browser) {
       ids: Array.from(document.querySelectorAll('.empty-guide-sample-card')).map(c => c.getAttribute('data-sample-card')),
       thumbsOk: Array.from(document.querySelectorAll('.empty-guide-sample-thumb img')).every(img => img.complete && img.naturalWidth > 0)
     }));
+    await p51Dist.click('[data-sample-card="visual"] [data-empty-sample="visual-sample.md"]');
+    await p51Dist.waitForFunction(() => document.title === 'visual-sample.md - Lucivo' && document.getElementById('btn-visual-mode')?.classList.contains('is-active'), null, { timeout: 10000 });
+    await p51Dist.goBack();
+    await p51Dist.waitForFunction(() => Boolean(document.querySelector('.empty-guide')), null, { timeout: 10000 });
+    const distBackToGuide = await p51Dist.evaluate(() => Boolean(document.querySelector('.empty-guide')));
     await p51Dist.close();
 
     record('TC-FILE-051',
       JSON.stringify(webCards.ids) === JSON.stringify(['visual', 'notation', 'color-museum'])
         && webCards.thumbsOk
         && webCards.notationLinks === 2
+        && webCards.allBlankTarget
+        && webCards.visualHref.includes('mode=visual')
         && webCards.museumHref.includes('present=museum-walk') && webCards.museumHref.includes('theme=dark')
         && !narrowOverflow
+        && visualOpened.isVisual && visualOpened.hasModeParam
         && webSampleUrl.endsWith('/public/samples/notation_sample.md')
         && JSON.stringify(distCards.ids) === JSON.stringify(['visual', 'notation'])
-        && distCards.thumbsOk,
-      JSON.stringify({ webCards, narrowOverflow, webSampleUrl, distCards }));
+        && distCards.thumbsOk
+        && distBackToGuide,
+      JSON.stringify({ webCards, narrowOverflow, visualOpened, webSampleUrl, distCards, distBackToGuide }));
 
     // TC-FILE-052: present=museum-walk による自動起動と Esc 復帰・スマホ抑止・スタンドアロン無視（FR-069）
     const ctx52 = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'ja-JP' });

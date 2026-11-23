@@ -315,11 +315,11 @@ export function setupViewModeControls() {
   setViewMode(window.innerWidth < 1024 ? 'canvas' : 'split');
 }
 
-export function syncUrlFromState() {
+export function syncUrlFromState(push = false) {
   if (!runtime.urlSyncReady) return;
   if (document.documentElement.classList.contains('is-stage-show')) return;
   // 人へリンクを共有した際に画面幅の違いで view=canvas 等が落ちないよう、既定値は常に 'split' 基準とする（#307）
-  syncBrowserUrl({ ...state, lang: getLang() }, runtime.currentRemoteUrl, 'split');
+  syncBrowserUrl({ ...state, lang: getLang() }, runtime.currentRemoteUrl, 'split', push);
 }
 
 export function applyInitialDisplayStateFromUrl() {

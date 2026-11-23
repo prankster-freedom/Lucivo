@@ -431,12 +431,15 @@ export function buildAppUrlWithState(
 export function syncBrowserUrl(
   displayState: DisplayStateSnapshot,
   remoteUrl: string | null,
-  defaultViewMode: string
+  defaultViewMode: string,
+  push = false
 ): void {
   if (typeof window === 'undefined' || !window.history || typeof window.history.replaceState !== 'function') return;
   try {
     const nextUrl = buildAppUrlWithState(window.location.href, displayState, remoteUrl, defaultViewMode);
-    if (nextUrl !== window.location.href) {
+    if (push && typeof window.history.pushState === 'function') {
+      window.history.pushState({ lucivoSampleView: true }, '', nextUrl);
+    } else if (nextUrl !== window.location.href) {
       window.history.replaceState(null, '', nextUrl);
     }
   } catch (_) {}
