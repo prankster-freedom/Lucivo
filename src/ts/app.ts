@@ -67,7 +67,7 @@ import {
   setupAmbientEffectsToggle,
   loadMarkdownFromUrlParam
 } from './ui/folder-browser';
-import { setupPresentModes, takePresentFromUrl, startPendingPresent } from './ui/present-modes';
+import { takePresentFromUrl, startPendingPresent } from './ui/present-modes';
 import { hasBundledSamples, sampleFileNameFromRawUrl } from './ui/sample-source';
 import {
   PREVIEW_SCROLL_MARGIN,
@@ -332,7 +332,6 @@ window.addEventListener('DOMContentLoaded', () => {
   setupAnimationToggle();
   setupAmbientEffectsToggle();
   setupFormatter();
-  setupPresentModes(closeFileMenu);
   setupDocumentLinks();
   syncCssTokens();
   setupMarkedMath();
