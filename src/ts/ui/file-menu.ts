@@ -66,7 +66,7 @@ export function confirmDiscardEdits(fileName) {
 // isSample: 同梱サンプルとして開いたとき。相対パスの画像とリンクは samples フォルダを基準にする（DD-FILE-081）
 // encoding: ファイルから読んだときの文字コード（decodeMarkdown() の結果。同梱サンプルは UTF-8）（FR-048, DD-FILE-083）
 // formatted: 読み込み時の整形の結果（FR-053）。整えたときは、読み込みの知らせに直した箇所の数を添える
-export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null, remoteUrl: string | null = null, remoteFetchUrl: string | null = null, opts: { preserveScroll?: boolean; silentToast?: boolean; keepWatch?: boolean } = {}) {
+export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSample = false, encoding = 'UTF-8', formatted = null, remoteUrl: string | null = null, remoteFetchUrl: string | null = null, opts: { preserveScroll?: boolean; silentToast?: boolean; keepWatch?: boolean; pushHistory?: boolean } = {}) {
   // 改行コードを LF にそろえる。そろえないと、textarea が LF に変えた内容と食い違い、編集していないのに破棄の確認が出る
   const text = normalizeText(String(rawText));
   if (!opts.keepWatch) clearWatchedFile();
@@ -88,7 +88,7 @@ export function applyLoadedMarkdown(rawText, fileName, folderPath = null, isSamp
   setEditorReadOnly(true);
   clearTimeout(runtime.renderDebounceTimer);
   runtime.renderApp();
-  runtime.syncUrlFromState();
+  runtime.syncUrlFromState(Boolean(opts.pushHistory));
   if (scroller) {
     scroller.scrollTop = opts.preserveScroll ? prevScrollTop : 0;
     if (opts.preserveScroll && prevScrollTop > 0) {
@@ -263,8 +263,32 @@ async function fetchWebSample(targetFileName: string): Promise<{ text: string; u
   }
 }
 
+// ブラウザの「戻る」で起動画面へ戻る（サンプル・URL 読み込み後の履歴復元）
+export function resetToEmptyGuide() {
+  clearWatchedFile();
+  runtime.currentFileEncoding = 'UTF-8';
+  runtime.currentRemoteUrl = null;
+  runtime.currentRemoteFetchUrl = null;
+  runtime.currentFileName = null;
+  runtime.currentFolderPath = null;
+  runtime.currentSampleFile = null;
+  runtime.lastLoadedMarkdown = '';
+  const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement | null;
+  if (editor) {
+    editor.value = '';
+    editor.readOnly = false;
+  }
+  document.getElementById('editor-lock')?.classList.add('hidden');
+  const saveName = document.getElementById('save-file-name');
+  if (saveName) saveName.textContent = 'untitled.md';
+  document.title = 'Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer';
+  state.curveByIndex.clear();
+  if (state.isVisualMode) (document.getElementById('btn-mode-fast') as HTMLElement | null)?.click();
+  runtime.renderApp();
+}
+
 // 開くメニュー・起動画面から同梱サンプルをワンクリックで読み込む（DD-FILE-015, FR-067, FR-068）
-export async function loadBundledSample(fileName, opts: { silentToast?: boolean } = {}) {
+export async function loadBundledSample(fileName, opts: { silentToast?: boolean; pushHistory?: boolean; visualMode?: boolean } = {}) {
   const resolvedName = resolveSampleFileName(fileName);
   if (!confirmDiscardEdits(resolvedName)) return false;
   if (!hasBundledSamples()) {
@@ -279,7 +303,8 @@ export async function loadBundledSample(fileName, opts: { silentToast?: boolean 
       showToast(t('file.readFailedToast', { name: resolvedName }));
       return false;
     }
-    applyLoadedMarkdown(web.text, actualName, null, false, 'UTF-8', null, web.url, web.url, { silentToast: opts.silentToast });
+    applyLoadedMarkdown(web.text, actualName, null, false, 'UTF-8', null, web.url, web.url, { silentToast: opts.silentToast, pushHistory: opts.pushHistory });
+    if (opts.visualMode && !state.isVisualMode) (document.getElementById('btn-visual-mode') as HTMLElement | null)?.click();
     return true;
   }
   let actualName = resolvedName;
@@ -293,7 +318,8 @@ export async function loadBundledSample(fileName, opts: { silentToast?: boolean 
     showToast(t('file.readFailedToast', { name: resolvedName }));
     return false;
   }
-  applyLoadedMarkdown(text, actualName, null, true, 'UTF-8', null, null, null, { silentToast: opts.silentToast });
+  applyLoadedMarkdown(text, actualName, null, true, 'UTF-8', null, null, null, { silentToast: opts.silentToast, pushHistory: opts.pushHistory });
+  if (opts.visualMode && !state.isVisualMode) (document.getElementById('btn-visual-mode') as HTMLElement | null)?.click();
   return true;
 }
 
@@ -413,7 +439,8 @@ export function setupFileMenu() {
     const fileName = target.getAttribute('data-empty-sample');
     if (!fileName) return;
     event.preventDefault();
-    void loadBundledSample(fileName);
+    const visualMode = target.getAttribute('data-empty-mode') === 'visual';
+    void loadBundledSample(fileName, { pushHistory: true, visualMode });
   });
   // 起動画面（.empty-guide）の公開 URL 貼り付けフォーム（FR-050, #373）
   document.addEventListener('submit', event => {

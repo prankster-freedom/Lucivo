@@ -52,8 +52,10 @@ import {
   loadBundledSample,
   setupFormatter,
   setupFileMenu,
-  setupFileDrop
+  setupFileDrop,
+  resetToEmptyGuide
 } from './ui/file-menu';
+import { extractMarkdownUrlFromLocation } from './ui/url-loader';
 import { setupFileWatch } from './ui/file-watch';
 import {
   renderFolderList,
@@ -365,6 +367,23 @@ window.addEventListener('DOMContentLoaded', () => {
   renderApp();
   // present は最初の文書の読み込みで URL から取り除かれるため、先に読み取っておく（FR-069）
   void loadMarkdownFromUrlParam().then(() => startPendingPresent(pendingPresent));
+
+  // サンプルカード等から pushState で開いたあと、ブラウザの「戻る」ボタンで起動画面・前文書へ戻れるようにする
+  window.addEventListener('popstate', () => {
+    runtime.urlSyncReady = false;
+    try {
+      applyInitialDisplayStateFromUrl();
+      const rawUrl = extractMarkdownUrlFromLocation(window.location.search, window.location.hash);
+      if (rawUrl) {
+        void loadMarkdownFromUrlParam().finally(() => { runtime.urlSyncReady = true; });
+      } else {
+        resetToEmptyGuide();
+        runtime.urlSyncReady = true;
+      }
+    } catch (_) {
+      runtime.urlSyncReady = true;
+    }
+  });
 });
 
 // E2E テストおよび外部連携用グローバル公開

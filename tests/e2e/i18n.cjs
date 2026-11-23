@@ -102,29 +102,35 @@ async function testI18n(browser) {
       loaded: img.complete && img.naturalWidth > 0
     })));
 
-    // 起動画面サンプルリンクから visual-sample.en.md を開き、Visualモード + ステージ発表を検査
-    await page.click('[data-empty-sample="visual-sample.md"]');
-    await page.waitForFunction(() => document.title === 'visual-sample.en.md - Lucivo', null, { timeout: 10000 });
-    await waitRendered(page);
-    const loadedFile = documentTitleToFile(await page.title());
-    await page.click('#btn-visual-mode');
-    await waitRendered(page);
-    const visualLeaks = await collectUiJapaneseLeaks(page, ['#markdown-editor']);
+    // 起動画面サンプルカード（別タブ）から visual-sample.en.md を開き、Visualモード + ステージ発表を検査
+    const [samplePage] = await Promise.all([
+      page.context().waitForEvent('page'),
+      page.click('[data-sample-card="visual"] .empty-guide-sample-link')
+    ]);
+    await mockWebSamples(samplePage);
+    await samplePage.waitForFunction(() => document.title === 'visual-sample.en.md - Lucivo', null, { timeout: 10000 });
+    await waitRendered(samplePage);
+    const loadedFile = documentTitleToFile(await samplePage.title());
+    if (!(await samplePage.evaluate(() => document.getElementById('btn-visual-mode')?.classList.contains('is-active')))) {
+      await samplePage.click('#btn-visual-mode');
+      await waitRendered(samplePage);
+    }
+    const visualLeaks = await collectUiJapaneseLeaks(samplePage, ['#markdown-editor']);
 
     // ステージ発表 HUD の検査
-    await page.click('#btn-stage-show');
-    await page.waitForSelector('#stage-hud', { timeout: 10000 });
-    const stageLeaks = await collectUiJapaneseLeaks(page, ['#markdown-editor']);
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(() => !document.documentElement.classList.contains('is-stage-show'));
+    await samplePage.click('#btn-stage-show');
+    await samplePage.waitForSelector('#stage-hud', { timeout: 10000 });
+    const stageLeaks = await collectUiJapaneseLeaks(samplePage, ['#markdown-editor']);
+    await samplePage.keyboard.press('Escape');
+    await samplePage.waitForFunction(() => !document.documentElement.classList.contains('is-stage-show'));
 
     // ミュージアム・ウォーク（Web 版）の検査
-    await page.click('#btn-present-menu');
-    await page.click('#menu-present-museum-walk');
-    await page.waitForSelector('#museum-walk', { timeout: 15000 });
-    const mwLeaks = await collectUiJapaneseLeaks(page, ['#markdown-editor', '#visual-stage-container', '#standard-doc-container']);
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(() => !document.documentElement.classList.contains('is-museum-walk'));
+    await samplePage.click('#btn-present-menu');
+    await samplePage.click('#menu-present-museum-walk');
+    await samplePage.waitForSelector('#museum-walk', { timeout: 15000 });
+    const mwLeaks = await collectUiJapaneseLeaks(samplePage, ['#markdown-editor', '#visual-stage-container', '#standard-doc-container']);
+    await samplePage.keyboard.press('Escape');
+    await samplePage.waitForFunction(() => !document.documentElement.classList.contains('is-museum-walk'));
 
     const allLeaks = [...startupLeaks, ...visualLeaks, ...stageLeaks, ...mwLeaks];
     record(
@@ -134,17 +140,17 @@ async function testI18n(browser) {
     );
 
     // TC-I18N-003: 言語切替による同梱サンプルの日英自動切替と起動画面カード 3 件の確認
-    await page.click('#btn-lang-menu');
-    await page.click('#menu-lang-ja');
-    await page.waitForFunction(() => document.title === 'visual-sample.md - Lucivo', null, { timeout: 10000 });
-    await waitRendered(page);
-    const switchedToJa = documentTitleToFile(await page.title());
+    await samplePage.click('#btn-lang-menu');
+    await samplePage.click('#menu-lang-ja');
+    await samplePage.waitForFunction(() => document.title === 'visual-sample.md - Lucivo', null, { timeout: 10000 });
+    await waitRendered(samplePage);
+    const switchedToJa = documentTitleToFile(await samplePage.title());
 
-    await page.click('#btn-lang-menu');
-    await page.click('#menu-lang-en');
-    await page.waitForFunction(() => document.title === 'visual-sample.en.md - Lucivo', null, { timeout: 10000 });
-    await waitRendered(page);
-    const switchedToEn = documentTitleToFile(await page.title());
+    await samplePage.click('#btn-lang-menu');
+    await samplePage.click('#menu-lang-en');
+    await samplePage.waitForFunction(() => document.title === 'visual-sample.en.md - Lucivo', null, { timeout: 10000 });
+    await waitRendered(samplePage);
+    const switchedToEn = documentTitleToFile(await samplePage.title());
 
     record(
       'TC-I18N-003',
@@ -158,22 +164,27 @@ async function testI18n(browser) {
     // TC-I18N-004: Visualモード英語表示の組版（html[lang="en"] の字間・横はみ出しなし・ゲラ保存）
     const galleyDir = path.join(ROOT_DIR, 'work', 'dtp_review', 'galley', 'i18n-en');
     fs.mkdirSync(galleyDir, { recursive: true });
-    await page.click('[data-view-mode="canvas"]');
-    await waitRendered(page);
-    const styleCheck = await page.evaluate(() => {
+    if (!(await samplePage.evaluate(() => document.getElementById('btn-visual-mode')?.classList.contains('is-active')))) {
+      await samplePage.click('#btn-visual-mode');
+      await waitRendered(samplePage);
+    }
+    await samplePage.click('[data-view-mode="canvas"]');
+    await waitRendered(samplePage);
+    const styleCheck = await samplePage.evaluate(() => {
       const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
       const tracking = wrap ? getComputedStyle(wrap).getPropertyValue('--vs-heading-tracking').trim() : '';
       const overflow = document.documentElement.scrollWidth > window.innerWidth + 2;
       return { tracking, overflow };
     });
-    await page.screenshot({ path: path.join(galleyDir, 'visual-en-shapes-cover.png') });
-    await page.click('.info-style-btn[data-info-style="editorial"]');
-    await waitRendered(page);
-    const editorialTracking = await page.evaluate(() => {
+    await samplePage.screenshot({ path: path.join(galleyDir, 'visual-en-shapes-cover.png') });
+    await samplePage.click('.info-style-btn[data-info-style="editorial"]');
+    await waitRendered(samplePage);
+    const editorialTracking = await samplePage.evaluate(() => {
       const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
       return wrap ? getComputedStyle(wrap).getPropertyValue('--vs-heading-tracking').trim() : '';
     });
-    await page.screenshot({ path: path.join(galleyDir, 'visual-en-editorial-cover.png') });
+    await samplePage.screenshot({ path: path.join(galleyDir, 'visual-en-editorial-cover.png') });
+    await samplePage.close();
 
     record(
       'TC-I18N-004',
