@@ -9,12 +9,14 @@ const TONES_DIR = path.resolve(__dirname, '..', 'doc', '0.DTP', 'assets', 'color
 const SECTION_HEADING = '## カラーコード一覧';
 const TABLE_NOTE = [
   '1 列目に、行ごとの配色の組（背景・文字・境界・線の色コード）を、Light と Dark に分けて書く。背景・文字・境界・線は、この組で使う。',
-  'Light / Dark の列の見本は、上が「背景に使った場合」（その色の背景の上に、組の文字色）、下が「文字色に使った場合」（ベース背景の上に、その色の文字。基本色の行だけ）。',
+  'Light / Dark の列はそれぞれのベース背景色で塗り、見本は上が「背景に使った場合」（その色の背景の上に、組の文字色）、下が「文字色に使った場合」（ベース背景の上に、その色の文字。基本色の行だけ）。',
   '見本の数字は、背景と文字のコントラスト比で、4.5 未満は、その使い方では文字が読みにくい。見本の枠は「境界」、中の短い線は「線」の色。',
-  '基本色は 2〜6 色で、使わない行は「未定義」にする。',
-  '元の配色が Light 向きか Dark 向きかが決まっている配色は、向いているほうのモードだけに組を書き、もう一方のモードは「—」にする。'
+  '背景色が「基にした配色」（オリジナルの色）と一致する見本は、中の文字を太字・下線で示す。',
+  '基本色は 2〜6 色で、使わない行は「未定義」にする。'
 ].join('');
-const CHIP_BASE = 'display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap;';
+const CHIP_BASE = 'display: inline-block; padding: 2px 8px; border-radius: 4px; white-space: nowrap;';
+const chipWeight = isOriginal => (isOriginal ? 'font-weight: 800;' : 'font-weight: 400;');
+const origText = (s, fg) => `<strong style="color: ${fg}; text-decoration: underline; text-underline-offset: 2px;">${s}</strong>`;
 // 表の行の並び。基本色は 6 行の枠を用意し、使わない行は「未定義」にする
 const BASE_TOKENS = ['--vs-c1', '--vs-c2', '--vs-c3', '--vs-c4', '--vs-c5', '--vs-c6'];
 const ROW_ORDER = [...BASE_TOKENS, '--diag-canvas', '--vs-card-bg', '--vs-glow'];
@@ -74,6 +76,13 @@ function readSet(col1, label) {
   return m ? { bg: m[1], ink: m[2], border: m[3], line: m[4] } : null;
 }
 
+// 文書冒頭の「- **基にした配色**: ...」行から、オリジナル配色の色コード（大文字 HEX）を抽出する
+function readBaseHexes(text) {
+  const m = text.match(/^-\s*\*\*基にした配色\*\*:\s*(.+)$/m);
+  if (!m) return [];
+  return [...new Set(hexesOf(m[1]).map(h => h.toUpperCase()))];
+}
+
 function readTone(text) {
   const cellsList = readTableRows(text.slice(text.indexOf(SECTION_HEADING)))
     .filter(cells => cells.length >= 5 && cells[1].startsWith('--'));
@@ -107,20 +116,23 @@ function readTone(text) {
   const byToken = Object.fromEntries(rows.map(r => [r.token, r]));
   // ベース背景は、Light か Dark の少なくとも一方に組が要る（片方のモードだけの配色もある）
   if (!byToken['--diag-canvas'] || !(byToken['--diag-canvas'].light || byToken['--diag-canvas'].dark)) throw new Error('ベース背景の行がありません');
-  return { rows, byToken };
+  return { rows, byToken, baseHexes: readBaseHexes(text) };
 }
 
 // 見本: 背景・文字・境界の色で塗った枠に、文字の見本、コントラスト比、線の色の短い線を入れる
-function sample({ bg, fg, border, line }) {
+function sample({ bg, fg, border, line, isOriginal = false }) {
   const ratio = contrast(bg, fg).toFixed(1);
+  const label = isOriginal ? origText('Aaあ', fg) : 'Aaあ';
   const stroke = `<span style="display: inline-block; width: 16px; margin-left: 6px; vertical-align: middle; border-top: 2px solid ${line};"></span>`;
-  return `<span style="background-color: ${bg}; color: ${fg}; ${CHIP_BASE} border: 1px solid ${border};">Aaあ <small>${ratio}</small>${stroke}</span>`;
+  return `<span style="background-color: ${bg}; color: ${fg}; ${CHIP_BASE} ${chipWeight(isOriginal)} border: 1px solid ${border};">${label} <small>${ratio}</small>${stroke}</span>`;
 }
 
 function sampleCell(tone, row, mode) {
   const s = row[mode];
   if (!s) return '—';
-  const asBackground = sample({ bg: s.bg, fg: s.ink, border: s.border, line: s.line });
+  const baseSet = new Set(tone.baseHexes || []);
+  const isOriginal = baseSet.has(s.bg.toUpperCase());
+  const asBackground = sample({ bg: s.bg, fg: s.ink, border: s.border, line: s.line, isOriginal });
   if (!isBase(row.token)) return asBackground;
   const canvas = tone.byToken['--diag-canvas'][mode];
   // 上段が背景に使った場合、下段が文字色に使った場合。縦に積んで、列の幅を抑える
@@ -136,30 +148,48 @@ const firstCell = row => (row.light || row.dark
   : `${escapeHtml(row.role)}<br><small>未定義</small>`);
 
 function buildToneTable(tone) {
+  const lightCanvas = tone.byToken['--diag-canvas'].light;
+  const darkCanvas = tone.byToken['--diag-canvas'].dark;
+  const lightTdAttr = lightCanvas ? ` style="background-color: ${lightCanvas.bg}; color: ${lightCanvas.ink};"` : '';
+  const darkTdAttr = darkCanvas ? ` style="background-color: ${darkCanvas.bg}; color: ${darkCanvas.ink};"` : '';
   const lines = ['<table>', '<thead>', '<tr><th>役割と配色の組</th><th>トークン例</th><th>Light</th><th>Dark</th><th>用途</th></tr>', '</thead>', '<tbody>'];
   for (const r of tone.rows) {
-    lines.push(`<tr><td>${firstCell(r)}</td><td><code>${r.token}</code></td><td>${sampleCell(tone, r, 'light')}</td><td>${sampleCell(tone, r, 'dark')}</td><td>${escapeHtml(r.use)}</td></tr>`);
+    lines.push(`<tr><td>${firstCell(r)}</td><td><code>${r.token}</code></td><td${lightTdAttr}>${sampleCell(tone, r, 'light')}</td><td${darkTdAttr}>${sampleCell(tone, r, 'dark')}</td><td>${escapeHtml(r.use)}</td></tr>`);
   }
   lines.push('</tbody>', '</table>');
   return lines.join('\n');
 }
 
 // 一覧の見本: 行ごとに、背景に使った場合の色（背景・文字・境界）で塗った 1 文字。A〜F が第 1〜6 色、G〜I がベース背景・補助面・光彩
-function letterChip(s, letter) {
-  return `<span style="background-color: ${s.bg}; color: ${s.ink}; ${CHIP_BASE} border: 1px solid ${s.border};">${letter}</span>`;
+function letterChip(s, letter, isOriginal = false) {
+  const content = isOriginal ? origText(letter, s.ink) : letter;
+  return `<span style="background-color: ${s.bg}; color: ${s.ink}; ${CHIP_BASE} ${chipWeight(isOriginal)} border: 1px solid ${s.border};">${content}</span>`;
 }
 
 function buildListTable(entries) {
   const lines = ['<table>', '<thead>', '<tr><th>#</th><th>ID</th><th>イメージ名</th><th>トーン区分</th><th>配色技法</th><th>基本色</th><th>ファイル</th><th>見本（上段 Light・下段 Dark）</th></tr>', '</thead>', '<tbody>'];
   for (const e of entries) {
     const baseCount = BASE_TOKENS.filter(t => e.tone.byToken[t] && (e.tone.byToken[t].light || e.tone.byToken[t].dark)).length;
-    const sampleText = MODES
-      .map(([mode]) => ROW_ORDER
-        .map((t, i) => (e.tone.byToken[t] && e.tone.byToken[t][mode] ? letterChip(e.tone.byToken[t][mode], String.fromCharCode(65 + i)) : ''))
-        .filter(Boolean)
-        .join(' '))
-      .join('<br>');
-    lines.push(`<tr><td>${e.no}</td><td><code>${e.id}</code></td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.toneClass)}</td><td>${escapeHtml(e.technique)}</td><td>${baseCount} 色</td><td><a href="${e.file}">${e.file}</a></td><td style="white-space: nowrap;">${sampleText}</td></tr>`);
+    const baseSet = new Set(e.tone.baseHexes || []);
+    const modeChips = mode => ROW_ORDER
+      .map((t, i) => {
+        const s = e.tone.byToken[t] && e.tone.byToken[t][mode];
+        return s ? letterChip(s, String.fromCharCode(65 + i), baseSet.has(s.bg.toUpperCase())) : '';
+      })
+      .filter(Boolean)
+      .join(' ');
+    const lightCanvas = e.tone.byToken['--diag-canvas'].light;
+    const darkCanvas = e.tone.byToken['--diag-canvas'].dark;
+    const lightBg = lightCanvas ? `background-color: ${lightCanvas.bg}; color: ${lightCanvas.ink}; ` : '';
+    const darkBg = darkCanvas ? `background-color: ${darkCanvas.bg}; color: ${darkCanvas.ink}; ` : '';
+    const lightChips = modeChips('light') || '—';
+    const darkChips = modeChips('dark') || '—';
+    lines.push(
+      `<tr><td rowspan="2">${e.no}</td><td rowspan="2"><code>${e.id}</code></td><td rowspan="2">${escapeHtml(e.name)}</td><td rowspan="2">${escapeHtml(e.toneClass)}</td><td rowspan="2">${escapeHtml(e.technique)}</td><td rowspan="2">${baseCount} 色</td><td rowspan="2"><a href="${e.file}">${e.file}</a></td><td style="${lightBg}white-space: nowrap;">${lightChips}</td></tr>`
+    );
+    lines.push(
+      `<tr><td style="${darkBg}white-space: nowrap;">${darkChips}</td></tr>`
+    );
   }
   lines.push('</tbody>', '</table>');
   return lines.join('\n');
@@ -190,10 +220,11 @@ function main() {
   const noteAt = readme.search(/^見本の A〜/m);
   const start = noteAt >= 0 ? noteAt : readme.search(/^(\|\s*#|<table>)/m);
   const note = [
-    '見本の A〜I は、各トーン文書の「カラーコード一覧」の行に対応する（A〜F: 第 1〜6 色、G: ベース背景、H: 補助面、I: 光彩。未定義の色は出さない）。見本は、その行の色を背景に使った場合で、文字・枠は、その行の組の文字色・境界の色。',
+    '見本の A〜I は、各トーン文書の「カラーコード一覧」の行に対応する（A〜F: 第 1〜6 色、G: ベース背景、H: 補助面、I: 光彩。未定義の色は出さない）。上段（Light）と下段（Dark）のセルはそれぞれのベース背景色で塗り、見本はその行の色を背景に使った場合で、文字・枠はその行の組の文字色・境界の色。背景色が「基にした配色」（オリジナルの色）と一致する見本は、中の文字を太字・下線で示す。',
     '',
     '- この一覧と各トーン文書の表は、`tools/build-color-tone-tables.cjs` が書き出す。色を直すときは、トーン文書の表の 1 列目の色コード（背景・文字・境界・線）を直してから、`node tools/build-color-tone-tables.cjs` を実行する。`style` の中の色は手で直さない。',
-    '- 表は HTML で書く。`style` 属性は、Lucivo では表示されるが、GitHub では取り除かれ、色が付かない。'
+    '- 表は HTML で書く。`style` 属性は、Lucivo では表示されるが、GitHub では取り除かれ、色が付かない。',
+    '- **集計用 ID（`analyticsId`）と廃止・追加時の永久欠番ルール**: Web 版の利用状況計測（`FR-063`）では、各トーンの識別子として `000-default`（スタイル準拠）および `NNN-<id>`（3 桁ゼロ埋め番号＋ID、例: `001-morning-window`）を用いる。新しいトーンを追加するときは既存の最大番号 + 1 と未使用の ID を割り当て、トーンを廃止するときは `retired.json` に `{ number, id, analyticsId, retiredAt }` を記録して**永久欠番**とする（一度使った番号・ID・集計用 ID は別のトーンへ再利用しない）。重複および再利用は `node tools/check-tones.cjs`（`npm run lint`）で自動検査する。'
   ].join('\n');
   fs.writeFileSync(readmePath, `${readme.slice(0, start)}${note}\n\n${buildListTable(entries)}\n`, 'utf8');
 
@@ -203,4 +234,4 @@ function main() {
 // 直接実行したときだけ書き出す。単体テスト（tests/build-color-tone-tables.test.cjs）は、読み込んで関数を呼ぶ
 if (require.main === module) main();
 
-module.exports = { readTableRows, readTone, buildToneTable, buildListTable };
+module.exports = { readTableRows, readBaseHexes, readTone, buildToneTable, buildListTable };

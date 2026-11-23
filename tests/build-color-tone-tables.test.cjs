@@ -10,7 +10,7 @@
 'use strict';
 
 const assert = require('assert');
-const { readTableRows, readTone, buildToneTable, buildListTable } = require('../tools/build-color-tone-tables.cjs');
+const { readTableRows, readBaseHexes, readTone, buildToneTable, buildListTable } = require('../tools/build-color-tone-tables.cjs');
 
 const HEAD = '# 1. テスト\n\n## カラーコード一覧\n\n';
 const TABLE_HEAD = '<table>\n<thead>\n<tr><th>役割と配色の組</th><th>トークン例</th><th>Light</th><th>Dark</th><th>用途</th></tr>\n</thead>\n<tbody>\n';
@@ -77,11 +77,13 @@ const doc = (...rows) => `${HEAD}${TABLE_HEAD}${rows.join('\n')}${TABLE_TAIL}`;
   assert.ok(tone.byToken['--diag-canvas'].light.ink, '旧形式の文字色から、組の文字色が決まる');
 }
 
-// 7. 一覧の表: 基本色の数と、見本の文字（A〜）
+// 7. 一覧の表: 基本色の数と、上下セル分割（Light/Dark 背景色）および見本の文字（A〜）
 {
   const tone = readTone(doc(c1, canvas));
   const html = buildListTable([{ no: '1', id: 'test', name: 'テスト', toneClass: '区分', technique: '技法', file: '01-test.md', tone }]);
-  assert.ok(html.includes('<td>1 色</td>'), '基本色の数');
+  assert.ok(html.includes('<td rowspan="2">1 色</td>'), '基本色の数（rowspan="2"）');
+  assert.ok(html.includes('style="background-color: #FFFFFF; color: #222222; white-space: nowrap;"'), '上段 Light セルに Light ベース背景色・文字色');
+  assert.ok(html.includes('style="background-color: #101820; color: #EEEEEE; white-space: nowrap;"'), '下段 Dark セルに Dark ベース背景色・文字色');
   assert.ok(html.includes('>A</span>'), '第 1 色の見本は A');
   assert.ok(html.includes('>G</span>'), 'ベース背景の見本は G');
   assert.ok(html.includes('<a href="01-test.md">01-test.md</a>'));
@@ -91,6 +93,23 @@ const doc = (...rows) => `${HEAD}${TABLE_HEAD}${rows.join('\n')}${TABLE_TAIL}`;
 {
   assert.deepStrictEqual(readTableRows('| a | `b` |\n').flat(), ['a', 'b']);
   assert.deepStrictEqual(readTableRows('<tr><td>x<br>y</td><td><code>z</code></td></tr>\n').flat(), ['x y', 'z']);
+}
+
+// 9. 「基にした配色」に一致するオリジナル色の見本だけ中の文字が太字・下線（strong+underline+800）になり、各セル背景に Light/Dark ベース背景色が付く
+{
+  const headWithBase = '# 21. オリジナル見本テスト\n\n- **基にした配色**: `#3366AA`（ブルー）、`#FFFFFF`（白）\n\n## カラーコード一覧\n\n';
+  const origDoc = `${headWithBase}${TABLE_HEAD}${c1}\n${canvas}${TABLE_TAIL}`;
+  assert.deepStrictEqual(readBaseHexes(origDoc), ['#3366AA', '#FFFFFF']);
+  const tone = readTone(origDoc);
+  const tableHtml = buildToneTable(tone);
+  assert.ok(tableHtml.includes('<td style="background-color: #FFFFFF; color: #222222;">'), '個別表の Light セルに Light ベース背景色・文字色');
+  assert.ok(tableHtml.includes('<td style="background-color: #101820; color: #EEEEEE;">'), '個別表の Dark セルに Dark ベース背景色・文字色');
+  assert.ok(tableHtml.includes('background-color: #3366AA; color: #FFFFFF; display: inline-block; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: 800; border: 1px solid #888888;"><strong style="color: #FFFFFF; text-decoration: underline; text-underline-offset: 2px;">Aaあ</strong>'), 'オリジナル背景色の見本は 1px 枠＋太字・下線（文字色明示）');
+  assert.ok(tableHtml.includes('background-color: #99BBEE; color: #1E293B; display: inline-block; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: 400; border: 1px solid #666666;">Aaあ '), '補完色（非オリジナル）の見本は 1px 枠＋通常ウェイト');
+
+  const listHtml = buildListTable([{ no: '21', id: 'orig-test', name: 'テスト', toneClass: '区分', technique: '技法', file: '21-orig-test.md', tone }]);
+  assert.ok(listHtml.includes('font-weight: 800; border: 1px solid #888888;"><strong style="color: #FFFFFF; text-decoration: underline; text-underline-offset: 2px;">A</strong></span>'), '一覧表でもオリジナル色は 1px 枠＋太字・下線（文字色明示）');
+  assert.ok(listHtml.includes('font-weight: 400; border: 1px solid #666666;">A</span>'), '一覧表でも非オリジナル色は 1px 枠＋通常ウェイト');
 }
 
 console.log('build-color-tone-tables.test.cjs: all assertions passed');
