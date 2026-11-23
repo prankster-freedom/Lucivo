@@ -264,7 +264,7 @@ function buildPanel(root: HTMLElement): HTMLElement {
 /* ------------------------------------------------------------------------
    始める・終える（DD-MWLK-002）
    ------------------------------------------------------------------------ */
-async function enter(host: ModeHost): Promise<boolean> {
+async function enter(host: ModeHost, opts: { appearance?: 'dark' | 'light' } = {}): Promise<boolean> {
   if (S.active || S.starting) return true;
   const en = isEnLang(host);
   if (typeof window.matchMedia === 'function'
@@ -289,7 +289,8 @@ async function enter(host: ModeHost): Promise<boolean> {
     host.toast(emptyMessage(host));
     return false;
   }
-  const appearance = loadAppearance();
+  // URL で外観を指定されたとき（?theme=…&present=…）は、覚えている外観より優先する。覚えている値は上書きしない（FR-069）
+  const appearance = opts.appearance ?? loadAppearance();
   if (host.appearance() !== appearance) {
     const themed = await host.setAppearance(appearance);
     const themedOutline = themed ? readOutline(themed) : null;

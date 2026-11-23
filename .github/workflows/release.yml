@@ -63,7 +63,7 @@ jobs:
           # スタンドアロン版（dist/）をビルドして ZIP にする。GitHub Release に付けるのはこの ZIP 1 つ
           # 公開用 URL の Web 版（public/）もここでビルドし、Actions アーティファクトとして保存して deploy.yml で使い回す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-004・005）
           LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod --channel standalone
-          LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" node tools/build-app.cjs --prod
+          LUCIVO_VERSION_OVERRIDE="$BUILD_VERSION" LUCIVO_SAMPLES_REF="$TAG" node tools/build-app.cjs --prod
 
           ZIP_DIR="Lucivo-v${VERSION}"
           ZIP_NAME="Lucivo-v${VERSION}.zip"
@@ -71,6 +71,8 @@ jobs:
           mkdir -p "/tmp/release-pkg/${ZIP_DIR}"
           cp -R dist/. "/tmp/release-pkg/${ZIP_DIR}/"
           (cd /tmp/release-pkg && zip -rq "$GITHUB_WORKSPACE/${ZIP_NAME}" "${ZIP_DIR}")
+          # Web 版（Actions アーティファクト）にはサンプルを含めない。GitHub 上のサンプルを読む（ARC-PUB-007）
+          rm -rf public/samples
 
           node - <<'EOF'
           const fs = require('fs');

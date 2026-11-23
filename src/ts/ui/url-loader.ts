@@ -2,7 +2,7 @@
 // パラメータが指定されていない通常起動では外部通信を行わない（NFR-008）
 
 const FETCH_TIMEOUT_MS = 10000;
-const MANAGED_PARAM_KEYS = ['url', 'mode', 'theme', 'style', 'tone', 'view', 'layout', 'lang'];
+const MANAGED_PARAM_KEYS = ['url', 'mode', 'theme', 'style', 'tone', 'view', 'layout', 'lang', 'present'];
 
 export interface DisplayStateSnapshot {
   isVisualMode: boolean;
@@ -22,6 +22,7 @@ export interface DisplayStateParams {
   viewMode?: 'split' | 'canvas' | 'editor';
   visualLayout?: 'page' | 'single';
   lang?: 'ja' | 'en';
+  present?: string;
 }
 
 function getMergedParam(searchParams: URLSearchParams, hashParams: URLSearchParams, key: string): string | null {
@@ -56,7 +57,8 @@ export function parseDisplayStateParams(
   search: string,
   hash: string,
   validStyles: string[],
-  validTones: string[]
+  validTones: string[],
+  validPresentModes: string[] = []
 ): DisplayStateParams {
   const searchParams = new URLSearchParams(search || '');
   const hashParams = parseHashAsSearchParams(hash);
@@ -93,6 +95,12 @@ export function parseDisplayStateParams(
   const lang = getMergedParam(searchParams, hashParams, 'lang')?.toLowerCase();
   if (lang === 'ja' || lang === 'en') {
     result.lang = lang;
+  }
+
+  // 発表モードの起動の合図（FR-069）。登録された識別名だけを受け付ける
+  const present = getMergedParam(searchParams, hashParams, 'present')?.toLowerCase();
+  if (present && validPresentModes.includes(present)) {
+    result.present = present;
   }
 
   return result;
@@ -362,6 +370,8 @@ export function buildAppUrlWithState(
   defaultViewMode: string
 ): string {
   const next = new URL(currentHref);
+  // present は起動の合図で、アドレスバーには残さない（FR-069。再読み込みや共有で再び始まらないように）
+  next.searchParams.delete('present');
   if (remoteUrl) next.searchParams.set('url', remoteUrl);
   else next.searchParams.delete('url');
 

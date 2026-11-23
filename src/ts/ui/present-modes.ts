@@ -4,6 +4,7 @@
 import { state } from './state';
 import { showToast } from './toast';
 import { trackWebEvent } from './analytics';
+import { parseDisplayStateParams } from './url-loader';
 import { getLang, onLangChange, t, type Lang } from '../i18n';
 
 // ビルドが埋め込む、この配布先で出すモードの表（modes.json の行から stage を除いたもの）
@@ -24,7 +25,7 @@ export interface ModeHost {
 }
 
 interface Mode {
-  enter(host: ModeHost): unknown;
+  enter(host: ModeHost, opts?: { appearance?: 'dark' | 'light' }): unknown;
   exit?(): void;
   info?(): unknown;
   [member: string]: unknown;
@@ -157,6 +158,38 @@ function isMobileTouchDevice(): boolean {
   return typeof window.matchMedia === 'function'
     && window.matchMedia('(pointer: coarse)').matches
     && Math.min(window.innerWidth, window.innerHeight) <= 768;
+}
+
+// URL パラメータ present で始める発表モード（FR-069, ARC-MODE-011）。present はアドレスバーから取り除かれる前に、起動の最初に読み取る
+export interface PendingPresent {
+  id: string;
+  appearance?: 'dark' | 'light';
+}
+
+export function takePresentFromUrl(): PendingPresent | null {
+  const params = parseDisplayStateParams(
+    window.location.search,
+    window.location.hash,
+    [],
+    [],
+    PRESENT_MODES.map(mode => mode.id)
+  );
+  if (!params.present) return null;
+  return { id: params.present, appearance: params.appearance };
+}
+
+// 文書の読み込みが終わったあとに呼ぶ。メニューから選んだときと同じ経路で始める。始められないときは通常の表示のまま、理由を知らせる
+export async function startPendingPresent(pending: PendingPresent | null): Promise<void> {
+  if (!pending) return;
+  if (pending.id === 'museum-walk' && isMobileTouchDevice()) {
+    showToast(t('present.mobileUnsupportedToast'));
+    return;
+  }
+  if (!(await loadMode(pending.id))) {
+    showToast(t('present.loadFailedToast'));
+    return;
+  }
+  modes.get(pending.id)!.enter(host, { appearance: pending.appearance });
 }
 
 // 発表のドロップダウンの項目を、埋め込まれた表の順に、ステージ発表の後ろへ作る（ARC-MODE-005）。closeMenus はメニューを閉じる関数

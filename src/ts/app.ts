@@ -65,7 +65,8 @@ import {
   setupAmbientEffectsToggle,
   loadMarkdownFromUrlParam
 } from './ui/folder-browser';
-import { setupPresentModes } from './ui/present-modes';
+import { setupPresentModes, takePresentFromUrl, startPendingPresent } from './ui/present-modes';
+import { hasBundledSamples, sampleFileNameFromRawUrl } from './ui/sample-source';
 import {
   PREVIEW_SCROLL_MARGIN,
   scrollBehavior,
@@ -308,6 +309,7 @@ runtime.renderApp = renderApp;
 runtime.syncUrlFromState = syncUrlFromState;
 
 window.addEventListener('DOMContentLoaded', () => {
+  const pendingPresent = takePresentFromUrl();
   initI18n();
   setupEventListeners();
   applyInitialDisplayStateFromUrl();
@@ -352,14 +354,17 @@ window.addEventListener('DOMContentLoaded', () => {
     syncUrlFromState();
     const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement | null;
     const isUnmodified = Boolean(editor && editor.value === runtime.lastLoadedMarkdown);
-    if (runtime.currentSampleFile && isUnmodified) {
-      void loadBundledSample(getSampleBaseFileName(runtime.currentSampleFile), { silentToast: true });
+    const sampleName = runtime.currentSampleFile
+      || (hasBundledSamples() ? null : sampleFileNameFromRawUrl(runtime.currentRemoteUrl));
+    if (sampleName && isUnmodified) {
+      void loadBundledSample(getSampleBaseFileName(sampleName), { silentToast: true });
     } else {
       renderApp();
     }
   });
   renderApp();
-  loadMarkdownFromUrlParam();
+  // present は最初の文書の読み込みで URL から取り除かれるため、先に読み取っておく（FR-069）
+  void loadMarkdownFromUrlParam().then(() => startPendingPresent(pendingPresent));
 });
 
 // E2E テストおよび外部連携用グローバル公開

@@ -41,6 +41,11 @@ export const en: I18nDict = {
   'sample.museumWalkWithFile': 'Museum Walk Sample ({file})',
   'sample.print': 'Print / PDF Check Sample',
   'sample.printWithFile': 'Print / PDF Check Sample ({file})',
+  'sample.colorMuseum': 'Color Museum',
+  'sample.colorMuseumWithFile': 'Color Museum ({file})',
+  'empty.sampleVisualDesc': 'Visual Mode · Light',
+  'empty.sampleNotationDesc': 'Split view · Light · Math',
+  'empty.sampleColorMuseumDesc': 'Museum Walk · Dark',
 
   // View / Stage / Present modes
   'view.switchTitle': 'Switch view layout',

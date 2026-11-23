@@ -4,7 +4,8 @@ import { decodeMarkdown, normalizeText, isUtf8Family } from '../utils/text-decod
 import { showToast, updateStatus } from './toast';
 import { getLang, setLang, t, resolveSampleFileName } from '../i18n';
 import { registerEscapeHandler } from './keymap';
-import { extractDroppedUrl } from './url-loader';
+import { extractDroppedUrl, fetchMarkdownFromUrl } from './url-loader';
+import { hasBundledSamples, samplesRawUrl } from './sample-source';
 import { watchFile, clearWatchedFile } from './file-watch';
 import { applyUpdateCheckState, checkForUpdate } from './update-check';
 import { setupPresentModes } from './present-modes';
@@ -251,10 +252,36 @@ async function fetchOrLoadSampleText(targetFileName: string): Promise<string | n
   return null;
 }
 
-// 開くメニュー・起動画面から同梱サンプルをワンクリックで読み込む（DD-FILE-015, FR-067）
+// Web 版は、GitHub 上のサンプルを公開 URL として読み込む（FR-068, ARC-PUB-007）。取得できなければ null
+async function fetchWebSample(targetFileName: string): Promise<{ text: string; url: string } | null> {
+  const url = samplesRawUrl(targetFileName);
+  try {
+    const { buffer } = await fetchMarkdownFromUrl(new URL(url));
+    return { text: new TextDecoder('utf-8').decode(buffer), url };
+  } catch (_) {
+    return null;
+  }
+}
+
+// 開くメニュー・起動画面から同梱サンプルをワンクリックで読み込む（DD-FILE-015, FR-067, FR-068）
 export async function loadBundledSample(fileName, opts: { silentToast?: boolean } = {}) {
   const resolvedName = resolveSampleFileName(fileName);
   if (!confirmDiscardEdits(resolvedName)) return false;
+  if (!hasBundledSamples()) {
+    let actualName = resolvedName;
+    let web = await fetchWebSample(resolvedName);
+    // 英語版サンプルが未配置の場合は日本語版へ安全にフォールバックする
+    if (web === null && resolvedName !== fileName) {
+      actualName = fileName;
+      web = await fetchWebSample(fileName);
+    }
+    if (web === null) {
+      showToast(t('file.readFailedToast', { name: resolvedName }));
+      return false;
+    }
+    applyLoadedMarkdown(web.text, actualName, null, false, 'UTF-8', null, web.url, web.url, { silentToast: opts.silentToast });
+    return true;
+  }
   let actualName = resolvedName;
   let text = await fetchOrLoadSampleText(resolvedName);
   // 英語版サンプルが未配置の場合は日本語版へ安全にフォールバックする
@@ -376,12 +403,17 @@ export function setupFileMenu() {
       if (fileName) loadBundledSample(fileName);
     };
   });
-  // 起動画面（.empty-guide）の同梱サンプルリンク（FR-007, FR-067）
+  // 起動画面（.empty-guide）の同梱サンプルのカード（FR-007, FR-067）。href はコピーや別タブのためで、通常のクリックはアプリ内で読み込む。
+  // 発表モードで開始するカード（data-empty-present）は、href のとおりに移動する（FR-069）
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target.closest('[data-empty-sample]') : null;
     if (!target) return;
+    const mouse = event as MouseEvent;
+    if (mouse.button !== 0 || mouse.ctrlKey || mouse.metaKey || mouse.shiftKey || mouse.altKey) return;
     const fileName = target.getAttribute('data-empty-sample');
-    if (fileName) void loadBundledSample(fileName);
+    if (!fileName) return;
+    event.preventDefault();
+    void loadBundledSample(fileName);
   });
   // 起動画面（.empty-guide）の公開 URL 貼り付けフォーム（FR-050, #373）
   document.addEventListener('submit', event => {

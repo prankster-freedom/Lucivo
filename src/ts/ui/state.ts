@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { mixHex } from '../utils/color';
-import { t, getReadmeViewerUrl, type I18nKey } from '../i18n';
+import { t, getLang, resolveSampleFileName, getReadmeViewerUrl, type I18nKey } from '../i18n';
+import { hasBundledSamples, samplesRawUrl, isPresentModeAvailable } from './sample-source';
 export const APP_TITLE_SUFFIX = ' - Lucivo';
 export const DROPPABLE_FILE_PATTERN = /\.(md|markdown|txt)$/i;
 
@@ -570,9 +571,62 @@ export function getLayoutLabel(layoutId = state.visualLayout): string {
   return layoutId === 'single' ? t('layout.single') : t('layout.page');
 }
 
+// 起動画面のサンプルのカード（FR-007, ARC-PUB-008）。サムネイルは assets/thumbs/ に同梱し、表示言語に合わせる（起動時に外部通信しない）
+interface SampleLink { file: string; label: I18nKey }
+interface SampleCard { id: string; thumbAlt: I18nKey; desc: I18nKey; links: SampleLink[]; presentMode?: string }
+
+const SAMPLE_CARDS: SampleCard[] = [
+  { id: 'visual', thumbAlt: 'sample.visual', desc: 'empty.sampleVisualDesc', links: [{ file: 'visual-sample.md', label: 'sample.visual' }] },
+  {
+    id: 'notation', thumbAlt: 'sample.notation', desc: 'empty.sampleNotationDesc',
+    links: [
+      { file: 'notation_sample.md', label: 'sample.notation' },
+      { file: 'notation_sample_extra1.md', label: 'sample.notationExtra' }
+    ]
+  },
+  { id: 'color-museum', thumbAlt: 'sample.colorMuseum', desc: 'empty.sampleColorMuseumDesc', links: [{ file: 'color-museum-sample.md', label: 'sample.colorMuseum' }], presentMode: 'museum-walk' }
+];
+
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+// リンク先。Web 版は GitHub 上のサンプルを開く URL、スタンドアロン版は同梱を開くので移動しない
+function sampleCardHref(file: string, presentMode?: string): string {
+  const lang = getLang();
+  if (hasBundledSamples()) return '#';
+  const params = [`url=${encodeURIComponent(samplesRawUrl(resolveSampleFileName(file)))}`];
+  if (presentMode) params.push('mode=visual', 'theme=dark', `present=${presentMode}`);
+  if (lang === 'en') params.push('lang=en');
+  return `./?${params.join('&')}`;
+}
+
+export function getSampleCardsHtml(): string {
+  const lang = getLang();
+  return SAMPLE_CARDS
+    .filter(card => !card.presentMode || (!hasBundledSamples() && isPresentModeAvailable(card.presentMode)))
+    .map(card => {
+      // 発表モードで始めるカードは data-empty-sample を付けず、href のとおりに移動する（FR-069）
+      const attr = (file: string) => (card.presentMode ? '' : ` data-empty-sample="${escapeAttr(file)}"`);
+      const first = card.links[0];
+      const links = card.links
+        .map(link => `<a class="empty-guide-sample-link" href="${escapeAttr(sampleCardHref(link.file, card.presentMode))}"${attr(link.file)}>${t(link.label)}</a>`)
+        .join('');
+      return `      <div class="empty-guide-sample-card" data-sample-card="${card.id}">
+        <a class="empty-guide-sample-thumb" href="${escapeAttr(sampleCardHref(first.file, card.presentMode))}"${attr(first.file)} tabindex="-1" aria-hidden="true">
+          <img src="./assets/thumbs/${card.id}.${lang}.webp" width="640" height="400" loading="lazy" decoding="async" alt="${escapeAttr(t(card.thumbAlt))}" />
+        </a>
+        <div class="empty-guide-sample-body">
+          <div class="empty-guide-sample-links">${links}</div>
+          <span class="empty-guide-sample-desc">${t(card.desc)}</span>
+        </div>
+      </div>`;
+    })
+    .join('\n');
+}
+
 export function getEmptyGuideHtml(): string {
   const readmeAttrs = `href="${getReadmeViewerUrl()}" target="_blank" rel="noopener noreferrer"`;
-  const sampleIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5"/></svg>';
   const urlIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';
   return `
 <div class="empty-guide">
@@ -592,9 +646,9 @@ export function getEmptyGuideHtml(): string {
 
   <div class="empty-guide-samples" role="group" aria-label="${t('menu.bundledSamples')}">
     <span class="empty-guide-samples-label">${t('empty.samplesLabel')}</span>
-    <button type="button" class="empty-guide-sample-btn empty-guide-sample-btn-featured" data-empty-sample="visual-sample.md">${sampleIcon}<span>${t('sample.visual')}</span></button>
-    <button type="button" class="empty-guide-sample-btn" data-empty-sample="notation_sample.md">${sampleIcon}<span>${t('sample.notation')}</span></button>
-    <button type="button" class="empty-guide-sample-btn" data-empty-sample="notation_sample_extra1.md">${sampleIcon}<span>${t('sample.notationExtra')}</span></button>
+    <div class="empty-guide-sample-cards">
+${getSampleCardsHtml()}
+    </div>
   </div>
 
   <div class="empty-guide-modes">

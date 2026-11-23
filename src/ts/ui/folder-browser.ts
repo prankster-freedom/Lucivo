@@ -51,11 +51,13 @@ export const BUNDLED_SAMPLES = [
   'notation_sample.md',
   'notation_sample_extra1.md',
   'museum-walk-sample.md',
+  'color-museum-sample.md',
   'print-sample.md',
   'visual-sample.en.md',
   'notation_sample.en.md',
   'notation_sample_extra1.en.md',
   'museum-walk-sample.en.md',
+  'color-museum-sample.en.md',
   'print-sample.en.md'
 ];
 // フォルダの画像のパス → blob URL（読み込み中は Promise）（DD-FILE-076）

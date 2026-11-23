@@ -39,6 +39,11 @@ export const ja = {
   'sample.museumWalkWithFile': 'ミュージアム・ウォーク サンプル ({file})',
   'sample.print': '印刷・PDF の確認サンプル',
   'sample.printWithFile': '印刷・PDF の確認サンプル ({file})',
+  'sample.colorMuseum': '配色ミュージアム',
+  'sample.colorMuseumWithFile': '配色ミュージアム ({file})',
+  'empty.sampleVisualDesc': 'Visualモード・Light',
+  'empty.sampleNotationDesc': 'Split 表示・Light・数式',
+  'empty.sampleColorMuseumDesc': 'ミュージアム・ウォーク・Dark',
 
   // ビュー・描画・発表モード
   'view.switchTitle': '表示の切り替え',
