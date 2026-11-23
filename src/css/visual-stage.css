@@ -78,12 +78,12 @@ html.is-stage-show #visual-stage-container {
   padding: 6vh 6vw 9vh;
   background:
     radial-gradient(ellipse 72% 64% at 50% -14%, rgba(148, 163, 184, 0.22), transparent 72%),
-    #070B14;
+    var(--vs-stage-bg, #070B14);
 }
 html.is-stage-show body:not([data-appearance="dark"]) #visual-stage-container {
   background:
     radial-gradient(ellipse 72% 64% at 50% -14%, #FFFFFF, transparent 72%),
-    #E9ECF2;
+    var(--vs-stage-bg, #E9ECF2);
 }
 html.is-stage-show .exhibition-wrap {
   width: 100%;
@@ -217,10 +217,10 @@ html.is-stage-show body:not([data-appearance="dark"]) .stage-hud {
   right: 0;
   bottom: 0;
   height: 9vh;
-  background: linear-gradient(transparent, #070B14 72%);
+  background: linear-gradient(transparent, var(--vs-stage-bg, #070B14) 72%);
 }
 body:not([data-appearance="dark"]) .stage-hud::before {
-  background: linear-gradient(transparent, #E9ECF2 72%);
+  background: linear-gradient(transparent, var(--vs-stage-bg, #E9ECF2) 72%);
 }
 .stage-hud-rail {
   position: absolute;
@@ -388,7 +388,7 @@ html.is-stage-show.is-stage-overview .exhibition-wrap > * {
   border-radius: 2.4vw;
   background:
     radial-gradient(ellipse 72% 64% at 50% -14%, rgba(148, 163, 184, 0.22), transparent 72%),
-    #070B14;
+    var(--vs-stage-bg, #070B14);
   box-shadow: 0 0 0 calc(1px / var(--ov-s)) rgba(148, 163, 184, 0.24);
   opacity: 1 !important;
   cursor: pointer;
@@ -397,7 +397,7 @@ html.is-stage-show.is-stage-overview .exhibition-wrap > * {
 html.is-stage-show.is-stage-overview body:not([data-appearance="dark"]) .exhibition-wrap > * {
   background:
     radial-gradient(ellipse 72% 64% at 50% -14%, #FFFFFF, transparent 72%),
-    #E9ECF2;
+    var(--vs-stage-bg, #E9ECF2);
   box-shadow: 0 0 0 calc(1px / var(--ov-s)) rgba(15, 23, 42, 0.14);
 }
 html.is-stage-show.is-stage-overview .exhibition-wrap > :hover {
