@@ -27,8 +27,8 @@ Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid d
 </p>
 
 <p align="center">
-  <img src="doc/images/readme/visual-cover.png" alt="Visual Mode Cover (Pastel Shapes)" width="49%">
-  <img src="doc/images/readme/visual-cards.png" alt="Key Point Cards and KPI Cards (Vibrant Circles)" width="49%">
+  <img src="doc/images/readme/visual-cover.en.png" alt="Visual Mode Cover (Pastel Shapes)" width="49%">
+  <img src="doc/images/readme/visual-cards.en.png" alt="Key Point Cards and KPI Cards (Vibrant Circles)" width="49%">
 </p>
 
 | Mode        | Best For                               | Key Features |
@@ -80,13 +80,22 @@ Choose the edition that best fits your workflow:
    - **Automatic Reload on External Changes**: When a local file opened in a supported browser (such as Chrome or Edge) is modified in an external editor, Lucivo automatically reloads it while preserving your scroll position if you have no unsaved edits. If you are actively editing, it protects your changes and displays a notification bar to reload manually (can be disabled in settings).
 2. **Switch Modes**: Click **Fast Mode** or **Visual Mode** in the center of the header to toggle display styles immediately.
 
-### Bundled Samples
+### Samples
+
+The Web Edition loads these samples directly from GitHub, while the Standalone Edition (ZIP) bundles them for offline use.
+
+<p align="center">
+  <img src="doc/images/readme/thumb-visual.en.png" alt="Visual Mode Sample (Light)" width="32%">
+  <img src="doc/images/readme/thumb-notation.en.png" alt="Notation Sample (Split view, Light, Math)" width="32%">
+  <img src="doc/images/readme/thumb-color-museum.en.png" alt="Color Museum (Museum Walk, Dark)" width="32%">
+</p>
 
 | Sample                                                        | Description |
 | :------------------------------------------------------------ | :---------- |
 | [visual-sample.en.md](public/samples/visual-sample.en.md)     | Visual Mode cover page, editorial templates, tables, Luminous Flow effects, and Stage Presentation |
 | [notation_sample.en.md](public/samples/notation_sample.en.md) | Comprehensive Markdown & Mermaid reference (all diagram types, math, callouts, footnotes, emoji, etc.) |
 | [notation_sample_extra1.en.md](public/samples/notation_sample_extra1.en.md) | Extended syntax (CommonMark & GFM), images, cross-document links, directory trees, and supplementary math plots |
+| [color-museum-sample.en.md](public/samples/color-museum-sample.en.md) | Color Museum (20 curated product tones, all 203 stock palettes, diagrams & motifs; optimized for Dark Museum Walk) |
 
 ## Capabilities
 
