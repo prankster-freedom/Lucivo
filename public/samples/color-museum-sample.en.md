@@ -8,14 +8,14 @@ tags: ["Lucivo", "Color Museum", "Color Tones", "Museum Walk"]
 
 They say color has no right answer, yet every day we choose colors for someone. Here are no swatch lists, only posters, windows, and mountains painted with Lucivo's 203 tones. To choose is to leave something unchosen.
 
-![One white light splits into 20 tones through a prism](images/color-museum-prism.en.svg)
-
 > [!NOTE]
 > Choose "Museum Walk" from the Present menu to walk this document as a 3D corridor. Walk with `↑` `↓` or the wheel, look around by dragging, switch the gallery lighting (Dark / Light) with `T`, and return with `Esc`.
 
 ## Light Splits into Color
 
-### A Map of Feeling
+![One white light splits into an infinite spectrum through a prism](images/color-museum-prism.en.svg)
+
+## A Map of Feeling
 
 Red is passion, blue is calm. Say it so flatly and color dies a little. Thinned, red is a cheek's warmth; sunk deep, old blood. Tone shapes feeling more than hue. Here, 14 tones sit on two axes: warm to cool, soft to hard.
 
