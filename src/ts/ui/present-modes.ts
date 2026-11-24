@@ -153,13 +153,6 @@ function loadMode(id: string): Promise<boolean> {
   return loads.get(id)!;
 }
 
-// #123 の暫定対応（#125）: スマホの縦長画面で描画が欠ける不具合が解決するまで、タッチ主体端末では選択を制限する
-function isMobileTouchDevice(): boolean {
-  return typeof window.matchMedia === 'function'
-    && window.matchMedia('(pointer: coarse)').matches
-    && Math.min(window.innerWidth, window.innerHeight) <= 768;
-}
-
 // URL パラメータ present で始める発表モード（FR-069, ARC-MODE-011）。present はアドレスバーから取り除かれる前に、起動の最初に読み取る
 export interface PendingPresent {
   id: string;
@@ -181,10 +174,6 @@ export function takePresentFromUrl(): PendingPresent | null {
 // 文書の読み込みが終わったあとに呼ぶ。メニューから選んだときと同じ経路で始める。始められないときは通常の表示のまま、理由を知らせる
 export async function startPendingPresent(pending: PendingPresent | null): Promise<void> {
   if (!pending) return;
-  if (pending.id === 'museum-walk' && isMobileTouchDevice()) {
-    showToast(t('present.mobileUnsupportedToast'));
-    return;
-  }
   if (!(await loadMode(pending.id))) {
     showToast(t('present.loadFailedToast'));
     return;
@@ -196,7 +185,7 @@ export async function startPendingPresent(pending: PendingPresent | null): Promi
 export function setupPresentModes(closeMenus: () => void): void {
   const menu = document.getElementById('present-menu');
   if (!menu) return;
-  const syncRestrictions: Array<() => void> = [];
+  const syncLabels: Array<() => void> = [];
   PRESENT_MODES.forEach(({ id, label, labelEn }) => {
     if (document.getElementById(`menu-present-${id}`)) return;
     const item = document.createElement('button');
@@ -205,27 +194,11 @@ export function setupPresentModes(closeMenus: () => void): void {
     item.setAttribute('role', 'menuitem');
     item.className = 'file-menu-item';
     const sync = () => {
-      const displayLabel = getLang() === 'en' && labelEn ? labelEn : label;
-      if (id === 'museum-walk' && isMobileTouchDevice()) {
-        item.disabled = true;
-        item.setAttribute('aria-disabled', 'true');
-        item.textContent = `${displayLabel}${t('present.mobileUnsupportedSuffix')}`;
-        item.title = t('present.mobileUnsupportedTitle');
-      } else {
-        item.disabled = false;
-        item.removeAttribute('aria-disabled');
-        item.textContent = displayLabel;
-        item.removeAttribute('title');
-      }
+      item.textContent = getLang() === 'en' && labelEn ? labelEn : label;
     };
     sync();
-    syncRestrictions.push(sync);
+    syncLabels.push(sync);
     item.addEventListener('click', async () => {
-      if (id === 'museum-walk' && isMobileTouchDevice()) {
-        closeMenus();
-        showToast(t('present.mobileUnsupportedToast'));
-        return;
-      }
       closeMenus();
       if (!(await loadMode(id))) {
         showToast(t('present.loadFailedToast'));
@@ -236,12 +209,6 @@ export function setupPresentModes(closeMenus: () => void): void {
     menu.appendChild(item);
   });
   onLangChange(() => {
-    syncRestrictions.forEach(fn => fn());
+    syncLabels.forEach(fn => fn());
   });
-  const btn = document.getElementById('btn-present-menu');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      syncRestrictions.forEach(fn => fn());
-    });
-  }
 }

@@ -944,13 +944,13 @@ async function testUrlLoading(browser) {
     }));
     await ctx52.close();
 
-    // スマホ端末（pointer: coarse + 幅 390px）では起動せずトースト通知
+    // スマホ端末（pointer: coarse + 幅 390px）でも起動すること（#397 Canary 検証）
     const ctx52Mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, locale: 'ja-JP' });
     const p52Mobile = await ctx52Mobile.newPage();
     await mockWebSamples(p52Mobile);
     await p52Mobile.goto(`${server.url}?url=${encodeURIComponent(museumRaw)}&mode=visual&theme=dark&present=museum-walk`);
-    await p52Mobile.waitForFunction(() => (document.getElementById('toast-message')?.textContent || '').includes('スマホでは利用できません'), null, { timeout: 10000 });
-    const mobileBlocked = await p52Mobile.evaluate(() => !document.documentElement.classList.contains('is-museum-walk'));
+    await p52Mobile.waitForFunction(() => document.documentElement.classList.contains('is-museum-walk'), null, { timeout: 20000 });
+    const mobileStarted = await p52Mobile.evaluate(() => document.documentElement.classList.contains('is-museum-walk'));
     await ctx52Mobile.close();
 
     // スタンドアロン版では present=museum-walk を無視して通常表示になる
@@ -968,9 +968,9 @@ async function testUrlLoading(browser) {
         && startedState.hasPresentParam === false
         && startedState.hasUrlParam
         && afterEsc.appearance === 'dark' && afterEsc.isVisual
-        && mobileBlocked
+        && mobileStarted
         && distIgnored,
-      JSON.stringify({ startedState, afterEsc, mobileBlocked, distIgnored }));
+      JSON.stringify({ startedState, afterEsc, mobileStarted, distIgnored }));
   } finally {
     await server.close();
   }

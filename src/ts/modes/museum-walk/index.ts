@@ -267,14 +267,6 @@ function buildPanel(root: HTMLElement): HTMLElement {
 async function enter(host: ModeHost, opts: { appearance?: 'dark' | 'light' } = {}): Promise<boolean> {
   if (S.active || S.starting) return true;
   const en = isEnLang(host);
-  if (typeof window.matchMedia === 'function'
-    && window.matchMedia('(pointer: coarse)').matches
-    && Math.min(window.innerWidth, window.innerHeight) <= 768) {
-    host.toast(en
-      ? 'Museum Walk is currently unavailable on smartphones (please use on PC)'
-      : 'ミュージアム・ウォークは現在スマホでは利用できません（PC でご利用ください）');
-    return false;
-  }
   if (host.isDocumentEmpty()) {
     host.toast(emptyMessage(host));
     return false;

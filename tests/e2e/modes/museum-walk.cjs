@@ -306,7 +306,7 @@ async function testMuseumWalk(browser) {
       JSON.stringify({ reducedMotion: ri.reducedMotion, sliding: sliding.slice(0, 2), flash, errors: reduced.consoleErrors }));
     await reduced.context().close();
 
-    // TC-MWLK-007: タッチ主体端末（pointer: coarse）のスマホではメニュー項目が無効化され、デスクトップでは有効であること（#125）
+    // TC-MWLK-007: スマホ（pointer: coarse）の縦長・横長およびデスクトップでもメニュー項目が有効であること（#397）
     const checkRestricted = async viewport => {
       const ctx = await browser.newContext({ viewport, hasTouch: true, isMobile: true });
       const p = await ctx.newPage();
@@ -337,8 +337,8 @@ async function testMuseumWalk(browser) {
       return { disabled: !!btn && btn.disabled, text: btn ? btn.textContent.trim() : '' };
     }, MODE);
     await desktopCtx.close();
-    const mw7Ok = mobilePort.coarse && mobilePort.disabled && mobilePort.ariaDisabled === 'true' && /スマホ非対応/.test(mobilePort.text)
-      && mobileLand.coarse && mobileLand.disabled && mobileLand.ariaDisabled === 'true' && /スマホ非対応/.test(mobileLand.text)
+    const mw7Ok = mobilePort.coarse && !mobilePort.disabled && mobilePort.ariaDisabled === null && !/スマホ非対応/.test(mobilePort.text)
+      && mobileLand.coarse && !mobileLand.disabled && mobileLand.ariaDisabled === null && !/スマホ非対応/.test(mobileLand.text)
       && !desktopState.disabled && !/スマホ非対応/.test(desktopState.text);
     record('TC-MWLK-007', mw7Ok, JSON.stringify({ mobilePort, mobileLand, desktopState }));
 
