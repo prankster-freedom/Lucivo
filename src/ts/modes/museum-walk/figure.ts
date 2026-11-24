@@ -2,7 +2,7 @@
 // 画像の中の SVG は別の文書になるため、元の図と id が重複せず、矢じりやグラデーションの参照が崩れない。
 
 export interface FigureLayer { url: string; role: 'lines' | 'nodes' | 'all'; }
-export interface FigureImages { layers: FigureLayer[]; width: number; height: number; }
+export interface FigureImages { layers: FigureLayer[]; width: number; height: number; isEmotionMap?: boolean; }
 
 const NS = 'http://www.w3.org/2000/svg';
 // 層ごとに隠すもの。線の層は枠（サブグラフ）と線、ノードの層はノードと線のラベルを見せる
@@ -37,11 +37,12 @@ function toUrl(svg: SVGSVGElement, size: { width: number; height: number }, hide
 
 export function figureImages(svg: SVGSVGElement): FigureImages {
   const size = sizeOf(svg);
+  const isEmotionMap = /感情の地図|Map of Feeling/.test(svg.textContent || '');
   const layered = !!svg.querySelector('.nodes') && !!svg.querySelector('.edgePaths');
   const layers: FigureLayer[] = layered
     ? [{ url: toUrl(svg, size, HIDE.lines), role: 'lines' }, { url: toUrl(svg, size, HIDE.nodes), role: 'nodes' }]
     : [{ url: toUrl(svg, size, null), role: 'all' }];
-  return { layers, ...size };
+  return { layers, ...size, isEmotionMap };
 }
 
 export function revokeFigures(figures: FigureImages[]): void {

@@ -188,6 +188,23 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   cap.style.cssText = 'width:4000px;height:3400px';
 
   // 広間の真ん中に立つ図。層（枠・線・ノード）を進む向きにずらして置き、手前の層から順に通り抜ける
+  const EMOTION_TONES = [
+    { ja: '桃の花', en: 'Peach Blossom', x: 0.14, y: 0.25, z: 0.30, c1: '#F4A295', c2: '#FFC4BA' },
+    { ja: 'レモンメレンゲ', en: 'Lemon Meringue', x: 0.29, y: 0.11, z: 0.68, c1: '#DCD900', c2: '#FEF08A' },
+    { ja: '綿菓子', en: 'Cotton Candy', x: 0.39, y: 0.33, z: 0.20, c1: '#B6A9E3', c2: '#F1CCB1' },
+    { ja: '抹茶と和三盆', en: 'Matcha & Wasanbon', x: 0.42, y: 0.44, z: 0.62, c1: '#99B37F', c2: '#B8E0A4' },
+    { ja: '朝の窓辺', en: 'Morning Window', x: 0.59, y: 0.19, z: 0.28, c1: '#F5B7BF', c2: '#BAE6FD' },
+    { ja: 'ライラックと雪', en: 'Lilac Snow', x: 0.77, y: 0.11, z: 0.68, c1: '#E2C9E5', c2: '#F5EEFA' },
+    { ja: '北欧の霜柱', en: 'Nordic Frost', x: 0.89, y: 0.32, z: 0.24, c1: '#9EC1D6', c2: '#CFFAFE' },
+    { ja: 'シーグラスの浜辺', en: 'Sea Glass Shore', x: 0.67, y: 0.37, z: 0.60, c1: '#8297FD', c2: '#4FD8E8' },
+    { ja: '琥珀の夕暮れ', en: 'Amber Sunset', x: 0.12, y: 0.62, z: 0.66, c1: '#F2AF5C', c2: '#FCD34D' },
+    { ja: 'テラコッタの中庭', en: 'Terracotta Courtyard', x: 0.33, y: 0.69, z: 0.26, c1: '#E48670', c2: '#FF9D80' },
+    { ja: '黒と白い花', en: 'Black Blossom', x: 0.17, y: 0.85, z: 0.30, c1: '#FFB99E', c2: '#FFE4D6' },
+    { ja: '夜を編む図書館', en: 'Midnight Library', x: 0.41, y: 0.82, z: 0.70, c1: '#CC6B79', c2: '#F3D56B' },
+    { ja: '晴天の工作舎', en: 'Cobalt Workshop', x: 0.64, y: 0.64, z: 0.32, c1: '#EB576D', c2: '#7DD3FC' },
+    { ja: '分光プリズムと黒曜石', en: 'Cyber Prism', x: 0.84, y: 0.78, z: 0.66, c1: '#38BDF8', c2: '#A5F3FC' }
+  ];
+  const isEnDoc = typeof document !== 'undefined' && document.documentElement.lang === 'en';
   const stands: StandRef[] = [];
   plan.stands.forEach(s => {
     const fig = figures[s.figure];
@@ -195,6 +212,48 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
     const g = standGeometry(fig);
     const elev = sectionAt(plan, s.z).elev;
     const tint = tintAt(plan, s.z);
+    if (fig.isEmotionMap) {
+      const boxW = 360, boxH = 240, boxD = 340;
+      const cube = el(`mw-stand mw-emotion-cube is-${figureAppearance}`, world);
+      cube.style.cssText = `transform:translate3d(${-boxW - 12}px, ${FLOOR - boxH * 2 - 140 + elev}px, ${s.z}px);width:${boxW * 2 + 24}px;height:${boxH * 2}px;--tint:${tint}`;
+      const makeBox = (ox: number, oy: number, oz: number) => {
+        const box = el('mw-ec-box', cube);
+        box.style.cssText = `transform:translate3d(${ox}px,${oy}px,${oz}px);width:${boxW}px;height:${boxH}px;transform-style:preserve-3d;position:absolute;left:0;top:0;`;
+        const face = (cls: string, tr: string, w: number, h: number) => {
+          const f = el(`mw-ec-face ${cls}`, box);
+          f.style.cssText = `width:${w}px;height:${h}px;transform:${tr}`;
+        };
+        face('is-front', `translate3d(0,0,${boxD / 2}px)`, boxW, boxH);
+        face('is-back', `translate3d(0,0,${-boxD / 2}px) rotateY(180deg)`, boxW, boxH);
+        face('is-left', `translate3d(${-boxD / 2}px,0,0) rotateY(-90deg)`, boxD, boxH);
+        face('is-right', `translate3d(${boxW - boxD / 2}px,0,0) rotateY(90deg)`, boxD, boxH);
+        face('is-top', `translate3d(0,${-boxD / 2}px,0) rotateX(90deg)`, boxW, boxD);
+        face('is-bottom', `translate3d(0,${boxH - boxD / 2}px,0) rotateX(-90deg)`, boxW, boxD);
+      };
+      // 添付画像と同じ互い違いの 4 象限ボックス（左柱=手前、右柱=少し右奥上）
+      makeBox(0, 0, 0);
+      makeBox(0, boxH, 0);
+      makeBox(boxW + 24, -36, -150);
+      makeBox(boxW + 24, boxH - 36, -150);
+      // 14 の配色球体と中央寄せラベル
+      EMOTION_TONES.forEach(t => {
+        const isRight = t.x >= 0.5;
+        const isTop = t.y >= 0.5;
+        const lx = isRight ? (t.x - 0.5) * 2 : t.x * 2;
+        const ly = isTop ? (t.y - 0.5) * 2 : t.y * 2;
+        const ox = isRight ? boxW + 24 : 0;
+        const oy = (isTop ? 0 : boxH) + (isRight ? -36 : 0);
+        const oz = isRight ? -150 : 0;
+        const px = ox + 36 + lx * (boxW - 72);
+        const py = oy + 36 + (1 - ly) * (boxH - 72);
+        const pz = oz + (t.z - 0.5) * (boxD - 80);
+        const node = el('mw-ec-sphere', cube);
+        node.style.cssText = `transform:translate3d(${px.toFixed(1)}px,${py.toFixed(1)}px,${pz.toFixed(1)}px)`;
+        node.innerHTML = `<i style="background:radial-gradient(circle at 32% 28%,#fff 0%,${t.c2} 28%,${t.c1} 74%,rgba(10,15,28,.88) 100%);box-shadow:0 0 26px ${t.c2}88"></i><b>${isEnDoc ? t.en : t.ja}</b>`;
+      });
+      stands.push({ el: cube, z: s.z, baseZ: s.z, dz: 0, elev, key: -1, frame: true, figure: s.figure });
+      return;
+    }
     const place = (node: HTMLElement, dz: number, role?: 'lines' | 'nodes' | 'all', img?: HTMLImageElement) => {
       node.style.cssText = `transform:translate3d(${g.x}px, ${g.top + elev}px, ${s.z + dz}px) scale(0.5);width:${g.fw * 2}px;height:${g.fh * 2}px;--tint:${tint}`;
       stands.push({ el: node, z: s.z + dz, baseZ: s.z, dz, elev, key: -1, frame: dz === 0, figure: s.figure, role, img });
