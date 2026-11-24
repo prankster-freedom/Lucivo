@@ -2,6 +2,13 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.16.2 (2026-11-25)
+
+- feat(ui): Compacted the Visual Mode style bar below 1024px (style dropdown, tone swatches, and layout icon) so all controls fit within a 360px viewport without horizontal scrolling
+- feat(museum-walk): Rendered "Map of Feeling" in 3D using staggered four-quadrant translucent boxes and glowing color spheres
+- fix(ui): Fixed header horizontal overflow at 360px smartphone width and 1024–1279px intermediate widths, as well as duplicate brand logo rendering at 1024px and above
+- fix(samples): Fixed right-edge text clipping in the Color Museum prism SVGs and refined them to a smooth violet-to-brown spectrum with representative color names
+
 ## 0.16.1 (2026-11-24)
 
 - fix(stage): The Presentation mode background now follows the background color of the color tone selected in Visual mode, including the bottom edge of chapter titles and the overview slides.

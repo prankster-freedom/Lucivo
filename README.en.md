@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.16.1`
+- **Version**: `0.16.2`
 - **Language**: [日本語](README.md) | English
 
 Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid diagrams. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
@@ -231,17 +231,14 @@ Licensed under the [MIT License](LICENSE). See [public/THIRD_PARTY_LICENSES.txt]
 
 The two most recent releases are listed below. For the complete version history, see [release-notes.en.md](release-notes.en.md).
 
+### 0.16.2 (2026-11-25)
+
+- feat(ui): Compacted the Visual Mode style bar below 1024px (style dropdown, tone swatches, and layout icon) so all controls fit within a 360px viewport without horizontal scrolling
+- feat(museum-walk): Rendered "Map of Feeling" in 3D using staggered four-quadrant translucent boxes and glowing color spheres
+- fix(ui): Fixed header horizontal overflow at 360px smartphone width and 1024–1279px intermediate widths, as well as duplicate brand logo rendering at 1024px and above
+- fix(samples): Fixed right-edge text clipping in the Color Museum prism SVGs and refined them to a smooth violet-to-brown spectrum with representative color names
+
 ### 0.16.1 (2026-11-24)
 
 - fix(stage): The Presentation mode background now follows the background color of the color tone selected in Visual mode, including the bottom edge of chapter titles and the overview slides.
 - fix(visual): Text on hero cards highlighted with "★" now switches automatically between dark navy and white to stay readable against the card color, even with light tones.
-
-### 0.16.0 (2026-11-23)
-
-- feat(samples): Added a new sample, "Color Museum": walk a 3D corridor of posters, windows, seasonal landscapes, color fields, and diagrams, and see the moments color moves people (Japanese and English editions)
-- feat(ui): Added sample thumbnail cards to the start screen on the web edition; choosing one opens the sample from GitHub. The `present` URL parameter now starts Museum Walk as soon as the document opens
-- feat(ui): Replaced seven of the product color tones in the Color Tone menu and moved seven pastel tones, including Cotton Candy, to the top
-- fix(museum-walk): Fixed a long cover description spilling out of the gate on both sides, and the exhibit label overlapping a diagram's title in the hall
-- fix(ui): Samples opened from the start screen can now return to it with the browser's Back button, and samples meant for Visual Mode switch to it automatically
-- fix(ui): Fixed duplicate items in the Present menu
-- fix(ui): Added to the drop guide that a public URL can be pasted to open a file
