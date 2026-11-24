@@ -471,7 +471,9 @@ body[data-appearance="light"] .brand-mark-dark {
 }
 @media (min-width: 1024px) {
   #mobile-file-wrap,
-  #mobile-view-wrap {
+  #mobile-view-wrap,
+  #btn-mobile-style,
+  #active-layout-icon {
     display: none !important;
   }
 }
@@ -494,6 +496,7 @@ body[data-appearance="light"] .brand-mark-dark {
   #open-menu-wrap,
   #save-menu-wrap,
   #desktop-view-pills,
+  #style-bar .pill-container,
   #btn-test-cache,
   #btn-test-err {
     display: none !important;

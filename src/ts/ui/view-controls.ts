@@ -27,6 +27,7 @@ export function syncStageModeUi(isVisual: boolean) {
   document.getElementById('btn-visual-mode')?.classList.toggle('is-active', isVisual);
   document.getElementById('style-bar')?.classList.toggle('is-hidden', !isVisual);
   if (!isVisual) {
+    setStyleMenuOpen(false);
     setToneMenuOpen(false);
     setLayoutMenuOpen(false);
   }
@@ -75,8 +76,10 @@ export function renderSwatchDotsHtml(colors: string[]) {
 }
 
 export function syncToneUi() {
+  const toneLabel = getToneLabel(state.tone);
   const labelEl = document.getElementById('active-tone-name');
-  if (labelEl) labelEl.textContent = getToneLabel(state.tone);
+  if (labelEl) labelEl.textContent = toneLabel;
+  document.getElementById('btn-tone-menu')?.setAttribute('aria-label', `${t('styleBar.toneTitle')}: ${toneLabel}`);
   const swatchEl = document.getElementById('active-tone-swatches');
   if (swatchEl) {
     const colors = getEffectiveVisualPalette(state.infographicStyle, state.appearance);
@@ -97,6 +100,8 @@ export function setToneMenuOpen(open: boolean) {
   const menu = document.getElementById('tone-menu');
   if (!btn || !menu) return;
   if (open) {
+    setStyleMenuOpen(false);
+    setLayoutMenuOpen(false);
     const rect = btn.getBoundingClientRect();
     const top = Math.round(rect.bottom + 6);
     menu.style.top = `${top}px`;
@@ -123,9 +128,18 @@ export function selectTone(toneId: string) {
   showToast(t('toast.toneApplied', { label: getToneLabel(toneEntry.id) }));
 }
 
+const LAYOUT_ICONS: Record<'page' | 'single', string> = {
+  page: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.8" y="3" width="5.4" height="10" rx="1.2" stroke="currentColor" stroke-width="1.4"/><rect x="8.8" y="3" width="5.4" height="10" rx="1.2" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity="0.14"/></svg>',
+  single: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.8" y="2.2" width="10.4" height="11.6" rx="1.4" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity="0.14"/><path d="M5.2 5.5h5.6M5.2 8h5.6M5.2 10.5h3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>'
+};
+
 export function syncLayoutUi() {
+  const layoutLabel = getLayoutLabel(state.visualLayout);
   const labelEl = document.getElementById('active-layout-name');
-  if (labelEl) labelEl.textContent = getLayoutLabel(state.visualLayout);
+  if (labelEl) labelEl.textContent = layoutLabel;
+  const iconEl = document.getElementById('active-layout-icon');
+  if (iconEl) iconEl.innerHTML = LAYOUT_ICONS[state.visualLayout === 'single' ? 'single' : 'page'];
+  document.getElementById('btn-layout-menu')?.setAttribute('aria-label', `${t('styleBar.layoutTitle')}: ${layoutLabel}`);
   document.querySelectorAll('#layout-menu .tone-menu-item').forEach(btn => {
     const layoutId = btn.getAttribute('data-layout-id') || 'page';
     const active = layoutId === state.visualLayout;
@@ -141,7 +155,46 @@ export function setLayoutMenuOpen(open: boolean) {
   const menu = document.getElementById('layout-menu');
   if (!btn || !menu) return;
   if (open) {
+    setStyleMenuOpen(false);
     setToneMenuOpen(false);
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = `${Math.round(rect.bottom + 6)}px`;
+    menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
+  }
+  menu.classList.toggle('hidden', !open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+export function syncStyleUi() {
+  const style = state.infographicStyle;
+  document.querySelectorAll('.info-style-btn').forEach(b => {
+    b.classList.toggle('is-active', b.getAttribute('data-info-style') === style);
+  });
+  document.querySelectorAll('#mobile-style-menu [data-mobile-style]').forEach(btn => {
+    const active = btn.getAttribute('data-mobile-style') === style;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+  const activeBtn = document.querySelector(`.info-style-btn[data-info-style="${style}"]`);
+  const iconWrap = document.getElementById('mobile-style-icon');
+  const srcSvg = activeBtn?.querySelector('svg');
+  if (iconWrap && srcSvg) iconWrap.innerHTML = srcSvg.outerHTML;
+  const label = t(`style.${style}`);
+  const nameEl = document.getElementById('mobile-style-name');
+  if (nameEl) {
+    nameEl.setAttribute('data-i18n', `style.${style}`);
+    nameEl.textContent = label;
+  }
+  document.getElementById('btn-mobile-style')?.setAttribute('aria-label', `${t('styleBar.styleTitle')}: ${label}`);
+}
+
+export function setStyleMenuOpen(open: boolean) {
+  const btn = document.getElementById('btn-mobile-style');
+  const menu = document.getElementById('mobile-style-menu');
+  if (!btn || !menu) return;
+  if (open) {
+    setToneMenuOpen(false);
+    setLayoutMenuOpen(false);
     const rect = btn.getBoundingClientRect();
     menu.style.top = `${Math.round(rect.bottom + 6)}px`;
     menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
@@ -179,9 +232,7 @@ export function setStageMode(isVisual: boolean) {
 
 export function selectInfographicStyle(style: string) {
   state.infographicStyle = style;
-  document.querySelectorAll('.info-style-btn').forEach(b => {
-    b.classList.toggle('is-active', b.getAttribute('data-info-style') === style);
-  });
+  syncStyleUi();
   // スタイルバーは Visualモードのときだけ表示する。高速モードから選べるのはキーボードの 1〜4 だけで、
   // その場合は Visualモードに切り替えて適用する（FR-025）
   if (!state.isVisualMode) {
@@ -342,9 +393,7 @@ export function applyInitialDisplayStateFromUrl() {
   }
   if (params.infographicStyle) {
     state.infographicStyle = params.infographicStyle;
-    document.querySelectorAll('.info-style-btn').forEach(b => {
-      b.classList.toggle('is-active', b.getAttribute('data-info-style') === state.infographicStyle);
-    });
+    syncStyleUi();
   }
   if (typeof params.isVisualMode === 'boolean') {
     state.isVisualMode = params.isVisualMode;

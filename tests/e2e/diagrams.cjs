@@ -737,12 +737,52 @@ async function testStyleBar(browser) {
   await page.keyboard.press('3');
   await waitRendered(page);
   const byKey = await barState();
+  // 狭い幅（360px・412px・768px）でスタイルバーに横スクロールが出ず、プルダウン・色見本・アイコンになること（#406）
+  const inspectMobileBar = () => page.evaluate(() => {
+    const bar = document.getElementById('style-bar');
+    const vis = el => !!el && getComputedStyle(el).display !== 'none';
+    return {
+      barScroll: bar ? bar.scrollWidth : 9999,
+      barClient: bar ? bar.clientWidth : 0,
+      pillsHidden: !vis(document.querySelector('#style-bar .pill-container')),
+      mobileStyleShown: vis(document.getElementById('btn-mobile-style')),
+      toneNameHidden: !vis(document.getElementById('active-tone-name')),
+      layoutNameHidden: !vis(document.getElementById('active-layout-name')),
+      layoutIconShown: vis(document.getElementById('active-layout-icon'))
+    };
+  });
+  await page.setViewportSize({ width: 360, height: 844 });
+  const mob360 = await inspectMobileBar();
+  await page.screenshot({ path: path.join(SHOT_DIR, 'mobile-stylebar-360.png') });
+  await page.click('#btn-mobile-style');
+  const styleMenuOpened = await page.evaluate(() => !document.getElementById('mobile-style-menu').classList.contains('hidden'));
+  await page.keyboard.press('Escape');
+  const styleMenuEscaped = await page.evaluate(() => document.getElementById('mobile-style-menu').classList.contains('hidden') && document.activeElement?.id === 'btn-mobile-style');
+  await page.click('#btn-mobile-style');
+  await page.click('#mobile-style-menu [data-mobile-style="editorial"]');
+  await waitRendered(page);
+  const mobStyled = await page.evaluate(() => ({
+    style: state.infographicStyle,
+    label: document.getElementById('mobile-style-name')?.textContent?.trim()
+  }));
+  await page.setViewportSize({ width: 412, height: 915 });
+  const mob412 = await inspectMobileBar();
+  await page.setViewportSize({ width: 768, height: 1024 });
+  const mob768 = await inspectMobileBar();
+  await page.setViewportSize({ width: 1440, height: 900 });
   record('TC-DIAG-024', !fastStart.visual && !fastStart.barShown
     && visual.visual && visual.barShown && visual.workspaceTop > fastStart.workspaceTop
     && styled.visual && styled.style === 'cards' && styled.barShown
     && !backToFast.visual && !backToFast.barShown && backToFast.workspaceTop === fastStart.workspaceTop
-    && byKey.visual && byKey.style === 'circles' && byKey.barShown && page.consoleErrors.length === 0,
-  JSON.stringify({ fastStart, visual, styled, backToFast, byKey, errors: page.consoleErrors }));
+    && byKey.visual && byKey.style === 'circles' && byKey.barShown
+    && mob360.barScroll <= mob360.barClient && mob360.pillsHidden && mob360.mobileStyleShown
+    && mob360.toneNameHidden && mob360.layoutNameHidden && mob360.layoutIconShown
+    && styleMenuOpened && styleMenuEscaped
+    && mobStyled.style === 'editorial' && Boolean(mobStyled.label)
+    && mob412.barScroll <= mob412.barClient
+    && mob768.barScroll <= mob768.barClient
+    && page.consoleErrors.length === 0,
+  JSON.stringify({ fastStart, visual, styled, backToFast, byKey, mob360, styleMenuOpened, styleMenuEscaped, mobStyled, mob412, mob768, errors: page.consoleErrors }));
 
   // TC-DIAG-041 トーン刷新とその他メニュー化（#221）
   await page.click('#btn-tone-menu');

@@ -88,6 +88,8 @@ import {
   selectTone,
   syncLayoutUi,
   setLayoutMenuOpen,
+  syncStyleUi,
+  setStyleMenuOpen,
   selectVisualLayout,
   setStageMode,
   selectInfographicStyle,
@@ -181,6 +183,35 @@ function setupEventListeners() {
   document.querySelectorAll('.info-style-btn').forEach((btn: any) => {
     btn.onclick = () => selectInfographicStyle(btn.getAttribute('data-info-style'));
   });
+  const mobileStyleBtn = document.getElementById('btn-mobile-style');
+  const mobileStyleMenu = document.getElementById('mobile-style-menu');
+  if (mobileStyleMenu) {
+    mobileStyleMenu.querySelectorAll('[data-mobile-style]').forEach((item: any) => {
+      item.onclick = () => {
+        const style = item.getAttribute('data-mobile-style');
+        setStyleMenuOpen(false);
+        if (style) selectInfographicStyle(style);
+      };
+    });
+  }
+  if (mobileStyleBtn && mobileStyleMenu) {
+    mobileStyleBtn.onclick = e => {
+      e.stopPropagation();
+      setStyleMenuOpen(mobileStyleMenu.classList.contains('hidden'));
+    };
+    document.addEventListener('click', e => {
+      if (!mobileStyleMenu.classList.contains('hidden') && !mobileStyleMenu.contains(e.target as Node) && !mobileStyleBtn.contains(e.target as Node)) {
+        setStyleMenuOpen(false);
+      }
+    });
+    registerEscapeHandler('mobile-style-menu', 91, () => {
+      if (mobileStyleMenu.classList.contains('hidden')) return false;
+      setStyleMenuOpen(false);
+      mobileStyleBtn.focus();
+      return true;
+    });
+  }
+  syncStyleUi();
 
   const toneBtn = document.getElementById('btn-tone-menu');
   const toneMenu = document.getElementById('tone-menu');
@@ -340,11 +371,13 @@ window.addEventListener('DOMContentLoaded', () => {
   setupMarkedFootnotes();
   setupMarkedEmoji();
   setupMermaid();
+  syncStyleUi();
   syncToneUi();
   syncLayoutUi();
   onLangChange(() => {
     applyStaticI18n();
     renderShortcutModalList();
+    syncStyleUi();
     syncToneUi();
     syncLayoutUi();
     const zoomPicker = document.getElementById('zoom-scale-picker');

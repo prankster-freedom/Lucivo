@@ -110,6 +110,8 @@ export const ja = {
 
   // スタイルバー・トーン・誌面
   'styleBar.designStyle': 'デザインスタイル:',
+  'styleBar.styleTitle': 'デザインスタイルを切り替える',
+  'styleBar.styleMenuAria': 'デザインスタイルを選択',
   'style.shapes': 'パステル図形',
   'style.cards': '2段カード',
   'style.circles': '5色サークル',

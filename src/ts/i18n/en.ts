@@ -112,6 +112,8 @@ export const en: I18nDict = {
 
   // Style bar / Tone / Layout
   'styleBar.designStyle': 'Style:',
+  'styleBar.styleTitle': 'Switch design style',
+  'styleBar.styleMenuAria': 'Select design style',
   'style.shapes': 'Pastel Shapes',
   'style.cards': '2-Tier Cards',
   'style.circles': 'Vibrant Circles',
