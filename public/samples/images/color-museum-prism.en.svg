@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" width="960" height="440" role="img" aria-label="White light splits into 20 color tones through a prism">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" width="960" height="440" role="img" aria-label="White light splits into a spectrum from violet to sepia through a prism">
   <style>
     .ray { animation: ray 3.6s ease-in-out infinite; }
     .beam { animation: beam 3.6s ease-in-out infinite; }
@@ -13,87 +13,87 @@
   </defs>
   <rect width="960" height="440" rx="20" fill="url(#room)"/>
   <polygon class="beam" points="40,228 40,232 300,233 300,227" fill="url(#beam)"/>
-  <linearGradient id="ray0" x1="362" y1="230" x2="855.0" y2="56.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F4A295" stop-opacity="0.15"/><stop offset="1" stop-color="#F4A295" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-0.00s" points="362,227 362,233 855.0,63.4 855.0,49.4" fill="url(#ray0)"/>
-  <circle cx="855.0" cy="56.4" r="6.5" fill="#FFC4BA" stroke="#F4A295" stroke-width="2"/>
-  <text x="869.0" y="60.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Peach Blossom</text>
-  <linearGradient id="ray1" x1="362" y1="230" x2="869.7" y2="73.2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EEA669" stop-opacity="0.15"/><stop offset="1" stop-color="#EEA669" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-0.18s" points="362,227 362,233 869.7,80.2 869.7,66.2" fill="url(#ray1)"/>
-  <circle cx="869.7" cy="73.2" r="6.5" fill="#E29857" stroke="#EEA669" stroke-width="2"/>
-  <text x="883.7" y="77.2" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Dried Rose</text>
-  <linearGradient id="ray2" x1="362" y1="230" x2="882.8" y2="90.5" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E48670" stop-opacity="0.15"/><stop offset="1" stop-color="#E48670" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-0.36s" points="362,227 362,233 882.8,97.5 882.8,83.5" fill="url(#ray2)"/>
-  <circle cx="882.8" cy="90.5" r="6.5" fill="#FF9D80" stroke="#E48670" stroke-width="2"/>
-  <text x="896.8" y="94.5" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Terracotta Courtyard</text>
-  <linearGradient id="ray3" x1="362" y1="230" x2="894.4" y2="108.3" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F2AF5C" stop-opacity="0.15"/><stop offset="1" stop-color="#F2AF5C" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-0.54s" points="362,227 362,233 894.4,115.3 894.4,101.3" fill="url(#ray3)"/>
-  <circle cx="894.4" cy="108.3" r="6.5" fill="#FCD34D" stroke="#F2AF5C" stroke-width="2"/>
-  <text x="908.4" y="112.3" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Amber Sunset</text>
-  <linearGradient id="ray4" x1="362" y1="230" x2="904.5" y2="126.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#DCD900" stop-opacity="0.15"/><stop offset="1" stop-color="#DCD900" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-0.72s" points="362,227 362,233 904.5,133.4 904.5,119.4" fill="url(#ray4)"/>
-  <circle cx="904.5" cy="126.4" r="6.5" fill="#DFDC33" stroke="#DCD900" stroke-width="2"/>
-  <text x="918.5" y="130.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Lemon Meringue</text>
-  <linearGradient id="ray5" x1="362" y1="230" x2="912.9" y2="144.8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E5DA4A" stop-opacity="0.15"/><stop offset="1" stop-color="#E5DA4A" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-0.90s" points="362,227 362,233 912.9,151.8 912.9,137.8" fill="url(#ray5)"/>
-  <circle cx="912.9" cy="144.8" r="6.5" fill="#E0D978" stroke="#E5DA4A" stroke-width="2"/>
-  <text x="926.9" y="148.8" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Lime Aqua Dune</text>
-  <linearGradient id="ray6" x1="362" y1="230" x2="919.6" y2="163.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#99B37F" stop-opacity="0.15"/><stop offset="1" stop-color="#99B37F" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-1.08s" points="362,227 362,233 919.6,170.4 919.6,156.4" fill="url(#ray6)"/>
-  <circle cx="919.6" cy="163.4" r="6.5" fill="#B8E0A4" stroke="#99B37F" stroke-width="2"/>
-  <text x="933.6" y="167.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Matcha &amp; Wasanbon</text>
-  <linearGradient id="ray7" x1="362" y1="230" x2="924.7" y2="182.3" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8297FD" stop-opacity="0.15"/><stop offset="1" stop-color="#8297FD" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-1.26s" points="362,227 362,233 924.7,189.3 924.7,175.3" fill="url(#ray7)"/>
-  <circle cx="924.7" cy="182.3" r="6.5" fill="#4FD8E8" stroke="#8297FD" stroke-width="2"/>
-  <text x="938.7" y="186.3" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Sea Glass Shore</text>
-  <linearGradient id="ray8" x1="362" y1="230" x2="928.1" y2="201.3" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9EC1D6" stop-opacity="0.15"/><stop offset="1" stop-color="#9EC1D6" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-1.44s" points="362,227 362,233 928.1,208.3 928.1,194.3" fill="url(#ray8)"/>
-  <circle cx="928.1" cy="201.3" r="6.5" fill="#CFFAFE" stroke="#9EC1D6" stroke-width="2"/>
-  <text x="942.1" y="205.3" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Nordic Frost</text>
-  <linearGradient id="ray9" x1="362" y1="230" x2="929.8" y2="220.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F5B7BF" stop-opacity="0.15"/><stop offset="1" stop-color="#F5B7BF" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-1.62s" points="362,227 362,233 929.8,227.4 929.8,213.4" fill="url(#ray9)"/>
-  <circle cx="929.8" cy="220.4" r="6.5" fill="#BAE6FD" stroke="#F5B7BF" stroke-width="2"/>
-  <text x="943.8" y="224.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Morning Window</text>
-  <linearGradient id="ray10" x1="362" y1="230" x2="929.8" y2="239.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EB576D" stop-opacity="0.15"/><stop offset="1" stop-color="#EB576D" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-1.80s" points="362,227 362,233 929.8,246.6 929.8,232.6" fill="url(#ray10)"/>
-  <circle cx="929.8" cy="239.6" r="6.5" fill="#7DD3FC" stroke="#EB576D" stroke-width="2"/>
-  <text x="943.8" y="243.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Cobalt Workshop</text>
-  <linearGradient id="ray11" x1="362" y1="230" x2="928.1" y2="258.7" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFBB82" stop-opacity="0.15"/><stop offset="1" stop-color="#FFBB82" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-1.98s" points="362,227 362,233 928.1,265.7 928.1,251.7" fill="url(#ray11)"/>
-  <circle cx="928.1" cy="258.7" r="6.5" fill="#FFC79A" stroke="#FFBB82" stroke-width="2"/>
-  <text x="942.1" y="262.7" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Lavender Apricot</text>
-  <linearGradient id="ray12" x1="362" y1="230" x2="924.7" y2="277.7" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E2C9E5" stop-opacity="0.15"/><stop offset="1" stop-color="#E2C9E5" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-2.16s" points="362,227 362,233 924.7,284.7 924.7,270.7" fill="url(#ray12)"/>
-  <circle cx="924.7" cy="277.7" r="6.5" fill="#DFCEE1" stroke="#E2C9E5" stroke-width="2"/>
-  <text x="938.7" y="281.7" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Lilac Snow</text>
-  <linearGradient id="ray13" x1="362" y1="230" x2="919.6" y2="296.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#B6A9E3" stop-opacity="0.15"/><stop offset="1" stop-color="#B6A9E3" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-2.34s" points="362,227 362,233 919.6,303.6 919.6,289.6" fill="url(#ray13)"/>
-  <circle cx="919.6" cy="296.6" r="6.5" fill="#F1CCB1" stroke="#B6A9E3" stroke-width="2"/>
-  <text x="933.6" y="300.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Cotton Candy</text>
-  <linearGradient id="ray14" x1="362" y1="230" x2="912.9" y2="315.2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E8BCC2" stop-opacity="0.15"/><stop offset="1" stop-color="#E8BCC2" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-2.52s" points="362,227 362,233 912.9,322.2 912.9,308.2" fill="url(#ray14)"/>
-  <circle cx="912.9" cy="315.2" r="6.5" fill="#F9D5DC" stroke="#E8BCC2" stroke-width="2"/>
-  <text x="926.9" y="319.2" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Spring Mist</text>
-  <linearGradient id="ray15" x1="362" y1="230" x2="904.5" y2="333.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#DBA787" stop-opacity="0.15"/><stop offset="1" stop-color="#DBA787" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-2.70s" points="362,227 362,233 904.5,340.6 904.5,326.6" fill="url(#ray15)"/>
-  <circle cx="904.5" cy="333.6" r="6.5" fill="#F6C9B9" stroke="#DBA787" stroke-width="2"/>
-  <text x="918.5" y="337.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Blush Chambray</text>
-  <linearGradient id="ray16" x1="362" y1="230" x2="894.4" y2="351.7" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E478B1" stop-opacity="0.15"/><stop offset="1" stop-color="#E478B1" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-2.88s" points="362,227 362,233 894.4,358.7 894.4,344.7" fill="url(#ray16)"/>
-  <circle cx="894.4" cy="351.7" r="6.5" fill="#FACC8A" stroke="#E478B1" stroke-width="2"/>
-  <text x="908.4" y="355.7" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Butterfly Sketch</text>
-  <linearGradient id="ray17" x1="362" y1="230" x2="882.8" y2="369.5" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#CC6B79" stop-opacity="0.15"/><stop offset="1" stop-color="#CC6B79" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-3.06s" points="362,227 362,233 882.8,376.5 882.8,362.5" fill="url(#ray17)"/>
-  <circle cx="882.8" cy="369.5" r="6.5" fill="#F3D56B" stroke="#CC6B79" stroke-width="2"/>
-  <text x="896.8" y="373.5" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Midnight Library</text>
-  <linearGradient id="ray18" x1="362" y1="230" x2="869.7" y2="386.8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFB99E" stop-opacity="0.15"/><stop offset="1" stop-color="#FFB99E" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-3.24s" points="362,227 362,233 869.7,393.8 869.7,379.8" fill="url(#ray18)"/>
-  <circle cx="869.7" cy="386.8" r="6.5" fill="#FFBCA1" stroke="#FFB99E" stroke-width="2"/>
-  <text x="883.7" y="390.8" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Black Blossom</text>
-  <linearGradient id="ray19" x1="362" y1="230" x2="855.0" y2="403.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#38BDF8" stop-opacity="0.15"/><stop offset="1" stop-color="#38BDF8" stop-opacity="0.95"/></linearGradient>
-  <polygon class="ray" style="animation-delay:-3.42s" points="362,227 362,233 855.0,410.6 855.0,396.6" fill="url(#ray19)"/>
-  <circle cx="855.0" cy="403.6" r="6.5" fill="#67E8F9" stroke="#38BDF8" stroke-width="2"/>
-  <text x="869.0" y="407.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Cyber Prism</text>
+  <linearGradient id="ray0" x1="362" y1="230" x2="740.0" y2="56.0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A78BFA" stop-opacity="0.15"/><stop offset="1" stop-color="#A78BFA" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-0.00s" points="362,227 362,233 740.0,63.0 740.0,49.0" fill="url(#ray0)"/>
+  <circle cx="740.0" cy="56.0" r="6.5" fill="#DDD6FE" stroke="#A78BFA" stroke-width="2"/>
+  <text x="754.0" y="60.0" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Violet</text>
+  <linearGradient id="ray1" x1="362" y1="230" x2="751.0" y2="74.2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#818CF8" stop-opacity="0.15"/><stop offset="1" stop-color="#818CF8" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-0.18s" points="362,227 362,233 751.0,81.2 751.0,67.2" fill="url(#ray1)"/>
+  <circle cx="751.0" cy="74.2" r="6.5" fill="#C7D2FE" stroke="#818CF8" stroke-width="2"/>
+  <text x="765.0" y="78.2" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Indigo</text>
+  <linearGradient id="ray2" x1="362" y1="230" x2="760.7" y2="92.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60A5FA" stop-opacity="0.15"/><stop offset="1" stop-color="#60A5FA" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-0.36s" points="362,227 362,233 760.7,99.4 760.7,85.4" fill="url(#ray2)"/>
+  <circle cx="760.7" cy="92.4" r="6.5" fill="#BFDBFE" stroke="#60A5FA" stroke-width="2"/>
+  <text x="774.7" y="96.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Cobalt Blue</text>
+  <linearGradient id="ray3" x1="362" y1="230" x2="769.2" y2="110.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#38BDF8" stop-opacity="0.15"/><stop offset="1" stop-color="#38BDF8" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-0.54s" points="362,227 362,233 769.2,117.6 769.2,103.6" fill="url(#ray3)"/>
+  <circle cx="769.2" cy="110.6" r="6.5" fill="#BAE6FD" stroke="#38BDF8" stroke-width="2"/>
+  <text x="783.2" y="114.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Cerulean Blue</text>
+  <linearGradient id="ray4" x1="362" y1="230" x2="776.6" y2="128.8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#22D3EE" stop-opacity="0.15"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-0.72s" points="362,227 362,233 776.6,135.8 776.6,121.8" fill="url(#ray4)"/>
+  <circle cx="776.6" cy="128.8" r="6.5" fill="#A5F3FC" stroke="#22D3EE" stroke-width="2"/>
+  <text x="790.6" y="132.8" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Cyan</text>
+  <linearGradient id="ray5" x1="362" y1="230" x2="782.6" y2="147.0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2DD4BF" stop-opacity="0.15"/><stop offset="1" stop-color="#2DD4BF" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-0.90s" points="362,227 362,233 782.6,154.0 782.6,140.0" fill="url(#ray5)"/>
+  <circle cx="782.6" cy="147.0" r="6.5" fill="#99F6E4" stroke="#2DD4BF" stroke-width="2"/>
+  <text x="796.6" y="151.0" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Turquoise</text>
+  <linearGradient id="ray6" x1="362" y1="230" x2="787.5" y2="165.2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#34D399" stop-opacity="0.15"/><stop offset="1" stop-color="#34D399" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-1.08s" points="362,227 362,233 787.5,172.2 787.5,158.2" fill="url(#ray6)"/>
+  <circle cx="787.5" cy="165.2" r="6.5" fill="#A7F3D0" stroke="#34D399" stroke-width="2"/>
+  <text x="801.5" y="169.2" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Emerald</text>
+  <linearGradient id="ray7" x1="362" y1="230" x2="791.2" y2="183.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ADE80" stop-opacity="0.15"/><stop offset="1" stop-color="#4ADE80" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-1.26s" points="362,227 362,233 791.2,190.4 791.2,176.4" fill="url(#ray7)"/>
+  <circle cx="791.2" cy="183.4" r="6.5" fill="#BBF7D0" stroke="#4ADE80" stroke-width="2"/>
+  <text x="805.2" y="187.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Mint Green</text>
+  <linearGradient id="ray8" x1="362" y1="230" x2="793.6" y2="201.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#84CC16" stop-opacity="0.15"/><stop offset="1" stop-color="#84CC16" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-1.44s" points="362,227 362,233 793.6,208.6 793.6,194.6" fill="url(#ray8)"/>
+  <circle cx="793.6" cy="201.6" r="6.5" fill="#D9F99D" stroke="#84CC16" stroke-width="2"/>
+  <text x="807.6" y="205.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Leaf Green</text>
+  <linearGradient id="ray9" x1="362" y1="230" x2="794.8" y2="219.8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A3E635" stop-opacity="0.15"/><stop offset="1" stop-color="#A3E635" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-1.62s" points="362,227 362,233 794.8,226.8 794.8,212.8" fill="url(#ray9)"/>
+  <circle cx="794.8" cy="219.8" r="6.5" fill="#ECFCCB" stroke="#A3E635" stroke-width="2"/>
+  <text x="808.8" y="223.8" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Lime Green</text>
+  <linearGradient id="ray10" x1="362" y1="230" x2="794.8" y2="238.0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FACC15" stop-opacity="0.15"/><stop offset="1" stop-color="#FACC15" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-1.80s" points="362,227 362,233 794.8,245.0 794.8,231.0" fill="url(#ray10)"/>
+  <circle cx="794.8" cy="238.0" r="6.5" fill="#FEF08A" stroke="#FACC15" stroke-width="2"/>
+  <text x="808.8" y="242.0" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Canary Yellow</text>
+  <linearGradient id="ray11" x1="362" y1="230" x2="793.6" y2="256.2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FBBF24" stop-opacity="0.15"/><stop offset="1" stop-color="#FBBF24" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-1.98s" points="362,227 362,233 793.6,263.2 793.6,249.2" fill="url(#ray11)"/>
+  <circle cx="793.6" cy="256.2" r="6.5" fill="#FDE68A" stroke="#FBBF24" stroke-width="2"/>
+  <text x="807.6" y="260.2" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Amber</text>
+  <linearGradient id="ray12" x1="362" y1="230" x2="791.2" y2="274.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FB923C" stop-opacity="0.15"/><stop offset="1" stop-color="#FB923C" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-2.16s" points="362,227 362,233 791.2,281.4 791.2,267.4" fill="url(#ray12)"/>
+  <circle cx="791.2" cy="274.4" r="6.5" fill="#FED7AA" stroke="#FB923C" stroke-width="2"/>
+  <text x="805.2" y="278.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Apricot</text>
+  <linearGradient id="ray13" x1="362" y1="230" x2="787.5" y2="292.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F87171" stop-opacity="0.15"/><stop offset="1" stop-color="#F87171" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-2.34s" points="362,227 362,233 787.5,299.6 787.5,285.6" fill="url(#ray13)"/>
+  <circle cx="787.5" cy="292.6" r="6.5" fill="#FECACA" stroke="#F87171" stroke-width="2"/>
+  <text x="801.5" y="296.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Coral Red</text>
+  <linearGradient id="ray14" x1="362" y1="230" x2="782.6" y2="310.8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FB7185" stop-opacity="0.15"/><stop offset="1" stop-color="#FB7185" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-2.52s" points="362,227 362,233 782.6,317.8 782.6,303.8" fill="url(#ray14)"/>
+  <circle cx="782.6" cy="310.8" r="6.5" fill="#FECDD3" stroke="#FB7185" stroke-width="2"/>
+  <text x="796.6" y="314.8" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Crimson</text>
+  <linearGradient id="ray15" x1="362" y1="230" x2="776.6" y2="329.0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F472B6" stop-opacity="0.15"/><stop offset="1" stop-color="#F472B6" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-2.70s" points="362,227 362,233 776.6,336.0 776.6,322.0" fill="url(#ray15)"/>
+  <circle cx="776.6" cy="329.0" r="6.5" fill="#FBCFE8" stroke="#F472B6" stroke-width="2"/>
+  <text x="790.6" y="333.0" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Rose Pink</text>
+  <linearGradient id="ray16" x1="362" y1="230" x2="769.2" y2="347.2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E07A5F" stop-opacity="0.15"/><stop offset="1" stop-color="#E07A5F" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-2.88s" points="362,227 362,233 769.2,354.2 769.2,340.2" fill="url(#ray16)"/>
+  <circle cx="769.2" cy="347.2" r="6.5" fill="#F4B5A4" stroke="#E07A5F" stroke-width="2"/>
+  <text x="783.2" y="351.2" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Terracotta</text>
+  <linearGradient id="ray17" x1="362" y1="230" x2="760.7" y2="365.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#C87D55" stop-opacity="0.15"/><stop offset="1" stop-color="#C87D55" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-3.06s" points="362,227 362,233 760.7,372.4 760.7,358.4" fill="url(#ray17)"/>
+  <circle cx="760.7" cy="365.4" r="6.5" fill="#E5B293" stroke="#C87D55" stroke-width="2"/>
+  <text x="774.7" y="369.4" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Sienna</text>
+  <linearGradient id="ray18" x1="362" y1="230" x2="751.0" y2="383.6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A67B5B" stop-opacity="0.15"/><stop offset="1" stop-color="#A67B5B" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-3.24s" points="362,227 362,233 751.0,390.6 751.0,376.6" fill="url(#ray18)"/>
+  <circle cx="751.0" cy="383.6" r="6.5" fill="#D1B097" stroke="#A67B5B" stroke-width="2"/>
+  <text x="765.0" y="387.6" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Umber Brown</text>
+  <linearGradient id="ray19" x1="362" y1="230" x2="740.0" y2="401.8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5E3C" stop-opacity="0.15"/><stop offset="1" stop-color="#8B5E3C" stop-opacity="0.95"/></linearGradient>
+  <polygon class="ray" style="animation-delay:-3.42s" points="362,227 362,233 740.0,408.8 740.0,394.8" fill="url(#ray19)"/>
+  <circle cx="740.0" cy="401.8" r="6.5" fill="#C49A76" stroke="#8B5E3C" stroke-width="2"/>
+  <text x="754.0" y="405.8" fill="#D9D4C7" font-family="'Yu Gothic','Hiragino Sans','Noto Sans JP',sans-serif" font-size="11.5">Sepia</text>
   <polygon points="260,308 340,308 300,148" fill="url(#glass)" stroke="#DCE6FA" stroke-opacity="0.7" stroke-width="1.6"/>
-  <text x="40" y="58" fill="#F3E9D2" font-family="'Yu Mincho','Hiragino Mincho ProN','Noto Serif JP',serif" font-size="26" font-weight="700" letter-spacing="3">One light, twenty stories</text>
-  <text x="40" y="84" fill="#8E96A8" font-family="Consolas,'JetBrains Mono',monospace" font-size="11" letter-spacing="3">WHITE LIGHT → 20 CURATED TONES</text>
+  <text x="40" y="58" fill="#F3E9D2" font-family="'Yu Mincho','Hiragino Mincho ProN','Noto Serif JP',serif" font-size="26" font-weight="700" letter-spacing="3">From one light, infinite stories</text>
+  <text x="40" y="84" fill="#8E96A8" font-family="Consolas,'JetBrains Mono',monospace" font-size="11" letter-spacing="3">WHITE LIGHT → INFINITE STORIES</text>
 </svg>
