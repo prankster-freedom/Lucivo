@@ -30,7 +30,8 @@ import { linkSplitTerms } from './split-term-links';
 import {
   buildSingleVisualSlabHtml,
   buildVisualHeroAndEndCard,
-  buildVisualStageHtml
+  buildVisualStageHtml,
+  enhanceSingleSvgHero
 } from './visual-stage';
 import {
   sanitizeMarkdownHtml,
@@ -437,6 +438,7 @@ function renderVisualSlabElement(
     bindInteractions: bindViewportInteractions,
     rootContainer: visContainer
   });
+  enhanceSingleSvgHero(slabEl);
   return slabEl;
 }
 
@@ -893,6 +895,9 @@ export function renderApp() {
       bindInteractions: bindViewportInteractions
     });
     postProcessConnectedScope(activeContainer, { cachedKeys, fitRoot: activeContainer, forceMathEmoji: true });
+    if (isVisual) {
+      activeContainer.querySelectorAll('.exhibition-slab').forEach(s => enhanceSingleSvgHero(s as HTMLElement));
+    }
   }
 
   if (usedIncremental) {

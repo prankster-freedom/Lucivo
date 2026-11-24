@@ -936,6 +936,23 @@ body[data-appearance="dark"] :is(html.has-ambient-effects, .exhibition-wrap.has-
   }
 }
 
+/* 複雑な SVG 画像が 1 枚だけ置かれた章の主役レイアウト（#416） */
+.exhibition-slab.vs-svg-hero .vs-svg-hero-wrap {
+  margin: 0.75rem 0 0;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: radial-gradient(ellipse 80% 70% at 50% 45%, #161d2e, #090d16);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+}
+.exhibition-slab.vs-svg-hero .vs-svg-hero-wrap img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
 /* ==========================================================================
    Visualモード: シングルページ表示（連続誌面レイアウト。FR-064, #308）
    ステージ発表（html.is-stage-show）と印刷（@media print）は従来どおりページ単位を保つ。

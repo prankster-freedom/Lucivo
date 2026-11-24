@@ -15,7 +15,7 @@ const FOG_STOPS: Array<[number, number]> = [[0, 0], [0.28, 0.2], [0.58, 0.58], [
 const KIND: Record<PartKind, { off: number; range: [number, number] }> = {
   h3: { off: 150, range: [3700, 2600] },
   h3shadow: { off: 3, range: [3700, 2600] },
-  body: { off: 4, range: [2300, 1500] },
+  body: { off: 20, range: [2300, 1500] },
   bullet: { off: 46, range: [2000, 1300] },
   plate: { off: 30, range: [2300, 1500] },
   aside: { off: 24, range: [1500, 800] },

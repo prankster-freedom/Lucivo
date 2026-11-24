@@ -432,6 +432,13 @@ function buildVisualSlabSection(nodes, stageNo) {
   } else {
     const template = detectSlabTemplate(proseEls, slots.length);
     applySlabTemplate(template, proseEls);
+    const isSingleImg = proseEls.length === 1 && !hasComplexBlock && slots.length === 0
+      && proseEls[0].tagName === 'P'
+      && proseEls[0].querySelectorAll('img').length === 1
+      && !proseEls[0].textContent.trim();
+    if (isSingleImg) {
+      proseEls[0].classList.add('vs-single-image-wrap');
+    }
     const isLongProse = template === 'standard' && shouldUseTwoColumnProse(proseEls);
     if (isLongProse) {
       wrapTwoColumnProse(wrapper, h2);
@@ -440,6 +447,55 @@ function buildVisualSlabSection(nodes, stageNo) {
     html = `<section class="exhibition-slab vs-tpl-${template}${longProseClass}"${stageAttr}>${wrapper.innerHTML}${footnotesHtml}${actionsHtml}</section>`;
   }
   return { html, agendaItem };
+}
+
+// 複雑な SVG 画像が 1 枚だけ置かれたスラブを判定し、主役表示クラスを付与する（#416）
+const svgComplexityCache = new Map<string, boolean>();
+const SVG_COMPLEX_ELEMENT_THRESHOLD = 20;
+
+export function enhanceSingleSvgHero(slabEl: HTMLElement): void {
+  const wrap = slabEl.querySelector('.vs-single-image-wrap') as HTMLElement | null;
+  const img = wrap?.querySelector('img') as HTMLImageElement | null;
+  if (!wrap || !img) return;
+  const rawSrc = img.getAttribute('src') || '';
+  if (!/\.svg($|[?#])/i.test(rawSrc)) return;
+  const key = img.src || rawSrc;
+  const apply = (isComplex: boolean) => {
+    if (!isComplex) return;
+    slabEl.classList.add('vs-svg-hero');
+    wrap.classList.add('vs-svg-hero-wrap');
+  };
+  if (svgComplexityCache.has(key)) {
+    apply(svgComplexityCache.get(key)!);
+    return;
+  }
+  const fallbackBySize = () => {
+    if (img.complete) {
+      const ok = img.naturalWidth >= 700;
+      svgComplexityCache.set(key, ok);
+      apply(ok);
+    } else {
+      img.addEventListener('load', () => {
+        const ok = img.naturalWidth >= 700;
+        svgComplexityCache.set(key, ok);
+        apply(ok);
+      }, { once: true });
+    }
+  };
+  if (typeof fetch !== 'function' || key.startsWith('file:')) {
+    fallbackBySize();
+    return;
+  }
+  fetch(key)
+    .then(r => (r.ok ? r.text() : Promise.reject(new Error('fetch failed'))))
+    .then(text => {
+      const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+      const count = doc.querySelectorAll('path, circle, rect, polygon, line, polyline, ellipse, text').length;
+      const isComplex = count >= SVG_COMPLEX_ELEMENT_THRESHOLD;
+      svgComplexityCache.set(key, isComplex);
+      apply(isComplex);
+    })
+    .catch(fallbackBySize);
 }
 
 // 差分組み直し用: 1 章分のサニタイズ済み HTML を単一スラブ HTML に変換する（#251）

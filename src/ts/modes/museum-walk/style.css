@@ -93,7 +93,7 @@ html.is-museum-walk body { overflow: hidden; }
   font-family: ui-monospace, Consolas, monospace; font-size: .86em;
   background: rgba(255, 255, 255, .08);
 }
-#museum-walk .mw-part img { max-width: 100%; height: auto; }
+#museum-walk .mw-part img { display: block; max-width: 100%; height: auto; }
 #museum-walk .mw-part p { margin: 0 0 .5em; }
 #museum-walk .mw-part p:last-child { margin-bottom: 0; }
 #museum-walk .mw-part ul,
