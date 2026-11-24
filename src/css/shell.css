@@ -462,8 +462,8 @@ body[data-appearance="dark"] .brand-logo-light,
 body[data-appearance="dark"] .brand-mark-light {
   display: none;
 }
-.brand-mark-light,
-.brand-mark-dark {
+.header-brand-logo img.brand-mark-light,
+.header-brand-logo img.brand-mark-dark {
   display: none;
 }
 body[data-appearance="light"] .brand-mark-dark {
@@ -471,8 +471,22 @@ body[data-appearance="light"] .brand-mark-dark {
 }
 @media (min-width: 1024px) {
   #mobile-file-wrap,
-  #mobile-view-wrap,
+  #mobile-view-wrap {
+    display: none !important;
+  }
+}
+@media (min-width: 1280px) {
   #mobile-more-wrap {
+    display: none !important;
+  }
+}
+@media (max-width: 1279.98px) {
+  #btn-open-settings,
+  #btn-toggle-animation,
+  #btn-front-matter,
+  #btn-theme-toggle,
+  #header-lang-wrap,
+  #header-update-wrap {
     display: none !important;
   }
 }
@@ -480,11 +494,6 @@ body[data-appearance="light"] .brand-mark-dark {
   #open-menu-wrap,
   #save-menu-wrap,
   #desktop-view-pills,
-  #btn-open-settings,
-  #btn-toggle-animation,
-  #btn-front-matter,
-  #btn-theme-toggle,
-  #header-update-wrap,
   #btn-test-cache,
   #btn-test-err {
     display: none !important;
@@ -530,6 +539,55 @@ body[data-appearance="light"] .brand-mark-dark {
   #btn-mobile-file svg {
     width: 0.75rem;
     height: 0.75rem;
+  }
+}
+@media (max-width: 389.98px) {
+  #main-header {
+    padding-left: 0.1875rem;
+    padding-right: 0.1875rem;
+    gap: 0.1rem;
+  }
+  #main-header > div {
+    gap: 0.1rem;
+  }
+  #main-header .pill-container {
+    padding: 1.5px;
+  }
+  .header-brand-logo img.brand-mark-light,
+  .header-brand-logo img.brand-mark-dark {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+  #main-header .stage-mode-btn {
+    padding: 2px 3px;
+    font-size: 9px;
+  }
+  #main-header .header-icon-btn {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+  #btn-mobile-file,
+  #btn-mobile-view,
+  #btn-stage-show,
+  #btn-present-menu {
+    height: 1.5rem;
+    padding-left: 0.125rem;
+    padding-right: 0.125rem;
+    font-size: 9px;
+    gap: 0.08rem;
+  }
+  #btn-present-menu {
+    padding-left: 0.125rem;
+    padding-right: 0.125rem;
+  }
+  #btn-mobile-file svg {
+    width: 0.6875rem;
+    height: 0.6875rem;
+  }
+  #btn-mobile-view svg,
+  #btn-present-menu svg {
+    width: 0.625rem;
+    height: 0.625rem;
   }
 }
 .header-brand-logo {

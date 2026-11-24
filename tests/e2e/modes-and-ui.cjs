@@ -334,6 +334,20 @@ async function testResponsiveAndWebUi(browser) {
     return !document.getElementById('more-menu').classList.contains('hidden') && !item.classList.contains('hidden');
   });
   await narrowPage.screenshot({ path: path.join(SHOT_DIR, 'mobile-header-390.png') });
+  await narrowPage.setViewportSize({ width: 375, height: 844 });
+  const narrow375Ok = await narrowPage.evaluate(() => {
+    const help = document.getElementById('btn-header-help');
+    return document.documentElement.scrollWidth <= window.innerWidth
+      && !!help && help.getBoundingClientRect().right <= window.innerWidth;
+  });
+  await narrowPage.setViewportSize({ width: 360, height: 844 });
+  const narrow360JaOk = await narrowPage.evaluate(() => {
+    const help = document.getElementById('btn-header-help');
+    return document.documentElement.scrollWidth <= window.innerWidth
+      && !!help && help.getBoundingClientRect().right <= window.innerWidth;
+  });
+  await narrowPage.screenshot({ path: path.join(SHOT_DIR, 'mobile-header-360.png') });
+  await narrowPage.setViewportSize({ width: 390, height: 844 });
   await narrowPage.click('#btn-mobile-file');
   await narrowPage.click('[data-mobile-sample="menu-sample-notation"]');
   await narrowPage.waitForSelector('#standard-doc-container h1', { timeout: 10000 });
@@ -348,6 +362,70 @@ async function testResponsiveAndWebUi(browser) {
   await narrowPage.setViewportSize({ width: 768, height: 1024 });
   const tabletOverflow = await narrowPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   await narrowCtx.close();
+
+  // 中間幅（1024px〜1279px）と広い画面（1280px）の検証（#408）
+  const midCtx = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const midPage = await midCtx.newPage();
+  await midPage.goto(APP_URL);
+  await midPage.waitForFunction(() => typeof renderApp === 'function');
+  const checkHeaderLayout = () => midPage.evaluate(() => {
+    const vis = id => {
+      const el = document.getElementById(id);
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).display !== 'none';
+    };
+    const help = document.getElementById('btn-header-help');
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      helpRight: help ? help.getBoundingClientRect().right : 99999,
+      fileBtn: vis('btn-file-menu'),
+      saveBtn: vis('btn-save-menu'),
+      desktopView: vis('desktop-view-pills'),
+      stageShow: vis('btn-stage-show'),
+      moreBtn: vis('btn-more-menu'),
+      helpBtn: vis('btn-header-help'),
+      settingsBtn: vis('btn-open-settings'),
+      animBtn: vis('btn-toggle-animation'),
+      yamlBtn: vis('btn-front-matter'),
+      themeBtn: vis('btn-theme-toggle'),
+      langWrap: vis('header-lang-wrap'),
+      updateWrap: vis('header-update-wrap')
+    };
+  });
+  const mid1024Ja = await checkHeaderLayout();
+  await midPage.screenshot({ path: path.join(SHOT_DIR, 'tablet-header-1024.png') });
+  await midPage.setViewportSize({ width: 1100, height: 768 });
+  const mid1100Ja = await checkHeaderLayout();
+  await midPage.setViewportSize({ width: 1280, height: 800 });
+  const wide1280Ja = await checkHeaderLayout();
+  await midPage.screenshot({ path: path.join(SHOT_DIR, 'desktop-header-1280.png') });
+  // 英語表示でも 360px / 1024px / 1280px で収まることを確かめる
+  await midPage.click('#btn-lang-menu');
+  await midPage.click('#menu-lang-en');
+  const wide1280En = await checkHeaderLayout();
+  await midPage.setViewportSize({ width: 1024, height: 768 });
+  const mid1024En = await checkHeaderLayout();
+  await midPage.setViewportSize({ width: 360, height: 844 });
+  const narrow360En = await midPage.evaluate(() => {
+    const help = document.getElementById('btn-header-help');
+    return {
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      helpRight: help ? help.getBoundingClientRect().right : 99999
+    };
+  });
+  const narrow360EnOk = narrow360En.scrollWidth <= narrow360En.innerWidth && narrow360En.helpRight <= narrow360En.innerWidth;
+  await midCtx.close();
+
+  const isMidOk = s => s.scrollWidth <= s.innerWidth && s.helpRight <= s.innerWidth
+    && s.fileBtn && s.saveBtn && s.desktopView && s.stageShow && s.moreBtn && s.helpBtn
+    && !s.settingsBtn && !s.animBtn && !s.yamlBtn && !s.themeBtn && !s.langWrap && !s.updateWrap;
+  const isWideOk = s => s.scrollWidth <= s.innerWidth && s.helpRight <= s.innerWidth
+    && s.fileBtn && s.saveBtn && s.desktopView && s.stageShow && !s.moreBtn && s.helpBtn
+    && s.settingsBtn && s.animBtn && s.yamlBtn && s.themeBtn && s.langWrap && s.updateWrap;
+
   record('TC-UI-001',
     mobileInit.scrollWidth <= mobileInit.innerWidth
     && mobileInit.viewMode === 'canvas' && mobileInit.editorHidden
@@ -359,8 +437,14 @@ async function testResponsiveAndWebUi(browser) {
     && moreHasUpdateOnFile
     && mobileEditorBtns.viewMode === 'editor' && mobileEditorBtns.lockVisible
     && mobileEditorBtns.testCacheHidden && mobileEditorBtns.testErrHidden
-    && tabletOverflow,
-    JSON.stringify({ mobileInit, presentOpened, moreHasUpdateOnFile, mobileEditorBtns, tabletOverflow })
+    && narrow375Ok && narrow360JaOk && narrow360EnOk && tabletOverflow
+    && isMidOk(mid1024Ja) && isMidOk(mid1100Ja) && isMidOk(mid1024En)
+    && isWideOk(wide1280Ja) && isWideOk(wide1280En),
+    JSON.stringify({
+      mobileInit, presentOpened, moreHasUpdateOnFile, mobileEditorBtns,
+      narrow375Ok, narrow360JaOk, narrow360En, tabletOverflow,
+      mid1024Ja, mid1100Ja, mid1024En, wide1280Ja, wide1280En
+    })
   );
 
   // TC-UI-002: Web 版（http://）では「最新版確認」ボタン・起動時案内の「更新を確認」を出さない
