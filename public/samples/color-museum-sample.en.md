@@ -13,11 +13,11 @@ They say color has no right answer, yet every day we choose colors for someone. 
 
 ## Light Splits into Color
 
+![One white light splits into an infinite spectrum through a prism](images/color-museum-prism.en.svg)
+
 **From one light, to infinite stories.**
 
 Behind every color we choose stand countless colors we did not. Perhaps a work is the quiet of that.
-
-![One white light splits into an infinite spectrum through a prism](images/color-museum-prism.en.svg)
 
 ## A Map of Feeling
 
