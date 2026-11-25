@@ -6,7 +6,7 @@
 import { readOutline, isOutlineEmpty } from './outline';
 import { layout, elevationAt, type Plan } from './layout';
 import { CAMERA_SPEC, REDUCED_MOTION, defaultCamera, loadCamera, direct, clamp, type Cam, type CameraValues } from './camera';
-import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, DEFAULT_VIEW, TRIAL_VIEW, type WorldRefs } from './world';
+import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, RENDER_LEVELS, type LightLevel, type WorldRefs } from './world';
 import { attachInput, stepWalk, type Input } from './input';
 import { figureImages, revokeFigures, type FigureImages } from './figure';
 
@@ -40,6 +40,37 @@ function saveAppearance(appearance: 'dark' | 'light'): void {
   }
 }
 
+// 描画の軽さ（#426、DD-MWLK-012）。決める順は、URL の指定 → 保存した段階 → 端末の既定
+const LIGHT_KEY = 'lucivo-museum-walk-light';
+
+function parseLight(value: string | null): LightLevel | null {
+  const n = Number(value);
+  return value !== null && Number.isInteger(n) && n >= 1 && n <= 4 ? (n as LightLevel) : null;
+}
+
+// スマホ（タッチ主体の小さい画面）か
+function isPhoneScreen(): boolean {
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches
+    && Math.min(window.innerWidth, window.innerHeight) <= 768;
+}
+
+function resolveLight(): LightLevel {
+  const q = location.search + location.hash;
+  const fromUrl = q.match(/[?&#]museum-light=(\d+)(?![0-9])/);
+  const urlLevel = fromUrl ? parseLight(fromUrl[1]) : null;
+  if (urlLevel) return urlLevel;
+  // museum-mem は、確認用に配った切り替え。段階 3 の別名として残す（#421）
+  if (/museum-mem/.test(q)) return 3;
+  try {
+    const saved = parseLight(localStorage.getItem(LIGHT_KEY));
+    if (saved) return saved;
+  } catch {
+    // storage 利用不可時は、保存した段階を使わない
+  }
+  return isPhoneScreen() ? 3 : 1;
+}
+
 const S = {
   active: false,
   starting: false,
@@ -47,6 +78,7 @@ const S = {
   root: null as HTMLElement | null,
   plan: null as Plan | null,
   refs: null as WorldRefs | null,
+  lightness: 1 as LightLevel,
   input: null as Input | null,
   figuresByAppearance: {} as Partial<Record<'dark' | 'light', FigureImages[]>>,
   appearanceGen: 0,
@@ -310,9 +342,9 @@ async function enter(host: ModeHost, opts: { appearance?: 'dark' | 'light' } = {
   measurer.dispose();
   const initialFigs = outline.figures.map(svg => figureImages(svg));
   S.figuresByAppearance = { [appearance]: initialFigs };
-  // URL に museum-mem を含めたときだけ、見える距離を短くして同時に描く面を減らす（#421 の試す版）
-  const view = /museum-mem/.test(location.search + location.hash) ? TRIAL_VIEW : DEFAULT_VIEW;
-  S.refs = buildWorld(root, S.plan, initialFigs, appearance, view);
+  // 描画の軽さの段階で、見える距離と床・天井の届く距離を決め、同時に描く面を減らす（#426）
+  S.lightness = resolveLight();
+  S.refs = buildWorld(root, S.plan, initialFigs, appearance, RENDER_LEVELS[S.lightness]);
   buildChrome(root, en);
   S.panel = /museum-tune/.test(location.search + location.hash) ? buildPanel(root) : null;
 
@@ -375,7 +407,8 @@ function info() {
     appearance: S.light ? 'light' : 'dark',
     gaze: S.gaze,
     reducedMotion: S.reduced,
-    view: S.refs ? { ...S.refs.range } : { ...DEFAULT_VIEW },
+    lightness: S.lightness,
+    render: S.refs ? { ...S.refs.render } : { ...RENDER_LEVELS[S.lightness] },
     gates: plan ? plan.gates.map(g => ({ z: g.z, no: g.no, title: g.title, cover: !!g.cover })) : [],
     sections: plan ? plan.sections.map(s => ({ name: s.name || 'passage', from: s.from, to: s.to, elev: s.elev })) : [],
     stands: plan ? plan.stands.length : 0,

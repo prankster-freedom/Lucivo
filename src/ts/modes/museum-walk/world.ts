@@ -6,13 +6,21 @@ import { clamp, lerp, smooth, sectionAt, type Cam } from './camera';
 import type { FigureImages } from './figure';
 
 const TILE = 1000;
-// 霞みの始まりと、真っ暗になる距離。真っ暗になる距離より先の面・文字・門は display: none で外す
-export interface ViewRange { fog0: number; fog1: number; }
-export const DEFAULT_VIEW: ViewRange = { fog0: 900, fog1: 7000 };
-// URL に museum-mem を含めたときの値（#421 の試す版）。同時に画面に載る面を減らし、描画のメモリが足りない環境で欠けが減るかを確かめる
-export const TRIAL_VIEW: ViewRange = { fog0: 600, fog1: 3500 };
-let FOG0 = DEFAULT_VIEW.fog0;
-let FOG1 = DEFAULT_VIEW.fog1;
+// 描画の軽さ（#426、DTP-MWLK-070）。段階が大きいほど軽い。
+// fog0: 霞みの始まり。fog1: 真っ暗になる距離（これより先の壁・文字・門は display: none で外す）。
+// flat: 床と天井が届く距離。床・天井は、fog1 より短く切ってよい（遠くの床・天井は霞みで暗く、損が小さい）。
+// 同時に描く面を減らし、描画のメモリが足りない端末で、門や壁の文字が欠けたり描かれなかったりするのを減らす（#421）
+export type LightLevel = 1 | 2 | 3 | 4;
+export interface RenderLevel { fog0: number; fog1: number; flat: number; }
+export const RENDER_LEVELS: Record<LightLevel, RenderLevel> = {
+  1: { fog0: 900, fog1: 7000, flat: 7000 },
+  2: { fog0: 750, fog1: 5000, flat: 5000 },
+  3: { fog0: 600, fog1: 3500, flat: 3500 },
+  4: { fog0: 450, fog1: 2500, flat: 1500 }
+};
+let FOG0 = RENDER_LEVELS[1].fog0;
+let FOG1 = RENDER_LEVELS[1].fog1;
+let FLAT = RENDER_LEVELS[1].flat;
 const FOG_STOPS: Array<[number, number]> = [[0, 0], [0.28, 0.2], [0.58, 0.58], [0.84, 0.88], [1, 1]];
 
 // パーツの種類ごとの、壁からの距離（奥行き）と、現れ始める距離・現れ終わる距離（DTP-MWLK-030）
@@ -29,7 +37,8 @@ const KIND: Record<PartKind, { off: number; range: [number, number] }> = {
 // 立体図の層（DTP-MWLK-050）。dz は進む向きと逆へずらす量（大きいほど手前）
 const STAND = { maxW: 1100, maxH: 520, padX: 60, padTop: 104, padBottom: 90, bottom: 180, dzLines: 70, dzNodes: 210 };
 
-interface Tile { el: HTMLElement; near: number; far: number; vis: boolean; key: number; wall: boolean; }
+// flat: 床と天井のタイル（届く距離が FLAT）
+interface Tile { el: HTMLElement; near: number; far: number; vis: boolean; key: number; wall: boolean; flat: boolean; }
 interface PartRef { el: HTMLElement; kind: PartKind; side: 'L' | 'R'; z: number; y: number; w: number; half: number; key: string; vis: boolean; }
 interface StandRef {
   el: HTMLElement;
@@ -58,7 +67,7 @@ export interface WorldRefs {
   stands: StandRef[];
   gates: GateRef[];
   zoneKey: number;
-  range: ViewRange;
+  render: RenderLevel;
 }
 
 export function fogA(d: number): number {
@@ -127,9 +136,10 @@ function fitTitle(title: HTMLElement, start: number): void {
   }
 }
 
-export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[], figureAppearance: 'dark' | 'light', range: ViewRange = DEFAULT_VIEW): WorldRefs {
-  FOG0 = range.fog0;
-  FOG1 = range.fog1;
+export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[], figureAppearance: 'dark' | 'light', render: RenderLevel = RENDER_LEVELS[1]): WorldRefs {
+  FOG0 = render.fog0;
+  FOG1 = render.fog1;
+  FLAT = render.flat;
   const view = el('mw-view', root);
   const world = el('mw-world', view);
   const tiles: Tile[] = [];
@@ -138,7 +148,7 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   const surface = (cls: string, tf: string, w: number, h: number, near: number, far: number, tint: string, wall: boolean) => {
     const node = el(cls, world);
     node.style.cssText = `transform:${tf};width:${w}px;height:${h}px;--tint:${tint}`;
-    tiles.push({ el: node, near, far, vis: true, key: -1, wall });
+    tiles.push({ el: node, near, far, vis: true, key: -1, wall, flat: cls === 'mw-floor' || cls === 'mw-ceil' });
   };
   plan.sections.forEach((s, i) => {
     const h = FLOOR - s.ceil;
@@ -328,7 +338,7 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   const progress = el('mw-progress', root, '<i></i>');
   const zone = el('mw-zone', root);
 
-  return { root, view, world, cap, flash, bar: progress.firstElementChild as HTMLElement, zone, tiles, parts, stands, gates, zoneKey: -1, range: { ...range } };
+  return { root, view, world, cap, flash, bar: progress.firstElementChild as HTMLElement, zone, tiles, parts, stands, gates, zoneKey: -1, render: { ...render } };
 }
 
 // 視点の距離（perspective）。縦長の狭い画面では、視野が狭くなりすぎないよう縮める（DTP-MWLK-060）
@@ -386,13 +396,16 @@ export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, re
   refs.cap.style.transform = `translate3d(-2000px, ${cam.y - 2600}px, ${cam.z - FOG1}px)`;
   for (const t of refs.tiles) {
     const limit = t.wall ? cam.z - 20 : cam.z + 220;
-    const vis = t.near > cam.z - FOG1 - 100 && t.far < limit;
+    // 床と天井は、届く距離（FLAT）が真っ暗になる距離（FOG1）より短いとき、霞みを FOG1 / FLAT 倍に縮めて、FLAT で真っ暗にする（切れ目を見せない）
+    const reach = t.flat ? FLAT : FOG1;
+    const vis = t.near > cam.z - reach - 100 && t.far < limit;
     if (vis !== t.vis) {
       t.vis = vis;
       t.el.style.display = vis ? '' : 'none';
     }
     if (!vis) continue;
-    const key = Math.round(fogA(cam.z - (t.near + t.far) * 0.5) * 40);
+    const dist = cam.z - (t.near + t.far) * 0.5;
+    const key = Math.round(fogA(t.flat ? dist * (FOG1 / FLAT) : dist) * 40);
     if (key !== t.key) {
       t.key = key;
       t.el.style.opacity = ((40 - key) / 40).toFixed(3);
