@@ -5,18 +5,19 @@ import { FLOOR, TINTS, rampLengthFor, tintAt, zoneAt, type Plan, type PartKind, 
 import { clamp, lerp, smooth, sectionAt, type Cam } from './camera';
 import type { FigureImages } from './figure';
 
-const TILE = 1000;
 // 描画の軽さ（#426、DTP-MWLK-070）。段階が大きいほど軽い。
 // fog0: 霞みの始まり。fog1: 真っ暗になる距離（これより先の壁・文字・門は display: none で外す）。
 // flat: 床と天井が届く距離。床・天井は、fog1 より短く切ってよい（遠くの床・天井は霞みで暗く、損が小さい）。
+// tile: 壁・床・天井のタイル 1 枚の長さ。手前の 1〜2 枚は必ず描かれるため、距離を 1000px 未満に縮めても、タイルが 1000px のままでは、面積が減らない。
+// 最も軽い段階は、タイルを短くして、切り取る範囲を細かくする（枚数は増えるが、描く面積は減る）
 // 同時に描く面を減らし、描画のメモリが足りない端末で、門や壁の文字が欠けたり描かれなかったりするのを減らす（#421）
 export type LightLevel = 1 | 2 | 3 | 4;
-export interface RenderLevel { fog0: number; fog1: number; flat: number; }
+export interface RenderLevel { fog0: number; fog1: number; flat: number; tile: number; }
 export const RENDER_LEVELS: Record<LightLevel, RenderLevel> = {
-  1: { fog0: 900, fog1: 7000, flat: 7000 },
-  2: { fog0: 750, fog1: 5000, flat: 5000 },
-  3: { fog0: 600, fog1: 3500, flat: 3500 },
-  4: { fog0: 450, fog1: 2500, flat: 1500 }
+  1: { fog0: 900, fog1: 7000, flat: 7000, tile: 1000 },
+  2: { fog0: 750, fog1: 5000, flat: 5000, tile: 1000 },
+  3: { fog0: 450, fog1: 2500, flat: 1500, tile: 1000 },
+  4: { fog0: 300, fog1: 1800, flat: 900, tile: 500 }
 };
 let FOG0 = RENDER_LEVELS[1].fog0;
 let FOG1 = RENDER_LEVELS[1].fog1;
@@ -154,8 +155,8 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
     const h = FLOOR - s.ceil;
     const floorY = FLOOR + s.elev;
     const ceilY = s.ceil + s.elev;
-    for (let near = s.from; near > s.to; near -= TILE) {
-      const far = Math.max(s.to, near - TILE);
+    for (let near = s.from; near > s.to; near -= render.tile) {
+      const far = Math.max(s.to, near - render.tile);
       const len = near - far;
       const tint = tintAt(plan, (near + far) / 2);
       surface('mw-wall', `translate3d(${-s.half}px, ${ceilY}px, ${near}px) rotateY(90deg)`, len, h, near, far, tint, false);
