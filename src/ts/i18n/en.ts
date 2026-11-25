@@ -218,6 +218,14 @@ export const en: I18nDict = {
   'settings.ambientDesc': 'Enable translucent glass, light, water, flame, and organic motion background/foreground effects',
   'settings.ambientOnToast': 'Visual Mode Ambient Effects: ON',
   'settings.ambientOffToast': 'Visual Mode Ambient Effects: OFF',
+  'settings.museumLightSection': 'Museum Walk Rendering Weight',
+  'settings.museumLightAuto': 'Auto (match this device)',
+  'settings.museumLight1': '1 Crisp',
+  'settings.museumLight2': '2 Balanced',
+  'settings.museumLight3': '3 Light',
+  'settings.museumLight4': '4 Lightest',
+  'settings.museumLightDesc': 'If gate titles or wall text are cut off or missing, choose a lighter level. The change takes effect the next time you start Museum Walk.',
+  'settings.museumLightToast': 'Museum Walk rendering weight: {label}',
 
   // File load/save / Format / URL / Drop
   'file.confirmDiscard': 'Unsaved edits will be lost. Load "{name}"?',

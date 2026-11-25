@@ -424,6 +424,19 @@
         </label>
       </div>
 
+      <!-- ミュージアム・ウォークの描画の軽さ（FR-056, DTP-MWLK-070, #426）。ミュージアム・ウォークのない版（スタンドアロン版）では出さない -->
+      <div id="setting-museum-light-section" class="flex flex-col gap-2 border-t pt-3" style="border-color: var(--border-subtle);" hidden>
+        <label class="text-[11px] font-mono uppercase font-semibold" style="color: var(--text-muted);" for="setting-museum-light" data-i18n="settings.museumLightSection">ミュージアム・ウォークの描画の軽さ</label>
+        <select id="setting-museum-light" class="settings-select">
+          <option value="auto" data-i18n="settings.museumLightAuto">おまかせ（端末に合わせる）</option>
+          <option value="1" data-i18n="settings.museumLight1">1 くっきり</option>
+          <option value="2" data-i18n="settings.museumLight2">2 ふつう</option>
+          <option value="3" data-i18n="settings.museumLight3">3 軽い</option>
+          <option value="4" data-i18n="settings.museumLight4">4 とても軽い</option>
+        </select>
+        <p class="text-xs leading-relaxed" style="color: var(--text-secondary);" data-i18n="settings.museumLightDesc">門や壁の文字が欠けたり、描かれなかったりするときは、軽い段階を選びます。変更は、次にミュージアム・ウォークを始めるときから効きます。</p>
+      </div>
+
     </div>
   </div>
 

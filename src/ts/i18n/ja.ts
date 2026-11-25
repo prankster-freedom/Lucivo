@@ -216,6 +216,14 @@ export const ja = {
   'settings.ambientDesc': '半透明・すりガラス・水・光・炎・日光のグラデーションと有機的揺らぎ表現を有効にする',
   'settings.ambientOnToast': 'Visualモードの背景・前景演出: ON',
   'settings.ambientOffToast': 'Visualモードの背景・前景演出: OFF',
+  'settings.museumLightSection': 'ミュージアム・ウォークの描画の軽さ',
+  'settings.museumLightAuto': 'おまかせ（端末に合わせる）',
+  'settings.museumLight1': '1 くっきり',
+  'settings.museumLight2': '2 ふつう',
+  'settings.museumLight3': '3 軽い',
+  'settings.museumLight4': '4 とても軽い',
+  'settings.museumLightDesc': '門や壁の文字が欠けたり、描かれなかったりするときは、軽い段階を選びます。変更は、次にミュージアム・ウォークを始めるときから効きます。',
+  'settings.museumLightToast': 'ミュージアム・ウォークの描画の軽さ: {label}',
 
   // ファイル読み書き・整形・URL・ドロップ
   'file.confirmDiscard': '編集中の内容は失われます。「{name}」を読み込みますか？',

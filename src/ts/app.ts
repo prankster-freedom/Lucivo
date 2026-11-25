@@ -68,6 +68,7 @@ import {
   loadMarkdownFromUrlParam
 } from './ui/folder-browser';
 import { takePresentFromUrl, startPendingPresent } from './ui/present-modes';
+import { setupMuseumLightSetting } from './ui/museum-light-setting';
 import { hasBundledSamples, sampleFileNameFromRawUrl } from './ui/sample-source';
 import {
   PREVIEW_SCROLL_MARGIN,
@@ -362,6 +363,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupFrontMatterToggle();
   setupAnimationToggle();
   setupAmbientEffectsToggle();
+  setupMuseumLightSetting();
   setupFormatter();
   setupDocumentLinks();
   syncCssTokens();

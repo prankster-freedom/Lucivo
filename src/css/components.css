@@ -34,6 +34,26 @@
   border-color: var(--accent, #2563eb);
 }
 
+/* ミュージアム・ウォークの描画の軽さの選択（#426）。tailwind.css は使うクラスだけを生成するため、専用のクラスで組む */
+.settings-select {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.6rem;
+  background: var(--panel-sub);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-select:hover,
+.settings-select:focus-visible {
+  border-color: var(--accent, #2563eb);
+  outline: none;
+}
+
 /* ==========================================================================
    ファイルのドロップの受け付け（FR-041, DTP-007）
    ========================================================================== */
