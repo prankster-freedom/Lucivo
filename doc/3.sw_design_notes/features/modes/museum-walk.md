@@ -49,6 +49,7 @@ Camera --> World : 向き・立つ位置
 | DD-MWLK-009 | 動きを減らす設定 | `prefers-reduced-motion: reduce` のときは、止まるときの滑りを短くし（`friction` を 6 に）、1 回押しの歩幅を短くし、歩行・近寄りの上下の揺れを 0 にして近寄りと段差追従（`elevEase`）を即座に切り替え、門を通り抜けるときの光と、パーツが壁から滑り出す動きをなくす（現れるのは不透明度だけにする） |
 | DD-MWLK-010 | 調整のパネル     | URL に `museum-tune` を含めて開いたときだけ、`C` キーでカメラワークの値を動かすパネルを出す。パネルは `CAMERA_SPEC` から作り（近寄りと上下の動き・高さ追従の項目を含む）、決めた値を JSON に書き出せる。書き出した値は `camera.ts` の表へ写す |
 | DD-MWLK-011 | テストの入口     | `info()` は `active`・カメラの位置（`z`, `x`, `y`, `yaw`, `zoom`, `zoomTarget`, `fov`, `bob`）・入口と突き当たりの位置・外観・視線の自動の入切・門（位置と題名）・区間（種類・範囲・基準高さ `elev`）・立体図とパーツの数を返す。テストと確認用に、`walkTo(z)`（その位置へ移り、向きと立つ位置・高さを落ち着き先まで進める）を登録する |
+| DD-MWLK-012 | 描画の軽さ       | 段階（`LightLevel` 1〜4）ごとに、霞みの始まり `fog0`・真っ暗になる距離 `fog1`・床と天井の届く距離 `flat` を、`world.ts` の表（`RENDER_LEVELS`）に持つ。段階は、`index.ts` の `resolveLight()` が、URL の `museum-light=<1〜4>`（`museum-mem` は段階 3 の別名）→ 保存した段階（`localStorage` の `lucivo-museum-walk-light`）→ 端末の既定（PC は 1、`pointer: coarse` かつ短辺 768px 以下は 3）の順に決める。範囲外・不正な値は、次の決め方へ進む。`buildWorld()` が段階の値を受け取り、毎フレームの更新（`updateWorld()`）で、壁・文字・門は `fog1` を、床・天井のタイル（`Tile.flat`）は `flat` を、外す距離にする。床・天井は、`fog1 / flat` 倍に縮めた霞みで、`flat` の距離で真っ暗にする（切れ目を見せない）。`info()` は `lightness`（段階）と `render`（`fog0`・`fog1`・`flat`）を返す（`DTP-MWLK-070`、#426） |
 
 ## 割り付けの規則（DD-MWLK-004）
 
