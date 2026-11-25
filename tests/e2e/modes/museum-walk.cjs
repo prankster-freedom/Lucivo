@@ -2,7 +2,7 @@
 // 共通の品質（始められる・エラーがない・スマホの幅ではみ出さない・Esc で戻る）は present-modes.cjs の関門で確かめる。ここでは体験の核心だけを確かめる。
 // 確かめた場面のスクリーンショット（ゲラ）を SHOT_DIR に mw-*.png で残す（dtp の校正で使う）。
 const path = require('path');
-const { record, SHOT_DIR, startWebServer, openWebPageWithSample, setDocument, waitRendered } = require('../helpers.cjs');
+const { record, SHOT_DIR, startWebServer, openWebPageWithSample, openStagePage, setDocument, waitRendered } = require('../helpers.cjs');
 
 const MODE = 'museum-walk';
 
@@ -660,6 +660,52 @@ async function testMuseumWalk(browser) {
       && lv.saved2.lightness === 2 && lv.savedBad.lightness === 1
       && lv.urlBeatsSaved.lightness === 1 && lv.phoneUrl1.lightness === 1;
     record('TC-MWLK-013', mw13Ok, JSON.stringify(lv));
+
+    // TC-MWLK-014: 「その他（アプリ設定）」から、描画の軽さを選べる。選んだ段階は保存され、次の開始に効く（#426）
+    const setCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'ja-JP' });
+    const setPage = await setCtx.newPage();
+    await setPage.goto(server.url, { waitUntil: 'load' });
+    await waitRendered(setPage);
+    const readSetting = () => setPage.evaluate(() => {
+      const sel = document.getElementById('setting-museum-light');
+      return {
+        hidden: document.getElementById('setting-museum-light-section').hidden,
+        value: sel.value,
+        saved: localStorage.getItem('lucivo-museum-walk-light'),
+        options: Array.from(sel.options).map(o => o.value)
+      };
+    });
+    const initial = await readSetting();
+    await setPage.click('#btn-open-settings');
+    await setPage.selectOption('#setting-museum-light', '4');
+    const chose4 = await readSetting();
+    const toast = await setPage.evaluate(() => (document.getElementById('toast-message') || {}).textContent || '');
+    await setPage.selectOption('#setting-museum-light', 'auto');
+    const choseAuto = await readSetting();
+    await setPage.selectOption('#setting-museum-light', '2');
+    await setPage.reload({ waitUntil: 'load' });
+    await waitRendered(setPage);
+    const afterReload = await readSetting();
+    // 保存した段階で、ミュージアム・ウォークが始まる（URL の指定なし）。URL の指定は、保存した段階より優先する
+    await setDocument(setPage, ['# 設定の確認', '', '導入の文。', '', '## 章', '', '本文の文。'].join('\n'));
+    await start(setPage);
+    const startedWith = (await info(setPage)).lightness;
+    await setPage.context().close();
+    // スタンドアロン版（dist/）には、ミュージアム・ウォークがないため、この節を出さない
+    const standalone = await openStagePage(browser);
+    const standaloneState = await standalone.evaluate(() => {
+      const sec = document.getElementById('setting-museum-light-section');
+      return { present: !!sec, hidden: sec ? sec.hidden : null };
+    });
+    await standalone.context().close();
+    const mw14Ok = !initial.hidden && initial.value === 'auto' && initial.saved === null
+      && JSON.stringify(initial.options) === JSON.stringify(['auto', '1', '2', '3', '4'])
+      && chose4.value === '4' && chose4.saved === '4' && /とても軽い/.test(toast)
+      && choseAuto.value === 'auto' && choseAuto.saved === null
+      && afterReload.value === '2' && afterReload.saved === '2'
+      && startedWith === 2
+      && standaloneState.present && standaloneState.hidden === true;
+    record('TC-MWLK-014', mw14Ok, JSON.stringify({ initial, chose4, toast, choseAuto, afterReload, startedWith, standaloneState }));
   } finally {
     await server.close();
   }
@@ -667,6 +713,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013'], fn: testMuseumWalk, timeoutMs: 420000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013', 'TC-MWLK-014'], fn: testMuseumWalk, timeoutMs: 420000 }
   ]
 };
