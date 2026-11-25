@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "発表モード", "museum-walk"]
 
 # js/modes/museum-walk
 
-ソース: [src/ts/modes/museum-walk/](../../../../src/ts/modes/museum-walk/)／生成物: `public/js/modes/museum-walk.js`・`public/css/modes/museum-walk.css`（コミットしない）／設計: `DD-MWLK-001`〜`011`／目次: [README.md](README.md)
+ソース: [src/ts/modes/museum-walk/](../../../../src/ts/modes/museum-walk/)／生成物: `public/js/modes/museum-walk.js`・`public/css/modes/museum-walk.css`（コミットしない）／設計: `DD-MWLK-001`〜`013`／目次: [README.md](README.md)
 
 発表のドロップダウンで「ミュージアム・ウォーク」を選んだときだけ読み込む部品（登録表の `stage: "web"`）。読み込まれたときに `LucivoModes.register('museum-walk', { enter, exit, info, walkTo })` で自分を登録する。`walkTo` はテストと確認用。
 
@@ -59,5 +59,6 @@ flowchart TD
 - **Visualモードの DOM を書き換えない**: `outline.ts` は複製（`cloneNode`）して使い、`id`・ボタン・飾りを消す。元の DOM に触ると、終えたあとの Visualモードが崩れる。
 - **図の画像**: `figure.ts` が作る Blob の URL は、外観ごとに保持して `exit()` で解放する。`T` で外観を切り替えたときは、`host.setAppearance()` で図を再描画して図板（`.mw-fig-frame.is-dark` / `.is-light`）と画像を追従させる。Mermaid の図でない層の構造（`.nodes`・`.edgePaths` がない）のときは、1 枚の画像にする。
 - **本体に触れない**: 本体の中身を使わず、`enter(host)` で受け取る host だけを使う（`ARC-MODE-006`）。外観の初期値は `localStorage`（`lucivo-museum-walk-appearance`、未保存時は `'dark'`）から決め、本体の外観と異なるときは `host.setAppearance()` で図を描き直して読み取る。終了時は `host.restoreView()` で本体の外観を元に戻す。
+- **描画の軽さ（#426）**: 描画のメモリが足りない端末で、門や壁の文字が欠けるのを減らすため、同時に描く面を、4 段階で調整する。段階の値は `world.ts` の `RENDER_LEVELS`（`fog0`・`fog1`・`flat`・`tile`）にまとめ、段階は `index.ts` の `resolveLight()` が、URL の `museum-light=1`〜`4`（`museum-mem` は段階 3 の別名）→ `localStorage` の `lucivo-museum-walk-light` → 端末の既定（PC は 1、スマホは 3）の順に決める。値を変えるときは、`RENDER_LEVELS` だけを直し、デザイン仕様（`DTP-MWLK-070`）の表とテスト（`TC-MWLK-013`）も合わせる。保存する側の画面は、本体の `src/ts/ui/museum-light-setting.ts`（`DD-MWLK-013`）で、保存先の名前を、`index.ts` の `LIGHT_KEY` と、そろえておく。
 - **CSS の名前**: クラスは `mw-` で始め、すべて `#museum-walk` の中に書く。本体の CSS（`.wall` などの一般的な名前）とぶつけない。
 - **テスト**: `walkTo(z)` で位置を決めて確かめる。画面なしの Chromium は毎秒のコマ数が少なく、1 コマの進みに上限（0.05 秒分）があるため、キーを押し続けるテストは、短い距離を長めに押して確かめる。
