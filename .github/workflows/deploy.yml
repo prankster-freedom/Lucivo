@@ -31,7 +31,7 @@ jobs:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment_retry.outputs.page_url || steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -136,5 +136,28 @@ jobs:
       - uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: _site
+      # アップロードの直後は、成果物の一覧への反映が遅れることがあり、deploy-pages が「成果物 0 件」で失敗する（Ref #428）。
+      # この実行の一覧に github-pages が出るまで、2 秒おきに最大 60 秒待つ。出なくても、警告だけ出して先へ進む（deploy-pages の再試行に任せる）
+      - name: Wait until the Pages artifact is visible
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 30); do
+            COUNT="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?name=github-pages" --jq '.artifacts | length' 2>/dev/null || echo 0)"
+            if [ "${COUNT}" -ge 1 ]; then
+              echo "github-pages artifact is visible (check ${i}, count ${COUNT})"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::warning::github-pages artifact was not visible after 60 seconds"
+      # deploy-pages が失敗したときは、20 秒待って、もう 1 回だけ実行する（GitHub Pages 側の一時的な失敗に備える）
       - id: deployment
+        uses: actions/deploy-pages@v5.0.1
+        continue-on-error: true
+      - name: Wait before retrying the Pages deployment
+        if: ${{ steps.deployment.outcome == 'failure' }}
+        run: sleep 20
+      - id: deployment_retry
+        if: ${{ steps.deployment.outcome == 'failure' }}
         uses: actions/deploy-pages@v5.0.1
