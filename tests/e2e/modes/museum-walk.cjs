@@ -425,11 +425,12 @@ async function testMuseumWalk(browser) {
     // 歩き中に上下揺れ（walkBob）が発生することを確認（#294, #341）
     await zoomPage.keyboard.press('c');
     await zoomPage.keyboard.down('ArrowUp');
-    await zoomPage.waitForFunction(id => {
+    // 揺れは正弦波のように動くため、条件を満たした時点の値をそのまま採る（あとで読み直すと、ゼロ付近の値になることがある）
+    const bobHandle = await zoomPage.waitForFunction(id => {
       const st = window.LucivoModes.get(id).info();
-      return Math.abs((st.zoom ?? 0) - (st.zoomTarget ?? 0)) < 0.005 && Math.abs(st.bob) > 0.2;
-    }, MODE, { timeout: 5000 }).catch(() => {});
-    const walkBobSample = (await info(zoomPage)).bob;
+      return Math.abs((st.zoom ?? 0) - (st.zoomTarget ?? 0)) < 0.005 && Math.abs(st.bob) > 0.2 ? st.bob : false;
+    }, MODE, { timeout: 5000 }).catch(() => null);
+    const walkBobSample = bobHandle ? await bobHandle.jsonValue() : (await info(zoomPage)).bob;
     await zoomPage.keyboard.up('ArrowUp');
     const zoomErrors = zoomPage.consoleErrors.slice();
     await zoomPage.context().close();
@@ -622,6 +623,42 @@ async function testMuseumWalk(browser) {
     const mw12Ok = figStandsAlone && notes.length === 2 && notes.every(n => n.w === 600 && n.z < fig.z)
       && notes[0].z === notes[1].z && !!longPart && longPart.y !== undefined && plainSmall === 0;
     record('TC-MWLK-012', mw12Ok, JSON.stringify({ fig, notes, longPart, plainSmall }));
+
+    // TC-MWLK-013: 描画の軽さの段階が、URL → 保存 → 端末の既定の順に決まる（#426）
+    const lightOf = async (ctxOptions, hash, saved) => {
+      const ctx = await browser.newContext(ctxOptions);
+      const p = await ctx.newPage();
+      if (saved !== undefined) await p.addInitScript(v => { try { localStorage.setItem('lucivo-museum-walk-light', v); } catch (e) { /* 保存できない環境 */ } }, saved);
+      await p.goto(server.url + (hash || ''), { waitUntil: 'load' });
+      await waitRendered(p);
+      await setDocument(p, ['# 軽さの確認', '', '導入の文。', '', '## 章', '', '本文の文。'].join('\n'));
+      await start(p);
+      const i = await info(p);
+      await ctx.close();
+      return { lightness: i.lightness, render: i.render };
+    };
+    const pcOpts = { viewport: { width: 1440, height: 900 } };
+    const phoneOpts = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
+    const lv = {
+      pcDefault: await lightOf(pcOpts, ''),
+      phoneDefault: await lightOf(phoneOpts, ''),
+      url2: await lightOf(pcOpts, '#museum-light=2'),
+      url4: await lightOf(pcOpts, '#museum-light=4'),
+      urlBad: await lightOf(pcOpts, '#museum-light=9'),
+      alias: await lightOf(pcOpts, '#museum-mem'),
+      saved2: await lightOf(pcOpts, '', '2'),
+      savedBad: await lightOf(pcOpts, '', '7'),
+      urlBeatsSaved: await lightOf(pcOpts, '#museum-light=1', '4'),
+      phoneUrl1: await lightOf(phoneOpts, '#museum-light=1')
+    };
+    const mw13Ok = lv.pcDefault.lightness === 1 && lv.pcDefault.render.fog1 === 7000 && lv.pcDefault.render.flat === 7000
+      && lv.phoneDefault.lightness === 3 && lv.phoneDefault.render.fog1 === 3500
+      && lv.url2.lightness === 2 && lv.url2.render.fog1 === 5000
+      && lv.url4.lightness === 4 && lv.url4.render.fog1 === 2500 && lv.url4.render.flat === 1500
+      && lv.urlBad.lightness === 1 && lv.alias.lightness === 3
+      && lv.saved2.lightness === 2 && lv.savedBad.lightness === 1
+      && lv.urlBeatsSaved.lightness === 1 && lv.phoneUrl1.lightness === 1;
+    record('TC-MWLK-013', mw13Ok, JSON.stringify(lv));
   } finally {
     await server.close();
   }
@@ -629,6 +666,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012'], fn: testMuseumWalk, timeoutMs: 420000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013'], fn: testMuseumWalk, timeoutMs: 420000 }
   ]
 };
