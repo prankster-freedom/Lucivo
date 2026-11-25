@@ -6,7 +6,7 @@
 import { readOutline, isOutlineEmpty } from './outline';
 import { layout, elevationAt, type Plan } from './layout';
 import { CAMERA_SPEC, REDUCED_MOTION, defaultCamera, loadCamera, direct, clamp, type Cam, type CameraValues } from './camera';
-import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, DEFAULT_VIEW, TRIAL_VIEW, type WorldRefs } from './world';
+import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, DEFAULT_VIEW, TRIAL_VIEW, DEFAULT_DEPTH, TRIAL_DEPTH, type WorldRefs } from './world';
 import { attachInput, stepWalk, type Input } from './input';
 import { figureImages, revokeFigures, type FigureImages } from './figure';
 
@@ -312,7 +312,9 @@ async function enter(host: ModeHost, opts: { appearance?: 'dark' | 'light' } = {
   S.figuresByAppearance = { [appearance]: initialFigs };
   // URL に museum-mem を含めたときだけ、見える距離を短くして同時に描く面を減らす（#421 の試す版）
   const view = /museum-mem/.test(location.search + location.hash) ? TRIAL_VIEW : DEFAULT_VIEW;
-  S.refs = buildWorld(root, S.plan, initialFigs, appearance, view);
+  // URL に museum-depth を含めたときだけ、壁の文字と壁、門と床・壁の間隔を広げる（#421 の試す版）
+  const depth = /museum-depth/.test(location.search + location.hash) ? TRIAL_DEPTH : DEFAULT_DEPTH;
+  S.refs = buildWorld(root, S.plan, initialFigs, appearance, view, depth);
   buildChrome(root, en);
   S.panel = /museum-tune/.test(location.search + location.hash) ? buildPanel(root) : null;
 
@@ -376,6 +378,7 @@ function info() {
     gaze: S.gaze,
     reducedMotion: S.reduced,
     view: S.refs ? { ...S.refs.range } : { ...DEFAULT_VIEW },
+    depth: S.refs ? { ...S.refs.depth } : { ...DEFAULT_DEPTH },
     gates: plan ? plan.gates.map(g => ({ z: g.z, no: g.no, title: g.title, cover: !!g.cover })) : [],
     sections: plan ? plan.sections.map(s => ({ name: s.name || 'passage', from: s.from, to: s.to, elev: s.elev })) : [],
     stands: plan ? plan.stands.length : 0,

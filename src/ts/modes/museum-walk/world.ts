@@ -26,6 +26,13 @@ const KIND: Record<PartKind, { off: number; range: [number, number] }> = {
   number: { off: 110, range: [3600, 2500] }
 };
 
+// 別々の要素を、ほぼ同じ面・ほぼ接する位置に置くときの間隔（#421 の試す版）。
+// partMinOff は壁の文字のパーツの、壁からの最小の距離（0 なら KIND.off のまま）。gateGap は門と床・左右の壁の隙間
+export interface DepthOptions { partMinOff: number; gateGap: number; }
+export const DEFAULT_DEPTH: DepthOptions = { partMinOff: 0, gateGap: 2 };
+// URL に museum-depth を含めたときの値。奥行きの判定の精度が低い環境で、前後の取り違えが減るかを確かめる
+export const TRIAL_DEPTH: DepthOptions = { partMinOff: 60, gateGap: 40 };
+
 // 立体図の層（DTP-MWLK-050）。dz は進む向きと逆へずらす量（大きいほど手前）
 const STAND = { maxW: 1100, maxH: 520, padX: 60, padTop: 104, padBottom: 90, bottom: 180, dzLines: 70, dzNodes: 210 };
 
@@ -59,6 +66,7 @@ export interface WorldRefs {
   gates: GateRef[];
   zoneKey: number;
   range: ViewRange;
+  depth: DepthOptions;
 }
 
 export function fogA(d: number): number {
@@ -127,7 +135,7 @@ function fitTitle(title: HTMLElement, start: number): void {
   }
 }
 
-export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[], figureAppearance: 'dark' | 'light', range: ViewRange = DEFAULT_VIEW): WorldRefs {
+export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[], figureAppearance: 'dark' | 'light', range: ViewRange = DEFAULT_VIEW, depth: DepthOptions = DEFAULT_DEPTH): WorldRefs {
   FOG0 = range.fog0;
   FOG1 = range.fog1;
   const view = el('mw-view', root);
@@ -306,7 +314,8 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   const gates: GateRef[] = plan.gates.map((g, i) => {
     const s = sectionAt(plan, g.z);
     const gh = 776;
-    const gy = FLOOR + s.elev - gh - 2;
+    const gap = depth.gateGap;
+    const gy = FLOOR + s.elev - gh - gap;
     const tint = TINTS[(i + 1) % TINTS.length];
     const node = el(`mw-gate${g.cover ? ' is-cover' : ''}`, world, '<div class="mw-scrim"></div><div class="mw-label"><div class="mw-no"></div><div class="mw-title"></div></div>');
     (node.querySelector('.mw-no') as HTMLElement).textContent = g.no;
@@ -318,7 +327,7 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
       sub.textContent = g.sub;
       node.querySelector('.mw-label')?.appendChild(sub);
     }
-    node.style.cssText = `transform:translate3d(${-s.half + 2}px, ${gy}px, ${g.z}px);width:${s.half * 2 - 4}px;height:${gh}px;--tint:${tint}`;
+    node.style.cssText = `transform:translate3d(${-s.half + gap}px, ${gy}px, ${g.z}px);width:${s.half * 2 - gap * 2}px;height:${gh}px;--tint:${tint}`;
     fitTitle(title, g.cover ? 136 : 204);
     return { el: node, z: g.z, tint, key: -1 };
   });
@@ -328,7 +337,7 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   const progress = el('mw-progress', root, '<i></i>');
   const zone = el('mw-zone', root);
 
-  return { root, view, world, cap, flash, bar: progress.firstElementChild as HTMLElement, zone, tiles, parts, stands, gates, zoneKey: -1, range: { ...range } };
+  return { root, view, world, cap, flash, bar: progress.firstElementChild as HTMLElement, zone, tiles, parts, stands, gates, zoneKey: -1, range: { ...range }, depth };
 }
 
 // 視点の距離（perspective）。縦長の狭い画面では、視野が狭くなりすぎないよう縮める（DTP-MWLK-060）
@@ -446,7 +455,7 @@ export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, re
     if (key !== p.key) {
       p.key = key;
       p.el.style.opacity = o.toFixed(2);
-      p.el.style.transform = partTransform(p, k.off, r, reduced);
+      p.el.style.transform = partTransform(p, Math.max(k.off, refs.depth.partMinOff), r, reduced);
     }
   }
 
