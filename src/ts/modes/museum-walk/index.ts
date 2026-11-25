@@ -6,7 +6,7 @@
 import { readOutline, isOutlineEmpty } from './outline';
 import { layout, elevationAt, type Plan } from './layout';
 import { CAMERA_SPEC, REDUCED_MOTION, defaultCamera, loadCamera, direct, clamp, type Cam, type CameraValues } from './camera';
-import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, type WorldRefs } from './world';
+import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, DEFAULT_VIEW, TRIAL_VIEW, type WorldRefs } from './world';
 import { attachInput, stepWalk, type Input } from './input';
 import { figureImages, revokeFigures, type FigureImages } from './figure';
 
@@ -310,7 +310,9 @@ async function enter(host: ModeHost, opts: { appearance?: 'dark' | 'light' } = {
   measurer.dispose();
   const initialFigs = outline.figures.map(svg => figureImages(svg));
   S.figuresByAppearance = { [appearance]: initialFigs };
-  S.refs = buildWorld(root, S.plan, initialFigs, appearance);
+  // URL に museum-mem を含めたときだけ、見える距離を短くして同時に描く面を減らす（#421 の試す版）
+  const view = /museum-mem/.test(location.search + location.hash) ? TRIAL_VIEW : DEFAULT_VIEW;
+  S.refs = buildWorld(root, S.plan, initialFigs, appearance, view);
   buildChrome(root, en);
   S.panel = /museum-tune/.test(location.search + location.hash) ? buildPanel(root) : null;
 
@@ -373,6 +375,7 @@ function info() {
     appearance: S.light ? 'light' : 'dark',
     gaze: S.gaze,
     reducedMotion: S.reduced,
+    view: S.refs ? { ...S.refs.range } : { ...DEFAULT_VIEW },
     gates: plan ? plan.gates.map(g => ({ z: g.z, no: g.no, title: g.title, cover: !!g.cover })) : [],
     sections: plan ? plan.sections.map(s => ({ name: s.name || 'passage', from: s.from, to: s.to, elev: s.elev })) : [],
     stands: plan ? plan.stands.length : 0,

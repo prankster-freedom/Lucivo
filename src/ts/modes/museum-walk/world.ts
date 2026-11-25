@@ -6,9 +6,13 @@ import { clamp, lerp, smooth, sectionAt, type Cam } from './camera';
 import type { FigureImages } from './figure';
 
 const TILE = 1000;
-// 霞みの始まりと、真っ暗になる距離
-const FOG0 = 900;
-const FOG1 = 7000;
+// 霞みの始まりと、真っ暗になる距離。真っ暗になる距離より先の面・文字・門は display: none で外す
+export interface ViewRange { fog0: number; fog1: number; }
+export const DEFAULT_VIEW: ViewRange = { fog0: 900, fog1: 7000 };
+// URL に museum-mem を含めたときの値（#421 の試す版）。同時に画面に載る面を減らし、描画のメモリが足りない環境で欠けが減るかを確かめる
+export const TRIAL_VIEW: ViewRange = { fog0: 600, fog1: 3500 };
+let FOG0 = DEFAULT_VIEW.fog0;
+let FOG1 = DEFAULT_VIEW.fog1;
 const FOG_STOPS: Array<[number, number]> = [[0, 0], [0.28, 0.2], [0.58, 0.58], [0.84, 0.88], [1, 1]];
 
 // パーツの種類ごとの、壁からの距離（奥行き）と、現れ始める距離・現れ終わる距離（DTP-MWLK-030）
@@ -54,6 +58,7 @@ export interface WorldRefs {
   stands: StandRef[];
   gates: GateRef[];
   zoneKey: number;
+  range: ViewRange;
 }
 
 export function fogA(d: number): number {
@@ -122,7 +127,9 @@ function fitTitle(title: HTMLElement, start: number): void {
   }
 }
 
-export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[], figureAppearance: 'dark' | 'light'): WorldRefs {
+export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[], figureAppearance: 'dark' | 'light', range: ViewRange = DEFAULT_VIEW): WorldRefs {
+  FOG0 = range.fog0;
+  FOG1 = range.fog1;
   const view = el('mw-view', root);
   const world = el('mw-world', view);
   const tiles: Tile[] = [];
@@ -321,7 +328,7 @@ export function buildWorld(root: HTMLElement, plan: Plan, figures: FigureImages[
   const progress = el('mw-progress', root, '<i></i>');
   const zone = el('mw-zone', root);
 
-  return { root, view, world, cap, flash, bar: progress.firstElementChild as HTMLElement, zone, tiles, parts, stands, gates, zoneKey: -1 };
+  return { root, view, world, cap, flash, bar: progress.firstElementChild as HTMLElement, zone, tiles, parts, stands, gates, zoneKey: -1, range: { ...range } };
 }
 
 // 視点の距離（perspective）。縦長の狭い画面では、視野が狭くなりすぎないよう縮める（DTP-MWLK-060）
