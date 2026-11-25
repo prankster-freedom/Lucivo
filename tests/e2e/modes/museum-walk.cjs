@@ -652,9 +652,10 @@ async function testMuseumWalk(browser) {
       phoneUrl1: await lightOf(phoneOpts, '#museum-light=1')
     };
     const mw13Ok = lv.pcDefault.lightness === 1 && lv.pcDefault.render.fog1 === 7000 && lv.pcDefault.render.flat === 7000
-      && lv.phoneDefault.lightness === 3 && lv.phoneDefault.render.fog1 === 3500
+      && lv.pcDefault.render.tile === 1000
+      && lv.phoneDefault.lightness === 3 && lv.phoneDefault.render.fog1 === 2500 && lv.phoneDefault.render.flat === 1500
       && lv.url2.lightness === 2 && lv.url2.render.fog1 === 5000
-      && lv.url4.lightness === 4 && lv.url4.render.fog1 === 2500 && lv.url4.render.flat === 1500
+      && lv.url4.lightness === 4 && lv.url4.render.fog1 === 1800 && lv.url4.render.flat === 900 && lv.url4.render.tile === 500
       && lv.urlBad.lightness === 1 && lv.alias.lightness === 3
       && lv.saved2.lightness === 2 && lv.savedBad.lightness === 1
       && lv.urlBeatsSaved.lightness === 1 && lv.phoneUrl1.lightness === 1;
