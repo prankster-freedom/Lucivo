@@ -581,6 +581,47 @@ async function testMuseumWalk(browser) {
       && deckPage.consoleErrors.length === 0;
     record('TC-MWLK-011', mw11Ok, JSON.stringify({ deck, stand, errors: deckPage.consoleErrors }));
     await deckPage.context().close();
+
+    // TC-MWLK-012: 図（画像だけの段落）は広く置き、続く短い文章は、図の隣の列に小さく添える（#423）
+    const longPara = '長い段落の文。'.repeat(30);
+    const figureDoc = [
+      '# 図と添える文章',
+      '',
+      '導入の文。',
+      '',
+      '## 章',
+      '',
+      '![プリズム](samples/images/color-museum-prism.svg)',
+      '',
+      '短い一文。',
+      '',
+      'もうひとつの短い一文。',
+      '',
+      longPara
+    ].join('\n');
+    const figPage = await openWebPageWithSample(browser, server);
+    await setDocument(figPage, figureDoc);
+    await figPage.waitForFunction(() => {
+      const img = Array.from(document.querySelectorAll('img')).find(i => /color-museum-prism\.svg/.test(i.getAttribute('src') || ''));
+      return !!img && img.complete && img.naturalWidth > 0;
+    }, null, { timeout: 15000 });
+    await start(figPage);
+    const fi = await info(figPage);
+    const inChapter = fi.parts.filter(p => p.kind === 'body' && p.z <= fi.gates[1].z);
+    const fig = inChapter.find(p => p.w === 1000);
+    const notes = inChapter.filter(p => p.small);
+    const longPart = inChapter.find(p => !p.small && p.w === 660 && p !== fig);
+    const figStandsAlone = !!fig && inChapter.indexOf(fig) === inChapter.findIndex(p => p.w === 1000);
+    await figPage.context().close();
+    const plainPage = await openWebPageWithSample(browser, server);
+    await setDocument(plainPage, ['# 画像なし', '', '導入の文。', '', '## 章', '', '短い一文。', '', 'もうひとつの短い一文。'].join('\n'));
+    await start(plainPage);
+    const plainInfo = await info(plainPage);
+    const plainSmall = plainInfo.parts.filter(p => p.small).length;
+    await plainPage.context().close();
+    const mw12Ok = figStandsAlone && notes.length === 2 && notes.every(n => n.w === 600 && n.z < fig.z)
+      && notes[0].z === notes[1].z && !!longPart && longPart.y !== undefined && plainSmall === 0;
+    record('TC-MWLK-012', mw12Ok, JSON.stringify({ fig, notes, longPart, plainSmall }));
   } finally {
     await server.close();
   }
@@ -588,6 +629,6 @@ async function testMuseumWalk(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011'], fn: testMuseumWalk, timeoutMs: 240000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012'], fn: testMuseumWalk, timeoutMs: 420000 }
   ]
 };
