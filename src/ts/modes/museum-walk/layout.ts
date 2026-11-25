@@ -33,7 +33,10 @@ export const LAYOUT = {
   colGap: 220,          // 列と列の間
   stackGap: 36,         // 列の中で、上下のパーツの間
   shadowDy: 26,         // 小見出しの影のずれ
-  width: { h3: 860, body: 660, bullet: 640, plate: 760, aside: 590 },
+  width: { h3: 860, body: 660, bullet: 640, plate: 760, aside: 590, figure: 1000, note: 600 },
+  noteMax: 160,         // 図に添える文章の、文字数の上限（これより長い段落は、ふつうの本文として積む）
+  noteGap: 100,         // 図の列と、添える文章の列の間
+  noteDy: 60,           // 添える文章の上端を、図の上端から下げる量
   bulletStep: 280,      // 箇条書きの項目を、奥へずらす量
   bulletMinDy: 160,     // 箇条書きの項目を、下へずらす最小の量
   hallBefore: 200,
@@ -75,6 +78,11 @@ function escapeHtml(text: string): string {
 
 function textOf(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// 画像だけの段落か（文字がなく、画像がある）
+function isImageOnly(html: string): boolean {
+  return /<img\b/i.test(html) && !textOf(html);
 }
 
 export function layout(outline: Outline, measure: Measure): Plan {
@@ -123,11 +131,45 @@ export function layout(outline: Outline, measure: Measure): Plan {
     y += h + L.stackGap;
     stair = null;
   };
+  // 画像だけの段落（図）。広く置き、上端を覚える（続く文章を、図の横に添えるため）
+  let figureTop = 0;
+  const stackFigure = (html: string) => {
+    const w = L.width.figure;
+    const h = measure('body', html, w);
+    if (!inColumn || (y + h > L.wallBottom && y > L.wallTop)) newColumn();
+    figureTop = y;
+    put('body', colZ, y, w, html);
+    colW = Math.max(colW, w);
+    y += h + L.stackGap;
+    stair = null;
+  };
+  // 図に添える文章。最初の 1 つは、図の列の隣（奥）に新しい列を開き、小さな文字で置く。続く文章は、その列に積む
+  const stackNote = (html: string, first: boolean) => {
+    const w = L.width.note;
+    const h = measure('body', html, w, undefined, true);
+    if (first) {
+      gap = L.noteGap;
+      newColumn();
+      y = Math.max(L.wallTop, figureTop + L.noteDy);
+    } else if (y + h > L.wallBottom && y > L.wallTop) {
+      newColumn();
+    }
+    parts.push({ kind: 'body', side: 'L', z: colZ, y, w, html, small: true });
+    edge = Math.min(edge, colZ - w);
+    colW = Math.max(colW, w);
+    y += h + L.stackGap;
+    stair = null;
+  };
 
   const placeBlocks = (blocks: Block[], chapterTitle: string) => {
     // 図の説明の文は、図の前の最も近い小見出し。なければ章の題名
     let caption = chapterTitle;
+    // 直前までが、図（画像だけの段落）と、その横に添えた文章か。noteOpen: 添える文章の列をもう開いたか
+    let afterFigure = false;
+    let noteOpen = false;
     for (const b of blocks) {
+      const followsFigure = afterFigure;
+      afterFigure = false;
       if (b.kind === 'heading') {
         const w = L.width.h3;
         const h = measure('h3', b.html, w);
@@ -139,7 +181,17 @@ export function layout(outline: Outline, measure: Measure): Plan {
         stair = null;
         caption = textOf(b.html);
       } else if (b.kind === 'body') {
-        stack('body', L.width.body, b.html);
+        if (isImageOnly(b.html)) {
+          stackFigure(b.html);
+          afterFigure = true;
+          noteOpen = false;
+        } else if (followsFigure && textOf(b.html).length <= L.noteMax) {
+          stackNote(b.html, !noteOpen);
+          noteOpen = true;
+          afterFigure = true;
+        } else {
+          stack('body', L.width.body, b.html);
+        }
       } else if (b.kind === 'plate') {
         stack('plate', L.width.plate, b.html);
       } else if (b.kind === 'bullet') {

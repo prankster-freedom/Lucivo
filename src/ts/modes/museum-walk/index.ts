@@ -382,7 +382,7 @@ function info() {
     gates: plan ? plan.gates.map(g => ({ z: g.z, no: g.no, title: g.title, cover: !!g.cover })) : [],
     sections: plan ? plan.sections.map(s => ({ name: s.name || 'passage', from: s.from, to: s.to, elev: s.elev })) : [],
     stands: plan ? plan.stands.length : 0,
-    parts: plan ? plan.parts.map(p => ({ kind: p.kind, side: p.side, z: p.z, y: p.y, w: p.w })) : []
+    parts: plan ? plan.parts.map(p => ({ kind: p.kind, side: p.side, z: p.z, y: p.y, w: p.w, small: !!p.small })) : []
   };
 }
 
