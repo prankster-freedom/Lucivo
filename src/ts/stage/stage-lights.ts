@@ -359,6 +359,11 @@ export function stopFlow(flow) {
   [flow.back, flow.front].forEach(ctx => {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    // 止まっている間は図の大きさの変化を追わない（ResizeObserver は動いている光だけを配置し直す）。
+    // 古い大きさのまま残すと、画面の幅を変えたときに表示枠からはみ出して横スクロールを生むため、畳んでおく。
+    // 再び見えたときは startFlow() が layoutFlow() で配置し直す
+    ctx.canvas.style.width = '0px';
+    ctx.canvas.style.height = '0px';
   });
   flow.blank = true;
 }
@@ -367,6 +372,9 @@ function lightLayer(host, layerClass) {
   const canvas = document.createElement('canvas');
   canvas.className = `signal-light-canvas ${layerClass}`;
   canvas.setAttribute('aria-hidden', 'true');
+  // 配置する（layoutFlow）までは、既定の 300×150 で表示枠からはみ出さないよう畳んでおく
+  canvas.style.width = '0px';
+  canvas.style.height = '0px';
   host.appendChild(canvas);
   return canvas.getContext('2d');
 }
