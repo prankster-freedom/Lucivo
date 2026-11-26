@@ -16,6 +16,11 @@
 .signal-light-canvas.is-front {
   z-index: 2;
 }
+/* 2 段組みの判定で図の表示枠のはみ出しを測る間は、光を外す。光は図の大きさに 1 コマ遅れて追うため、
+   古い大きさのまま測りに入ると、収まる図を 1 段組みにしてしまう（DD-DIAG-042） */
+.is-measuring > .signal-light-canvas {
+  display: none;
+}
 body[data-appearance="dark"] .signal-light-canvas {
   mix-blend-mode: screen;
 }

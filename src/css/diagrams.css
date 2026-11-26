@@ -54,7 +54,7 @@ svg .edgeLabel span:empty {
 :is(.diagram-viewport, .exhibition-viewport) {
   --fit-area-height: max(16rem, calc(100dvh - 12rem));
 }
-/* Fit: 横に加えて、縦も描画領域に収める。文字の下限（applyReadableFit の min-width）は残す */
+/* Fit: 横に加えて、縦も描画領域に収める。文字の大きさの下限は設けない（NFR-005） */
 html:not(.is-stage-show) :is(.diagram-viewport, .exhibition-viewport).is-scale-fit:not(.is-zoomed) svg {
   max-width: min(100%, var(--fit-max-width, 100%), calc(var(--fit-aspect, 100) * var(--fit-area-height))) !important;
 }

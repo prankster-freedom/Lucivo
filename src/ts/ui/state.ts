@@ -267,7 +267,7 @@ export const NODE_DECORATED_TYPES = ['flowchart-v2', 'flowchart', 'stateDiagram'
 export const DEFAULT_CURVES = { flowchart: 'step', state: 'smooth', class: 'step' };
 export const CURVE_LABELS = { smooth: '曲線', step: '直角', straight: '直線' };
 
-// Fit 表示で保つ、図の中の文字の表示上の最小サイズ（NFR-005）と、小さな図の拡大の上限
+// 図の中の文字が判読できる表示上の最小サイズ（2 段組みと印刷の段組みの判定に使う。Fit の下限ではない。DD-DIAG-030）と、小さな図の拡大の上限
 export const MIN_FIT_FONT_PX = 10;
 export const MAX_FIT_SCALE = 1.5;
 // 図の周りの広い余白を詰める図種（DD-DIAG-028）
@@ -732,7 +732,7 @@ export class LruCache<K = string, V = any> extends Map<K, V> {
 
 export const svgCache = new LruCache(DIAGRAM_CACHE_LIMIT);
 export const lkgCache = new LruCache(DIAGRAM_CACHE_LIMIT);
-// Fit の下限・上限の計算結果（描画結果のキャッシュのキー → { minWidth, maxWidth }）と、数式の描画結果
+// 図の判読できる幅と Fit の拡大の上限の計算結果（描画結果のキャッシュのキー → { readableWidth, maxWidth, naturalWidth, viewBox }）と、数式の描画結果
 export const fitCache = new LruCache(DIAGRAM_CACHE_LIMIT);
 export const mathCache = new Map();
 

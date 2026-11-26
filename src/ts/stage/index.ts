@@ -138,8 +138,8 @@ function fitSceneDiagrams(scene) {
     const availableHeight = isSplit
       ? Math.max(160, remaining)
       : Math.max(Math.min(remaining, byChrome), window.innerHeight * SCENE_FIT.minHeightRatio);
-    const readable = (parseFloat(svg.style.minWidth) || 0) / viewBox.width;
-    const scale = Math.max(readable, Math.min(availableWidth / viewBox.width, availableHeight / viewBox.height, SCENE_FIT.maxScale));
+    // 文字の下限は設けず、図全体を舞台に収める（NFR-005）
+    const scale = Math.min(availableWidth / viewBox.width, availableHeight / viewBox.height, SCENE_FIT.maxScale);
     svg.style.setProperty('--scene-width', `${Math.round(viewBox.width * scale)}px`);
   });
 }

@@ -62,7 +62,8 @@ export function styleSequenceDiagram(svg, colors) {
   });
 }
 
-// Fit 表示で、図の中の最も小さい文字が MIN_FIT_FONT_PX 未満になるほどは縮小しない（DD-DIAG-030）。
+// Fit は下限なしで図全体を表示枠に収める（NFR-005）。ここでは、図の中の最も小さい文字が MIN_FIT_FONT_PX になる幅
+// （判読できる幅）を求め、2 段組みと印刷の段組みの判定だけに使う（DD-DIAG-030, DD-DIAG-042）。
 // 文字の大きさは計算後のスタイルで調べるため、図を DOM に入れた後に呼ぶ
 // あわせて、小さな図を枠の幅まで拡大しすぎないよう、拡大の上限（MAX_FIT_SCALE）を CSS 変数で渡す。
 // 計算結果は描画結果のキャッシュのキーごとに保存し、キャッシュから表示するときは計算し直さない
@@ -91,13 +92,13 @@ export function applyReadableFit(svg, cacheKey) {
     const minScale = sizes.length ? Math.min(1, MIN_FIT_FONT_PX / Math.min(...sizes)) : 0;
     fit = {
       naturalWidth: Math.ceil(viewBox.width),
-      minWidth: Math.ceil(viewBox.width * minScale),
+      readableWidth: Math.ceil(viewBox.width * minScale),
       maxWidth: Math.ceil(viewBox.width * MAX_FIT_SCALE),
       viewBox: tightViewBox
     };
     if (cacheKey) fitCache.set(cacheKey, fit);
   }
-  if (fit.minWidth) svg.style.minWidth = `${fit.minWidth}px`;
+  if (fit.readableWidth) svg.dataset.readableWidth = String(fit.readableWidth);
   svg.style.setProperty('--fit-max-width', `${fit.maxWidth}px`);
   svg.style.setProperty('--natural-width', `${fit.naturalWidth}px`);
   // 2 段組みで、拡大を図の高さで抑えるための縦横比（幅 ÷ 高さ。DD-DIAG-044）
@@ -105,18 +106,28 @@ export function applyReadableFit(svg, cacheKey) {
   const splitSlab = svg.closest('.exhibition-slab-split');
   // 印刷（A4 横 16:10 版面）の右 7 カラム幅（約 440px）に収まらない横長の図だけ 1 段組みにする（#261, DD-VTPL-139）
   if (splitSlab) {
-    splitSlab.toggleAttribute('data-print-stacked', fit.minWidth > 440);
+    splitSlab.toggleAttribute('data-print-stacked', fit.readableWidth > 440);
   }
   updateSlabSplit(splitSlab);
 }
 
-// 2 段組みスラブで、右カラムの表示枠より図が広い場合、または 1:1（実寸）表示に切り替えた場合は 1 段組み（is-stacked）に切り替える（FR-015, DD-DIAG-042）
+// 2 段組みスラブで、右カラムの表示枠に図の判読できる幅（data-readable-width）が収まらない場合、
+// または 1:1（実寸）表示に切り替えた場合は 1 段組み（is-stacked）に切り替える（FR-015, DD-DIAG-042）。
+// Fit には下限がないため、判読できる幅を測るときだけ min-width を付けて、はみ出しを調べる。
+// 図の光の Canvas は図の大きさの変化に 1 コマ遅れて追うため、測る間は隠す（is-measuring。DD-DIAG-042）
 export function updateSlabSplit(slab) {
   if (!slab || !slab.classList.contains('exhibition-slab-split')) return;
   const vp = slab.querySelector('.exhibition-viewport');
-  if (!vp || !vp.querySelector(':scope > svg')) return;
+  const svg = vp && vp.querySelector(':scope > svg');
+  if (!svg) return;
   slab.classList.remove('is-stacked');
-  if (vp.classList.contains('is-actual-size') || vp.scrollWidth > vp.clientWidth + 1) {
+  const readable = svg.dataset.readableWidth;
+  if (readable) svg.style.minWidth = `${readable}px`;
+  vp.classList.add('is-measuring');
+  const overflows = vp.scrollWidth > vp.clientWidth + 1;
+  vp.classList.remove('is-measuring');
+  if (readable) svg.style.removeProperty('min-width');
+  if (vp.classList.contains('is-actual-size') || overflows) {
     slab.classList.add('is-stacked');
   }
 }
@@ -211,7 +222,7 @@ export function ensureSlabVisibilityTracking(root: Element | null): void {
 export function updateAllSlabSplits(container) {
   if (!container) return;
   ensureSlabVisibilityTracking(container);
-  const targets: { slab: Element; vp: Element; actualSize: boolean; needStack: boolean }[] = [];
+  const targets: { slab: Element; vp: Element; svg: SVGElement; actualSize: boolean; needStack: boolean }[] = [];
   container.querySelectorAll('.exhibition-slab-split').forEach(slab => {
     if (skippedSlabs.has(slab)) {
       dirtySplitSlabs.add(slab);
@@ -219,22 +230,28 @@ export function updateAllSlabSplits(container) {
     }
     dirtySplitSlabs.delete(slab);
     const vp = slab.querySelector('.exhibition-viewport');
-    if (!vp || !vp.querySelector(':scope > svg')) return;
-    targets.push({ slab, vp, actualSize: vp.classList.contains('is-actual-size'), needStack: false });
+    const svg = vp && vp.querySelector(':scope > svg');
+    if (!svg) return;
+    targets.push({ slab, vp, svg, actualSize: vp.classList.contains('is-actual-size'), needStack: false });
   });
   if (targets.length) {
-    // 一括 Write: 1:1 表示でないスラブの is-stacked をまとめて外してから計測する
+    // 一括 Write: 1:1 表示でないスラブの is-stacked をまとめて外し、判読できる幅を一時的に min-width に付けてから計測する（updateSlabSplit と同じ判定）
     for (const item of targets) {
       if (!item.actualSize) {
         item.slab.classList.remove('is-stacked');
       }
+      const readable = item.svg.dataset.readableWidth;
+      if (readable) item.svg.style.minWidth = `${readable}px`;
+      item.vp.classList.add('is-measuring');
     }
     // 一括 Read: すべてのスラブの幅をまとめて読み、強制レイアウトを 1 回に抑える
     for (const item of targets) {
       item.needStack = item.actualSize || item.vp.scrollWidth > item.vp.clientWidth + 1;
     }
-    // 一括 Write: 判定結果をまとめて反映する
+    // 一括 Write: 判定結果をまとめて反映し、測るために付けた min-width を外す（Fit に下限はない）
     for (const item of targets) {
+      if (item.svg.dataset.readableWidth) item.svg.style.removeProperty('min-width');
+      item.vp.classList.remove('is-measuring');
       if (item.needStack) {
         item.slab.classList.add('is-stacked');
       } else {
