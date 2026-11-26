@@ -105,7 +105,7 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
     if (drag.touch && Math.abs(dy) > Math.abs(dx)) {
       // 上へスワイプすると前へ進む（文書を読み進めるスクロールと同じ向き）
       cam.zoomTarget = 0;
-      const step = -dy * 2.4;
+      const step = -dy * C.swipeWalk;
       cam.z -= step;
       cam.vel = lerp(cam.vel, clamp(step / dt, -1500, 1500), 0.5);
     }
