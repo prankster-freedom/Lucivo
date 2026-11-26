@@ -270,7 +270,7 @@ async function testPerfOptimizations(browser) {
     '',
     '```mermaid',
     'flowchart LR',
-    '  A[入力] --> B[出力]',
+    '  A[入力] --> B[変換] --> C[出力]',
     '```',
     '',
     '## 2. 広い図の章',
@@ -671,7 +671,7 @@ async function testPerfOptimizations(browser) {
       '',
       '```mermaid',
       'flowchart LR',
-      '  A[入力] --> B[出力]',
+      '  A[入力] --> B[変換] --> C[出力]',
       '```',
       ''
     ].join('\n'))

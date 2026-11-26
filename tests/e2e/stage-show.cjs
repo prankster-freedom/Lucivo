@@ -400,7 +400,8 @@ async function testStageShow(browser) {
     return {
       bottom: rect.bottom,
       width: rect.width,
-      minWidth: parseFloat(svg.style.minWidth) || 0,
+      // 文字の下限はなく、図全体が表示枠の幅に収まる（NFR-005）
+      fitsWidth: rect.right <= svg.parentElement.getBoundingClientRect().right + 1 && svg.parentElement.scrollWidth <= svg.parentElement.clientWidth + 1,
       header: getComputedStyle(scene.querySelector('.exhibition-diagram-header')).display,
       fitsHeight: rect.bottom <= innerHeight,
       overflow: document.getElementById('visual-stage-container').scrollHeight - innerHeight
@@ -469,7 +470,7 @@ async function testStageShow(browser) {
   }
   await wqhdPage.context().close();
 
-  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.width >= diagram.minWidth && flowHead > 100 && wideOverflows.length === 0 && cappedInShow.length === 0 && targetScenes.length >= 6 && wqhdOverflows.length === 0,
+  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.fitsWidth && flowHead > 100 && wideOverflows.length === 0 && cappedInShow.length === 0 && targetScenes.length >= 6 && wqhdOverflows.length === 0,
     JSON.stringify({ diagram, flowHead, wideOverflows, cappedInShow, wqhdOverflows }));
 
   // TC-SHOW-004 画面に収まらない章は、次の章へ進む前に残りをスクロールする

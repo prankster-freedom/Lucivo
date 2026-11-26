@@ -2793,7 +2793,6 @@ async function testDiagramScaleModes(browser) {
       w: round(r.width), h: round(r.height), vbW: round(svg.viewBox.baseVal.width),
       cw: round(vp.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)),
       areaH: round(Math.max(16 * rem, window.innerHeight - 12 * rem)),
-      minW: parseFloat(svg.style.minWidth) || 0,
       fitMax: parseFloat(svg.style.getPropertyValue('--fit-max-width')) || 1e9,
       scrolls: vp.scrollWidth > vp.clientWidth + 1,
       fit: vp.classList.contains('is-scale-fit'),
@@ -2817,15 +2816,17 @@ async function testDiagramScaleModes(browser) {
   await selectScale(page, sel(1, 'scale-actual'));
   const wideActual = await measure(1);
   await page.click(sel(1, 'scale-fit'));
+  // 図の光の Canvas は、図の大きさが変わった次のコマで配置し直されるため、待ってから測る
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   const wideFit = await measure(1);
   const near = (a, b, tol = 2) => Math.abs(a - b) <= tol;
   const inline = {
-    tallFit: tallFit.fit && tallFit.active.join() === 'scale-fit' && tallFit.w <= tallFit.cw + 1 && (tallFit.h <= tallFit.areaH + 2 || near(tallFit.w, tallFit.minW)),
+    tallFit: tallFit.fit && tallFit.active.join() === 'scale-fit' && tallFit.w <= tallFit.cw + 1 && tallFit.h <= tallFit.areaH + 2 && !tallFit.scrolls,
     tallWidth: tallWidth.active.join() === 'scale-width' && near(tallWidth.w, Math.min(tallWidth.cw, tallWidth.fitMax)) && tallWidth.h > tallFit.h,
     menu: menuOpened.menuOpen && menuOpened.expanded === 'true' && !menuClosed.menuOpen && menuClosed.expanded === 'false',
     wideHeight: near(wideHeight.h, wideHeight.areaH) && wideHeight.scrolls && wideHeight.toggle === 'n:1 ▾' && wideHeight.toggleActive && !wideHeight.menuOpen,
     wideActual: near(wideActual.w, wideActual.vbW) && wideActual.toggle === '100% ▾' && wideActual.active.join() === 'scale-actual',
-    wideFit: wideFit.w <= wideFit.cw + 1 && wideFit.h <= wideFit.areaH + 2 && wideFit.toggle === '▾' && !wideFit.toggleActive
+    wideFit: wideFit.w <= wideFit.cw + 1 && wideFit.h <= wideFit.areaH + 2 && !wideFit.scrolls && wideFit.toggle === '▾' && !wideFit.toggleActive
   };
   record('TC-DIAG-039', Object.values(inline).every(Boolean) && page.consoleErrors.length === 0,
     JSON.stringify({ inline, tallFit, tallWidth, wideHeight, wideActual, wideFit, errors: page.consoleErrors }));

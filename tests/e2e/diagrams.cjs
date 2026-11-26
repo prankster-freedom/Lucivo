@@ -110,28 +110,20 @@ async function testDiagramRendering(browser) {
       // 空のエッジラベル
       const emptyLabels = Array.from(container.querySelectorAll('svg span.edgeLabel')).filter(s => s.textContent.trim() === '');
       const paddedEmpty = emptyLabels.filter(s => parseFloat(cs(s).paddingLeft) > 0).length;
-      // TC-DIAG-012 Fit 表示の文字サイズ: 表示上の最小の文字が 10px 以上（元が 10px 未満なら元の大きさ以上）
+      // TC-DIAG-012 Fit 表示で、図全体が表示枠に収まる（横スクロールがない。文字の大きさの下限はない）
       const fit = vps.map(vp => {
         const svg = vp.querySelector(':scope > svg');
-        const sizes = Array.from(svg.querySelectorAll('text, tspan, foreignObject *'))
-          .filter(el => !el.closest('math') && Array.from(el.childNodes).some(n => n.nodeType === 3 && n.textContent.trim()))
-          .map(el => parseFloat(cs(el).fontSize)).filter(s => s > 0);
-        const minFont = Math.min(...sizes);
-        const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
-        const shown = minFont * scale;
-        return { idx: vp.dataset.stageIndex, minFont, shown: +shown.toFixed(2), ok: shown >= Math.min(10, minFont) - 0.05 };
+        const v = vp.getBoundingClientRect();
+        const r = svg.getBoundingClientRect();
+        const ok = vp.classList.contains('is-scale-fit') && vp.scrollWidth <= vp.clientWidth + 1
+          && r.left >= v.left - 1 && r.right <= v.right + 1;
+        return { idx: vp.dataset.stageIndex, w: Math.round(r.width), vpW: vp.clientWidth, scrollW: vp.scrollWidth, ok };
       });
-      // TC-DIAG-013 表示枠より広い図は、左端から横スクロールで全体を見られる
-      const wide = vps.filter(vp => vp.scrollWidth > vp.clientWidth + 1).map(vp => {
+      // 判読できる幅（文字 10px）が表示枠より広い図。TC-DIAG-012 が下限なしで収めていることの裏付け
+      const wide = vps.filter(vp => {
         const svg = vp.querySelector(':scope > svg');
-        const pad = parseFloat(cs(vp).paddingLeft);
-        vp.scrollLeft = 0;
-        const leftOk = svg.getBoundingClientRect().left >= vp.getBoundingClientRect().left + pad - 1;
-        vp.scrollLeft = vp.scrollWidth;
-        const rightOk = svg.getBoundingClientRect().right <= vp.getBoundingClientRect().right + 1;
-        vp.scrollLeft = 0;
-        return { idx: vp.dataset.stageIndex, leftOk, rightOk };
-      });
+        return (parseFloat(svg.dataset.readableWidth) || 0) > vp.clientWidth;
+      }).map(vp => vp.dataset.stageIndex);
       // TC-DIAG-014 大きな図
       const nodeCount = s => s.querySelectorAll('g.node').length;
       const flowSizes = vps.map(vp => vp.querySelector('svg')).filter(s => s && s.getAttribute('aria-roledescription') === 'flowchart-v2').map(nodeCount);
@@ -151,7 +143,7 @@ async function testDiagramRendering(browser) {
       return { dup: [...new Set(dup)], badRefs: [...new Set(badRefs)], count: vps.length, errors, types, seq, markerUnits, emptyLabels: emptyLabels.length, paddedEmpty,
         fit, wide, flowSizes, stateSizes, mathSvgs, gaps, mathLums };
     });
-    perMode.fit.push({ tag, bad: r.fit.filter(f => !f.ok), shown: r.fit.map(f => f.shown) });
+    perMode.fit.push({ tag, bad: r.fit.filter(f => !f.ok), count: r.fit.length });
     perMode.wide.push({ tag, wide: r.wide });
     perMode.large.push({ tag, flow: Math.max(...r.flowSizes), state: Math.max(...r.stateSizes) });
     perMode.math.push({ tag, mathSvgs: r.mathSvgs, gaps: r.gaps, lums: r.mathLums, darkBg: tag.endsWith('-dark') });
@@ -176,8 +168,32 @@ async function testDiagramRendering(browser) {
   const markerOk = perMode.marker.filter(m => !m.tag.startsWith('std')).every(m => m.markerUnits.every(u => u === 'userSpaceOnUse'));
   record('TC-DIAG-010', markerOk, JSON.stringify(perMode.marker));
   record('TC-DIAG-011', perMode.edgeLabel.every(m => m.padded === 0) && perMode.edgeLabel.some(m => m.empty > 0), JSON.stringify(perMode.edgeLabel));
-  record('TC-DIAG-012', perMode.fit.every(m => m.bad.length === 0), JSON.stringify(perMode.fit.map(m => ({ tag: m.tag, bad: m.bad, minShown: Math.min(...m.shown) }))));
-  record('TC-DIAG-013', perMode.wide.every(m => m.wide.length > 0 && m.wide.every(w => w.leftOk && w.rightOk)), JSON.stringify(perMode.wide));
+  record('TC-DIAG-012', perMode.fit.every(m => m.count === expected && m.bad.length === 0) && perMode.wide.every(m => m.wide.length > 0),
+    JSON.stringify({ fit: perMode.fit.map(m => ({ tag: m.tag, count: m.count, bad: m.bad })), wide: perMode.wide }));
+  // TC-DIAG-013 スマホの幅（390px）でも、Fit で図全体が表示枠に収まり、ページが横にはみ出さない
+  // スマホの幅ではファイルのメニューやモードの切替が畳まれるため、広い幅で切り替えてから幅を狭める
+  const desktopViewport = page.viewportSize();
+  const phoneResults = [];
+  for (const mode of [{ style: 'std', appearance: 'light' }, { style: 'shapes', appearance: 'light' }]) {
+    await page.setViewportSize(desktopViewport);
+    await setMode(page, mode);
+    await page.setViewportSize({ width: 390, height: desktopViewport.height });
+    await page.waitForTimeout(300);
+    await waitRendered(page);
+    phoneResults.push({ tag: `${mode.style}-${mode.appearance}`, ...await page.evaluate(() => {
+      const root = document.getElementById(state.isVisualMode ? 'visual-stage-container' : 'standard-doc-container');
+      const vps = Array.from(root.querySelectorAll('[data-stage-index]')).filter(vp => vp.querySelector(':scope > svg'));
+      const bad = vps.filter(vp => {
+        const v = vp.getBoundingClientRect();
+        const r = vp.querySelector(':scope > svg').getBoundingClientRect();
+        return !(vp.scrollWidth <= vp.clientWidth + 1 && r.left >= v.left - 1 && r.right <= v.right + 1 && v.right <= innerWidth + 1);
+      }).map(vp => vp.dataset.stageIndex);
+      return { count: vps.length, bad, pageOverflow: document.documentElement.scrollWidth - innerWidth };
+    }) });
+  }
+  await page.setViewportSize(desktopViewport);
+  await waitRendered(page);
+  record('TC-DIAG-013', phoneResults.every(m => m.count === expected && m.bad.length === 0 && m.pageOverflow <= 0), JSON.stringify(phoneResults));
   record('TC-DIAG-014', perMode.large.every(m => m.flow >= 30 && m.state >= 15), JSON.stringify(perMode.large));
   record('TC-MATH-007', perMode.math.every(m => m.mathSvgs.map(s => `${s.type}:${s.math}`).join() === 'flowchart-v2:3,sequence:2'), JSON.stringify(perMode.math.map(m => ({ tag: m.tag, mathSvgs: m.mathSvgs }))));
   const lumOk = m => m.lums.length === 2 && m.lums.every(l => (m.darkBg ? l > 0.6 : l < 0.4));
@@ -853,7 +869,11 @@ async function testDiagramPanZoom(browser) {
       await waitRendered(page);
       await page.locator(vpSel(0)).scrollIntoViewIfNeeded();
     }
-    // TC-DIAG-026: スクロール表示の図をつかんで左へ 300px 動かすと、図の右側が見える
+    // TC-DIAG-026: スクロール表示の図をつかんで左へ 300px 動かすと、図の右側が見える。
+    // Fit は図全体を枠に収める（NFR-005）ため、100% に切り替えてスクロール表示にする
+    await selectScale(page, `#preview-scroll [data-action="scale-actual"][data-index="0"]`);
+    await page.locator(vpSel(0)).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
     const c = await center(0);
     await page.mouse.move(c.x, c.y);
     const before = await vpState(0);
@@ -867,6 +887,8 @@ async function testDiagramPanZoom(browser) {
     const small = await center(1);
     await page.mouse.move(small.x, small.y);
     const smallState = await vpState(1);
+    // 後のテスト（TC-DIAG-027 など）のため、Fit に戻す
+    await page.click(`#preview-scroll [data-action="scale-fit"][data-index="0"]`);
     rows.push({ mode, before, during, after, smallState, pass: before.scrollable && before.pannable && before.cursor === 'grab'
       && during.panning && during.cursor === 'grabbing' && Math.abs(after.scrollLeft - before.scrollLeft - 300) <= 3
       && !after.panning && !smallState.scrollable && !smallState.pannable && smallState.cursor !== 'grab' });
