@@ -75,6 +75,9 @@ html.is-stage-show #visual-stage-container {
   z-index: 70;
   display: flex;
   overflow-y: auto;
+  /* 横の指の動きは、ブラウザのスクロールにせず、左右スワイプの送り戻しに使う（DD-SHOW-012）。
+     横にスクロールする内側の要素（コード・表など）は、それ自身がスクロールの入れ物のため、この指定の影響を受けない */
+  touch-action: pan-y;
   padding: 6vh 6vw 9vh;
   background:
     radial-gradient(ellipse 72% 64% at 50% -14%, rgba(148, 163, 184, 0.22), transparent 72%),

@@ -370,7 +370,53 @@ function onShowKey(event) {
   action();
 }
 
+// スマホの左右スワイプで送り戻す（FR-019、DD-SHOW-012）。左スワイプで次、右スワイプで前
+const SWIPE = { minDx: 50, ratio: 1.5, clickGuardMs: 600 };
+const swipe = { x: 0, y: 0, tracking: false, guardUntil: 0 };
+
+// 横にスクロールする内容（表など）の上で始めた指の動きは、その内容のスクロールに任せる
+function inHorizontalScroller(target) {
+  const stage = stageContainer();
+  for (let el = target instanceof Element ? target : null; el && el !== stage; el = el.parentElement) {
+    if (el.scrollWidth > el.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true;
+  }
+  return false;
+}
+
+function onShowTouchStart(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  swipe.tracking = event.touches.length === 1 && !ov.active && !curtain.active
+    && !(target && target.closest('a, button')) && !inHorizontalScroller(target);
+  if (!swipe.tracking) return;
+  swipe.x = event.touches[0].clientX;
+  swipe.y = event.touches[0].clientY;
+}
+
+function onShowTouchEnd(event) {
+  if (!swipe.tracking) return;
+  swipe.tracking = false;
+  const touch = event.changedTouches[0];
+  if (!touch) return;
+  const dx = touch.clientX - swipe.x;
+  const dy = touch.clientY - swipe.y;
+  if (Math.abs(dx) < SWIPE.minDx || Math.abs(dx) < Math.abs(dy) * SWIPE.ratio) return;
+  // スワイプの後に届くクリックで、もう 1 枚送らないようにする
+  swipe.guardUntil = performance.now() + SWIPE.clickGuardMs;
+  if (dx < 0) next();
+  else prev();
+}
+
+function onShowTouchCancel() {
+  swipe.tracking = false;
+}
+
 function onShowClick(event) {
+  if (performance.now() < swipe.guardUntil) {
+    swipe.guardUntil = 0;
+    event.stopPropagation();
+    event.preventDefault();
+    return;
+  }
   if (ov.active) {
     event.stopPropagation();
     event.preventDefault();
@@ -444,6 +490,11 @@ function enterShow() {
   document.addEventListener('pointermove', overview.onPointerMove);
   document.addEventListener('fullscreenchange', onFullscreenChange);
   stageContainer().addEventListener('click', onShowClick, true);
+  stageContainer().addEventListener('touchstart', onShowTouchStart, { capture: true, passive: true });
+  stageContainer().addEventListener('touchend', onShowTouchEnd, { capture: true, passive: true });
+  stageContainer().addEventListener('touchcancel', onShowTouchCancel, { capture: true, passive: true });
+  swipe.tracking = false;
+  swipe.guardUntil = 0;
   window.addEventListener('resize', refitScene);
   wakeHud();
   applyScene(true);
@@ -497,6 +548,9 @@ function exitShow() {
   document.removeEventListener('pointermove', overview.onPointerMove);
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   stageContainer().removeEventListener('click', onShowClick, true);
+  stageContainer().removeEventListener('touchstart', onShowTouchStart, true);
+  stageContainer().removeEventListener('touchend', onShowTouchEnd, true);
+  stageContainer().removeEventListener('touchcancel', onShowTouchCancel, true);
   window.removeEventListener('resize', refitScene);
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
