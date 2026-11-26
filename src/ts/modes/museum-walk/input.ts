@@ -98,7 +98,10 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
     drag.x = e.clientX;
     drag.y = e.clientY;
     drag.t = now;
-    cam.userYaw = clamp(cam.userYaw + dx * 0.12, -75, 60);
+    // 指のスワイプは、画面の端から端まで動かさず短いことが多いため、マウスより大きく回す（#434）。
+    // 範囲は、基本の向きと合わせて direct()（camera.ts）が収める。ここでは大きく外れないように抑えるだけ
+    const C = h.camera();
+    cam.userYaw = clamp(cam.userYaw + dx * (drag.touch ? C.lookTouch : C.lookMouse), -270, 270);
     if (drag.touch && Math.abs(dy) > Math.abs(dx)) {
       // 上へスワイプすると前へ進む（文書を読み進めるスクロールと同じ向き）
       cam.zoomTarget = 0;

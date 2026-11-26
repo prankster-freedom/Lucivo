@@ -23,6 +23,9 @@ let FOG0 = RENDER_LEVELS[1].fog0;
 let FOG1 = RENDER_LEVELS[1].fog1;
 let FLAT = RENDER_LEVELS[1].flat;
 const FOG_STOPS: Array<[number, number]> = [[0, 0], [0.28, 0.2], [0.58, 0.58], [0.84, 0.88], [1, 1]];
+// 横を向いたときに描く、立つ位置より後ろのタイルの距離（px）。見回せる範囲（lookLimit、約 100 度）で、
+// 片側の視野（約 42 度）の分だけ後ろ寄りの壁が、通路の幅の壁まで入る距離に、余裕を足した値
+const BACK_REACH = 1400;
 
 // パーツの種類ごとの、壁からの距離（奥行き）と、現れ始める距離・現れ終わる距離（DTP-MWLK-030）
 const KIND: Record<PartKind, { off: number; range: [number, number] }> = {
@@ -395,8 +398,11 @@ export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, re
 
   // 突き当たりの闇と、各面の霞み（タイル自身の opacity だけを更新する）
   refs.cap.style.transform = `translate3d(-2000px, ${cam.y - 2600}px, ${cam.z - FOG1}px)`;
+  // 横を向くと、画面の端に、立つ位置より後ろの壁・床・天井が入る（真横で、片側の視野の分だけ後ろまで見える）。
+  // 向きに応じて、後ろのタイルを BACK_REACH まで描く。正面を向いている間は描かず、描く面を増やさない（#434、#421）
+  const back = smooth(30, 90, Math.abs(cam.yaw)) * BACK_REACH;
   for (const t of refs.tiles) {
-    const limit = t.wall ? cam.z - 20 : cam.z + 220;
+    const limit = (t.wall ? cam.z - 20 : cam.z + 220) + back;
     // 床と天井は、届く距離（FLAT）が真っ暗になる距離（FOG1）より短いとき、霞みを FOG1 / FLAT 倍に縮めて、FLAT で真っ暗にする（切れ目を見せない）
     const reach = t.flat ? FLAT : FOG1;
     const vis = t.near > cam.z - reach - 100 && t.far < limit;

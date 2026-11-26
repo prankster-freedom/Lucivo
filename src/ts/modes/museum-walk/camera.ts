@@ -19,6 +19,9 @@ export const CAMERA_SPEC: SpecRow[] = [
   ['walkYaw', '歩いているときの向き（度）', 14, 0, 45, 1],
   ['walkSpeed', '「歩いている」とみなす速さ', 380, 100, 900, 10],
   ['ease', '向きと立つ位置の変わる速さ（大きいほど速い）', 2.6, 0.4, 8, 0.1],
+  ['lookLimit', '見回せる範囲（度。進む向きから左右とも。90 で真横）', 100, 60, 150, 1],
+  ['lookMouse', 'マウスのドラッグで見回す量（度／px）', 0.12, 0.02, 0.6, 0.01],
+  ['lookTouch', '指のスワイプで見回す量（度／px）', 0.3, 0.02, 1, 0.01],
   ['歩き'],
   ['speed', '歩く速さ', 520, 150, 1400, 10],
   ['friction', '止まるときの滑り（小さいほど長く滑る）', 2.4, 0.6, 6, 0.1],
@@ -144,7 +147,10 @@ export function direct(cam: Cam, dt: number, plan: Plan, C: CameraValues, gaze: 
   cam.zoom += (cam.zoomTarget - cam.zoom) * zk;
   if (Math.abs(cam.zoomTarget - cam.zoom) < 0.001) cam.zoom = cam.zoomTarget;
 
-  const targetYaw = clamp(yaw + cam.userYaw, -75, 88);
+  // 見回せる範囲: 最終の向きが、進む向きから左右とも lookLimit 度まで（真横より少し後ろ。#434）。
+  // 基本の向き（止まると左の壁を向く）によらず左右対称にするため、見回した分をここで範囲に収める
+  cam.userYaw = clamp(cam.userYaw, -C.lookLimit - yaw, C.lookLimit - yaw);
+  const targetYaw = yaw + cam.userYaw;
   // 近寄り: 壁を見ているときは向いている壁側へ横位置を寄せ、正面の門・広間では中央を保ったまま視野を狭める（#275）
   const wallDir = Math.sin((targetYaw * Math.PI) / 180);
   x -= cam.zoom * C.zoomShiftX * wallDir;
