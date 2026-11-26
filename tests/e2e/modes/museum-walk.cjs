@@ -812,8 +812,82 @@ async function testMuseumWalkLook(browser) {
   }
 }
 
+// TC-MWLK-016: スマホのピンチで近寄る・離れる（#437）
+async function testMuseumWalkPinch(browser) {
+  const server = await startWebServer();
+  try {
+    const phone = await openWebPageWithSample(browser, server, { hasTouch: true });
+    await phone.setViewportSize({ width: 390, height: 844 });
+    await phone.waitForTimeout(500);
+    await start(phone);
+    const qi = await info(phone);
+    const qBody = qi.parts.find(p => p.kind === 'body' && p.z < qi.gates[1].z);
+    await walkTo(phone, readingZ(qBody, 590));
+    await waitYawSettled(phone);
+    const cdp = await phone.context().newCDPSession(phone);
+    const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([id, x, y]) => ({ id, x, y })) });
+    // 画面の真ん中（195, 420）を中心に、指の間隔を from から to へ変える。release が偽なら指を置いたままにする
+    const pinchGesture = async (from, to, release = true) => {
+      const pts = d => [[0, 195 - d / 2, 420], [1, 195 + d / 2, 420]];
+      await touch('touchStart', [pts(from)[0]]);
+      await touch('touchStart', pts(from));
+      for (let i = 1; i <= 10; i++) await touch('touchMove', pts(from + (to - from) * i / 10));
+      if (release) await touch('touchEnd', []);
+      await phone.waitForTimeout(300);
+      return info(phone);
+    };
+    const swipe = async (dx, dy) => {
+      await touch('touchStart', [[0, 150, 420]]);
+      for (let i = 1; i <= 10; i++) await touch('touchMove', [[0, 150 + dx * i / 10, 420 + dy * i / 10]]);
+      await touch('touchEnd', []);
+      return waitYawSettled(phone);
+    };
+    const p0 = await info(phone);
+    // 間隔を 2 倍に広げると、zoomPinch（0.75）だけ近寄る。指を離しても保つ
+    const out = await pinchGesture(80, 160);
+    await phone.waitForTimeout(1200);
+    const kept = await info(phone);
+    await shot(phone, 'pinch-in');
+    // 限度: 大きく広げても zoomMax（1）、大きく狭めても zoomMin（-0.5）で止まる
+    const max = await pinchGesture(40, 320);
+    const min = await pinchGesture(320, 20);
+    // ピンチのあと、1 本だけ離して残った指を動かしても、見回し・歩行に使わない。
+    // CDP の touchEnd は、載せた指だけを離す（指 1 を離し、指 0 を残す）
+    await pinchGesture(100, 100, false);
+    await touch('touchEnd', [[1, 245, 420]]);
+    for (let i = 1; i <= 10; i++) await touch('touchMove', [[0, 145 + 10 * i, 420 - 10 * i]]);
+    await touch('touchEnd', []);
+    const leftover = await waitYawSettled(phone);
+    // 全部の指を離したあとの 1 本指は、今までどおり見回す（50px で 30 度）
+    const look = await swipe(50, 0);
+    // 上へのスワイプで歩き出すと、既定の距離（0）へ戻る
+    await swipe(0, -150);
+    const walked = await info(phone);
+    const errors = phone.consoleErrors.slice();
+    await phone.context().close();
+
+    const near = (a, b, tol) => Math.abs(a - b) <= tol;
+    const result = {
+      out: out.zoomTarget, kept: [kept.zoomTarget, kept.zoom], max: max.zoomTarget, min: min.zoomTarget,
+      yaw: [p0.userYaw, out.userYaw, min.userYaw, leftover.userYaw, look.userYaw], z: [p0.z, out.z, min.z, leftover.z],
+      walked: [walked.zoomTarget, walked.z], errors
+    };
+    record('TC-MWLK-016', near(out.zoomTarget, 0.75, 0.02)
+      && near(kept.zoomTarget, 0.75, 0.02) && near(kept.zoom, 0.75, 0.02)
+      && near(max.zoomTarget, 1, 0.001) && near(min.zoomTarget, -0.5, 0.001)
+      && near(out.userYaw, p0.userYaw, 0.01) && near(min.userYaw, p0.userYaw, 0.01) && near(leftover.userYaw, p0.userYaw, 0.01)
+      && near(out.z, p0.z, 1) && near(min.z, p0.z, 1) && near(leftover.z, p0.z, 1)
+      && near(look.userYaw - leftover.userYaw, 30, 1)
+      && walked.zoomTarget === 0 && walked.z < p0.z - 50
+      && errors.length === 0, JSON.stringify(result));
+  } finally {
+    await server.close();
+  }
+}
+
 module.exports = {
   suites: [
+    { name: 'testMuseumWalkPinch', tcPrefix: ['TC-MWLK-016'], fn: testMuseumWalkPinch, timeoutMs: 180000 },
     { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013', 'TC-MWLK-014'], fn: testMuseumWalk, timeoutMs: 420000 },
     { name: 'testMuseumWalkLook', tcPrefix: ['TC-MWLK-015'], fn: testMuseumWalkLook, timeoutMs: 240000 }
   ]
