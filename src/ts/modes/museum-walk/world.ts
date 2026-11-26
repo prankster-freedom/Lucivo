@@ -26,6 +26,8 @@ const FOG_STOPS: Array<[number, number]> = [[0, 0], [0.28, 0.2], [0.58, 0.58], [
 // 横を向いたときに描く、立つ位置より後ろのタイルの距離（px）。見回せる範囲（lookLimit、約 100 度）で、
 // 片側の視野（約 42 度）の分だけ後ろ寄りの壁が、通路の幅の壁まで入る距離に、余裕を足した値
 const BACK_REACH = 1400;
+// 通り過ぎた壁のパーツが、薄くなり始めてから消えるまでの距離（px）
+const PASS_FADE = 340;
 
 // パーツの種類ごとの、壁からの距離（奥行き）と、現れ始める距離・現れ終わる距離（DTP-MWLK-030）
 const KIND: Record<PartKind, { off: number; range: [number, number] }> = {
@@ -449,10 +451,13 @@ export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, re
     return m;
   };
 
-  // 壁のパーツ。種類ごとに、現れる距離と奥行きが違う
+  // 壁のパーツ。種類ごとに、現れる距離と奥行きが違う。
+  // パーツは手前の端（p.z）から奥へ幅（p.w）の分だけ広がる。通り過ぎて薄くするのは、奥の端を過ぎてからにする。
+  // 横を向いている間は、後ろのタイルと同じ距離（back）だけさらに遅らせる（真横に立つパーツが見回した先で薄れないように。#434）
   for (const p of refs.parts) {
     const a = cam.z - p.z;
-    const vis = a < FOG1 && a > -p.w * 0.75;
+    const gone = -p.w - PASS_FADE - back;
+    const vis = a < FOG1 && a > gone;
     if (vis !== p.vis) {
       p.vis = vis;
       p.el.style.display = vis ? '' : 'none';
@@ -460,7 +465,7 @@ export function updateWorld(refs: WorldRefs, plan: Plan, cam: Cam, P: number, re
     if (!vis) continue;
     const k = KIND[p.kind];
     const r = 1 - smooth(k.range[1], k.range[0], a);
-    const pass = smooth(-p.w * 0.75, -60, a);
+    const pass = smooth(gone, gone + PASS_FADE, a);
     const o = r * pass * (1 - fogA(Math.max(0, a + p.w * 0.5))) * behindGate(p.z, 0.04);
     const key = `${Math.round(o * 100)}|${Math.round(r * 100)}`;
     if (key !== p.key) {
