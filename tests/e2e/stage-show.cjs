@@ -1002,6 +1002,46 @@ async function testStageOverviewPointer(browser) {
     && mobilePortHud.hudFont >= 14 && mobilePortHud.hintFont >= 14 && mobilePortHud.btnFont >= 14
     && mobilePortHud.btnHeight >= 36 && mobilePortHud.bottomMargin >= 44 && mobilePortHud.noOverlap;
   record('TC-SHOW-025', show25Ok, JSON.stringify({ desktopHud, mobileLandHud, mobilePortHud }));
+
+  // TC-SHOW-028 スマホの左右スワイプで送り戻す（#436、FR-019、DD-SHOW-012）
+  const swipeCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const swipePage = await swipeCtx.newPage();
+  const swipeErrors = [];
+  swipePage.on('pageerror', e => swipeErrors.push(e.message));
+  await swipePage.goto(APP_URL, { waitUntil: 'load' });
+  await waitRendered(swipePage);
+  await setDocument(swipePage, ['# スワイプ', '', '## 第 1 章', '', '一。', '', '## 第 2 章', '', '二。', '', '## 第 3 章', '', '三。'].join('\n'));
+  await swipePage.click('#btn-stage-show');
+  await swipePage.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.showState().active);
+  await swipePage.waitForTimeout(600);
+  const cdp = await swipeCtx.newCDPSession(swipePage);
+  const sceneIndex = () => swipePage.evaluate(() => LucivoStage.showState().index);
+  const touchDrag = async (x0, y0, x1, y1) => {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] });
+    for (let i = 1; i <= 6; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (x1 - x0) * i / 6, y: y0 + (y1 - y0) * i / 6 }] });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await swipePage.waitForTimeout(700);
+    return sceneIndex();
+  };
+  const swipeStart = await sceneIndex();
+  // タップで次へ進む既存の操作が残っていることを、指の動きを送る前に確かめる。
+  // CDP で送ったドラッグの直後の 1 回目のタップは、Chromium の試験の環境ではクリックにならないため（実機の挙動は実機で確かめる）
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 420 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await swipePage.waitForTimeout(700);
+  const afterTap = await sceneIndex();
+  const afterLeft = await touchDrag(300, 420, 120, 430);
+  const afterLeft2 = await touchDrag(300, 420, 120, 430);
+  const afterRight = await touchDrag(90, 420, 290, 410);
+  const afterShort = await touchDrag(200, 420, 170, 420);
+  const afterVertical = await touchDrag(200, 300, 260, 600);
+  const touchAction = await swipePage.evaluate(() => getComputedStyle(document.getElementById('visual-stage-container')).touchAction);
+  await swipeCtx.close();
+  const swipeResult = { swipeStart, afterTap, afterLeft, afterLeft2, afterRight, afterShort, afterVertical, touchAction, swipeErrors };
+  record('TC-SHOW-028', swipeStart === 0 && afterTap === 1 && afterLeft === 2 && afterLeft2 === 3 && afterRight === 2
+    && afterShort === 2 && afterVertical === 2 && touchAction === 'pan-y' && swipeErrors.length === 0, JSON.stringify(swipeResult));
 }
 
 // TC-UI-001〜003: 狭い画面のヘッダー・Web 版の更新確認非表示・Split 境目ドラッグ（#88, #89, #82）

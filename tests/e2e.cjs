@@ -108,7 +108,7 @@ const SUITES = [
   { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024', 'TC-VTPL-025', 'TC-VTPL-026', 'TC-VTPL-027', 'TC-VTPL-030', 'TC-VTPL-031', 'TC-VTPL-032', 'TC-VTPL-033', 'TC-VTPL-034', 'TC-VTPL-035', 'TC-VTPL-036', 'TC-VTPL-038', 'TC-VTPL-039'], fn: testCoverAndTables, timeoutMs: 150000 },
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight, serial: true },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007', 'TC-SHOW-026', 'TC-SHOW-027'], fn: testStageShow, timeoutMs: 180000 },
-  { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025'], fn: testStageOverviewPointer },
+  { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025', 'TC-SHOW-028'], fn: testStageOverviewPointer },
   { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022', 'TC-VTPL-028', 'TC-VTPL-029', 'TC-VTPL-037'], fn: testCalloutsGlossaryPrint },
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },
