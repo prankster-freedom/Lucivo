@@ -83,14 +83,43 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
     cam.vel = clamp(cam.vel - dy * h.camera().wheelSpeed, -1500, 1500);
   };
 
-  let drag: null | { x: number; y: number; t: number; touch: boolean } = null;
+  // 置かれている指（#437）。2 本になったらピンチとし、見回し・歩行を止めて近寄り量だけを動かす
+  const fingers = new Map<number, { x: number; y: number }>();
+  let pinch: null | { d0: number; z0: number } = null;
+  const spread = () => {
+    const [a, b] = [...fingers.values()];
+    return Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+  };
+  let drag: null | { id: number; x: number; y: number; t: number; touch: boolean } = null;
   const onDown = (e: PointerEvent) => {
     if ((e.target as Element).closest('button, .mw-panel')) return;
-    drag = { x: e.clientX, y: e.clientY, t: performance.now(), touch: e.pointerType !== 'mouse' };
+    const touch = e.pointerType !== 'mouse';
+    if (touch) fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (fingers.size >= 2) {
+      // 1 本目の指のドラッグは、ここで終える。ピンチのあとに残った指は、離して置き直すまで見回し・歩行に使わない（向きと位置を飛ばさない）。
+      // 歩行の滑りも止める。止めないと stepWalk() が歩いているとみなし、近寄り量を 0 に戻す
+      drag = null;
+      cam.vel = 0;
+      pinch = { d0: spread(), z0: cam.zoomTarget };
+      root.classList.remove('is-dragging');
+      return;
+    }
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), touch };
     root.classList.add('is-dragging');
   };
   const onMove = (e: PointerEvent) => {
-    if (!drag) return;
+    const f = fingers.get(e.pointerId);
+    if (f) {
+      f.x = e.clientX;
+      f.y = e.clientY;
+    }
+    if (pinch && fingers.size >= 2) {
+      // 指の間隔の比に比例させる（log2）。広げると近寄り、狭めると離れる
+      const C = h.camera();
+      cam.zoomTarget = clamp(pinch.z0 + Math.log2(spread() / pinch.d0) * C.zoomPinch, C.zoomMin, C.zoomMax);
+      return;
+    }
+    if (!drag || drag.id !== e.pointerId) return;
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y;
     const now = performance.now();
@@ -110,9 +139,14 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
       cam.vel = lerp(cam.vel, clamp(step / dt, -1500, 1500), 0.5);
     }
   };
-  const onUp = () => {
-    drag = null;
-    root.classList.remove('is-dragging');
+  const onUp = (e: PointerEvent) => {
+    fingers.delete(e.pointerId);
+    // 3 本目の指を離したときなど、2 本以上残っていればピンチを続ける（基準を今の間隔に置き直す）
+    pinch = fingers.size >= 2 ? { d0: spread(), z0: cam.zoomTarget } : null;
+    if (drag && drag.id === e.pointerId) {
+      drag = null;
+      root.classList.remove('is-dragging');
+    }
   };
 
   document.addEventListener('keydown', onKeyDown, true);
@@ -136,6 +170,7 @@ export function attachInput(root: HTMLElement, h: InputHandlers): Input {
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
       held.clear();
+      fingers.clear();
     }
   };
 }
