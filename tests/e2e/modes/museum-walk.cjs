@@ -783,19 +783,29 @@ async function testMuseumWalkLook(browser) {
     await touchDrag(300);
     const tLeft = await touchDrag(300);
     await shot(phone, 'look-phone-left');
+    // 本文の真横（手前の端から幅の 70% 奥）へ進み、左いっぱいまで見回す。真横に立つその本文が、薄くなっていないこと
+    await walkTo(phone, qBody.z - qBody.w * 0.7);
+    await touchDrag(300);
+    const beside = await touchDrag(300);
+    const besideOpacity = await phone.evaluate(z => {
+      const els = [...document.querySelectorAll('.mw-part.mw-body')].filter(el => el.style.transform.includes(`, ${z}px)`));
+      return els.length ? Math.min(...els.map(el => (getComputedStyle(el).display === 'none' ? 0 : Number(getComputedStyle(el).opacity)))) : -1;
+    }, qBody.z);
+    await shot(phone, 'look-phone-beside');
     const phoneErrors = phone.consoleErrors.slice();
     await phone.context().close();
 
     const near = (a, b, tol) => Math.abs(a - b) <= tol;
     const result = {
       mouseStep, touchStep, left: left.yaw, right: right.yaw, leftEdge, rightEdge,
-      tRight: tRight.yaw, tLeft: tLeft.yaw, tZ: [t0.z, tLeft.z], pcErrors, phoneErrors
+      tRight: tRight.yaw, tLeft: tLeft.yaw, tZ: [t0.z, tLeft.z], besideYaw: beside.yaw, besideOpacity, pcErrors, phoneErrors
     };
     record('TC-MWLK-015', near(mouseStep, 12, 0.5) && near(touchStep, 30, 1)
       && near(left.yaw, 100, 1) && near(right.yaw, -100, 1)
       && /mw-wall/.test(leftEdge) && /mw-wall/.test(rightEdge)
       && near(tRight.yaw, -100, 1) && near(tLeft.yaw, 100, 1)
       && Math.abs(tLeft.z - t0.z) < 1
+      && besideOpacity >= 0.95
       && pcErrors.length === 0 && phoneErrors.length === 0, JSON.stringify(result));
   } finally {
     await server.close();
@@ -805,6 +815,6 @@ async function testMuseumWalkLook(browser) {
 module.exports = {
   suites: [
     { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013', 'TC-MWLK-014'], fn: testMuseumWalk, timeoutMs: 420000 },
-    { name: 'testMuseumWalkLook', tcPrefix: ['TC-MWLK-015'], fn: testMuseumWalkLook, timeoutMs: 120000 }
+    { name: 'testMuseumWalkLook', tcPrefix: ['TC-MWLK-015'], fn: testMuseumWalkLook, timeoutMs: 240000 }
   ]
 };
