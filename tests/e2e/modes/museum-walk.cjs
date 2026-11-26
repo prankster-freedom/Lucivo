@@ -905,36 +905,40 @@ const waitPitchSettled = page => waitInfoSettled(page, 'pitch');
 async function testMuseumWalkRamp(browser) {
   const server = await startWebServer();
   try {
-    // key を押し続けて、z が done を満たすまで歩く。その間の pitch の最小値を、毎コマ取る。
-    // shotName を渡すと、pitch が shotAt を下回った最初のコマで、画面をゲラに残す
-    const pass = async (page, key, from, done, shotName = '', shotAt = -30) => {
+    // key を押し続けて、z が until を越えるまで歩く（前へは z が減り、後ろへは増える）。その間の pitch の最小値を、毎コマ取る。
+    // shotName を渡すと、pitch が shotAt を下回ったところで、画面をゲラに残す。
+    // 毎コマ info() を呼ぶと、パーツの一覧まで作って重く、並列で動く他のスイートのコマを遅くする。
+    // そのため、歩く間は、世界の要素（.mw-world）の transform から、向き（rotateX）と位置（最後の translate3d の z）だけを読む
+    const pass = async (page, key, from, until, shotName = '', shotAt = -30) => {
+      const fwd = key === 'ArrowUp';
       await walkTo(page, from);
       await settle(page);
       await waitPitchSettled(page);
-      await page.evaluate(id => {
-        const m = window.LucivoModes.get(id);
+      await page.evaluate(() => {
+        const world = document.querySelector('.mw-world');
+        window.__mwCam = () => {
+          const t = world.style.transform;
+          const pitch = parseFloat(/rotateX\(([^)]+)deg\)/.exec(t)[1]);
+          const z = -parseFloat(/translate3d\([^,]+,[^,]+,([^)]+)px\)$/.exec(t)[1]);
+          return { pitch, z };
+        };
         window.__mwMin = 0;
         const tick = () => {
-          window.__mwMin = Math.min(window.__mwMin, m.info().pitch);
+          window.__mwMin = Math.min(window.__mwMin, window.__mwCam().pitch);
           window.__mwRaf = requestAnimationFrame(tick);
         };
         window.__mwRaf = requestAnimationFrame(tick);
-      }, MODE);
-      let shotTaken = !shotName;
+      });
       await page.keyboard.down(key);
-      for (let t = 0; t < 20000; t += 50) {
-        await page.waitForTimeout(50);
-        const i = await info(page);
-        if (!shotTaken && i.pitch < shotAt) {
-          await shot(page, shotName);
-          shotTaken = true;
-        }
-        if (done(i.z)) break;
+      if (shotName) {
+        await page.waitForFunction(a => window.__mwMin < a, shotAt, { polling: 'raf', timeout: 60000 });
+        await shot(page, shotName);
       }
+      await page.waitForFunction(([f, u]) => (f ? window.__mwCam().z < u : window.__mwCam().z > u), [fwd, until], { polling: 'raf', timeout: 60000 });
       await page.keyboard.up(key);
       await settle(page);
       // 位置が止まって見えても、わずかな速さが残ることがある。速さが 0 になってから向きを読む
-      await page.waitForFunction(id => window.LucivoModes.get(id).info().vel === 0, MODE, { timeout: 60000 });
+      await page.waitForFunction(id => window.LucivoModes.get(id).info().vel === 0, MODE, { polling: 250, timeout: 60000 });
       const end = await waitPitchSettled(page);
       const min = await page.evaluate(() => { cancelAnimationFrame(window.__mwRaf); return window.__mwMin; });
       return { min, endPitch: end.pitch, z: end.z };
@@ -942,32 +946,31 @@ async function testMuseumWalkRamp(browser) {
     // 広間・小部屋の見上げと重ならないよう、真ん中あたりのスロープを使う
     const pickRamp = i => i.ramps[Math.floor(i.ramps.length / 2)];
 
+    // 手前の 650px は、向け始め（rampLead: 400）と、歩く速さに達するまでの分
     const page = await openWebPageWithSample(browser, server);
     await start(page);
-    const pi = await info(page);
-    const r = pickRamp(pi);
-    const fwd = await pass(page, 'ArrowUp', r.near + 900, z => z < r.far - 500, 'ramp-forward');
-    const back = await pass(page, 'ArrowDown', r.far - 900, z => z > r.near + 500, 'ramp-back', -22);
+    const r = pickRamp(await info(page));
+    const fwd = await pass(page, 'ArrowUp', r.near + 650, r.far - 250, 'ramp-forward');
+    const back = await pass(page, 'ArrowDown', r.far - 650, r.near + 250, 'ramp-back', -22);
     // スロープの途中で止まると、足元を見たまま残らず、水平へ戻る
-    const mid = (r.near + r.far) / 2;
-    const stop = await pass(page, 'ArrowUp', r.near + 900, z => z <= mid);
-    const pcErrors = page.consoleErrors.slice();
+    const stop = await pass(page, 'ArrowUp', r.near + 650, (r.near + r.far) / 2);
+
+    // 動きを減らす設定では、足元へ向けない。設定は始めるときに読むため、いったん終えて、設定を変えてから始め直す
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(id => !window.LucivoModes.get(id).info().active, MODE, { timeout: 5000 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await start(page);
+    const rm = await pass(page, 'ArrowUp', r.near + 650, r.far - 250);
+    const reducedOn = (await info(page)).reducedMotion;
+    const errors = page.consoleErrors.slice();
     await page.context().close();
 
-    // 動きを減らす設定では、足元へ向けない
-    const reduced = await openWebPageWithSample(browser, server, { reducedMotion: 'reduce' });
-    await start(reduced);
-    const rr = pickRamp(await info(reduced));
-    const rm = await pass(reduced, 'ArrowUp', rr.near + 900, z => z < rr.far - 500);
-    const rmErrors = reduced.consoleErrors.slice();
-    await reduced.context().close();
-
-    const result = { ramp: r, fwd, back, stop, rm, pcErrors, rmErrors };
+    const result = { ramp: r, fwd, back, stop, rm, reducedOn, errors };
     record('TC-MWLK-017', fwd.min < -35 && fwd.min >= -40.5
       && back.min < -26 && back.min >= -30.5 && back.min > fwd.min + 5
       && fwd.endPitch > -1 && back.endPitch > -1 && stop.endPitch > -1
-      && rm.min > -0.5
-      && pcErrors.length === 0 && rmErrors.length === 0, JSON.stringify(result));
+      && reducedOn === true && rm.min > -0.5
+      && errors.length === 0, JSON.stringify(result));
   } finally {
     await server.close();
   }
@@ -975,9 +978,10 @@ async function testMuseumWalkRamp(browser) {
 
 module.exports = {
   suites: [
-    { name: 'testMuseumWalkRamp', tcPrefix: ['TC-MWLK-017'], fn: testMuseumWalkRamp, timeoutMs: 420000 },
+    // 歩いて向きが変わるのを、コマの進みで待つ。並列で他の重いスイートと重なるとコマが遅くなり、互いに時間切れになるため、直列で流す
+    { name: 'testMuseumWalkRamp', tcPrefix: ['TC-MWLK-017'], fn: testMuseumWalkRamp, timeoutMs: 300000, serial: true },
     { name: 'testMuseumWalkPinch', tcPrefix: ['TC-MWLK-016'], fn: testMuseumWalkPinch, timeoutMs: 180000 },
     { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013', 'TC-MWLK-014'], fn: testMuseumWalk, timeoutMs: 420000 },
-    { name: 'testMuseumWalkLook', tcPrefix: ['TC-MWLK-015'], fn: testMuseumWalkLook, timeoutMs: 420000 }
+    { name: 'testMuseumWalkLook', tcPrefix: ['TC-MWLK-015'], fn: testMuseumWalkLook, timeoutMs: 300000 }
   ]
 };
