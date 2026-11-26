@@ -1,7 +1,7 @@
 // ミュージアム・ウォークのカメラワーク（DD-MWLK-005、DTP-MWLK-060）。
 // 演出を見直すときは、このファイルの 3 つだけを直す: 値の表（CAMERA_SPEC）、場所ごとの指示（cues()）、組み合わせ方（direct()）。
 // 空間の組み立てや入力には触れない。場所は割り付け（layout.ts の Plan）から読む。
-import { elevationAt, type Plan, type Section } from './layout';
+import { elevationAt, rampSpans, type Plan, type Section } from './layout';
 
 export const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(a, v));
 export const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -35,6 +35,12 @@ export const CAMERA_SPEC: SpecRow[] = [
   ['bob', '歩きの揺れ（px）', 6, 0, 20, 0.5],
   ['bobStep', '歩きの揺れの周期（距離 px）', 95, 30, 300, 5],
   ['elevEase', '段差の高さ追従の速さ（大きいほど速い）', 4.5, 1, 20, 0.5],
+  ['スロープ（足元を見る）'],
+  ['rampPitchFwd', '前へ進むとき、足元へ向ける角度（度）', 40, 0, 60, 1],
+  ['rampPitchBack', '後ろへ下がるとき、足元へ向ける角度（度）', 30, 0, 60, 1],
+  ['rampLead', '入口の手前で、足元へ向け始める距離', 400, 0, 800, 10],
+  ['rampAfter', '出口を過ぎて、元へ戻し切る距離', 160, 0, 600, 10],
+  ['rampEase', '足元へ向ける・戻す速さ（大きいほど速い）', 5, 1, 15, 0.5],
   ['門（通路の真ん中の見出し）'],
   ['gateFar', '正面を向き始める距離', 1350, 600, 3500, 50],
   ['gateNear', '正面を向き切る距離', 650, 100, 1600, 50],
@@ -61,7 +67,7 @@ export const CAMERA_SPEC: SpecRow[] = [
 ];
 
 // 動きを減らす設定のときに上書きする値（DD-MWLK-009）
-export const REDUCED_MOTION: Record<string, number> = { friction: 6, stride: 420, bob: 0, zoomBob: 0, zoomEase: 60, elevEase: 60 };
+export const REDUCED_MOTION: Record<string, number> = { friction: 6, stride: 420, bob: 0, zoomBob: 0, zoomEase: 60, elevEase: 60, rampPitchFwd: 0, rampPitchBack: 0 };
 
 export type CameraValues = Record<string, number>;
 
@@ -97,13 +103,14 @@ export interface Cam {
 }
 
 // 場所ごとの指示。w は効き具合（0〜1）。yaw・stopYaw・x・pitch は、その場所での向き・止まったときの向き・立つ位置・見上げる角度
-interface Cue { w: number; yaw?: number; stopYaw?: number; x?: number; pitch?: number; }
+// pitchEase は、その指示が効いている間の上下の向きの変わる速さ（ease より速くしたいときだけ）
+interface Cue { w: number; yaw?: number; stopYaw?: number; x?: number; pitch?: number; pitchEase?: number; }
 
 export function sectionAt(plan: Plan, z: number): Section {
   return plan.sections.find(s => z <= s.from && z > s.to) || plan.sections[plan.sections.length - 1];
 }
 
-function cues(plan: Plan, C: CameraValues, z: number): Cue[] {
+function cues(plan: Plan, C: CameraValues, z: number, vel: number): Cue[] {
   const list: Cue[] = [];
   // 門の手前では、通路の真ん中へ寄って正面を向き、通り抜ける
   for (const g of plan.gates) {
@@ -122,6 +129,20 @@ function cues(plan: Plan, C: CameraValues, z: number): Cue[] {
     if (s.name === 'hall') list.push({ w, yaw: 0, x: 0, pitch: C.hallPitch });
     else list.push({ w, x: C.alcoveX, stopYaw: C.alcoveYaw });
   }
+  // スロープでは、段差をまたぐ人のように足元を見る（#435）。広間の見上げより後に置き、こちらを優先する。
+  // スロープは短く一瞬で過ぎるため、入口の手前（rampLead）から向け始め、出口を過ぎて（rampAfter）戻す。
+  // 歩く速さを効き具合に掛け、止まると水平に戻す（途中で止まる・折り返すときに、下を向いたまま残さない）
+  const speed = Math.min(1, Math.abs(vel) / C.walkSpeed);
+  if (speed > 0) {
+    const fwd = vel > 0;
+    const angle = fwd ? C.rampPitchFwd : C.rampPitchBack;
+    for (const r of rampSpans(plan)) {
+      // 進む向きで、入る端と出る端を決める。前へ進むと z が減る
+      const [enter, leave, sign] = fwd ? [r.near, r.far, -1] : [r.far, r.near, 1];
+      const w = smooth(enter - sign * C.rampLead, enter, z) * (1 - smooth(leave, leave + sign * Math.max(1, C.rampAfter), z));
+      if (w > 0) list.push({ w: w * speed, pitch: -angle, pitchEase: C.rampEase });
+    }
+  }
   return list;
 }
 
@@ -132,12 +153,14 @@ export function direct(cam: Cam, dt: number, plan: Plan, C: CameraValues, gaze: 
   let stopYaw = portrait ? Math.max(C.stopYaw, C.portraitYaw) : C.stopYaw;
   let x = portrait ? Math.max(C.x, C.portraitX) : C.x;
   let pitch = C.pitch;
-  const list = cues(plan, C, cam.z);
+  let pitchEase = C.ease;
+  const list = cues(plan, C, cam.z, cam.vel);
   for (const c of list) {
     if (c.w <= 0) continue;
     if (c.stopYaw != null) stopYaw = lerp(stopYaw, c.stopYaw, c.w);
     if (c.x != null) x = lerp(x, portrait && c.stopYaw != null ? Math.max(c.x, C.portraitX) : c.x, c.w);
     if (c.pitch != null) pitch = lerp(pitch, c.pitch, c.w);
+    if (c.pitchEase != null) pitchEase = Math.max(pitchEase, c.pitchEase);
   }
   let yaw = gaze ? lerp(stopYaw, C.walkYaw, speed) : 0;
   for (const c of list) {
@@ -163,7 +186,7 @@ export function direct(cam: Cam, dt: number, plan: Plan, C: CameraValues, gaze: 
   const room = sectionAt(plan, cam.z).half - 130;
   cam.yaw += (targetYaw - cam.yaw) * k;
   cam.x += (clamp(x, -room, room) - cam.x) * kx;
-  cam.pitch += (pitch - cam.pitch) * k;
+  cam.pitch += (pitch - cam.pitch) * (1 - Math.exp(-dt * pitchEase));
   const targetY = elevationAt(plan, cam.z);
   const ky = C.elevEase >= 50 ? 1 : 1 - Math.exp(-dt * C.elevEase);
   cam.y += (targetY - cam.y) * ky;

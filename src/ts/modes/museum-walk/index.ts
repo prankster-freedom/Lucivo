@@ -4,7 +4,7 @@
 // 本体のモジュールは import せず、enter(host) で受け取る host だけを使う（ARC-MODE-006）。
 // Visualモードの DOM は読むだけで書き換えない。空間は <body> の直下の重ね（#museum-walk）に作る。
 import { readOutline, isOutlineEmpty } from './outline';
-import { layout, elevationAt, type Plan } from './layout';
+import { layout, elevationAt, rampSpans, type Plan } from './layout';
 import { CAMERA_SPEC, REDUCED_MOTION, defaultCamera, loadCamera, direct, clamp, type Cam, type CameraValues } from './camera';
 import { buildWorld, createMeasurer, updateWorld, updateStandAppearance, perspectiveFor, RENDER_LEVELS, type LightLevel, type WorldRefs } from './world';
 import { attachInput, stepWalk, type Input } from './input';
@@ -396,6 +396,8 @@ function info() {
     active: S.active,
     z: S.cam ? S.cam.z : 0,
     yaw: S.cam ? S.cam.yaw : 0,
+    pitch: S.cam ? S.cam.pitch : 0,
+    vel: S.cam ? S.cam.vel : 0,
     userYaw: S.cam ? S.cam.userYaw : 0,
     x: S.cam ? S.cam.x : 0,
     y: S.cam ? S.cam.y : 0,
@@ -412,6 +414,7 @@ function info() {
     render: S.refs ? { ...S.refs.render } : { ...RENDER_LEVELS[S.lightness] },
     gates: plan ? plan.gates.map(g => ({ z: g.z, no: g.no, title: g.title, cover: !!g.cover })) : [],
     sections: plan ? plan.sections.map(s => ({ name: s.name || 'passage', from: s.from, to: s.to, elev: s.elev })) : [],
+    ramps: plan ? rampSpans(plan) : [],
     stands: plan ? plan.stands.length : 0,
     parts: plan ? plan.parts.map(p => ({ kind: p.kind, side: p.side, z: p.z, y: p.y, w: p.w, small: !!p.small })) : []
   };

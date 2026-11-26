@@ -328,6 +328,20 @@ export function rampLengthFor(s: Section, n: Section): number {
   return Math.max(60, Math.min(RAMP_LEN, Math.floor(hostLen * 0.4)));
 }
 
+// スロープの区間（z の範囲。near が手前（入口側）、far が奥）。カメラを足元へ向ける範囲に使う（#435）
+export function rampSpans(plan: Plan): { near: number; far: number }[] {
+  const list: { near: number; far: number }[] = [];
+  const secs = plan.sections;
+  for (let i = 0; i < secs.length - 1; i++) {
+    const s = secs[i];
+    const n = secs[i + 1];
+    if (s.elev === n.elev) continue;
+    const len = rampLengthFor(s, n);
+    list.push(n.elev > s.elev ? { near: s.to, far: s.to - len } : { near: s.to + len, far: s.to });
+  }
+  return list;
+}
+
 // 指定した z 位置の床基準高さ（下向きが正）。スロープ区間では滑らかに補間する
 export function elevationAt(plan: Plan, z: number): number {
   const secs = plan.sections;
