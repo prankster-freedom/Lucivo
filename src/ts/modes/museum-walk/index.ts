@@ -396,6 +396,7 @@ function info() {
     active: S.active,
     z: S.cam ? S.cam.z : 0,
     yaw: S.cam ? S.cam.yaw : 0,
+    userYaw: S.cam ? S.cam.userYaw : 0,
     x: S.cam ? S.cam.x : 0,
     y: S.cam ? S.cam.y : 0,
     zoom: S.cam ? S.cam.zoom : 0,

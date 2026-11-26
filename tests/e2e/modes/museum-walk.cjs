@@ -711,8 +711,100 @@ async function testMuseumWalk(browser) {
   }
 }
 
+// 向き（yaw）が止まるまで待つ。向きは ease で少しずつ追いつくため
+async function waitYawSettled(page, maxMs = 8000) {
+  let last = (await info(page)).yaw;
+  for (let t = 0, still = 0; t < maxMs && still < 3; t += 200) {
+    await page.waitForTimeout(200);
+    const yaw = (await info(page)).yaw;
+    still = Math.abs(yaw - last) < 0.05 ? still + 1 : 0;
+    last = yaw;
+  }
+  return info(page);
+}
+
+// TC-MWLK-015: 見回しの量（マウスと指で別々）と、見回せる範囲（左右対称に約 100 度）（#434）
+async function testMuseumWalkLook(browser) {
+  const server = await startWebServer();
+  try {
+    // PC: マウスのドラッグ
+    const page = await openWebPageWithSample(browser, server);
+    await start(page);
+    const pi = await info(page);
+    const body = pi.parts.find(p => p.kind === 'body' && p.z < pi.gates[1].z);
+    await walkTo(page, readingZ(body, 590));
+    await waitYawSettled(page);
+    const mouseDrag = async dx => {
+      await page.mouse.move(700, 450);
+      await page.mouse.down();
+      for (let i = 1; i <= 10; i++) await page.mouse.move(700 + dx * i / 10, 450);
+      await page.mouse.up();
+      return waitYawSettled(page);
+    };
+    const m0 = await info(page);
+    const m1 = await mouseDrag(100);
+    const mouseStep = m1.userYaw - m0.userYaw;
+    // 後ろ寄りに向いたとき、画面の端（後ろ側）にも壁が描かれ、背景（mw-view）の黒が見えないこと
+    const hitAt = x => page.evaluate(xx => { const el = document.elementFromPoint(xx, 450); return el ? String(el.className) : ''; }, x);
+    const left = await mouseDrag(2400);
+    const leftEdge = await hitAt(150);
+    await shot(page, 'look-left-100');
+    const right = await mouseDrag(-4000);
+    const rightEdge = await hitAt(1290);
+    await shot(page, 'look-right-100');
+    const pcErrors = page.consoleErrors.slice();
+    await page.context().close();
+
+    // スマホ: 指のスワイプ（CDP で送る）
+    // 狭い画面ではファイルのメニューが隠れるため、広い画面で文書を開いてから縦長にする（TC-MWLK-005 と同じ）
+    const phone = await openWebPageWithSample(browser, server, { hasTouch: true });
+    await phone.setViewportSize({ width: 390, height: 844 });
+    await phone.waitForTimeout(500);
+    await start(phone);
+    const qi = await info(phone);
+    const qBody = qi.parts.find(p => p.kind === 'body' && p.z < qi.gates[1].z);
+    await walkTo(phone, readingZ(qBody, 590));
+    await waitYawSettled(phone);
+    const cdp = await phone.context().newCDPSession(phone);
+    const touchDrag = async dx => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 150, y: 420 }] });
+      for (let i = 1; i <= 10; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 150 + dx * i / 10, y: 420 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      return waitYawSettled(phone);
+    };
+    const t0 = await info(phone);
+    const t1 = await touchDrag(100);
+    const touchStep = t1.userYaw - t0.userYaw;
+    // 300px で 90 度回る。端まで届かせるため、同じ向きに何回かスワイプする
+    await touchDrag(-300);
+    await touchDrag(-300);
+    const tRight = await touchDrag(-300);
+    await touchDrag(300);
+    await touchDrag(300);
+    const tLeft = await touchDrag(300);
+    await shot(phone, 'look-phone-left');
+    const phoneErrors = phone.consoleErrors.slice();
+    await phone.context().close();
+
+    const near = (a, b, tol) => Math.abs(a - b) <= tol;
+    const result = {
+      mouseStep, touchStep, left: left.yaw, right: right.yaw, leftEdge, rightEdge,
+      tRight: tRight.yaw, tLeft: tLeft.yaw, tZ: [t0.z, tLeft.z], pcErrors, phoneErrors
+    };
+    record('TC-MWLK-015', near(mouseStep, 12, 0.5) && near(touchStep, 30, 1)
+      && near(left.yaw, 100, 1) && near(right.yaw, -100, 1)
+      && /mw-wall/.test(leftEdge) && /mw-wall/.test(rightEdge)
+      && near(tRight.yaw, -100, 1) && near(tLeft.yaw, 100, 1)
+      && Math.abs(tLeft.z - t0.z) < 1
+      && pcErrors.length === 0 && phoneErrors.length === 0, JSON.stringify(result));
+  } finally {
+    await server.close();
+  }
+}
+
 module.exports = {
   suites: [
-    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013', 'TC-MWLK-014'], fn: testMuseumWalk, timeoutMs: 420000 }
+    { name: 'testMuseumWalk', tcPrefix: ['TC-MWLK-001', 'TC-MWLK-002', 'TC-MWLK-003', 'TC-MWLK-004', 'TC-MWLK-005', 'TC-MWLK-006', 'TC-MWLK-007', 'TC-MWLK-008', 'TC-MWLK-009', 'TC-MWLK-010', 'TC-MWLK-011', 'TC-MWLK-012', 'TC-MWLK-013', 'TC-MWLK-014'], fn: testMuseumWalk, timeoutMs: 420000 },
+    { name: 'testMuseumWalkLook', tcPrefix: ['TC-MWLK-015'], fn: testMuseumWalkLook, timeoutMs: 120000 }
   ]
 };
