@@ -61,9 +61,6 @@ export const en: I18nDict = {
   'present.menuAria': 'Choose presentation mode',
   'present.menuTitle': 'Choose presentation mode',
   'present.stageShow': 'Stage Show',
-  'present.mobileUnsupportedSuffix': ' (Desktop only)',
-  'present.mobileUnsupportedTitle': 'Temporarily disabled on smartphones due to layout issues (please use on PC)',
-  'present.mobileUnsupportedToast': 'Museum Walk is currently unavailable on smartphones (please use on PC)',
   'present.loadFailedToast': 'Failed to load presentation mode',
 
   // Right tools & More menu

@@ -944,7 +944,7 @@ async function testUrlLoading(browser) {
     }));
     await ctx52.close();
 
-    // スマホ端末（pointer: coarse + 幅 390px）でも起動すること（#397 Canary 検証）
+    // スマホ端末（pointer: coarse + 幅 390px）でも起動すること（#397）
     const ctx52Mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, locale: 'ja-JP' });
     const p52Mobile = await ctx52Mobile.newPage();
     await mockWebSamples(p52Mobile);

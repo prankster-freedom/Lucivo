@@ -59,9 +59,6 @@ export const ja = {
   'present.menuAria': '発表モードを選ぶ',
   'present.menuTitle': '発表モードを選ぶ',
   'present.stageShow': 'ステージ発表',
-  'present.mobileUnsupportedSuffix': '（スマホ非対応）',
-  'present.mobileUnsupportedTitle': 'スマホでは表示崩れのため一時的に制限しています（PC でご利用ください）',
-  'present.mobileUnsupportedToast': 'ミュージアム・ウォークは現在スマホでは利用できません（PC でご利用ください）',
   'present.loadFailedToast': '発表の見せ方を読み込めませんでした',
 
   // 右側ツール・その他メニュー
