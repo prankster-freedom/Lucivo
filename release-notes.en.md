@@ -2,6 +2,14 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.16.3 (2026-11-26)
+
+- feat(museum-walk): Museum Walk can now be selected and used on smartphones
+- feat(museum-walk): Added four rendering lightness levels (Crisp / Normal / Light / Very light). An "Auto" choice fits the device, and smartphones start at a lighter level. Choose it in the "Other" settings screen (Web edition), or specify it in the URL
+- feat(museum-walk): Large figures are now placed wider, with short following text set quietly beside them
+- fix(museum-walk): Fixed wall figures overlapping and getting cut off, and complex single-image figures now display correctly
+- fix(samples): Reordered the Color Museum slides, made the prism figure background transparent, and moved its title and tagline out of the image into text
+
 ## 0.16.2 (2026-11-25)
 
 - feat(ui): Compacted the Visual Mode style bar below 1024px (style dropdown, tone swatches, and layout icon) so all controls fit within a 360px viewport without horizontal scrolling
