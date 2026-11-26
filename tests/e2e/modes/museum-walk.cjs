@@ -773,9 +773,9 @@ async function testMuseumWalkLook(browser) {
       return waitYawSettled(phone);
     };
     const t0 = await info(phone);
-    const t1 = await touchDrag(100);
+    const t1 = await touchDrag(50);
     const touchStep = t1.userYaw - t0.userYaw;
-    // 300px で 90 度回る。端まで届かせるため、同じ向きに何回かスワイプする
+    // 300px で 180 度回る。基本の向きによらず端まで届かせるため、同じ向きに何回かスワイプする
     await touchDrag(-300);
     await touchDrag(-300);
     const tRight = await touchDrag(-300);
