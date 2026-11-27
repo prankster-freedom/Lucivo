@@ -6,6 +6,7 @@ import { t } from '../i18n';
 import { state, EXPORT_URLS, loadLibrary, runtime } from './state';
 import { getThemeSpec } from '../diagram/mermaid-config';
 import { scrollBehavior } from './editor-follow';
+import { fullCodeText } from './page-fit';
 
 export function clearVisualStageSpotlight(container) {
   if (!container) return;
@@ -276,8 +277,8 @@ export function setupVisualStageInteractions() {
     const codeCopyBtn = event.target.closest('.vs-code-copy-btn');
     if (codeCopyBtn) {
       const pre = codeCopyBtn.closest('pre');
-      const codeEl = pre && pre.querySelector('code');
-      const codeText = codeEl ? codeEl.textContent : '';
+      // 版面で分けたコードは、分ける前の全体を写す（DD-VTPL-155）
+      const codeText = pre ? fullCodeText(pre) : '';
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(codeText).catch(() => {});
       }

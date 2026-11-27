@@ -84,7 +84,7 @@ function readBlocks(slab: Element, figures: SVGSVGElement[]): Block[] {
 
 function chapterTitle(h2: Element): string {
   const copy = h2.cloneNode(true) as HTMLElement;
-  copy.querySelectorAll('.exhibition-num-badge').forEach(n => n.remove());
+  copy.querySelectorAll('.exhibition-num-badge, .page-no-pill').forEach(n => n.remove());
   return (copy.textContent || '').trim();
 }
 
@@ -102,6 +102,13 @@ export function readOutline(root: HTMLElement): Outline {
   wrap.querySelectorAll(':scope > .exhibition-slab').forEach(slab => {
     const h2 = slab.querySelector('h2');
     const blocks = readBlocks(slab, outline.figures);
+    // 続きのページ（版面の比率で分けた章。ARC-PAGE-008）は、直前の章の展示に足す
+    if (slab.classList.contains('is-continuation')) {
+      const prev = outline.chapters[outline.chapters.length - 1];
+      if (prev) prev.blocks.push(...blocks);
+      else outline.intro.push(...blocks);
+      return;
+    }
     if (!h2) {
       outline.intro.push(...blocks);
       return;

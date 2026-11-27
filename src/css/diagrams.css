@@ -50,26 +50,27 @@ svg .edgeLabel span:empty {
    ========================================================================== */
 /* 図のカードの描画領域の高さ。プレビューの見えている高さから、ツールバーと図のカードの見出し・余白を除いた目安。
    描画のときに大きさを測らないよう、画面の高さから決める（NFR-007）。1:n は、既定の規則（表示枠の幅に合わせる）のまま。
-   ステージ発表の間は使わない（図や章の大きさを画面に合わせる仕組みを持つ） */
+   ステージ発表の間は使わない（図や章の大きさを画面に合わせる仕組みを持つ）。ただし、版面の比率のページ（html[data-page-ratio]）では、
+   ページの組みをそのまま拡大して発表するため、発表の間も使い、ページごとに page-fit.ts が残りの高さで上書きする（DD-VTPL-153・157） */
 :is(.diagram-viewport, .exhibition-viewport) {
   --fit-area-height: max(16rem, calc(100dvh - 12rem));
 }
 /* Fit: 横に加えて、縦も描画領域に収める。文字の大きさの下限は設けない（NFR-005） */
-html:not(.is-stage-show) :is(.diagram-viewport, .exhibition-viewport).is-scale-fit:not(.is-zoomed) svg {
+html:is(:not(.is-stage-show), [data-page-ratio]) :is(.diagram-viewport, .exhibition-viewport).is-scale-fit:not(.is-zoomed) svg {
   max-width: min(100%, var(--fit-max-width, 100%), calc(var(--fit-aspect, 100) * var(--fit-area-height))) !important;
 }
 /* 2 段組みの拡大の上限（DD-DIAG-044）と、Fit の高さの上限を両方かける */
-html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport.is-scale-fit:not(.is-zoomed) svg {
+html:is(:not(.is-stage-show), [data-page-ratio]) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport.is-scale-fit:not(.is-zoomed) svg {
   max-width: min(100%, var(--fit-max-width, 100%), max(var(--natural-width, 100%), calc(var(--fit-aspect, 100) * var(--split-fit-height, 30rem))), calc(var(--fit-aspect, 100) * var(--fit-area-height))) !important;
 }
 /* n:1: 縦を描画領域に合わせる。横にはみ出す図は、スクロール表示になる */
-html:not(.is-stage-show) :is(.diagram-viewport, .exhibition-viewport).is-scale-height:not(.is-zoomed) svg {
+html:is(:not(.is-stage-show), [data-page-ratio]) :is(.diagram-viewport, .exhibition-viewport).is-scale-height:not(.is-zoomed) svg {
   width: calc(var(--fit-aspect, 1) * var(--fit-area-height)) !important;
   max-width: none !important;
   flex-shrink: 0 !important;
 }
 /* n:1 と 100% は表示枠の幅に合わせないため、2 段組みの拡大の上限も外す */
-html:not(.is-stage-show) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport.is-scale-height:not(.is-zoomed) svg {
+html:is(:not(.is-stage-show), [data-page-ratio]) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport.is-scale-height:not(.is-zoomed) svg {
   max-width: none !important;
 }
 

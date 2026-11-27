@@ -324,6 +324,7 @@ export const en: I18nDict = {
   'render.codeCopyTitle': 'Copy code to clipboard',
   'render.codeCopyAria': 'Copy code',
   'render.codeCopiedToast': 'Code copied to clipboard',
+  'page.continued': 'CONTINUED →',
   'render.endcardAria': 'End card',
   'render.slabActionsAria': 'Slab actions',
   'render.slabCopyTitle': 'Copy this chapter card image to clipboard',

@@ -8,6 +8,7 @@ import { ensureStyleFont } from './style-fonts';
 import { assetUrl } from './asset-url';
 import { setupMermaid } from '../diagram/mermaid-config';
 import { updateAllSlabSplits } from '../diagram/svg-postprocess';
+import { requestPageFit } from './page-fit';
 import {
   VISUAL_STYLE_KEYS,
   COLOR_TONES,
@@ -213,6 +214,7 @@ export function selectVisualLayout(layoutId: string) {
   if (state.isVisualMode) {
     updateAllSlabSplits(document.getElementById('visual-stage-container'));
   }
+  requestPageFit('all');
   syncUrlFromState();
   showToast(t('toast.layoutApplied', { label: getLayoutLabel(next) }));
 }

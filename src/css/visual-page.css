@@ -1,0 +1,177 @@
+/* ==================== 版面の比率とページ割り（FR-070, DTP-VTPL-150, ARC-PAGE-001〜007, DD-VTPL-150〜158） ==================== */
+/* Visualモードのページ単位で、表紙と各章を比率の箱（ページ）にする。<html data-page-ratio> は page-fit.ts が、
+   ページの箱を使うとき（Visualモード・ページ単位・横 16:10）だけ付ける。この属性がないときは、今の表示・発表・印刷のまま。
+   詰める段階（data-fit-step）・続きのページ（.is-continuation）・図の高さ（--fit-area-height）は page-fit.ts が決める。
+   余白の値（--page-pad-y）は page-fit.ts の STEP_PAD_BOTTOM と同じにする */
+html[data-page-ratio="16:10"] {
+  --page-aspect-ratio: 16 / 10;
+}
+
+/* ページの箱（DD-VTPL-151）: 中身の量で高さを変えない。余白は画面の幅（vw）によらない固定の値にし、発表と印刷で同じ組みにする */
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-hero, .exhibition-slab) {
+  --page-pad-y: 32px;
+  --page-pad-x: 36px;
+  flex: none;
+  box-sizing: border-box;
+  aspect-ratio: var(--page-aspect-ratio);
+  height: auto;
+  min-height: 0;
+  overflow: clip;
+  /* 大きさは幅と比率だけで決まるため、中身から切り離す（size）。ページごとに組み直しが閉じ、page-fit.ts が測るたびの組み直しが軽くなる */
+  contain: size layout paint;
+  padding: var(--page-pad-y) var(--page-pad-x);
+}
+/* 長い文書の画面外のページは、今のまま content-visibility: auto で描画を省く（#251, NFR-006）。ページの高さは aspect-ratio で
+   決まるため、省いている間も大きさは変わらない。page-fit.ts が測るときは、ブラウザがそのページだけを組む */
+html[data-page-ratio] .exhibition-wrap.has-content-visibility:not(.is-single-page) > .exhibition-slab:nth-child(n+7) {
+  contain-intrinsic-size: none;
+}
+/* 詰める段階 1 以上: 余白と行間を詰める（DD-VTPL-152） */
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > [data-fit-step]:not([data-fit-step="0"]) {
+  --page-pad-y: 22px;
+  --page-pad-x: 28px;
+}
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-slab[data-fit-step]:not([data-fit-step="0"]) :is(p, li, dd) {
+  line-height: 1.6;
+}
+/* 本文の大きさ（段階 2〜4、分けられない要素の縮小）: 本文の要素に zoom を掛ける。zoom は折り返しを組み直す */
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-slab > :not(h2, .front-matter, .slab-actions, .page-continued, .vs-cover-texture, .vs-watermark-num),
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-hero > * {
+  zoom: var(--page-zoom, 1);
+}
+/* 背の低い章（DTP-VTPL-150）: 見出しは上に置き、本文を残りの高さの上下中央に置く。空きの半分（--page-center-pad）は page-fit.ts が測る */
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-slab > h2 {
+  margin-bottom: calc(1rem + var(--page-center-pad, 0px));
+}
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-slab[data-fit-step]:not([data-fit-step="0"]) > h2 {
+  margin-bottom: calc(0.6rem + var(--page-center-pad, 0px));
+}
+/* 表紙・ステートメント型・リード型は、全体を上下中央に置く */
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-hero, .exhibition-slab.vs-tpl-statement, .exhibition-slab.vs-tpl-lead) {
+  padding-top: calc(var(--page-pad-y) + var(--page-center-pad, 0px));
+}
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-slab.vs-tpl-statement, .exhibition-slab.vs-tpl-lead) > h2 {
+  margin-bottom: 1rem;
+}
+
+/* 図（DD-VTPL-153）: 表示枠の余白を固定の値にし（page-fit.ts の VIEWPORT_PAD）、高さの目安は page-fit.ts が残りの高さで上書きする */
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) .exhibition-viewport,
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) .exhibition-slab-split:not(.is-stacked) .exhibition-viewport {
+  padding: 24px;
+  min-height: 0;
+}
+/* 大きな画像も、本文の高さを上限にする */
+html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-slab img {
+  max-height: var(--page-body-height, none);
+  object-fit: contain;
+}
+
+/* 続きのページ（DD-VTPL-155）: 題の右の 2 / 3 の印と、右下の「続く →」 */
+.page-no-pill {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid color-mix(in oklab, var(--vs-c1) 70%, transparent);
+  border-radius: 999px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklab, var(--vs-c1) 80%, var(--vs-tone, #0F172A));
+  white-space: nowrap;
+}
+body[data-appearance="dark"] .page-no-pill {
+  color: color-mix(in oklab, var(--vs-c1) 75%, #FFFFFF);
+}
+.page-continued {
+  position: absolute;
+  right: 1.4rem;
+  bottom: 0.85rem;
+  z-index: 1;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #64748B);
+  pointer-events: none;
+}
+/* 解説＋図版型の続きのページは、図の段がないため 1 段にする */
+.exhibition-slab-split.is-continuation > .exhibition-slab-body {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+/* 分けた項目の続きは、番号・印を付けず、数えない */
+.is-pf-split-item {
+  counter-increment: none !important;
+  list-style: none;
+}
+.is-pf-split-item::before,
+.is-pf-split-item::marker {
+  content: none !important;
+  display: none !important;
+}
+
+/* ステージ発表（DD-VTPL-157）: ページの組みを変えずに、画面に合わせて一様に拡大する。
+   倍率（--page-stage-scale）は stage/index.ts が、舞台の余白（上 6vh・下 9vh・左右 6vw）を引いた大きさから決める */
+html.is-stage-show[data-page-ratio] #visual-stage-container {
+  overflow: hidden;
+}
+html.is-stage-show[data-page-ratio]:not(.is-stage-overview) .exhibition-wrap {
+  position: absolute;
+  left: 50%;
+  top: calc(6vh + (100% - 15vh) / 2);
+  width: var(--page-width, 62rem);
+  max-width: none;
+  aspect-ratio: auto;
+  margin: 0;
+  transform: translate(-50%, -50%) scale(var(--page-stage-scale, 1));
+  transform-origin: 50% 50%;
+}
+/* 表紙は目次を出さない（DTP-VTPL-100）ため、ページ単位で測った空き（--page-center-pad）を使わず、flex で上下中央に置く */
+html.is-stage-show[data-page-ratio]:not(.is-stage-overview) .exhibition-wrap > .exhibition-hero.is-scene {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: var(--page-pad-y);
+}
+/* 図のカードの札の操作部品（曲線・倍率・書き出し）は、舞台では見せない。札ごと消すとページの組みが変わるため、場所は残す */
+html.is-stage-show[data-page-ratio] .exhibition-diagram-header :is(button, .pill-container) {
+  visibility: hidden;
+}
+/* 発表の間に章を決め直すとき（図の描画の後など）、隠れているページを測れるよう、見えない形で同じ幅に組む（page-fit.ts） */
+html.is-stage-show[data-page-ratio] .exhibition-wrap.is-page-measuring > :not(.is-scene) {
+  display: block !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* 俯瞰: 升目は、ページの大きさのまま縮める（--page-ov-s は stage-overview.ts が決める） */
+html.is-stage-show.is-stage-overview[data-page-ratio] .exhibition-wrap > * {
+  width: var(--page-width, 62rem);
+  height: var(--page-height, 38.75rem);
+  margin: 0 calc(var(--page-width, 62rem) * (var(--page-ov-s, 0.2) - 1)) calc(var(--page-height, 38.75rem) * (var(--page-ov-s, 0.2) - 1)) 0;
+  padding: var(--page-pad-y) var(--page-pad-x);
+  transform: scale(var(--page-ov-s, 0.2));
+  border-radius: 22px;
+  display: block !important;
+}
+html.is-stage-show.is-stage-overview[data-page-ratio] .exhibition-wrap > :is(.exhibition-hero, .exhibition-slab.vs-tpl-statement, .exhibition-slab.vs-tpl-lead) {
+  padding-top: calc(var(--page-pad-y) + var(--page-center-pad, 0px));
+}
+
+/* 印刷（DD-VTPL-158）: 画面で決めたページを、ページの幅のまま zoom で版面（277 × 172mm）に収め、1 ページに 1 枚ずつ刷る */
+@media print {
+  html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-hero, .exhibition-slab):not(.vs-endcard) {
+    width: var(--page-width, 62rem);
+    zoom: var(--page-print-zoom, 1);
+    break-inside: avoid;
+    padding: var(--page-pad-y) var(--page-pad-x) !important;
+  }
+  html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-hero, .exhibition-slab.vs-tpl-statement, .exhibition-slab.vs-tpl-lead) {
+    padding-top: calc(var(--page-pad-y) + var(--page-center-pad, 0px)) !important;
+  }
+}

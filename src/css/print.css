@@ -143,7 +143,9 @@
   /* 1 ページに収まる表紙と章は、発表と同じくページの上下中央に置く（DTP-SHOW-020 にそろえる。DD-VTPL-137）。
      章の枠を版面の高さいっぱい（173mm。端数で次のページにあふれないよう 1mm 引く）にし、中身を上下中央にそろえる。
      版面より長い章は、枠が中身に合わせて伸びるため、これまでどおり上から流れる */
-  .exhibition-wrap > :is(.exhibition-hero, .exhibition-slab) {
+  /* 版面の比率のページ（html[data-page-ratio]）では、画面で決めたページを 1 対 1 で刷る（DD-VTPL-158、visual-page.css）。
+     以下の、印刷だけの詰め方・置き方（DD-VTPL-132・134・137・139）は、ページの箱がないとき（シングルページ表示など）だけ効かせる */
+  html:not([data-page-ratio]) .exhibition-wrap > :is(.exhibition-hero, .exhibition-slab) {
     min-height: 172mm;
     display: flex !important;
     flex-direction: column;
@@ -167,27 +169,29 @@
   }
   /* 表紙: 題名と目次を 1 ページに収める。画面の大きさのままだと、章の多い文書で目次だけが次のページへ送られる（DD-VTPL-136） */
   .exhibition-wrap > .exhibition-hero {
-    padding: 8mm 10mm !important;
     break-inside: avoid;
   }
-  .exhibition-hero .vs-cover-title {
+  html:not([data-page-ratio]) .exhibition-wrap > .exhibition-hero {
+    padding: 8mm 10mm !important;
+  }
+  html:not([data-page-ratio]) .exhibition-hero .vs-cover-title {
     font-size: 22pt !important;
     line-height: 1.25 !important;
   }
-  .exhibition-hero .vs-cover-deck {
+  html:not([data-page-ratio]) .exhibition-hero .vs-cover-deck {
     margin-top: 2mm !important;
     font-size: 10.5pt !important;
   }
-  .exhibition-hero .vs-cover-agenda {
+  html:not([data-page-ratio]) .exhibition-hero .vs-cover-agenda {
     margin-top: 5mm !important;
     padding-top: 3mm !important;
     column-gap: 6mm !important;
   }
-  .exhibition-hero .vs-cover-agenda-item {
+  html:not([data-page-ratio]) .exhibition-hero .vs-cover-agenda-item {
     padding: 0.9mm 1.5mm !important;
     gap: 2.5mm !important;
   }
-  .exhibition-hero :is(.vs-cover-agenda-no, .vs-cover-agenda-title) {
+  html:not([data-page-ratio]) .exhibition-hero :is(.vs-cover-agenda-no, .vs-cover-agenda-title) {
     font-size: 9pt !important;
   }
   /* モノクロ印刷・PDF でのカード・丸・コールアウトの境界線と視認性の補強 */
@@ -214,12 +218,12 @@
     break-inside: avoid;
   }
   /* 図は版面の幅に収め、縦長の図が何ページも占めないよう高さにも上限を置く（縦横比は保ち、左右は余白にする） */
-  [data-stage-index] {
+  html:not([data-page-ratio]) [data-stage-index] {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
   }
-  [data-stage-index] > svg {
+  html:not([data-page-ratio]) [data-stage-index] > svg {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -229,76 +233,76 @@
     max-height: 200mm !important;
   }
   /* 章の枠と図の表示枠の余白は、画面の幅（vw）で決まる値をやめ、版面に合わせて詰める */
-  .exhibition-wrap > .exhibition-slab {
+  html:not([data-page-ratio]) .exhibition-wrap > .exhibition-slab {
     padding: 7mm 8mm !important;
   }
-  .exhibition-wrap .exhibition-viewport {
+  html:not([data-page-ratio]) .exhibition-wrap .exhibition-viewport {
     padding: 5mm !important;
     min-height: 0 !important;
   }
   /* 図の高さの上限: 版面の高さ（173mm）から、章の枠の余白（14mm）・章の見出し（約 18mm）・
      図のカードの札（約 12mm）・表示枠の余白（10mm）と、ゆとり（約 14mm）を引いた高さ。図は途中で分けられないため、
      これを超えると図だけが次のページへ送られ、見出しと札が前のページに残る */
-  .exhibition-wrap [data-stage-index] > svg {
+  html:not([data-page-ratio]) .exhibition-wrap [data-stage-index] > svg {
     max-height: 105mm !important;
   }
   /* 解説＋図版型（split）: 画面が Split 表示で .is-stacked が付いていても、A4 横版面の 2 段に収まる標準図
      （data-print-stacked なし）は左右 2 段組みで刷り 1 ページに収める（#261, DD-VTPL-139） */
-  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body {
+  html:not([data-page-ratio]) .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body {
     grid-template-columns: minmax(68mm, 5fr) minmax(0, 7fr) !important;
     gap: 7mm !important;
   }
-  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose {
+  html:not([data-page-ratio]) .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose {
     align-self: stretch;
     display: flex;
     flex-direction: column;
   }
-  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::before,
-  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::after {
+  html:not([data-page-ratio]) .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::before,
+  html:not([data-page-ratio]) .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::after {
     content: "";
     flex: 1 1 0;
   }
-  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::before {
+  html:not([data-page-ratio]) .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-prose::before {
     max-height: 45mm;
   }
-  .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-figure > .exhibition-diagram-card {
+  html:not([data-page-ratio]) .exhibition-slab-split:not([data-print-stacked]) > .exhibition-slab-body > .exhibition-slab-figure > .exhibition-diagram-card {
     margin: 0 !important;
   }
   /* 横に大きい図（data-print-stacked）は全幅 1 段組みのまま、上の解説文のぶん図の高さ上限を詰めて 1 ページに収める */
-  .exhibition-slab-split[data-print-stacked] > .exhibition-slab-body {
+  html:not([data-page-ratio]) .exhibition-slab-split[data-print-stacked] > .exhibition-slab-body {
     grid-template-columns: minmax(0, 1fr) !important;
   }
-  .exhibition-slab-split[data-print-stacked] [data-stage-index] > svg {
+  html:not([data-page-ratio]) .exhibition-slab-split[data-print-stacked] [data-stage-index] > svg {
     max-height: 90mm !important;
   }
   /* 項目数の多いリスト・カード・手順が版面（173mm）をわずかに超えて 1 項目だけ次ページへはみ出すのを防ぐ（#261, DD-VTPL-139）。
      zoom や事前の位置計測を使わず、CSS の :has() で項目数に応じて段階的に文字と余白を詰める */
-  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(5)) {
+  html:not([data-page-ratio]) .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(5)) {
     font-size: 0.92rem !important;
   }
-  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(5)) > li {
+  html:not([data-page-ratio]) .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(5)) > li {
     margin-top: 0.25rem !important;
     margin-bottom: 0.25rem !important;
     line-height: 1.52 !important;
   }
-  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(8)) {
+  html:not([data-page-ratio]) .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(8)) {
     font-size: 0.88rem !important;
   }
-  .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(8)) > li {
+  html:not([data-page-ratio]) .exhibition-slab :is(ul:not(.vs-points):not(.vs-cover-agenda), ol:not(.vs-steps):not(.vs-cover-agenda)):has(> li:nth-child(8)) > li {
     margin-top: 0.18rem !important;
     margin-bottom: 0.18rem !important;
     line-height: 1.45 !important;
   }
-  .exhibition-slab ul.vs-points:has(> li:nth-child(5)) {
+  html:not([data-page-ratio]) .exhibition-slab ul.vs-points:has(> li:nth-child(5)) {
     gap: 0.75rem !important;
   }
-  .exhibition-slab ul.vs-points:has(> li:nth-child(5)) > li {
+  html:not([data-page-ratio]) .exhibition-slab ul.vs-points:has(> li:nth-child(5)) > li {
     padding: 0.95rem 1.05rem !important;
   }
-  .exhibition-slab ol.vs-steps.is-vertical:has(> li:nth-child(6)) {
+  html:not([data-page-ratio]) .exhibition-slab ol.vs-steps.is-vertical:has(> li:nth-child(6)) {
     gap: 0.65rem !important;
   }
-  .exhibition-slab ol.vs-steps.is-vertical:has(> li:nth-child(6)) > li {
+  html:not([data-page-ratio]) .exhibition-slab ol.vs-steps.is-vertical:has(> li:nth-child(6)) > li {
     font-size: 0.93rem !important;
     line-height: 1.5 !important;
   }

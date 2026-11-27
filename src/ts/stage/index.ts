@@ -191,7 +191,8 @@ function applyScene(animate) {
   });
   applyBuild(scene);
   if (animate) stageContainer().scrollTop = 0;
-  fitSceneDiagrams(scene);
+  if (isPageMode()) updatePageStageScale();
+  else fitSceneDiagrams(scene);
   if (animate) replaySceneEntrance(scene);
   updateHud();
   scheduleAuto();
@@ -437,7 +438,27 @@ function toggleShowAppearance() {
   document.getElementById('btn-theme-toggle').click();
 }
 
+// 版面の比率のページ（DD-VTPL-157）があるか。あるときは、ページの組みを一様に拡大して見せる
+function isPageMode() {
+  return Boolean(document.documentElement.dataset.pageRatio);
+}
+
+// ページを画面に合わせる倍率。舞台の余白（上 6vh・下 9vh・左右 6vw）を引いた大きさに収める
+function updatePageStageScale() {
+  const container = stageContainer();
+  const wrap = container && container.querySelector('.exhibition-wrap');
+  const scene = currentScene();
+  if (!wrap || !scene || !isPageMode()) return;
+  const w = scene.offsetWidth;
+  const h = scene.offsetHeight;
+  if (!w || !h) return;
+  const scale = Math.min((window.innerWidth * 0.88) / w, (window.innerHeight * 0.85) / h);
+  wrap.style.setProperty('--page-stage-scale', scale.toFixed(4));
+}
+
 function collectScenes() {
+  // ページ割りの待ち行列を処理しきってから、続きのページを含めてシーンを集める（ARC-PAGE-005）
+  if (window.LucivoPageFit) window.LucivoPageFit.flush();
   const wrap = stageContainer().querySelector('.exhibition-wrap');
   return wrap ? Array.from(wrap.querySelectorAll(':scope > .exhibition-hero, :scope > .exhibition-slab')) : [];
 }
@@ -496,6 +517,7 @@ function enterShow() {
   swipe.tracking = false;
   swipe.guardUntil = 0;
   window.addEventListener('resize', refitScene);
+  document.addEventListener('lucivo:pagefit', onPageFit);
   wakeHud();
   applyScene(true);
 
@@ -506,7 +528,13 @@ function enterShow() {
 function refitScene() {
   if (!show.active || !currentScene()) return;
   if (ov.active) overview.layoutOverview();
+  else if (isPageMode()) updatePageStageScale();
   else fitSceneDiagrams(currentScene());
+}
+
+// 発表中にページ割りが決め直されたら（明暗の切り替えで作り直したときなど）、続きのページを含めてシーンを取り直す
+function onPageFit() {
+  if (show.active) refreshScenes();
 }
 
 function restoreView() {
@@ -552,6 +580,7 @@ function exitShow() {
   stageContainer().removeEventListener('touchend', onShowTouchEnd, true);
   stageContainer().removeEventListener('touchcancel', onShowTouchCancel, true);
   window.removeEventListener('resize', refitScene);
+  document.removeEventListener('lucivo:pagefit', onPageFit);
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
   show.scenes.forEach(scene => {

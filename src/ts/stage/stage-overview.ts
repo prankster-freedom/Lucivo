@@ -11,7 +11,7 @@ export function createStageOverview(ctx) {
   const pointer = { on: false, moved: false, x: 0, y: 0, frame: 0 };
 
   const overviewWrap = () => ctx.stageContainer().querySelector('.exhibition-wrap');
-  const overviewScale = () => parseFloat(overviewWrap().style.getPropertyValue('--ov-s')) || 0.2;
+  const overviewScale = () => parseFloat(overviewWrap().style.getPropertyValue(document.documentElement.dataset.pageRatio ? '--page-ov-s' : '--ov-s')) || 0.2;
 
   // 画面の幅と高さの両方に収まる縮小率が最も大きくなる列の数（1〜6）を選ぶ。下限を下回る場合はスクロールで見せる
   function layoutOverview() {
@@ -27,8 +27,18 @@ export function createStageOverview(ctx) {
     for (let c = 2; c <= Math.min(n, OVERVIEW.maxCols); c++) if (fit(c) > fit(cols)) cols = c;
     const wrap = overviewWrap();
     wrap.style.setProperty('--ov-cols', String(cols));
-    wrap.style.setProperty('--ov-s', Math.max(OVERVIEW.minScale, fit(cols)).toFixed(4));
+    const s = Math.max(OVERVIEW.minScale, fit(cols));
+    wrap.style.setProperty('--ov-s', s.toFixed(4));
     wrap.style.setProperty('--ov-gap', `${gap.toFixed(1)}px`);
+    // 版面の比率のページ（DD-VTPL-157）: 升目はページの大きさのまま、画面と同じ大きさの升目に収まるよう縮める
+    const page = pageSize();
+    if (page) wrap.style.setProperty('--page-ov-s', (s * Math.min(window.innerWidth / page.w, window.innerHeight / page.h)).toFixed(4));
+  }
+
+  function pageSize() {
+    if (!document.documentElement.dataset.pageRatio) return null;
+    const scene = ctx.show.scenes[0];
+    return scene && scene.offsetWidth ? { w: scene.offsetWidth, h: scene.offsetHeight } : null;
   }
 
   function selectTile(index) {
@@ -43,7 +53,15 @@ export function createStageOverview(ctx) {
     if (prefersReducedMotion() || !tile.animate) return Promise.resolve();
     tile.classList.add('is-ov-zooming');
     const rect = tile.getBoundingClientRect();
-    const full = `translate(${-rect.left}px, ${-rect.top}px) scale(1)`;
+    let full = `translate(${-rect.left}px, ${-rect.top}px) scale(1)`;
+    // 版面の比率のページ: 全画面は、舞台の中央に拡大したページの位置と大きさ（DD-VTPL-157）
+    const page = pageSize();
+    if (page) {
+      const s = Math.min((window.innerWidth * 0.88) / page.w, (window.innerHeight * 0.85) / page.h);
+      const left = (window.innerWidth - page.w * s) / 2;
+      const top = window.innerHeight * 0.06 + (window.innerHeight * 0.85 - page.h * s) / 2;
+      full = `translate(${left - rect.left}px, ${top - rect.top}px) scale(${s})`;
+    }
     const small = `scale(${overviewScale()})`;
     const animation = tile.animate([{ transform: toTile ? full : small }, { transform: toTile ? small : full }], {
       duration: OVERVIEW.zoomMs,
@@ -165,7 +183,7 @@ export function createStageOverview(ctx) {
 
   function clearOverviewProps() {
     const wrap = overviewWrap();
-    if (wrap) ['--ov-cols', '--ov-s', '--ov-gap'].forEach(name => wrap.style.removeProperty(name));
+    if (wrap) ['--ov-cols', '--ov-s', '--ov-gap', '--page-ov-s'].forEach(name => wrap.style.removeProperty(name));
   }
 
   return {

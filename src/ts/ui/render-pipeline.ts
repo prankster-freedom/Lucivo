@@ -39,6 +39,7 @@ import {
   postProcessConnectedScope
 } from './fragment-renderer';
 import { applyToneToVisualStage } from './view-controls';
+import { requestPageFit, removePageWithContinuations } from './page-fit';
 import { rebuildFollowIndex, rebuildFollowIndexFromEntries, scheduleFollow } from './editor-follow';
 import { resolveFolderImages } from '../markdown/local-images';
 import { renderMath } from '../markdown/math-and-headings';
@@ -731,7 +732,7 @@ export function renderApp() {
             if (window.LucivoStage && typeof LucivoStage.unmountLights === 'function') {
               LucivoStage.unmountLights(oldEl);
             }
-            oldEl.remove();
+            removePageWithContinuations(oldEl);
           }
         }
 
@@ -911,6 +912,15 @@ export function renderApp() {
   } else {
     mountStage(activeContainer);
   }
+  // 版面の比率とページ割り（ARC-PAGE-005）: 全体の描画はすべての章、差分の描画は差し込んだ章（と表紙）を決め直す
+  if (!isVisual) {
+    requestPageFit(null);
+  } else if (visualPatchedScopes !== null) {
+    const heroForFit = runtime.prevVisCache?.heroEl;
+    requestPageFit(heroForFit ? [...visualPatchedScopes, heroForFit] : visualPatchedScopes);
+  } else {
+    requestPageFit('all');
+  }
   if (document.activeElement && document.activeElement.id === 'markdown-editor') scheduleFollow();
 
   if (dirtyBlocks.length > 0) {
@@ -1016,7 +1026,10 @@ async function processDirtyBlocks(dirtyBlocks, target) {
         stageViewport.innerHTML = finalSvg;
         applyReadableFit(stageViewport.querySelector(':scope > svg'), block.cacheKey);
         mountStage(stageViewport);
-        if (target.isVisual) linkSplitTerms(stageViewport.closest('.exhibition-slab-split'));
+        if (target.isVisual) {
+          linkSplitTerms(stageViewport.closest('.exhibition-slab-split'));
+          requestPageFit(stageViewport);
+        }
       }
     } catch (err) {
       // Mermaid が描画のために body に置いた一時的な要素が残っていれば消す（DD-DIAG-064）
@@ -1029,7 +1042,10 @@ async function processDirtyBlocks(dirtyBlocks, target) {
           stageViewport.innerHTML = fallback;
           applyReadableFit(stageViewport.querySelector(':scope > svg'));
           mountStage(stageViewport);
-          if (target.isVisual) linkSplitTerms(stageViewport.closest('.exhibition-slab-split'));
+          if (target.isVisual) {
+            linkSplitTerms(stageViewport.closest('.exhibition-slab-split'));
+            requestPageFit(stageViewport);
+          }
           showToast('構文エラーのため直前の正常状態を表示');
         } else {
           stageViewport.innerHTML = `<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">構文エラー: 正しいMermaid記法を入力してください</div>`;

@@ -220,14 +220,18 @@ function layoutFlow(flow) {
   const hostRect = host.getBoundingClientRect();
   const width = Math.ceil(svgRect.width);
   const height = Math.ceil(svgRect.height);
+  // 画面の座標から、表示枠の中の座標への倍率。版面の比率のページでは、詰める段階の zoom（DD-VTPL-152）と、
+  // ステージ発表の一様な拡大（DD-VTPL-157）で、画面の大きさと組んだ大きさが違う。Canvas の位置と大きさは表示枠の中の座標で書き、
+  // 画素の数は画面の大きさに合わせる（拡大しても光がぼけないように）
+  const k = host.offsetWidth ? hostRect.width / host.offsetWidth : 1;
   // 1:1 の大きな図で Canvas のメモリーが増えすぎないよう、解像度の倍率に上限を設ける
   const limit = Math.sqrt(LIGHT.maxCanvasPixels / Math.max(1, width * height));
   const dpr = Math.min(window.devicePixelRatio || 1, 2, limit);
   [back, front].forEach(({ canvas }) => {
-    canvas.style.left = `${svgRect.left - hostRect.left + host.scrollLeft - host.clientLeft}px`;
-    canvas.style.top = `${svgRect.top - hostRect.top + host.scrollTop - host.clientTop}px`;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    canvas.style.left = `${(svgRect.left - hostRect.left) / k + host.scrollLeft - host.clientLeft}px`;
+    canvas.style.top = `${(svgRect.top - hostRect.top) / k + host.scrollTop - host.clientTop}px`;
+    canvas.style.width = `${width / k}px`;
+    canvas.style.height = `${height / k}px`;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
   });

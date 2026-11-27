@@ -690,6 +690,8 @@ export const state = {
   isVisualMode: false,
   infographicStyle: 'shapes',
   visualLayout: 'page' as 'page' | 'single',
+  // 版面の比率（ARC-PAGE-001）。'auto' は画面の向きで決める。手で選ぶ UI と URL の ratio は #438 の 7c
+  pageRatio: 'auto' as 'auto' | '16:10' | '10:16',
   showFrontMatter: false,
   signalLightsEnabled: true,
   ambientEffectsEnabled: false,

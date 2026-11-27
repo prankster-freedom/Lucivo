@@ -322,6 +322,7 @@ export const ja = {
   'render.codeCopyTitle': 'コードをクリップボードにコピー',
   'render.codeCopyAria': 'コードをコピー',
   'render.codeCopiedToast': 'コードをクリップボードにコピーしました',
+  'page.continued': '続く →',
   'render.endcardAria': 'エンドカード',
   'render.slabActionsAria': 'スラブの操作',
   'render.slabCopyTitle': 'この章のカード画像をクリップボードにコピー',

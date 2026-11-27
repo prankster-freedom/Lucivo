@@ -63,8 +63,10 @@ html.is-animation-off .exhibition-slab .vs-steps > li::after {
 }
 
 /* ステージ発表（DTP-SHOW-010〜060, FR-019）: 1 章を 1 シーンとして全画面に出す。
-   rem の基準を画面の幅と高さ（16:9 相当）の小さい方に合わせ、横長画面・ウィンドウ表示でも版面全体が収まるようにする */
-html.is-stage-show {
+   rem の基準を画面の幅と高さ（16:9 相当）の小さい方に合わせ、横長画面・ウィンドウ表示でも版面全体が収まるようにする。
+   版面の比率のページ（html[data-page-ratio]）では、ページの組みをそのまま一様に拡大するため（DD-VTPL-157、visual-page.css）、
+   この節の大きさの上書きは使わない */
+html.is-stage-show:not([data-page-ratio]) {
   font-size: clamp(10px, min(1.22vw, 2.12dvh), 34px);
 }
 html.is-stage-show body {
@@ -109,46 +111,53 @@ html.is-stage-show .exhibition-wrap > :not(.is-scene) {
 }
 html.is-stage-show .exhibition-wrap > .is-scene {
   background: transparent;
-  border: 0;
   box-shadow: none;
-  padding: 0;
   /* 俯瞰から戻るとき、スラブの transform のトランジションで縮小図からもう一度拡大し直さないようにする */
   transition: none;
+}
+html.is-stage-show:not([data-page-ratio]) .exhibition-wrap > .is-scene {
+  border: 0;
+  padding: 0;
+}
+/* ページの組みを変えないよう、枠の太さは残して色だけ消す */
+html.is-stage-show[data-page-ratio] .exhibition-wrap > .is-scene {
+  border-color: transparent;
 }
 /* 画面より短いシーンは枠の中で上下の中央に置く。長いシーンは余白が 0 になり、上から置いてスクロールで見せる（DTP-SHOW-020, #144）。
    俯瞰では格子の升目に置くため、対象から外す */
 html.is-stage-show:not(.is-stage-overview) .exhibition-wrap > .is-scene {
   margin-block: auto;
 }
-html.is-stage-show .exhibition-hero h1 {
+html.is-stage-show:not([data-page-ratio]) .exhibition-hero h1 {
   font-size: 3.4rem;
   line-height: 1.25;
   margin-top: 1rem;
   word-break: auto-phrase;
   text-wrap: balance;
 }
-html.is-stage-show .vs-cover-eyebrow {
+html.is-stage-show:not([data-page-ratio]) .vs-cover-eyebrow {
   font-size: 0.95rem;
   margin-top: 1.5rem;
 }
-html.is-stage-show .vs-cover-deck {
+html.is-stage-show:not([data-page-ratio]) .vs-cover-deck {
   max-width: 52rem;
   font-size: 1.45rem;
   margin-top: 1.4rem;
 }
-/* 発表の表紙は題名を主役にする。目次は閲覧時の道案内のため、舞台では出さない（DTP-VTPL-100） */
+/* 発表の表紙は題名を主役にする。目次は閲覧時の道案内のため、舞台では出さない（DTP-VTPL-100）。
+   版面の比率のページでも出さない（表紙は分けないため、ページ割りに影響しない。中央の置き方は visual-page.css） */
 html.is-stage-show .vs-cover-agenda {
   display: none;
 }
-html.is-stage-show .exhibition-hero-emblem {
+html.is-stage-show:not([data-page-ratio]) .exhibition-hero-emblem {
   width: 4.5rem;
   height: 4.5rem;
 }
-html.is-stage-show .four-color-bar span {
+html.is-stage-show:not([data-page-ratio]) .four-color-bar span {
   width: 5rem;
   height: 5px;
 }
-html.is-stage-show .exhibition-slab h2 {
+html.is-stage-show:not([data-page-ratio]) .exhibition-slab h2 {
   font-size: 1.9rem;
   margin-bottom: 1.5rem;
   padding-bottom: 0;
@@ -156,19 +165,19 @@ html.is-stage-show .exhibition-slab h2 {
   word-break: auto-phrase;
   text-wrap: balance;
 }
-html.is-stage-show .exhibition-slab .vs-lead {
+html.is-stage-show:not([data-page-ratio]) .exhibition-slab .vs-lead {
   font-size: 1.7rem;
 }
-html.is-stage-show .exhibition-slab blockquote.vs-quote {
+html.is-stage-show:not([data-page-ratio]) .exhibition-slab blockquote.vs-quote {
   font-size: 2.3rem;
 }
-html.is-stage-show .exhibition-diagram-header {
+html.is-stage-show:not([data-page-ratio]) .exhibition-diagram-header {
   display: none;
 }
-html.is-stage-show .exhibition-viewport {
+html.is-stage-show:not([data-page-ratio]) .exhibition-viewport {
   padding: 1.25rem;
 }
-html.is-stage-show .exhibition-viewport svg {
+html.is-stage-show:not([data-page-ratio]) .exhibition-viewport svg {
   width: var(--scene-width, 100%) !important;
   min-width: 0 !important;
   max-width: none !important;
@@ -426,7 +435,7 @@ html.is-stage-show.is-stage-overview .exhibition-wrap > .is-ov-zooming {
   z-index: 2;
 }
 /* 縮小図の図は、升目の高さに収める（縦長の図が下へ切れないように）。縮小図内の要素の影・フィルターを省き展開を高速化する */
-html.is-stage-show.is-stage-overview .exhibition-viewport svg {
+html.is-stage-show.is-stage-overview:not([data-page-ratio]) .exhibition-viewport svg {
   height: auto;
   max-height: 56vh;
 }
@@ -506,6 +515,8 @@ html.is-stage-show .exhibition-wrap > .vs-endcard {
   align-items: center;
   text-align: center;
   gap: 1.1rem;
+}
+html.is-stage-show:not([data-page-ratio]) .exhibition-wrap > .vs-endcard {
   min-height: min(68vh, 32rem);
 }
 .vs-endcard-closing {
@@ -527,10 +538,10 @@ html.is-stage-show .exhibition-wrap > .vs-endcard {
   text-underline-offset: 0.25em;
   word-break: break-all;
 }
-html.is-stage-show .exhibition-slab.vs-svg-hero .vs-svg-hero-wrap {
+html.is-stage-show:not([data-page-ratio]) .exhibition-slab.vs-svg-hero .vs-svg-hero-wrap {
   padding: 1.5rem;
 }
-html.is-stage-show .exhibition-slab.vs-svg-hero .vs-svg-hero-wrap img {
+html.is-stage-show:not([data-page-ratio]) .exhibition-slab.vs-svg-hero .vs-svg-hero-wrap img {
   max-height: 68dvh;
   width: auto;
   max-width: 100%;
