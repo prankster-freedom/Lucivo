@@ -16,10 +16,11 @@ tags: ["Lucivo", "実装"]
 | [js/stage.js](../../src/ts/stage/index.ts)                         | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                             |
 | [js/formatter.js](../../src/ts/formatter/index.ts)                 | [js/formatter.js.md](js/formatter.js.md)                           | 読み込み時の Markdown の整形（markdownlint を同梱）        |
 | [js/emoji.js](../../src/ts/emoji/index.ts)                         | [js/emoji.js.md](js/emoji.js.md)                                   | 絵文字ショートコードの対応表（gemoji を同梱）              |
+| [js/structurizr.js](../../src/ts/diagram/structurizr/index.ts)     | [js/structurizr.js.md](js/structurizr.js.md)                       | Structurizr（C4 モデル）描画エンジン（Web 版限定、`elkjs` 同梱） |
 | [src/ts/modes/](../../src/ts/modes/)                               | [js/modes/README.md](js/modes/README.md)                           | 発表モード（登録表と、モードごとの実装ドキュメントの目次） |
 | [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成                                 |
 | [tools/build-html-pages.cjs](../../tools/build-html-pages.cjs)     | [tools/build-html-pages.cjs.md](tools/build-html-pages.cjs.md)     | ひな形から言語別のページ・転送用のページ・スタンドアロン版の HTML を作る |
-| [tools/build-ogp-image.cjs](../../tools/build-ogp-image.cjs)       | [tools/build-ogp-image.cjs.md](tools/build-ogp-image.cjs.md)       | OGP の画像（`AST-147`）を作図元の SVG から PNG に書き出す |
+| [tools/build-ogp-image.cjs](../../tools/build-ogp-image.cjs)       | [tools/build-ogp-image.cjs.md](tools/build-ogp-image.cjs.md)       | OGP の画像（`AST-147`）を作図元の SVG から PNG に書き出す  |
 | [tools/build-samples-data.cjs](../../tools/build-samples-data.cjs) | [tools/build-samples-data.cjs.md](tools/build-samples-data.cjs.md) | `file://` 直開き時の同梱サンプル遅延読み込みデータの生成   |
 | [tools/build-vendor.cjs](../../tools/build-vendor.cjs)             | [tools/build-vendor.cjs.md](tools/build-vendor.cjs.md)             | ライブラリとフォントの同梱ファイルの生成                   |
 | [tools/capture-readme-shots.cjs](../../tools/capture-readme-shots.cjs) | [tools/capture-readme-shots.cjs.md](tools/capture-readme-shots.cjs.md) | README の画面写真の撮り直し（主にエージェントが実行） |
