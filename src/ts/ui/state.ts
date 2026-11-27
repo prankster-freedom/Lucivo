@@ -572,7 +572,7 @@ export function getLayoutLabel(layoutId = state.visualLayout): string {
 
 // 起動画面のサンプルのカード（FR-007, ARC-PUB-008）。サムネイルは assets/thumbs/ に同梱し、表示言語に合わせる（起動時に外部通信しない）
 interface SampleLink { file: string; label: I18nKey }
-interface SampleCard { id: string; thumbAlt: I18nKey; desc: I18nKey; links: SampleLink[]; mode?: 'visual'; presentMode?: string }
+interface SampleCard { id: string; thumbAlt: I18nKey; desc: I18nKey; links: SampleLink[]; mode?: 'visual'; presentMode?: string; webOnly?: boolean }
 
 const SAMPLE_CARDS: SampleCard[] = [
   { id: 'visual', thumbAlt: 'sample.visual', desc: 'empty.sampleVisualDesc', mode: 'visual', links: [{ file: 'visual-sample.md', label: 'sample.visual' }] },
@@ -583,6 +583,7 @@ const SAMPLE_CARDS: SampleCard[] = [
       { file: 'notation_sample_extra1.md', label: 'sample.notationExtra' }
     ]
   },
+  { id: 'structurizr', thumbAlt: 'sample.structurizr', desc: 'empty.sampleStructurizrDesc', links: [{ file: 'sample-Structurizr.md', label: 'sample.structurizr' }], webOnly: true },
   { id: 'color-museum', thumbAlt: 'sample.colorMuseum', desc: 'empty.sampleColorMuseumDesc', mode: 'visual', links: [{ file: 'color-museum-sample.md', label: 'sample.colorMuseum' }], presentMode: 'museum-walk' }
 ];
 
@@ -604,7 +605,7 @@ export function getSampleCardsHtml(): string {
   const lang = getLang();
   const web = !hasBundledSamples();
   return SAMPLE_CARDS
-    .filter(card => !card.presentMode || (web && isPresentModeAvailable(card.presentMode)))
+    .filter(card => (!card.webOnly || web) && (!card.presentMode || (web && isPresentModeAvailable(card.presentMode))))
     .map(card => {
       const modeAttr = card.mode ? ` data-empty-mode="${card.mode}"` : '';
       // Web 版は新しいタブ（別ウィンドウ）で開き、スタンドアロン版はアプリ内で開く（pushState + popstate 対応）

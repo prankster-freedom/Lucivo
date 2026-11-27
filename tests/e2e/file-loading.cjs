@@ -279,7 +279,7 @@ async function testFileLoading(browser) {
   const closedByEsc = await page.evaluate(() => document.getElementById('file-menu').classList.contains('hidden'));
   record('TC-FILE-002',
     menuState.opened && closedByOutside && closedByEsc
-    && JSON.stringify(menuState.items) === JSON.stringify(['ファイルを開く…', 'フォルダを開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)', 'ミュージアム・ウォーク サンプル (museum-walk-sample.md)', '配色ミュージアム (color-museum-sample.md)', '印刷・PDF の確認サンプル (print-sample.md)', 'Structurizr（C4 モデル）サンプル (sample-Structurizr.md)']),
+    && JSON.stringify(menuState.items) === JSON.stringify(['ファイルを開く…', 'フォルダを開く…', 'Visualモードサンプル (visual-sample.md)', '記法サンプル (notation_sample.md)', '記法サンプル追補版 (notation_sample_extra1.md)', 'ミュージアム・ウォーク サンプル (museum-walk-sample.md)', '配色ミュージアム (color-museum-sample.md)', '印刷・PDF の確認サンプル (print-sample.md)', 'C4 モデル図サンプル — Structurizr DSL (sample-Structurizr.md)']),
     JSON.stringify({ ...menuState, closedByOutside, closedByEsc }));
 
   // TC-FILE-003 未編集の状態での読み込みと同梱サンプル選択
@@ -853,12 +853,12 @@ async function testUrlLoading(browser) {
       && sharedQuery.includes('style=cards') && sharedQuery.includes('tone=cobalt-workshop'),
       JSON.stringify({ sharedQuery }));
 
-    // TC-FILE-051: 起動画面サムネイルカード（Web 版 3 枚・別タブ遷移 / スタンドアロン版 2 枚・戻る対応、FR-007, FR-068）
+    // TC-FILE-051: 起動画面サムネイルカード（Web 版 4 枚・別タブ遷移 / スタンドアロン版 2 枚・戻る対応、FR-007, FR-068）
     const ctx51 = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'ja-JP' });
     const p51 = await ctx51.newPage();
     await mockWebSamples(p51);
     await p51.goto(server.url);
-    await p51.waitForFunction(() => document.querySelectorAll('.empty-guide-sample-card').length === 3, null, { timeout: 10000 });
+    await p51.waitForFunction(() => document.querySelectorAll('.empty-guide-sample-card').length === 4, null, { timeout: 10000 });
     const webCards = await p51.evaluate(() => ({
       ids: Array.from(document.querySelectorAll('.empty-guide-sample-card')).map(c => c.getAttribute('data-sample-card')),
       thumbsOk: Array.from(document.querySelectorAll('.empty-guide-sample-thumb img')).every(img => img.complete && img.naturalWidth > 0),
@@ -893,7 +893,7 @@ async function testUrlLoading(browser) {
     const ctx51Mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ja-JP' });
     const p51Mobile = await ctx51Mobile.newPage();
     await p51Mobile.goto(server.url);
-    await p51Mobile.waitForFunction(() => document.querySelectorAll('.empty-guide-sample-card').length === 3, null, { timeout: 10000 });
+    await p51Mobile.waitForFunction(() => document.querySelectorAll('.empty-guide-sample-card').length === 4, null, { timeout: 10000 });
     const narrowOverflow = await p51Mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     await ctx51Mobile.close();
 
@@ -910,7 +910,7 @@ async function testUrlLoading(browser) {
     await p51Dist.close();
 
     record('TC-FILE-051',
-      JSON.stringify(webCards.ids) === JSON.stringify(['visual', 'notation', 'color-museum'])
+      JSON.stringify(webCards.ids) === JSON.stringify(['visual', 'notation', 'structurizr', 'color-museum'])
         && webCards.thumbsOk
         && webCards.notationLinks === 2
         && webCards.allBlankTarget

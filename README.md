@@ -1,7 +1,7 @@
 ---
 title: Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
-description: Markdown 文書と Mermaid ダイアグラムを、軽快な仕様書表示と展示品質のインフォグラフィック表示で見せる、ブラウザだけで動く Markdown ビューアー。
-tags: ["Lucivo", "Markdown", "Mermaid"]
+description: Markdown 文書・Mermaid ダイアグラム・Structurizr DSL による C4 モデル図を、軽快な仕様書表示と展示品質のインフォグラフィック表示で見せる、ブラウザだけで動く Markdown ビューアー。
+tags: ["Lucivo", "Markdown", "Mermaid", "Structurizr DSL", "C4モデル"]
 ---
 
 <p align="center">
@@ -16,7 +16,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 - **Version**: `0.16.3`
 - **Language**: 日本語 | [English](README.en.md)
 
-Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラムをブラウザ単体で表示するビューアーです。ローカルの Markdown ファイルをそのまま開くだけで、「読むための軽快な仕様書」と「見せるための展示・講演品質」の 2 つの表示モードを瞬時に切り替えられます。
+Lucivo（ルシーヴォ）は、Markdown 文書・Mermaid ダイアグラム・Structurizr DSL による C4 モデル図をブラウザ単体で表示するビューアーです。ローカルの Markdown ファイルをそのまま開くだけで、「読むための軽快な仕様書」と「見せるための展示・講演品質」の 2 つの表示モードを瞬時に切り替えられます。
 
 <p align="center">
   <a href="https://prankster-freedom.github.io/Lucivo/"><strong>Web 版を開く</strong></a>
@@ -39,6 +39,7 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
 ## 特長
 
 - **読む軽快さと見せる品質を 1 本で両立**: 日常の仕様確認に使う「高速モード」と、そのまま人に見せられる「Visualモード」を、同じ文書からワンクリックで切り替えられます。
+- **Models as code に基づく C4 モデル図の多ビュー描画（Web 版）**: C4 モデルの考案者 Simon Brown 氏が策定した Structurizr DSL に対応。1 つのモデル（Workspace）から System Landscape / System Context / Container / Component の各ビューを切り替え、要素のクリックで下位ビューへ掘り下げたり、ステージ発表中にビューを切り替えたりできます。
 - **スライド作り直し不要の「ステージ発表」**: 独自記法は一切不要です。標準の Markdown と Mermaid のまま、1 章 1 シーンの全画面プレゼンテーション（自動進行・俯瞰一覧・光のポインター）が行えます。
 - **Web 版とスタンドアロン版（オフライン版）の 2 提供形態**: 最新機能を網羅した Web 版と、インターネットに一切接続せず `file://` 直開きで安全に使えるスタンドアロン版（ZIP）を用意しています。
 
@@ -68,6 +69,7 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
 | :------------------------------------------------- | :----: | :---------------------: |
 | 高速モード・Visualモード                           | ○      | ○                       |
 | スタイル別見出し書体（丸ゴシック・明朝）           | ○      | —（共通書体で表示）     |
+| Structurizr DSL による C4 モデル図の描画           | ○      | —（コード表示＋案内）   |
 | ステージ発表（全画面・自動進行・俯瞰・ポインター） | ○      | ○                       |
 | ミュージアム・ウォーク（「発表」▾ から起動）       | ○      | —                       |
 
@@ -85,9 +87,10 @@ Lucivo（ルシーヴォ）は、Markdown 文書と Mermaid ダイアグラム�
 Web 版は GitHub 上のサンプルを直接読み込み、ダウンロード版（ZIP）は同じサンプルを同梱しています。
 
 <p align="center">
-  <img src="doc/images/readme/thumb-visual.ja.png" alt="Visualモードサンプル（Light）" width="32%">
-  <img src="doc/images/readme/thumb-notation.ja.png" alt="記法サンプル（Split 表示・Light・数式）" width="32%">
-  <img src="doc/images/readme/thumb-color-museum.ja.png" alt="配色ミュージアム（ミュージアム・ウォーク・Dark）" width="32%">
+  <img src="doc/images/readme/thumb-visual.ja.png" alt="Visualモードサンプル（Light）" width="24%">
+  <img src="doc/images/readme/thumb-notation.ja.png" alt="記法サンプル（Split 表示・Light・数式）" width="24%">
+  <img src="doc/images/readme/thumb-structurizr.ja.png" alt="C4 モデル図サンプル — Structurizr DSL（Visualモード・Light）" width="24%">
+  <img src="doc/images/readme/thumb-color-museum.ja.png" alt="配色ミュージアム（ミュージアム・ウォーク・Dark）" width="24%">
 </p>
 
 | サンプル                                                              | 内容 |
@@ -95,6 +98,7 @@ Web 版は GitHub 上のサンプルを直接読み込み、ダウンロード�
 | [visual-sample.md](public/samples/visual-sample.md)                   | Visualモードの表紙・各種誌面雛形・表・光の流動演出・ステージ発表 |
 | [notation_sample.md](public/samples/notation_sample.md)               | Markdown と Mermaid の記法一覧（全図種・数式・コールアウト・脚注・絵文字など） |
 | [notation_sample_extra1.md](public/samples/notation_sample_extra1.md) | 発展的記法（CommonMark・GFM）、画像・文書間リンク、フォルダ構成ツリー、数式補足グラフ |
+| [sample-Structurizr.md](public/samples/sample-Structurizr.md)         | Structurizr DSL による C4 モデル図（多ビュー切替・階層ズームイン・公式チュートリアル／未対応構文スキップ例。Web 版のみ描画） |
 | [color-museum-sample.md](public/samples/color-museum-sample.md)       | 配色ミュージアム（ポスター・窓・風景・色面・図で、色が人の心を動かす瞬間を巡る展示。Dark ミュージアム・ウォーク向け） |
 
 ## できること
@@ -111,6 +115,7 @@ Web 版は GitHub 上のサンプルを直接読み込み、ダウンロード�
 
 - **標準 Markdown / GFM**: 見出し・表・リスト・コードブロック・引用に加え、タスクリスト、**GFM 脚注（`[^1]`）**、**絵文字ショートコード（`:rocket:` など）** に対応しています。
 - **多彩な Mermaid 図表**: ```` ```mermaid ```` で記述したフローチャート、シーケンス図、状態遷移図、クラス図、ガントチャート、マインドマップ、タイムライン、円グラフ、ユーザージャーニー、4 象限チャートなどを高品位にレンダリングします。
+- **Structurizr DSL による C4 モデル図（Web 版）**: C4 モデルの考案者 Simon Brown 氏が "models as code" のために策定した [Structurizr DSL](https://docs.structurizr.com/)（```` ```structurizr ```` / ```` ```structurizr-dsl ````）をサーバー通信なしで解析・描画します。1 つの Workspace から System Landscape・System Context・Container・Component の各ビュー（Code 図は対象外）を切り替え、下位要素の関係から上位ビューの関係を導出する Implied relationships、要素からのズームイン（階層ドリルダウン）とパンくず戻り、ステージ発表中の `[` / `]` ビュー切替、印刷時の全ビュー出力に対応します（`deploymentEnvironment`・`dynamic`・`filtered`・外部 `theme` などの未対応構文は安全にスキップし、警告バッジで一覧表示します）。
 - **TeX 数式**: インライン `$…$` とブロック `$$…$$` の KaTeX 数式に対応しています。フローチャートやシーケンス図のラベル内数式も描画できます。
 - **数式の補足グラフ（数式プロット）**: 本文中の $y = f(x)$ 形式の陽関数から、数式の横へプロット計算した補足グラフ（PNG ラスター画像）を自動生成して並記します。複数式の重ね描きや定義域の明示指定にも対応します。
 - **GitHub 準拠のコールアウト**: `> [!NOTE]`、`[!TIP]`、`[!IMPORTANT]`、`[!WARNING]`、`[!CAUTION]` を記述すると、種別に応じた専用アイコンと配色のアラートボックスとして表示されます。

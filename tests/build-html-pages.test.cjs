@@ -44,8 +44,8 @@ for (const lang of ['ja', 'en']) {
 {
   const title = 'Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —';
   const expected = {
-    ja: { locale: 'ja_JP', description: 'Markdown と Mermaid をブラウザ単体で表示するビューアー。読むための軽快な仕様書レイアウトと、講演・展示・印刷に使える展示品質のレイアウトを、瞬時に切り替えられます。' },
-    en: { locale: 'en_US', description: 'A browser-only viewer for Markdown and Mermaid. Switch instantly between a fast reading layout and an exhibition-grade layout for talks and print.' }
+    ja: { locale: 'ja_JP', description: 'Markdown・Mermaid・Structurizr DSL による C4 モデル図をブラウザ単体で表示するビューアー。軽快な仕様書レイアウトと、講演・展示・印刷向けの展示品質レイアウトを瞬時に切り替えられます。' },
+    en: { locale: 'en_US', description: 'A browser-only viewer for Markdown, Mermaid, and C4 diagrams in Structurizr DSL. Switch instantly between a fast reading layout and an exhibition layout.' }
   };
   for (const target of ['production', 'preview']) {
     const base = target === 'preview' ? `${SITE_URL}preview/` : SITE_URL;

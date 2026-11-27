@@ -2,7 +2,7 @@
 // README 用スクリーンショット（doc/images/readme/*.png, 1280x800）を日英それぞれ撮影する（#378）。
 // 使い方: node tools/capture-sample-thumbs.cjs
 // 一部だけ撮り直すときは、環境変数で絞る（例: LANGS=ja TARGETS=color-museum）。
-//   LANGS: ja,en のうち撮る言語（既定は両方）／TARGETS: visual,notation,color-museum のうち撮る対象（既定はすべて）
+//   LANGS: ja,en のうち撮る言語（既定は両方）／TARGETS: visual,notation,structurizr,color-museum のうち撮る対象（既定はすべて）
 'use strict';
 
 const fs = require('fs');
@@ -15,7 +15,7 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const THUMB_DIR = path.join(PUBLIC_DIR, 'assets', 'thumbs');
 const README_DIR = path.join(ROOT, 'doc', 'images', 'readme');
 const LANGS = (process.env.LANGS || 'ja,en').split(',').map(s => s.trim()).filter(Boolean);
-const TARGETS = (process.env.TARGETS || 'visual,notation,color-museum').split(',').map(s => s.trim()).filter(Boolean);
+const TARGETS = (process.env.TARGETS || 'visual,notation,structurizr,color-museum').split(',').map(s => s.trim()).filter(Boolean);
 const HIDE_CSS ='#telemetry-pill, .slab-actions, #toast, #toast-container, #toast-message, .toast { display: none !important; }';
 
 function startStaticServer() {
@@ -164,6 +164,30 @@ async function main() {
         page,
         path.join(README_DIR, `thumb-notation.${lang}.png`),
         path.join(THUMB_DIR, `notation.${lang}.webp`)
+      );
+      }
+
+      // 2b. Structurizr DSL による C4 モデル図サンプル（Visual モード・Light・最初の C4 図カード周辺）
+      if (TARGETS.includes('structurizr')) {
+      const structurizrUrl = `https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/sample-Structurizr${suffix}`;
+      await page.goto(`${server.url}${lang}/?url=${encodeURIComponent(structurizrUrl)}&mode=visual&theme=light&view=canvas`);
+      await page.addStyleTag({ content: HIDE_CSS });
+      await waitRendered(page);
+      await page.waitForFunction(() => Boolean(document.querySelector('svg.lucivo-c4-svg')), null, { timeout: 20000 });
+      await page.evaluate(() => {
+        const sc = document.getElementById('preview-scroll');
+        const card = document.querySelector('.lucivo-structurizr-card');
+        if (sc && card) {
+          const rect = card.getBoundingClientRect();
+          const scRect = sc.getBoundingClientRect();
+          sc.scrollTop = Math.max(0, sc.scrollTop + rect.top - scRect.top - 36);
+        }
+      });
+      await page.waitForTimeout(1000);
+      await savePngAndWebp(
+        page,
+        path.join(README_DIR, `thumb-structurizr.${lang}.png`),
+        path.join(THUMB_DIR, `structurizr.${lang}.webp`)
       );
       }
 

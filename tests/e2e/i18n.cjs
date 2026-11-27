@@ -139,7 +139,7 @@ async function testI18n(browser) {
       allLeaks.length === 0 ? `sample=${loadedFile}, leaks=0` : `leaks(${allLeaks.length}): ${allLeaks.slice(0, 5).join(' | ')}`
     );
 
-    // TC-I18N-003: 言語切替による同梱サンプルの日英自動切替と起動画面カード 3 件の確認
+    // TC-I18N-003: 言語切替による同梱サンプルの日英自動切替と起動画面カード 4 件の確認
     await samplePage.click('#btn-lang-menu');
     await samplePage.click('#menu-lang-ja');
     await samplePage.waitForFunction(() => document.title === 'visual-sample.md - Lucivo', null, { timeout: 10000 });
@@ -156,7 +156,7 @@ async function testI18n(browser) {
       'TC-I18N-003',
       switchedToJa === 'visual-sample.md'
         && switchedToEn === 'visual-sample.en.md'
-        && startupThumbsEn.length === 3
+        && startupThumbsEn.length === 4
         && startupThumbsEn.every(t => t.src.endsWith('.en.webp') && t.loaded),
       `ja=${switchedToJa}, en=${switchedToEn}, thumbs=${JSON.stringify(startupThumbsEn)}`
     );

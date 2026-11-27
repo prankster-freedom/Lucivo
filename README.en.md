@@ -1,7 +1,7 @@
 ---
 title: Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
-description: A browser-based Markdown viewer that presents Markdown documents and Mermaid diagrams in both a lightweight specification view and exhibition-grade infographic layouts.
-tags: ["Lucivo", "Markdown", "Mermaid"]
+description: A browser-based Markdown viewer that presents Markdown documents, Mermaid diagrams, and Structurizr DSL C4 model diagrams in both a lightweight specification view and exhibition-grade infographic layouts.
+tags: ["Lucivo", "Markdown", "Mermaid", "Structurizr DSL", "C4 model"]
 ---
 
 <p align="center">
@@ -16,7 +16,7 @@ tags: ["Lucivo", "Markdown", "Mermaid"]
 - **Version**: `0.16.3`
 - **Language**: [日本語](README.md) | English
 
-Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid diagrams. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
+Lucivo is a standalone browser-based viewer for Markdown documents, Mermaid diagrams, and C4 model diagrams written in Structurizr DSL. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
 
 <p align="center">
   <a href="https://prankster-freedom.github.io/Lucivo/"><strong>Launch Web Edition</strong></a>
@@ -39,6 +39,7 @@ Lucivo is a standalone browser-based viewer for Markdown documents and Mermaid d
 ## Key Features
 
 - **Speed for Reading, Polish for Presenting in One Tool**: Switch between **Fast Mode** for everyday specification review and **Visual Mode** for live audiences with a single click—using the exact same document.
+- **Multi-View C4 Model Diagrams via Structurizr DSL (Web Edition)**: Supports Structurizr DSL—designed by C4 model creator Simon Brown for expressing software architecture as "models as code." Switch between System Landscape, System Context, Container, and Component views from a single Workspace, zoom in to child views, and step through views during Stage Show.
 - **Zero-Rebuild Stage Presentations**: No proprietary syntax required. Deliver full-screen, one-chapter-per-scene presentations (with auto-advance, bird's-eye overview, and an optical pointer) directly from standard Markdown and Mermaid.
 - **Two Distribution Formats—Web & Standalone (Offline)**: Choose between the full-featured Web Edition and a zero-network Standalone Edition (ZIP) that runs safely offline directly via `file://`.
 
@@ -68,6 +69,7 @@ Choose the edition that best fits your workflow:
 | :---------------------------------------------------------------- | :---------: | :----------------------------: |
 | Fast Mode & Visual Mode                                           | Yes         | Yes                            |
 | Style-specific heading typefaces (Rounded Gothic / Mincho)        | Yes         | — (Uses shared fallback fonts) |
+| C4 model diagram rendering (Structurizr DSL)                      | Yes         | — (Code block + notice)        |
 | Stage Presentation (Full-screen, Auto-advance, Overview, Pointer) | Yes         | Yes                            |
 | Museum Walk                                                       | Yes         | —                              |
 
@@ -85,9 +87,10 @@ Choose the edition that best fits your workflow:
 The Web Edition loads these samples directly from GitHub, while the Standalone Edition (ZIP) bundles them for offline use.
 
 <p align="center">
-  <img src="doc/images/readme/thumb-visual.en.png" alt="Visual Mode Sample (Light)" width="32%">
-  <img src="doc/images/readme/thumb-notation.en.png" alt="Notation Sample (Split view, Light, Math)" width="32%">
-  <img src="doc/images/readme/thumb-color-museum.en.png" alt="Color Museum (Museum Walk, Dark)" width="32%">
+  <img src="doc/images/readme/thumb-visual.en.png" alt="Visual Mode Sample (Light)" width="24%">
+  <img src="doc/images/readme/thumb-notation.en.png" alt="Notation Sample (Split view, Light, Math)" width="24%">
+  <img src="doc/images/readme/thumb-structurizr.en.png" alt="C4 Model Sample — Structurizr DSL (Visual Mode, Light)" width="24%">
+  <img src="doc/images/readme/thumb-color-museum.en.png" alt="Color Museum (Museum Walk, Dark)" width="24%">
 </p>
 
 | Sample                                                        | Description |
@@ -95,6 +98,7 @@ The Web Edition loads these samples directly from GitHub, while the Standalone E
 | [visual-sample.en.md](public/samples/visual-sample.en.md)     | Visual Mode cover page, editorial templates, tables, Luminous Flow effects, and Stage Presentation |
 | [notation_sample.en.md](public/samples/notation_sample.en.md) | Comprehensive Markdown & Mermaid reference (all diagram types, math, callouts, footnotes, emoji, etc.) |
 | [notation_sample_extra1.en.md](public/samples/notation_sample_extra1.en.md) | Extended syntax (CommonMark & GFM), images, cross-document links, directory trees, and supplementary math plots |
+| [sample-Structurizr.en.md](public/samples/sample-Structurizr.en.md) | C4 model diagrams in Structurizr DSL (multi-view switching, hierarchical zoom-in, official tutorial & unsupported-syntax safe-skip examples; Web Edition only) |
 | [color-museum-sample.en.md](public/samples/color-museum-sample.en.md) | Color Museum (a gallery of the moments color moves us: posters, windows, landscapes, color fields, and diagrams; made for Dark Museum Walk) |
 
 ## Capabilities
@@ -111,6 +115,7 @@ The Web Edition loads these samples directly from GitHub, while the Standalone E
 
 - **Standard Markdown & GFM**: Supports headings, tables, lists, code blocks, and blockquotes alongside task lists, **GFM footnotes (`[^1]`)**, and **emoji shortcodes (`:rocket:`, etc.)**.
 - **Rich Mermaid Diagrams**: High-precision rendering for flowcharts, sequence diagrams, state diagrams, class diagrams, Gantt charts, mindmaps, timelines, pie charts, user journeys, quadrant charts, and more inside ```` ```mermaid ```` blocks.
+- **C4 Model Diagrams in Structurizr DSL (Web Edition)**: Parses and renders [Structurizr DSL](https://docs.structurizr.com/) (```` ```structurizr ```` / ```` ```structurizr-dsl ````)—the "models as code" notation created by C4 model author Simon Brown—entirely in the browser. Supports switching between System Landscape, System Context, Container, and Component views (Code diagrams are out of scope) from a single Workspace, automatic Implied relationships aggregation, hierarchical zoom-in with breadcrumb navigation, `[` / `]` view switching in Stage Show, and printing all views together (unsupported constructs such as `deploymentEnvironment`, `dynamic`, `filtered`, and external `theme` are safely skipped and listed in a warning badge).
 - **TeX Math Equations**: Renders inline `$…$` and block `$$…$$` math via KaTeX, including equations embedded inside flowchart and sequence diagram labels.
 - **Supplementary Math Plots**: Automatically plots explicit single-variable functions ($y = f(x)$) in body text as crisp PNG raster graphs displayed alongside the equation. Supports overlaying multiple curves and explicit domain bounds.
 - **GitHub-Flavored Callouts**: Blockquotes starting with `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, or `[!CAUTION]` render as color-coded alert boxes with dedicated icons.

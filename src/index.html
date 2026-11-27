@@ -58,7 +58,7 @@
           <button type="button" role="menuitem" data-mobile-sample="menu-sample-notation" class="file-menu-item" data-i18n="sample.notation">記法サンプル</button>
           <button type="button" role="menuitem" data-mobile-sample="menu-sample-notation-extra" class="file-menu-item" data-i18n="sample.notationExtra">記法サンプル追補版</button>
           <button type="button" role="menuitem" data-mobile-sample="menu-sample-museum-walk" class="file-menu-item" data-i18n="sample.museumWalk">ミュージアム・ウォーク サンプル</button>
-          <button type="button" role="menuitem" data-mobile-sample="menu-sample-structurizr" class="file-menu-item" data-i18n="sample.structurizr">Structurizr（C4 モデル）サンプル</button>
+          <button type="button" role="menuitem" data-mobile-sample="menu-sample-structurizr" class="file-menu-item" data-i18n="sample.structurizr">C4 モデル図サンプル — Structurizr DSL</button>
           <div class="file-menu-divider" role="separator"></div>
           <button id="mobile-menu-save-markdown" type="button" role="menuitem" class="file-menu-item" data-i18n="menu.saveMarkdown">Markdown を保存</button>
           <button id="mobile-menu-print" type="button" role="menuitem" class="file-menu-item" data-i18n="menu.print">印刷 / PDF として保存…</button>
@@ -85,7 +85,7 @@
           <button id="menu-sample-museum-walk" type="button" role="menuitem" data-sample-file="museum-walk-sample.md" class="file-menu-item">ミュージアム・ウォーク サンプル (museum-walk-sample.md)</button>
 <button id="menu-sample-color-museum" type="button" role="menuitem" data-sample-file="color-museum-sample.md" class="file-menu-item">配色ミュージアム (color-museum-sample.md)</button>
           <button id="menu-sample-print" type="button" role="menuitem" data-sample-file="print-sample.md" class="file-menu-item">印刷・PDF の確認サンプル (print-sample.md)</button>
-          <button id="menu-sample-structurizr" type="button" role="menuitem" data-sample-file="sample-Structurizr.md" class="file-menu-item">Structurizr（C4 モデル）サンプル (sample-Structurizr.md)</button>
+          <button id="menu-sample-structurizr" type="button" role="menuitem" data-sample-file="sample-Structurizr.md" class="file-menu-item">C4 モデル図サンプル — Structurizr DSL (sample-Structurizr.md)</button>
         </div>
         <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" class="hidden" />
         <!-- File System Access API がないブラウザで、フォルダを選ぶ（DD-FILE-078） -->
@@ -336,7 +336,7 @@
         </div>
       </div>
       <div class="flex-1 min-h-0 relative">
-        <textarea id="markdown-editor" class="w-full h-full p-4 text-xs sm:text-[13px] overflow-y-auto" spellcheck="false" data-i18n-placeholder="editor.placeholder" placeholder="Markdownと ```mermaid を記述..."></textarea>
+        <textarea id="markdown-editor" class="w-full h-full p-4 text-xs sm:text-[13px] overflow-y-auto" spellcheck="false" data-i18n-placeholder="editor.placeholder" placeholder="Markdown・```mermaid・```structurizr を記述..."></textarea>
       </div>
     </section>
 
