@@ -10,8 +10,9 @@ export const en: I18nDict = {
   'header.helpTitle': 'Open Help (README) in Lucivo (connects to the internet)',
 
   // Language switcher
-  'lang.switchAria': 'Switch display language',
-  'lang.switchTitle': 'Switch display language (日本語 / English)',
+  // 言語の切り替えの入口は、英語を読めない人も使うため、切り替え先の言語を添える（FR-065。FR-066 の例外 1）
+  'lang.switchAria': 'Change language / 表示言語を切り替え',
+  'lang.switchTitle': 'Change language / 表示言語を切り替え (日本語 / English)',
   'lang.ja': '日本語',
   'lang.en': 'English',
   'lang.toastSwitched': 'Switched language to English',
@@ -79,7 +80,8 @@ export const en: I18nDict = {
   'tools.moreYaml': 'Toggle YAML Front Matter',
   'tools.moreTheme': 'Toggle Light / Dark',
   'tools.moreUpdate': 'Check for Updates (Online)',
-  'tools.moreLanguage': 'Language: Switch to 日本語',
+  // 切り替えたい人は今の言語を読めないため、切り替え先の言語で書く（FR-065。FR-066 の例外 1）
+  'tools.moreLanguage': '日本語に切り替え',
 
   // Update check
   'update.headerLabel': 'Updates',

@@ -8,8 +8,9 @@ export const ja = {
   'header.helpTitle': 'ヘルプ（README）を Lucivo で開く（インターネットに接続します）',
 
   // 言語切り替え
-  'lang.switchAria': '表示言語を切り替え',
-  'lang.switchTitle': '表示言語を切り替え（日本語 / English）',
+  // 言語の切り替えの入口は、日本語を読めない人も使うため、切り替え先の言語を添える（FR-065）
+  'lang.switchAria': '表示言語を切り替え / Change language',
+  'lang.switchTitle': '表示言語を切り替え / Change language（日本語 / English）',
   'lang.ja': '日本語',
   'lang.en': 'English',
   'lang.toastSwitched': '表示言語を日本語に切り替えました',
@@ -77,7 +78,8 @@ export const ja = {
   'tools.moreYaml': 'YAML フロントマター切替',
   'tools.moreTheme': 'Light / Dark 切替',
   'tools.moreUpdate': '最新版を確認（通信発生）',
-  'tools.moreLanguage': '言語: English に切替',
+  // 切り替えたい人は今の言語を読めないため、切り替え先の言語で書く（FR-065）
+  'tools.moreLanguage': 'Switch to English',
 
   // 更新確認
   'update.headerLabel': '最新版確認',
