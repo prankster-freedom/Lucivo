@@ -10,7 +10,7 @@ tags: ["Lucivo", "実装"]
 
 | ソース                                                             | 実装ドキュメント                                                   | 概要                                                       |
 | :----------------------------------------------------------------- | :----------------------------------------------------------------- | :--------------------------------------------------------- |
-| [index.html](../../public/index.html)                              | [index.html.md](index.html.md)                                     | 画面の骨格、同梱のライブラリと CSS・スクリプトの読み込み順 |
+| [src/index.html](../../src/index.html)                             | [index.html.md](index.html.md)                                     | 画面の骨格、同梱のライブラリと CSS・スクリプトの読み込み順 |
 | [css/style.css](../../src/css/style.css)                           | [css/style.css.md](css/style.css.md)                               | デザイントークン、組版、Markdown 要素、図の表示枠、Visualモード |
 | [js/app.js](../../src/ts/app.ts)                                   | [js/app.js.md](js/app.js.md)                                       | 状態管理、描画パイプライン、SVG 後処理、数式、イベント処理 |
 | [js/stage.js](../../src/ts/stage/index.ts)                         | [js/stage.js.md](js/stage.js.md)                                   | シグナル・ライトとステージ発表                             |
@@ -18,6 +18,7 @@ tags: ["Lucivo", "実装"]
 | [js/emoji.js](../../src/ts/emoji/index.ts)                         | [js/emoji.js.md](js/emoji.js.md)                                   | 絵文字ショートコードの対応表（gemoji を同梱）              |
 | [src/ts/modes/](../../src/ts/modes/)                               | [js/modes/README.md](js/modes/README.md)                           | 発表モード（登録表と、モードごとの実装ドキュメントの目次） |
 | [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成                                 |
+| [tools/build-html-pages.cjs](../../tools/build-html-pages.cjs)     | [tools/build-html-pages.cjs.md](tools/build-html-pages.cjs.md)     | ひな形から言語別のページ・転送用のページ・スタンドアロン版の HTML を作る |
 | [tools/build-samples-data.cjs](../../tools/build-samples-data.cjs) | [tools/build-samples-data.cjs.md](tools/build-samples-data.cjs.md) | `file://` 直開き時の同梱サンプル遅延読み込みデータの生成   |
 | [tools/build-vendor.cjs](../../tools/build-vendor.cjs)             | [tools/build-vendor.cjs.md](tools/build-vendor.cjs.md)             | ライブラリとフォントの同梱ファイルの生成                   |
 | [tools/capture-readme-shots.cjs](../../tools/capture-readme-shots.cjs) | [tools/capture-readme-shots.cjs.md](tools/capture-readme-shots.cjs.md) | README の画面写真の撮り直し（主にエージェントが実行） |

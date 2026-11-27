@@ -63,14 +63,14 @@ tags: ["Lucivo", "SRS", "file-loading"]
 
 ### FR-024: 公開リポジトリと README への導線
 
-- メインヘッダー左端のロゴと、起動時の案内（FR-007）のロゴを、Lucivo の公開 URL で README を開くリンク（`https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual`）にする（#298）。
+- メインヘッダー左端のロゴと、起動時の案内（FR-007）のロゴを、Lucivo の公開 URL で README を開くリンク（`https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual`。英語表示では、`/preview/en/` で `README.en.md` を開く。`FR-065`）にする（#298）。
 - 起動時の案内の最後に「最新版はこちら」の一文と、公開リポジトリ（https://github.com/prankster-freedom/Lucivo）へのリンクを表示する。
 - リンクは新しいタブで開き、開いたページから Lucivo の画面を操作できないようにする（`rel="noopener noreferrer"`）。
 - **背景・根拠**: Lucivo はダウンロードしてローカルで開く配布形態のため、利用者が手元の版が最新かを確かめる手段がない。配布元への導線を起動時の案内に置きつつ、ロゴやヘルプからは README 自体を Lucivo の Visualモードで直接読めるようにする（#298）。インターネットに接続していない環境では、リンク先を開けないだけで、Lucivo の動作には影響しない（NFR-008）。
 
 ### FR-049: 更新の確認とヘルプ
 
-- 起動時の案内（FR-007）の「最新版はこちら」の次の行と、ヘッダー右側に更新確認のUIを表示する。ヘッダーでは「最新版確認」ボタン（メニュー・更新アイコン付き）を配置し、クリックで「通信が発生します」メニューボタンを開き、そのクリックで初めて最新の GitHub Release の版を問い合わせる。結果に応じてヘッダーボタンの表示文字を、新しい版があるときは「更新あり」、最新版で更新がないときは「更新なし」に切り替える。またヘッダー右端に Lucivo の公開 URL で README を開く「ヘルプ」リンク（`https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual`、#298）を新しいタブ（`rel="noopener noreferrer"`）で置く。ヘッダー右端からの並び順は、ヘルプ、最新版確認、Light / Dark 切替、YAML 切替、アニメーション切替とする。
+- 起動時の案内（FR-007）の「最新版はこちら」の次の行と、ヘッダー右側に更新確認のUIを表示する。ヘッダーでは「最新版確認」ボタン（メニュー・更新アイコン付き）を配置し、クリックで「通信が発生します」メニューボタンを開き、そのクリックで初めて最新の GitHub Release の版を問い合わせる。結果に応じてヘッダーボタンの表示文字を、新しい版があるときは「更新あり」、最新版で更新がないときは「更新なし」に切り替える。またヘッダー右端に Lucivo の公開 URL で README を開く「ヘルプ」リンク（`https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual`。英語表示では、`/preview/en/` で `README.en.md` を開く。`FR-065`、#298）を新しいタブ（`rel="noopener noreferrer"`）で置く。ヘッダー右端からの並び順は、ヘルプ、最新版確認、Light / Dark 切替、YAML 切替、アニメーション切替とする。
 - 案内の「更新を確認」ボタンには外部通信を伴う注記（`title`）を表示する。
 - ボタンを押したときだけ、公開リポジトリの最新の GitHub Release の版を問い合わせ、結果を案内のボタン横とトーストで知らせる。
   - 新しい版があれば、その版番号と、リリースのページへのリンク（新しいタブ）
@@ -227,6 +227,7 @@ tags: ["Lucivo", "SRS", "file-loading"]
 - カラートーンの集計用 ID（`tone_id`）は、`000-default`（スタイル準拠）および `doc/0.DTP/assets/color-tones/` の通し番号・ID に紐づく `NNN-<id>`（3 桁ゼロ埋め番号＋ケバブケース ID、例: `001-morning-window`）とし、今後の追加・廃止において一度割り当てた番号・ID・集計用 ID は永久欠番として再利用しないこと。重複および廃止済み ID の再利用は自動検査で検出すること。
 - すべてのイベントに配布種別パラメータ `release_channel`（正式版: `production`、プレビュー版: `preview`）を付与すること。判定は URL パスではなく、ビルド時に埋め込まれるバージョン文字列（`-canary` の有無および `(build id:` の有無）で行うこと。
 - ローカル開発ビルド（`(build id:` を含まない版文字列）、スタンドアロン版（`file://` およびビルド時に計測スニペットを除去した `dist/index.html`）、E2E 自動テスト実行時（`navigator.webdriver === true`）には送信しないこと。
+- Web 版のルート（`/`、`/preview/`）の、言語別のページ（`/ja/`・`/en/`）へ転送するだけのページ（`FR-065`）には、計測のスニペットを含めないこと。計測は、言語別のページで行う。
 - 送信する情報は選択された識別子と `release_channel` のみとし、ファイル名・文書内容・ローカルパス・閲覧 URL 等は送信しないこと。
 - `README.md` の「安全性とプライバシー」節に、Web 版でデザインスタイル・カラー トーン・発表モードの利用傾向を把握するために Google Analytics を利用している旨を簡潔に記載すること（スタンドアロン版には含まないことも明記する。同意バナー等は設けない）。
 - **背景・根拠**: Web 版で先行提供している発表モードや各種スタイル・トーンの利用傾向を把握し、展開・廃止・改善の判断材料にする（`ARC-MODE`）。一方でプライバシーとオフライン原則（`NFR-008`）を守るため、送信項目を最小限に絞り、スタンドアロン版からは計測コードを除外する。

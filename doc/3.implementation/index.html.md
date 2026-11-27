@@ -6,7 +6,7 @@ tags: ["Lucivo", "実装", "HTML"]
 
 # index.html
 
-ソース: [index.html](../../public/index.html)／設計: `DD-FILE-001`〜`007`、`DD-FM-011`、`DD-LIGHT-001`、`DD-SHOW-001`、アーキテクチャ 4.5
+ソース: [src/index.html](../../src/index.html)（ひな形。Web 版の `ja/index.html`・`en/index.html`・転送用の `index.html` と、スタンドアロン版の `index.html` は [tools/build-html-pages.cjs](tools/build-html-pages.cjs.md) が作る。アーキテクチャ 4.14 `ARC-PUB-009`）／設計: `DD-FILE-001`〜`007`、`DD-FM-011`、`DD-LIGHT-001`、`DD-SHOW-001`、アーキテクチャ 4.5
 
 ## 依存関係
 
@@ -45,7 +45,8 @@ flowchart TD
 - **印刷で隠れる場所**: `body` の直下（`main` 以外）と、`#pane-preview` の中の `#preview-scroll` 以外は、印刷で刷らない（`DD-VTPL-131`）。文書の一部として刷る要素は `#preview-scroll` の中に置く。
 - **初期値で隠す要素**: スタイルバー（`#style-bar`）は `.is-hidden`、エディタの「閲覧 / 編集」の切り替え（`#editor-lock`）は `.hidden` を初期値に持ち、`app.js` が表示する（`DD-DIAG-063`、`DD-FILE-041`）。どちらも Tailwind の `flex` などと同じ要素に付くため、`style.css` の詳細度の高い規則で隠している。初期値のクラスを外すと、起動直後に表示される。
 - **HTML エクスポート**: `document.documentElement.outerHTML` を書き出すため、`<head>` の読み込み（KaTeX の CSS など）は書き出した HTML にもそのまま入る。0.2.0 では、ヘッダーの `HTML` ボタン（`#btn-export-html`）を置いていない（`DD-OFF-005`、`CR-001`）。作り直すときにボタンを戻す。
-- **Web 版の利用状況計測（GTM / GA4、`DD-FILE-095`）**: `public/index.html` の `LUCIVO_WEB_ANALYTICS_START`〜`END` は `gtm.js?id=GTM-KMQ3KLNT` 読み込み前に `gtm.start`（`event: 'gtm.js'`）を `dataLayer` へ積み、スタンドアロン版ビルド（`tools/build-app.cjs --channel standalone`）では除去される。GTM / GA4 側の設定および確認手順は次のとおり。
+- **参照は `./` で書く（`ARC-PUB-009`）**: ひな形の `src`・`href` は `./` からの相対パスで書く。言語別のページ（1 階層深い）では、ビルドが `../` に書き換える。`./` 以外（`assets/…` のような書き方）は書き換わらず、言語別のページで読めなくなる。JavaScript で組み立てるアセットの参照は、`assetUrl()`（`src/ts/ui/asset-url.ts`）を通す。
+- **Web 版の利用状況計測（GTM / GA4、`DD-FILE-095`）**: ひな形 `src/index.html` の `LUCIVO_WEB_ANALYTICS_START`〜`END` は `gtm.js?id=GTM-KMQ3KLNT` 読み込み前に `gtm.start`（`event: 'gtm.js'`）を `dataLayer` へ積み、スタンドアロン版ビルド（`tools/build-app.cjs --channel standalone`）では除去される。GTM / GA4 側の設定および確認手順は次のとおり。
   - **GTM の変数（データレイヤー変数）**: `release_channel`、`design_style`、`tone`、`present_mode` の 4 つをデータレイヤー変数として作成する。
   - **GTM のトリガー（カスタムイベント）**: イベント名 `design_style_select`、`tone_select`、`present_mode_select` に対応するカスタムイベントトリガーを作成する（`.*` 正規表現一致で `^(design_style_select|tone_select|present_mode_select)$` にまとめることも可）。
   - **GTM のタグ（GA4 イベント）**: 対象イベントごとに GA4 イベントタグを作成し、イベントパラメータに `release_channel` と該当パラメータ（`design_style` / `tone` / `present_mode`）を割り当てて公開する。

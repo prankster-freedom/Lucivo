@@ -15,7 +15,7 @@ flowchart TD
   subgraph Dependencies
     pw["playwright（リポジトリ直下の node_modules）"]
     cdn["Tailwind CSS の CDN 版（版を固定）"]
-    src["index.html / js/app.js（クラス名の候補）"]
+    src["src/index.html（HTML のひな形） / js/app.js（クラス名の候補）"]
   end
   tool["tools/build-tailwind-css.cjs"]
   pw --> tool
