@@ -616,6 +616,12 @@ function updatePageSize(wrap: HTMLElement) {
   host.style.setProperty('--page-print-zoom', zoom.toFixed(4));
 }
 
+let printQuery: MediaQueryList | null = null;
+function isPrinting(): boolean {
+  if (!printQuery && typeof matchMedia === 'function') printQuery = matchMedia('print');
+  return Boolean(printQuery && printQuery.matches);
+}
+
 function observeWrap(wrap: HTMLElement | null) {
   if (wrap === observedWrap) return;
   if (resizeObserver && observedWrap) resizeObserver.unobserve(observedWrap);
@@ -624,8 +630,9 @@ function observeWrap(wrap: HTMLElement | null) {
   if (!wrap || typeof ResizeObserver !== 'function') return;
   if (!resizeObserver) {
     resizeObserver = new ResizeObserver(() => {
-      // ステージ発表の間は、ページの幅を --page-width で保つ。俯瞰の格子で .exhibition-wrap の幅が変わっても、決め直さない
-      if (document.documentElement.classList.contains('is-stage-show')) return;
+      // ステージ発表の間は、ページの幅を --page-width で保つ。俯瞰の格子で .exhibition-wrap の幅が変わっても、決め直さない。
+      // 印刷の間も、印刷の版面で組んだ幅で決め直さない（画面で決めたページを 1 対 1 で刷る。DD-VTPL-158）
+      if (document.documentElement.classList.contains('is-stage-show') || isPrinting()) return;
       const w = observedWrap ? observedWrap.clientWidth : 0;
       if (!w || Math.abs(w - lastWrapWidth) < 1) return;
       lastWrapWidth = w;
@@ -720,7 +727,7 @@ export function flushPageFit() {
     resizePending = false;
     requestPageFit('all');
   }
-  if (wrap && !document.documentElement.classList.contains('is-stage-show') && Math.abs(wrap.clientWidth - lastWrapWidth) >= 1) {
+  if (wrap && !document.documentElement.classList.contains('is-stage-show') && !isPrinting() && Math.abs(wrap.clientWidth - lastWrapWidth) >= 1) {
     lastWrapWidth = wrap.clientWidth;
     requestPageFit('all');
   }
@@ -767,7 +774,9 @@ export function installPageFit() {
   installed = true;
   if (typeof matchMedia === 'function') {
     portraitQuery = matchMedia('(orientation: portrait)');
-    const onChange = () => requestPageFit('all');
+    const onChange = () => {
+      if (!isPrinting()) requestPageFit('all');
+    };
     if (portraitQuery.addEventListener) portraitQuery.addEventListener('change', onChange);
   }
   if (document.fonts && document.fonts.addEventListener) {
