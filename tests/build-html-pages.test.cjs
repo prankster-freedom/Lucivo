@@ -40,6 +40,42 @@ for (const lang of ['ja', 'en']) {
   assert.ok(!ja.includes('lang=en') && !en.includes('lang=en'), 'README への導線に lang= を付けない');
 }
 
+// 2b. 説明文と OGP（#443 の方針 12）。タイトルは従来のまま、説明文は言語ごと、画像は言語で共通
+{
+  const title = 'Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —';
+  const expected = {
+    ja: { locale: 'ja_JP', description: 'Markdown と Mermaid をブラウザ単体で表示するビューアー。読むための軽快な仕様書レイアウトと、講演・展示・印刷に使える展示品質のレイアウトを、瞬時に切り替えられます。' },
+    en: { locale: 'en_US', description: 'A browser-only viewer for Markdown and Mermaid. Switch instantly between a fast reading layout and an exhibition-grade layout for talks and print.' }
+  };
+  for (const target of ['production', 'preview']) {
+    const base = target === 'preview' ? `${SITE_URL}preview/` : SITE_URL;
+    for (const lang of ['ja', 'en']) {
+      const html = buildLanguagePage(template, lang, target);
+      const e = expected[lang];
+      const has = tag => assert.ok(html.includes(tag), `${target}/${lang}: ${tag}`);
+      has(`<title>${title}</title>`);
+      has(`<meta name="description" content="${e.description}" />`);
+      has('<meta property="og:type" content="website" />');
+      has('<meta property="og:site_name" content="Lucivo" />');
+      has(`<meta property="og:title" content="${title}" />`);
+      has(`<meta property="og:description" content="${e.description}" />`);
+      has(`<meta property="og:url" content="${base}${lang}/" />`);
+      has(`<meta property="og:locale" content="${e.locale}" />`);
+      has(`<meta property="og:image" content="${base}assets/ogp/lucivo-ogp.png" />`);
+      has('<meta property="og:image:width" content="1200" />');
+      has('<meta property="og:image:height" content="630" />');
+      has('<meta name="twitter:card" content="summary_large_image" />');
+    }
+  }
+  // 説明文の長さの目安（AGENTS.repo.md 12 章: 英語版は 155 字前後、日本語版は 120 字前後）
+  assert.ok([...expected.en.description].length <= 160, '英語版の説明文は 160 字以内');
+  assert.ok([...expected.ja.description].length <= 125, '日本語版の説明文は 125 字以内');
+  // OGP の画像は 1200×630 の PNG（IHDR の幅と高さ）
+  const png = require('fs').readFileSync(require('path').join(__dirname, '..', 'public', 'assets', 'ogp', 'lucivo-ogp.png'));
+  assert.strictEqual(png.readUInt32BE(16), 1200, 'OGP の画像の幅は 1200');
+  assert.strictEqual(png.readUInt32BE(20), 630, 'OGP の画像の高さは 630');
+}
+
 // 3. 言語別のページ（テスト用 URL）: noindex を書き、hreflang は書かない。canonical は /preview/ の下の自分自身
 for (const lang of ['ja', 'en']) {
   const html = buildLanguagePage(template, lang, 'preview');

@@ -310,9 +310,21 @@ async function testLangPages(browser) {
           canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
           alternates: Array.from(document.querySelectorAll('link[rel="alternate"][hreflang]')).map(l => `${l.getAttribute('hreflang')}=${l.getAttribute('href')}`).sort(),
           robots: !!document.querySelector('meta[name="robots"]'),
-          title: document.title
+          title: document.title,
+          description: document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+          ogTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content'),
+          ogUrl: document.querySelector('meta[property="og:url"]')?.getAttribute('content'),
+          ogLocale: document.querySelector('meta[property="og:locale"]')?.getAttribute('content'),
+          ogImage: document.querySelector('meta[property="og:image"]')?.getAttribute('content')
         }));
+        // OGP の画像は、配布先のアセット（1 組だけ）にあり、読み込める
+        const imageRes = await page.request.get(`${root}assets/ogp/lucivo-ogp.png`);
+        head.imageStatus = imageRes.status();
         const ok = head.lang === lang && head.pageLang === lang
+          && head.description.length > 0 && (lang === 'ja' ? /ブラウザ単体/.test(head.description) : /^A browser-only viewer/.test(head.description))
+          && head.ogTitle === head.title && head.ogUrl === `${SITE}${lang}/`
+          && head.ogLocale === (lang === 'ja' ? 'ja_JP' : 'en_US')
+          && head.ogImage === `${SITE}assets/ogp/lucivo-ogp.png` && head.imageStatus === 200
           && head.canonical === `${SITE}${lang}/`
           && head.alternates.join(',') === [`en=${SITE}en/`, `ja=${SITE}ja/`, `x-default=${SITE}en/`].join(',')
           && !head.robots
@@ -320,7 +332,9 @@ async function testLangPages(browser) {
         results.push({ lang, ok, head: ok ? undefined : head });
         await context.close();
       }
-      record('TC-I18N-007', results.every(r => r.ok), JSON.stringify(results));
+      // OGP の画像は Web 版だけのもので、スタンドアロン版（dist/）には入れない
+      const standaloneHasOgp = fs.existsSync(path.join(ROOT_DIR, 'dist', 'assets', 'ogp'));
+      record('TC-I18N-007', results.every(r => r.ok) && !standaloneHasOgp, JSON.stringify({ results, standaloneHasOgp }));
     }
 
     // TC-I18N-008: 言語の切り替えで、読み込み直さずにアドレスバーをもう一方のディレクトリへ書き換える（クエリと # を保ち、編集中の内容を失わない）
