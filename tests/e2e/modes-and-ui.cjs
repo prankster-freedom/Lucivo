@@ -349,6 +349,32 @@ async function testResponsiveAndWebUi(browser) {
   await narrowPage.screenshot({ path: path.join(SHOT_DIR, 'mobile-header-360.png') });
   await narrowPage.setViewportSize({ width: 390, height: 844 });
   await narrowPage.click('#btn-mobile-file');
+  const mobileMenuSamples = await narrowPage.evaluate(() =>
+    Array.from(document.querySelectorAll('#mobile-file-menu [data-mobile-sample]')).map(el => el.getAttribute('data-mobile-sample'))
+  );
+  const mobileSampleOrderOk = JSON.stringify(mobileMenuSamples) === JSON.stringify([
+    'menu-sample-visual',
+    'menu-sample-notation',
+    'menu-sample-notation-extra',
+    'menu-sample-museum-walk',
+    'menu-sample-color-museum',
+    'menu-sample-print',
+    'menu-sample-structurizr'
+  ]);
+  const mobileColorMuseumTargetOk = await narrowPage.evaluate(() => {
+    const btn = document.querySelector('#mobile-file-menu [data-mobile-sample="menu-sample-color-museum"]');
+    const target = document.getElementById('menu-sample-color-museum');
+    return !!btn && !!target && target.getAttribute('data-sample-file') === 'color-museum-sample.md';
+  });
+  await narrowPage.click('[data-mobile-sample="menu-sample-print"]');
+  await narrowPage.waitForFunction(() => document.title === 'print-sample.md - Lucivo', null, { timeout: 10000 });
+  await narrowPage.setViewportSize({ width: 390, height: 320 });
+  await narrowPage.click('#btn-mobile-file');
+  const mobileMenuScrollable = await narrowPage.evaluate(() => {
+    const m = document.getElementById('mobile-file-menu');
+    return !!m && getComputedStyle(m).overflowY === 'auto' && m.scrollHeight > m.clientHeight;
+  });
+  await narrowPage.setViewportSize({ width: 390, height: 844 });
   await narrowPage.click('[data-mobile-sample="menu-sample-notation"]');
   await narrowPage.waitForSelector('#standard-doc-container h1', { timeout: 10000 });
   await narrowPage.click('#btn-mobile-view');
@@ -437,11 +463,13 @@ async function testResponsiveAndWebUi(browser) {
     && moreHasUpdateOnFile
     && mobileEditorBtns.viewMode === 'editor' && mobileEditorBtns.lockVisible
     && mobileEditorBtns.testCacheHidden && mobileEditorBtns.testErrHidden
+    && mobileSampleOrderOk && mobileColorMuseumTargetOk && mobileMenuScrollable
     && narrow375Ok && narrow360JaOk && narrow360EnOk && tabletOverflow
     && isMidOk(mid1024Ja) && isMidOk(mid1100Ja) && isMidOk(mid1024En)
     && isWideOk(wide1280Ja) && isWideOk(wide1280En),
     JSON.stringify({
       mobileInit, presentOpened, moreHasUpdateOnFile, mobileEditorBtns,
+      mobileSampleOrderOk, mobileColorMuseumTargetOk, mobileMenuScrollable,
       narrow375Ok, narrow360JaOk, narrow360En, tabletOverflow,
       mid1024Ja, mid1100Ja, mid1024En, wide1280Ja, wide1280En
     })
