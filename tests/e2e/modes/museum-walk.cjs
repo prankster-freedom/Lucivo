@@ -592,7 +592,8 @@ async function testMuseumWalk(browser) {
       '',
       '## 章',
       '',
-      '![プリズム](samples/images/color-museum-prism.svg)',
+      // 画像は試験のサーバーの絶対 URL で書く（ページは /ja/ にあり、Web 版の配布物には samples/ がない。ARC-PUB-007・009）
+      `![プリズム](${server.rootUrl}samples/images/color-museum-prism.svg)`,
       '',
       '短い一文。',
       '',

@@ -143,20 +143,27 @@ const MD_MODES = [
   { style: 'shapes', appearance: 'light' }, { style: 'shapes', appearance: 'dark' }
 ];
 
+// Web 版（public/）を GitHub Pages と同じように配る。フォルダへのリクエストには、その index.html を返す。
+// url は日本語版のページ（/ja/）、rootUrl はルートの転送用のページ（/）を指す（doc/2.ARCHITECTURE.md 4.14 ARC-PUB-009）。
+// notFound には、見つからなかったリクエストのパスを貯める（言語別のページの相対パスの確認に使う）
 async function startWebServer() {
   const http = require('http');
   const mime = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.woff2': 'font/woff2', '.md': 'text/markdown; charset=utf-8', '.png': 'image/png' };
+  const notFound = [];
   const server = http.createServer((req, res) => {
-    const rel = ((req.url || '/').split('?')[0].replace(/^\/+/, '')) || 'index.html';
-    const fp = path.join(WEB_DIR, decodeURIComponent(rel));
+    const rel = (req.url || '/').split(/[?#]/)[0].replace(/^\/+/, '');
+    let fp = path.join(WEB_DIR, decodeURIComponent(rel));
+    if (fp.startsWith(WEB_DIR) && fs.existsSync(fp) && fs.statSync(fp).isDirectory()) fp = path.join(fp, 'index.html');
     if (!fp.startsWith(WEB_DIR) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
+      notFound.push('/' + rel);
       res.writeHead(404); res.end('Not found'); return;
     }
     res.writeHead(200, { 'Content-Type': mime[path.extname(fp)] || 'application/octet-stream' });
     fs.createReadStream(fp).pipe(res);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  return { url: `http://127.0.0.1:${server.address().port}/`, close: () => new Promise(resolve => server.close(resolve)) };
+  const rootUrl = `http://127.0.0.1:${server.address().port}/`;
+  return { url: `${rootUrl}ja/`, rootUrl, notFound, close: () => new Promise(resolve => server.close(resolve)) };
 }
 
 // Web 版で GitHub 上のサンプル（raw.githubusercontent.com/.../public/samples/...）を読むリクエストを、

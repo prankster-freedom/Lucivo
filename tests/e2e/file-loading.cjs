@@ -105,7 +105,7 @@ async function testFileLoading(browser) {
   // TC-FILE-014 ヘッダーと案内のロゴが Lucivo の公開 URL で README を開き、案内の「最新版はこちら」が公開リポジトリへのリンクになっている（#298）
   const repoLinks = await page.evaluate(() => {
     const repoUrl = 'https://github.com/prankster-freedom/Lucivo';
-    const readmeUrl = 'https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual';
+    const readmeUrl = 'https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual';
     const describe = (a, expected) => a && { href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'), ok: a.getAttribute('href') === expected && a.getAttribute('target') === '_blank' && /\bnoopener\b/.test(a.getAttribute('rel') || '') && /\bnoreferrer\b/.test(a.getAttribute('rel') || '') };
     const latest = document.querySelector('#standard-doc-container .empty-guide-latest');
     return {
@@ -241,7 +241,7 @@ async function testFileLoading(browser) {
       && latest.state === 'latest' && latest.text.includes('最新版です') && latest.text.includes(appVersion)
       && failed.state === 'error' && failed.text.includes('確認できませんでした')
       && afterRender.state === 'error'
-      && helpAttr.helpHref === 'https://prankster-freedom.github.io/Lucivo/preview/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual'
+      && helpAttr.helpHref === 'https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual'
       && helpAttr.helpTarget === '_blank' && helpAttr.helpRel === 'noopener noreferrer'
       && helpAttr.updateText === '最新版確認' && helpAttr.updateMenuHiddenInitially === true
       && helpAttr.menuItemText === '通信が発生します' && helpAttr.updateIconAfterText && helpAttr.updateSingleLine
@@ -1812,9 +1812,12 @@ async function testAutoReload(browser) {
 
 // TC-FILE-048: Web 版の利用状況計測とスタンドアロン版・E2E の抑止（FR-063, #321）
 async function testWebAnalytics(browser) {
-  const webHtml = fs.readFileSync(path.join(ROOT_DIR, 'public', 'index.html'), 'utf8');
+  // 計測は言語別のページ（/ja/・/en/）で行い、ルートの転送用のページには含めない（FR-063, FR-065）
+  const webHtmls = ['ja', 'en'].map(lang => fs.readFileSync(path.join(ROOT_DIR, 'public', lang, 'index.html'), 'utf8'));
+  const rootHtml = fs.readFileSync(path.join(ROOT_DIR, 'public', 'index.html'), 'utf8');
   const distHtml = fs.readFileSync(path.join(APP_DIR, 'index.html'), 'utf8');
-  const hasGtmInWeb = webHtml.includes('GTM-KMQ3KLNT') && webHtml.includes("'gtm.start'");
+  const hasGtmInWeb = webHtmls.every(html => html.includes('GTM-KMQ3KLNT') && html.includes("'gtm.start'"))
+    && !rootHtml.includes('GTM-KMQ3KLNT') && !rootHtml.includes('googletagmanager.com');
   const noGtmInDist = !distHtml.includes('GTM-KMQ3KLNT')
     && !distHtml.includes('LUCIVO_WEB_ANALYTICS_START')
     && !distHtml.includes('googletagmanager.com');

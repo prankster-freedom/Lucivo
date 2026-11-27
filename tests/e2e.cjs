@@ -63,7 +63,7 @@ const {
   testOffline
 } = require('./e2e/modes-and-ui.cjs');
 
-const { testI18n } = require('./e2e/i18n.cjs');
+const { testI18n, testLangPages } = require('./e2e/i18n.cjs');
 
 const { testPerfBudget, testPerfOptimizations } = require('./e2e/perf-budget.cjs');
 
@@ -83,7 +83,9 @@ const SUITES = [
   { name: 'testUrlLoading', tcPrefix: ['TC-FILE-035', 'TC-FILE-041', 'TC-FILE-042', 'TC-FILE-043', 'TC-FILE-044', 'TC-FILE-045', 'TC-FILE-047', 'TC-FILE-050', 'TC-FILE-051', 'TC-FILE-052'], fn: testUrlLoading },
   { name: 'testAutoReload', tcPrefix: ['TC-FILE-046'], fn: testAutoReload },
   { name: 'testWebAnalytics', tcPrefix: ['TC-FILE-048'], fn: testWebAnalytics },
-  { name: 'testI18n', tcPrefix: ['TC-I18N-'], fn: testI18n },
+  { name: 'testI18n', tcPrefix: ['TC-I18N-001', 'TC-I18N-002', 'TC-I18N-003', 'TC-I18N-004'], fn: testI18n },
+  // Web 版の言語別のページ（/ja/・/en/）と、ルート・?lang= の転送（FR-065, ARC-PUB-009）
+  { name: 'testLangPages', tcPrefix: ['TC-I18N-005', 'TC-I18N-006', 'TC-I18N-007', 'TC-I18N-008', 'TC-I18N-009'], fn: testLangPages },
   { name: 'testTitleAndDrop', tcPrefix: ['TC-FILE-017', 'TC-FILE-018', 'TC-FILE-019', 'TC-FILE-032', 'TC-FILE-033'], fn: testTitleAndDrop },
   { name: 'testSampleLinks', tcPrefix: ['TC-FILE-028'], fn: testSampleLinks },
   { name: 'testEncoding', tcPrefix: ['TC-FILE-029', 'TC-FILE-030', 'TC-FILE-031'], fn: testEncoding },

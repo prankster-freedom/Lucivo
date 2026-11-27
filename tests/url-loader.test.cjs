@@ -179,6 +179,29 @@ async function run() {
   );
   assert.ok(!syncedUrl.includes('present='), 'buildAppUrlWithState がクエリおよびハッシュから present を取り除くこと');
 
+  // 言語別のページ（FR-065, ARC-PUB-009）: 言語をパスの言語のディレクトリで表し、lang を付けない。クエリと # は保つ
+  const baseState = { isVisualMode: true, appearance: 'light', infographicStyle: 'shapes', tone: 'default', viewMode: 'split' };
+  assert.strictEqual(
+    buildAppUrlWithState('https://example.com/Lucivo/preview/ja/?mode=visual#memo', { ...baseState, lang: 'en', pageLang: 'ja' }, null, 'split'),
+    'https://example.com/Lucivo/preview/en/?mode=visual#memo',
+    '言語別のページでは /ja/ を /en/ に書き換えること'
+  );
+  assert.strictEqual(
+    buildAppUrlWithState('https://example.com/Lucivo/en/?lang=en&mode=visual', { ...baseState, lang: 'ja', pageLang: 'en' }, null, 'split'),
+    'https://example.com/Lucivo/ja/?mode=visual',
+    '言語別のページでは lang を消すこと'
+  );
+  assert.strictEqual(
+    buildAppUrlWithState('file:///C:/Lucivo/public/ja/index.html', { ...baseState, lang: 'en', pageLang: 'ja' }, null, 'split'),
+    'file:///C:/Lucivo/public/en/index.html?mode=visual',
+    'file: の言語別のページでは index.html を残すこと'
+  );
+  assert.strictEqual(
+    buildAppUrlWithState('file:///C:/Lucivo/dist/index.html', { ...baseState, lang: 'en', pageLang: null }, null, 'split'),
+    'file:///C:/Lucivo/dist/index.html?mode=visual&lang=en',
+    'スタンドアロン版は従来どおり lang=en を書くこと'
+  );
+
   console.log('url-loader.test.cjs: all assertions passed');
 }
 

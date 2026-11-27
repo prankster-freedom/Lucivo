@@ -100,9 +100,9 @@ function loadAnalyticsModule(versionString) {
   assert.strictEqual(prodWin.dataLayer.length, 0);
 }
 
-// 5. public/index.html に GTM スニペット（gtm.start）が含まれること
+// 5. HTML のひな形（src/index.html。Web 版の言語別のページの元）に GTM スニペット（gtm.start）が含まれること
 {
-  const indexHtml = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
+  const indexHtml = fs.readFileSync(path.join(ROOT, 'src', 'index.html'), 'utf8');
   assert.ok(indexHtml.includes('<!-- LUCIVO_WEB_ANALYTICS_START -->'));
   assert.ok(indexHtml.includes('GTM-KMQ3KLNT'));
   assert.ok(indexHtml.includes("'gtm.start'"));
