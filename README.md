@@ -13,13 +13,13 @@ tags: ["Lucivo", "Markdown", "Mermaid", "Structurizr DSL", "C4モデル"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.16.3`
+- **Version**: `0.17.0`
 - **Language**: 日本語 | [English](README.en.md)
 
 Lucivo（ルシーヴォ）は、Markdown 文書・Mermaid ダイアグラム・Structurizr DSL による C4 モデル図をブラウザ単体で表示するビューアーです。ローカルの Markdown ファイルをそのまま開くだけで、「読むための軽快な仕様書」と「見せるための展示・講演品質」の 2 つの表示モードを瞬時に切り替えられます。
 
 <p align="center">
-  <a href="https://prankster-freedom.github.io/Lucivo/"><strong>Web 版を開く</strong></a>
+  <a href="https://prankster-freedom.github.io/Lucivo/ja/"><strong>Web 版を開く</strong></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/prankster-freedom/Lucivo/releases/latest"><strong>ダウンロード版（ZIP）</strong></a>
   &nbsp;·&nbsp;
@@ -49,7 +49,7 @@ Lucivo（ルシーヴォ）は、Markdown 文書・Mermaid ダイアグラム・
 
 | 提供形態                         | こんなときに                 | リンク |
 | :------------------------------- | :--------------------------- | :----- |
-| 正式リリース版（Web 版）         | インストール不要ですぐ使う   | [prankster-freedom.github.io/Lucivo](https://prankster-freedom.github.io/Lucivo/) |
+| 正式リリース版（Web 版）         | インストール不要ですぐ使う   | [prankster-freedom.github.io/Lucivo/ja](https://prankster-freedom.github.io/Lucivo/ja/) |
 | 正式リリース版（ダウンロード版） | オフラインで安全に使う       | [GitHub Releases の最新版](https://github.com/prankster-freedom/Lucivo/releases/latest) |
 | プレビュー版（Web 版）           | リリース前の次の版を先に試す | [prankster-freedom.github.io/Lucivo/preview](https://prankster-freedom.github.io/Lucivo/preview/) |
 
@@ -236,6 +236,16 @@ Visualモードでは、上部のスタイルバーから 4 種類のデザイ�
 
 直近の 2 版を載せています。過去のすべての版は [release-notes.md](release-notes.md) をご覧ください。
 
+### 0.17.0（2026-11-28）
+
+- feat(visual): ページ単位表示・ステージ発表・印刷の版面を 16:10（縦向きの 10:16 も選択・URL 指定可）にそろえ、収まらない章は自動で文字詰めやページ分割を行い、スマホの横向きなど縦の短い画面でもページ全体が収まるようにしました
+- feat(diagram): Web 版で Structurizr DSL による C4 モデル図の描画と多ビュー切り替え（掘り下げ・ステージ発表中のビュー切り替え含む）に対応し、サンプルを追加しました
+- feat(i18n): Web 版の公開ページを日本語（`/ja/`）と英語（`/en/`）の言語別ディレクトリに分け、説明文・OGP と切り替え先の言語による表示を整えました
+- feat(diagram): 図の Fit 表示で文字の大きさの下限をなくし、大きな図でも常に全体が一画面に収まるようにしました
+- feat(museum-walk): スマートフォンの 2 本指ピンチ操作でのズームに対応し、スロープ通過時に足元へ向けて戻るカメラ演出を加えました
+- feat(ui): スマートフォン用の「開く」メニューに「配色ミュージアム」と「印刷・PDF の確認」サンプルを追加しました
+- fix(museum-walk): スマートフォンでのスワイプによる見回し量を広げ、歩行速度を調整しました
+
 ### 0.16.3（2026-11-26）
 
 - feat(museum-walk): スマートフォンでもミュージアム・ウォークを選べるようにしました
@@ -243,10 +253,3 @@ Visualモードでは、上部のスタイルバーから 4 種類のデザイ�
 - feat(museum-walk): 大きな図を広く置き、続く短い文章を図の横にそっと添えるようにしました
 - fix(museum-walk): 壁の図が重なって欠ける問題を直し、複雑な 1 枚の図も表示できるようにしました
 - fix(samples): 配色ミュージアムのスライドの順序を見直し、プリズムの図の背景を透明にして、題名と英字を図の外の文章にしました
-
-### 0.16.2（2026-11-25）
-
-- feat(ui): 1024px 未満の狭い画面で Visualモードのスタイルバーをコンパクト表示（スタイルプルダウン・色見本・誌面アイコン）にし、360px 幅でも横スクロールなしで操作できるようにしました
-- feat(museum-walk): 「感情の地図」を 3D の互い違い 4 象限ボックスと配色球体で立体表示するようにしました
-- fix(ui): 360px 幅のスマートフォンおよび 1024〜1279px の中間幅でヘッダーが横にはみ出す問題を解消し、1024px 以上でのロゴの重複表示も修正しました
-- fix(samples): 配色ミュージアムのプリズム図 SVG で右端の文字切れを解消し、紫系から茶色系へのスペクトルと色名ラベルに整理しました

@@ -2,6 +2,16 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.17.0 (2026-11-28)
+
+- feat(visual): Unified paged view, Stage Show, and print layouts to 16:10 (with selectable 10:16 portrait and `ratio` URL parameter), automatically compacting or splitting overflowing chapters and fitting the full page even on short landscape mobile screens
+- feat(diagram): Added Web Edition support for rendering C4 model diagrams in Structurizr DSL with multi-view navigation (including drill-down and view switching in Stage Show) and bundled sample workspaces
+- feat(i18n): Split Web Edition pages into dedicated `/ja/` and `/en/` language directories with localized metadata, OGP tags, and target-language switcher labels
+- feat(diagram): Removed the minimum font-size limit in diagram Fit mode so large diagrams always fit completely within the viewport
+- feat(museum-walk): Added two-finger pinch zoom on smartphones and a subtle downward camera tilt when crossing slopes
+- feat(ui): Added "Color Museum" and "Print & PDF Check" samples to the mobile "Open" menu
+- fix(museum-walk): Increased swipe look-around range and tuned walking speed on smartphones
+
 ## 0.16.3 (2026-11-26)
 
 - feat(museum-walk): Museum Walk can now be selected and used on smartphones

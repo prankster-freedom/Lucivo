@@ -13,13 +13,13 @@ tags: ["Lucivo", "Markdown", "Mermaid", "Structurizr DSL", "C4 model"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.16.3`
+- **Version**: `0.17.0`
 - **Language**: [日本語](README.md) | English
 
 Lucivo is a standalone browser-based viewer for Markdown documents, Mermaid diagrams, and C4 model diagrams written in Structurizr DSL. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
 
 <p align="center">
-  <a href="https://prankster-freedom.github.io/Lucivo/"><strong>Launch Web Edition</strong></a>
+  <a href="https://prankster-freedom.github.io/Lucivo/en/"><strong>Launch Web Edition</strong></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/prankster-freedom/Lucivo/releases/latest"><strong>Download Standalone Edition (ZIP)</strong></a>
   &nbsp;·&nbsp;
@@ -49,7 +49,7 @@ Choose the edition that best fits your workflow:
 
 | Edition                         | Best For                              | Link |
 | :------------------------------ | :------------------------------------ | :--- |
-| Official Release (Web Edition)  | Instant use with zero installation    | [prankster-freedom.github.io/Lucivo](https://prankster-freedom.github.io/Lucivo/) |
+| Official Release (Web Edition)  | Instant use with zero installation    | [prankster-freedom.github.io/Lucivo/en](https://prankster-freedom.github.io/Lucivo/en/) |
 | Official Release (Downloadable) | Safe, completely offline environments | [Latest GitHub Release](https://github.com/prankster-freedom/Lucivo/releases/latest) |
 | Preview Edition (Web Edition)   | Trying upcoming pre-release features  | [prankster-freedom.github.io/Lucivo/preview](https://prankster-freedom.github.io/Lucivo/preview/) |
 
@@ -236,6 +236,16 @@ Licensed under the [MIT License](LICENSE). See [public/THIRD_PARTY_LICENSES.txt]
 
 The two most recent releases are listed below. For the complete version history, see [release-notes.en.md](release-notes.en.md).
 
+### 0.17.0 (2026-11-28)
+
+- feat(visual): Unified paged view, Stage Show, and print layouts to 16:10 (with selectable 10:16 portrait and `ratio` URL parameter), automatically compacting or splitting overflowing chapters and fitting the full page even on short landscape mobile screens
+- feat(diagram): Added Web Edition support for rendering C4 model diagrams in Structurizr DSL with multi-view navigation (including drill-down and view switching in Stage Show) and bundled sample workspaces
+- feat(i18n): Split Web Edition pages into dedicated `/ja/` and `/en/` language directories with localized metadata, OGP tags, and target-language switcher labels
+- feat(diagram): Removed the minimum font-size limit in diagram Fit mode so large diagrams always fit completely within the viewport
+- feat(museum-walk): Added two-finger pinch zoom on smartphones and a subtle downward camera tilt when crossing slopes
+- feat(ui): Added "Color Museum" and "Print & PDF Check" samples to the mobile "Open" menu
+- fix(museum-walk): Increased swipe look-around range and tuned walking speed on smartphones
+
 ### 0.16.3 (2026-11-26)
 
 - feat(museum-walk): Museum Walk can now be selected and used on smartphones
@@ -243,10 +253,3 @@ The two most recent releases are listed below. For the complete version history,
 - feat(museum-walk): Large figures are now placed wider, with short following text set quietly beside them
 - fix(museum-walk): Fixed wall figures overlapping and getting cut off, and complex single-image figures now display correctly
 - fix(samples): Reordered the Color Museum slides, made the prism figure background transparent, and moved its title and tagline out of the image into text
-
-### 0.16.2 (2026-11-25)
-
-- feat(ui): Compacted the Visual Mode style bar below 1024px (style dropdown, tone swatches, and layout icon) so all controls fit within a 360px viewport without horizontal scrolling
-- feat(museum-walk): Rendered "Map of Feeling" in 3D using staggered four-quadrant translucent boxes and glowing color spheres
-- fix(ui): Fixed header horizontal overflow at 360px smartphone width and 1024–1279px intermediate widths, as well as duplicate brand logo rendering at 1024px and above
-- fix(samples): Fixed right-edge text clipping in the Color Museum prism SVGs and refined them to a smooth violet-to-brown spectrum with representative color names
