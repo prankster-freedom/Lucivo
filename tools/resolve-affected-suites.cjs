@@ -118,7 +118,8 @@ const DIRECT_SUITE_MAP = [
       'testDiagramLongLabel',
       'testNodeLabelWrap',
       'testDiagramUserStyles',
-      'testDiagramPanZoom'
+      'testDiagramPanZoom',
+      'testStructurizr'
     ]
   },
   {

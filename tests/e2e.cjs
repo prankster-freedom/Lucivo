@@ -30,6 +30,7 @@ const {
   testStyleBar,
   testDiagramPanZoom
 } = require('./e2e/diagrams.cjs');
+const { testStructurizr } = require('./e2e/structurizr.cjs');
 
 const {
   testMarkdownTypography,
@@ -123,6 +124,7 @@ const SUITES = [
   { name: 'testNodeLabelWrap', tcPrefix: ['TC-DIAG-037'], fn: testNodeLabelWrap },
   { name: 'testDiagramUserStyles', tcPrefix: ['TC-DIAG-030'], fn: testDiagramUserStyles },
   { name: 'testDiagramPanZoom', tcPrefix: ['TC-DIAG-026', 'TC-DIAG-027', 'TC-DIAG-028'], fn: testDiagramPanZoom },
+  { name: 'testStructurizr', tcPrefix: ['TC-DIAG-043', 'TC-DIAG-044', 'TC-DIAG-045', 'TC-DIAG-046', 'TC-DIAG-047'], fn: testStructurizr },
   // 時間を測るスイートと、アニメーションの終わりを決め打ちの時間で待つスイート（testStageShow、testMuseumWalk）は serial: true にし、
   // 並列の分が終わった後に 1 つずつ流す（他のスイートの負荷で値が乱れたり、アニメーションが待ち時間内に終わらなかったりしないようにする）
   { name: 'testStartupAndCache', tcPrefix: ['TC-CACHE-', 'TC-PERF-001', 'TC-PERF-002', 'TC-PERF-003', 'TC-PERF-004', 'TC-PERF-005', 'TC-PERF-006', 'TC-PERF-007'], fn: testStartupAndCache, serial: true },
