@@ -516,7 +516,12 @@ async function testPerfOptimizations(browser) {
 
   const visInc = await p13.evaluate(() => {
     const stripRuntimeLights = root => {
+      // 版面の比率のページ割り（DD-VTPL-156）を処理しきってから比べる。通し番号（分けた要素と章の組の番号）は描画のたびに変わるため除く
+      if (window.LucivoPageFit) window.LucivoPageFit.flush();
       const clone = root.cloneNode(true);
+      clone.querySelectorAll('[data-pf-id], [data-pf-clone], [data-pf-split], [data-page-group]').forEach(el => {
+        ['data-pf-id', 'data-pf-clone', 'data-pf-split', 'data-page-group'].forEach(a => el.removeAttribute(a));
+      });
       clone.querySelectorAll('.signal-light-canvas').forEach(c => c.remove());
       clone.querySelectorAll('.has-signal-light').forEach(el => el.classList.remove('has-signal-light'));
       clone.querySelectorAll('.is-offscreen').forEach(el => el.classList.remove('is-offscreen'));
@@ -561,7 +566,12 @@ async function testPerfOptimizations(browser) {
     const fullMs = performance.now() - tFull;
     const fullHtml = stripRuntimeLights(root);
 
+    // 一致しないときに原因を追えるよう、最初に食い違う位置の前後を記録する
+    let at = 0;
+    while (at < patchHtml.length && patchHtml[at] === fullHtml[at]) at++;
+    const firstDiff = patchHtml === fullHtml ? null : { at, patch: patchHtml.slice(Math.max(0, at - 160), at + 160), full: fullHtml.slice(Math.max(0, at - 160), at + 160) };
     return {
+      firstDiff,
       sameHero: heroBefore !== null && heroBefore === heroAfter,
       sameFirstSlab: firstSlabBefore !== null && firstSlabBefore === firstSlabAfter,
       sameLastSlab: lastSlabBefore !== null && lastSlabBefore === lastSlabAfter,

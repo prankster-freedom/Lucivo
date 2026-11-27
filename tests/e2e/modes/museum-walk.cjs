@@ -80,7 +80,8 @@ async function testMuseumWalk(browser) {
     const built = await page.evaluate(id => {
       const i = window.LucivoModes.get(id).info();
       const vs = document.getElementById('visual-stage-container');
-      const slabs = vs.querySelectorAll('.exhibition-wrap > .exhibition-slab h2').length;
+      // 版面の比率で分けた続きのページ（題の複製を持つ）は、章に数えない（ARC-PAGE-008）
+      const slabs = vs.querySelectorAll('.exhibition-wrap > .exhibition-slab:not(.is-continuation) h2').length;
       const figures = Array.from(vs.querySelectorAll('[data-stage-index]')).filter(vp => vp.querySelector('svg')).length;
       const quotes = Array.from(vs.querySelectorAll('blockquote, .md-alert')).filter(q => !q.parentElement.closest('blockquote, .md-alert')).length;
       const imgs = Array.from(document.querySelectorAll('#museum-walk .mw-fig-layer img'));

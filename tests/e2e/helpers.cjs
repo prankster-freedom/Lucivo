@@ -124,7 +124,7 @@ async function setDocument(page, md) {
 }
 
 async function scrollToSlab(page, index) {
-  await page.evaluate(i => document.querySelectorAll('#visual-stage-container .exhibition-slab')[i].scrollIntoView({ block: 'start' }), index);
+  await page.evaluate(i => document.querySelectorAll('#visual-stage-container .exhibition-slab:not(.is-continuation)')[i].scrollIntoView({ block: 'start' }), index);
   await page.waitForTimeout(350);
 }
 

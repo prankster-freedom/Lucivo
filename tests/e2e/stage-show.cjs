@@ -150,7 +150,13 @@ async function testSignalLight(browser) {
 
   // TC-LIGHT-002 シーケンス図は時系列の順に 1 本ずつ流れ、長い図でも一巡の時間に上限がある
   await scrollToSlab(page, 11);
-  await page.evaluate(() => document.querySelectorAll('#visual-stage-container .exhibition-slab')[11].querySelectorAll('.exhibition-viewport')[1].scrollIntoView({ block: 'center' }));
+  // 版面の比率で分けた章は、続きのページの図も含めて数える（DD-VTPL-155）
+  await page.evaluate(() => {
+    const first = document.querySelectorAll('#visual-stage-container .exhibition-slab:not(.is-continuation)')[11];
+    const pages = [first];
+    for (let n = first.nextElementSibling; n && n.classList.contains('is-continuation'); n = n.nextElementSibling) pages.push(n);
+    pages.flatMap(p => Array.from(p.querySelectorAll('.exhibition-viewport')))[1].scrollIntoView({ block: 'center' });
+  });
   await page.waitForFunction(() => LucivoStage.lightPlans()[3].plan);
   const sequence = await page.evaluate(() => {
     const { plan } = LucivoStage.lightPlans()[3];
@@ -215,7 +221,7 @@ async function testSignalLight(browser) {
       await page.evaluate(() => LucivoStage.seekLights(null));
       await scrollToSlab(page, 6);
       await page.waitForTimeout(1300);
-      await page.locator('#visual-stage-container .exhibition-slab').nth(6).screenshot({ path: path.join(SHOT_DIR, `light-${style}-${appearance}-steps.png`) });
+      await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(6).screenshot({ path: path.join(SHOT_DIR, `light-${style}-${appearance}-steps.png`) });
     }
   }
   // TC-LIGHT-012 トグルボタンで全フローアニメーション（Canvas と手順リスト）を ON/OFF でき、モード切替でも保つ
@@ -293,6 +299,8 @@ function inspectShow() {
     htmlClass: document.documentElement.classList.contains('is-stage-show'),
     covers: rect.left === 0 && rect.top === 0 && rect.width === innerWidth && rect.height === innerHeight,
     wrapRatio: wrapRect && wrapRect.height > 0 ? +(wrapRect.width / wrapRect.height).toFixed(3) : 0,
+    // シーンは、表紙と各ページ（版面の比率で分けた続きのページを含む。DD-VTPL-157）とエンドカード
+    pages: wrap ? wrap.querySelectorAll(':scope > .exhibition-hero, :scope > .exhibition-slab').length : 0,
     topElement: document.elementFromPoint(20, 20).closest('#visual-stage-container, #stage-hud') !== null,
     shown: shown.length,
     tpl: shown[0] ? shown[0].className : '',
@@ -326,8 +334,12 @@ async function testStageShow(browser) {
   await page.waitForTimeout(900);
   const entered = await page.evaluate(inspectShow);
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-00-hero.png') });
-  record('TC-SHOW-001', entered.htmlClass && entered.covers && entered.wrapRatio >= 1.76 && entered.wrapRatio <= 1.80 && entered.topElement && entered.scenes === SHOWCASE_SCENES && entered.shown === 1
-    && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === sceneCount(1), JSON.stringify(entered));
+  // シーンの数は、ページ割り（版面の比率で分けた続きのページ）で決まるため、書体などの環境で変わりうる。発表の中の数を使う
+  const SCENES = entered.scenes;
+  const countText = n => `${String(n).padStart(2, '0')} / ${String(SCENES).padStart(2, '0')}`;
+  record('TC-SHOW-001', entered.htmlClass && entered.covers && Math.abs(entered.wrapRatio - 1.6) <= 0.02 && entered.topElement
+    && entered.scenes === entered.pages && entered.scenes >= SHOWCASE_SCENES && entered.shown === 1
+    && /exhibition-hero/.test(entered.tpl) && entered.appearance === 'dark' && entered.viewMode === 'canvas' && entered.isVisual && entered.count === countText(1), JSON.stringify(entered));
 
   // TC-SHOW-002 ページ送り（→ / Space / ← / End / Home）
   await page.keyboard.press('ArrowRight');
@@ -340,10 +352,11 @@ async function testStageShow(browser) {
   const last = await page.evaluate(inspectShow);
   await page.keyboard.press('Home');
   const first = await page.evaluate(inspectShow);
-  record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === SHOWCASE_SCENES - 1 && first.index === 0 && first.shown === 1,
+  record('TC-SHOW-002', second.index === 1 && third.index === 2 && back.index === 1 && last.index === SCENES - 1 && first.index === 0 && first.shown === 1,
     JSON.stringify([second.index, third.index, back.index, last.index, first.index]));
 
-  // TC-SHOW-026 画面より短いシーンは、舞台の枠の上下の中央に置く（#144）
+  // TC-SHOW-026 シーン（ページ）は舞台の左右の中央に置き、画面に収める。背の低い章は、題を上に置いたまま、
+  // 本文をページの残りの高さの上下中央に置く（ページの組みのまま。DTP-SHOW-020, DTP-VTPL-150）
   const centered = [];
   for (let i = 1; i <= 4; i++) {
     await page.keyboard.press('ArrowRight');
@@ -351,16 +364,22 @@ async function testStageShow(browser) {
     centered.push(await page.evaluate(() => {
       const wrap = document.querySelector('#visual-stage-container .exhibition-wrap');
       const scene = Array.from(wrap.children).find(c => c.classList.contains('is-scene') && getComputedStyle(c).display !== 'none');
-      const w = wrap.getBoundingClientRect();
       const s = scene.getBoundingClientRect();
-      return { top: Math.round(s.top - w.top), bottom: Math.round(w.bottom - s.bottom), short: s.height < w.height - 40 };
+      const h2 = scene.querySelector(':scope > h2');
+      return {
+        left: Math.round(s.left), right: Math.round(innerWidth - s.right), top: Math.round(s.top), bottom: Math.round(innerHeight - s.bottom),
+        ratio: +(s.width / s.height).toFixed(3),
+        h2Top: h2 ? Math.round((h2.getBoundingClientRect().top - s.top) / (s.width / scene.offsetWidth)) : null,
+        short: parseFloat(scene.style.getPropertyValue('--page-center-pad') || '0') > 0
+      };
     }));
   }
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-centered.png') });
   await page.keyboard.press('Home');
   await page.waitForTimeout(600);
-  record('TC-SHOW-026', centered.some(c => c.short) && centered.filter(c => c.short).every(c => c.top > 40 && Math.abs(c.top - c.bottom) <= 4)
-    && centered.filter(c => !c.short).every(c => c.top >= 0 && c.top <= 4), JSON.stringify(centered));
+  record('TC-SHOW-026', centered.some(c => c.short)
+    && centered.every(c => Math.abs(c.left - c.right) <= 2 && c.top >= 0 && c.bottom >= 0 && Math.abs(c.ratio - 1.6) <= 0.02),
+    JSON.stringify(centered));
 
   // TC-SHOW-003 要点カード・手順は 1 項目ずつ見せる
   await pressUntil(page, () => document.querySelector('.is-scene.vs-tpl-points'));
@@ -402,7 +421,9 @@ async function testStageShow(browser) {
       width: rect.width,
       // 文字の下限はなく、図全体が表示枠の幅に収まる（NFR-005）
       fitsWidth: rect.right <= svg.parentElement.getBoundingClientRect().right + 1 && svg.parentElement.scrollWidth <= svg.parentElement.clientWidth + 1,
+      // ページの組みを変えないよう札は残し、操作部品だけを見せない（DD-VTPL-157）
       header: getComputedStyle(scene.querySelector('.exhibition-diagram-header')).display,
+      buttonsHidden: Array.from(scene.querySelectorAll('.exhibition-diagram-header button')).every(b => getComputedStyle(b).visibility === 'hidden'),
       fitsHeight: rect.bottom <= innerHeight,
       overflow: document.getElementById('visual-stage-container').scrollHeight - innerHeight
     };
@@ -419,7 +440,8 @@ async function testStageShow(browser) {
   await waitRendered(widePage);
   const wideOverflows = [];
   const cappedInShow = [];
-  for (let i = 0; i < SHOWCASE_SCENES; i++) {
+  const wideScenes = await widePage.evaluate(() => LucivoStage.showState().scenes);
+  for (let i = 0; i < wideScenes; i++) {
     if (i > 0) {
       await widePage.keyboard.press('b');
       await widePage.waitForFunction(() => document.documentElement.classList.contains('is-stage-curtain'), null, { timeout: 5000 });
@@ -435,7 +457,8 @@ async function testStageShow(browser) {
       const splitSvg = cur && cur.classList.contains('exhibition-slab-split') ? cur.querySelector('.exhibition-viewport > svg') : null;
       return { overflow: root.scrollHeight - root.clientHeight, h, splitMaxWidth: splitSvg ? getComputedStyle(splitSvg).maxWidth : null };
     });
-    if (st.overflow > 0 && ![12, 13, 14].includes(i)) {
+    // ページの組みのまま一様に拡大するため、どのシーンも舞台からあふれない（長い章は続きのページに分かれている）
+    if (st.overflow > 0) {
       wideOverflows.push({ slide: i + 1, ...st });
     }
     if (st.splitMaxWidth && st.splitMaxWidth !== 'none') cappedInShow.push({ slide: i + 1, ...st });
@@ -470,21 +493,34 @@ async function testStageShow(browser) {
   }
   await wqhdPage.context().close();
 
-  record('TC-SHOW-005', diagram.header === 'none' && diagram.fitsHeight && diagram.fitsWidth && flowHead > 100 && wideOverflows.length === 0 && cappedInShow.length === 0 && targetScenes.length >= 6 && wqhdOverflows.length === 0,
+  // 2 段組みの図の拡大の上限（DD-DIAG-044）は、ページ単位の表示と同じく発表でも使う（ページの組みのまま見せる。cappedInShow は記録のみ）
+  record('TC-SHOW-005', diagram.header !== 'none' && diagram.buttonsHidden && diagram.fitsHeight && diagram.fitsWidth && flowHead > 100 && wideOverflows.length === 0 && targetScenes.length >= 6 && wqhdOverflows.length === 0,
     JSON.stringify({ diagram, flowHead, wideOverflows, cappedInShow, wqhdOverflows }));
 
-  // TC-SHOW-004 画面に収まらない章は、次の章へ進む前に残りをスクロールする
-  await pressUntil(page, () => document.getElementById('visual-stage-container').scrollHeight - innerHeight > 200);
+  // TC-SHOW-004 1 ページに収まらない章は、続きのページ（1 シーンずつ）で見せ、シーンの中はスクロールしない（DTP-SHOW-020, DD-VTPL-157）
+  await page.keyboard.press('Home');
+  await pressUntil(page, () => {
+    const s = document.querySelector('#visual-stage-container .exhibition-wrap > .is-scene');
+    return s && s.dataset.pageNo === '1';
+  });
   await waitForSettled(page, { selector: '#visual-stage-container', frames: 4 });
-  const tall = await page.evaluate(inspectShow);
+  const tall = await page.evaluate(() => {
+    const s = document.querySelector('#visual-stage-container .exhibition-wrap > .is-scene');
+    const root = document.getElementById('visual-stage-container');
+    return { index: LucivoStage.showState().index, no: s.dataset.pageNo, count: s.dataset.pageCount, overflow: root.scrollHeight - root.clientHeight };
+  });
   await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-tall.png') });
   await page.keyboard.press('ArrowRight');
   await waitForSettled(page, { selector: '#visual-stage-container', frames: 4 });
-  const scrolled = await page.evaluate(inspectShow);
-  await page.keyboard.press('ArrowLeft');
-  await waitForSettled(page, { selector: '#visual-stage-container', frames: 4 });
-  const returned = await page.evaluate(inspectShow);
-  record('TC-SHOW-004', scrolled.index === tall.index && scrolled.scrollTop > 100 && returned.index === tall.index && returned.scrollTop <= 4, JSON.stringify({ index: tall.index, overflow: tall.overflow, scrolled: scrolled.scrollTop, returned: returned.scrollTop }));
+  const nextPage = await page.evaluate(() => {
+    const s = document.querySelector('#visual-stage-container .exhibition-wrap > .is-scene');
+    const root = document.getElementById('visual-stage-container');
+    return { index: LucivoStage.showState().index, no: s.dataset.pageNo, cont: s.classList.contains('is-continuation'), pill: s.querySelector('.page-no-pill')?.textContent, scrollTop: root.scrollTop, overflow: root.scrollHeight - root.clientHeight };
+  });
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-dark-continued.png') });
+  record('TC-SHOW-004', tall.no === '1' && Number(tall.count) >= 2 && tall.overflow === 0
+    && nextPage.index === tall.index + 1 && nextPage.no === '2' && nextPage.cont && nextPage.pill === `2 / ${tall.count}` && nextPage.scrollTop === 0 && nextPage.overflow === 0,
+    JSON.stringify({ tall, nextPage }));
 
   // TC-SHOW-007 発表中に明暗を切り替えても、シーンを保つ
   await page.keyboard.press('Home');
@@ -498,7 +534,7 @@ async function testStageShow(browser) {
   await page.keyboard.press('t');
   await waitRendered(page);
   await page.waitForTimeout(500);
-  record('TC-SHOW-007', beforeToggle.index === afterToggle.index && afterToggle.appearance === 'light' && afterToggle.shown === 1 && afterToggle.scenes === SHOWCASE_SCENES, JSON.stringify({ before: beforeToggle.appearance, after: afterToggle.appearance, index: afterToggle.index }));
+  record('TC-SHOW-007', beforeToggle.index === afterToggle.index && afterToggle.appearance === 'light' && afterToggle.shown === 1 && afterToggle.scenes === SCENES, JSON.stringify({ before: beforeToggle.appearance, after: afterToggle.appearance, index: afterToggle.index }));
 
   // TC-SHOW-006 自動進行（項目ごとの送りと、最後の章から先頭への巡回）
   await page.keyboard.press('Home');
@@ -564,7 +600,8 @@ async function testStageShow(browser) {
   await page.click('#btn-stage-show');
   await page.waitForFunction(() => window.LucivoStage && LucivoStage.showState().active);
   await waitRendered(page);
-  for (let i = 0; i < SHOWCASE_SCENES; i++) {
+  const allScenes = await page.evaluate(() => LucivoStage.showState().scenes);
+  for (let i = 0; i < allScenes; i++) {
     await page.waitForTimeout(950);
     await page.screenshot({ path: path.join(SHOT_DIR, `show-scene-${String(i).padStart(2, '0')}.png`) });
     // 項目の送りとスクロールを含めて、次の章へ進むまで送る
@@ -656,7 +693,8 @@ async function testStageOverviewPointer(browser) {
       visible: tiles.filter(t => getComputedStyle(t).display !== 'none').length,
       columns: new Set(rects.map(r => Math.round(r.left))).size,
       inside: rects.every(r => r.left >= 0 && r.right <= innerWidth + 1),
-      aspect: rects.every(r => Math.abs(r.width / r.height - innerWidth / innerHeight) < 0.03),
+      // 升目は、ページの形（16:10。DD-VTPL-157）
+      aspect: rects.every(r => Math.abs(r.width / r.height - 1.6) < 0.03),
       selectedClass: tiles.findIndex(t => t.classList.contains('is-ov-selected')),
       lightsOff: LucivoStage.lightPlans().every(p => !p.active),
       count: document.querySelector('.stage-hud-count').textContent
@@ -688,9 +726,12 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
   const escaped = await page.evaluate(inspectShow);
-  const overviewOk = openMs < 800 && grid.overview && grid.htmlClass && grid.visible === SHOWCASE_SCENES && grid.columns === 5 && grid.inside && grid.aspect
-    && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === sceneCount(5)
-    && JSON.stringify(moves) === JSON.stringify([5, 10, 5, SHOWCASE_SCENES - 1, 0, 0])
+  // シーンの数と列の数は、ページ割り（続きのページ）で変わるため、発表の中の値から期待値を作る
+  const scenesInShow = grid.scenes;
+  const cols = grid.columns;
+  const overviewOk = openMs < 800 && grid.overview && grid.htmlClass && grid.visible === scenesInShow && scenesInShow >= SHOWCASE_SCENES && cols >= 4 && cols <= 6 && grid.inside && grid.aspect
+    && grid.selected === 4 && grid.selectedClass === 4 && grid.lightsOff && grid.count === `05 / ${String(scenesInShow).padStart(2, '0')}`
+    && JSON.stringify(moves) === JSON.stringify([5, 5 + cols, 5, scenesInShow - 1, 0, 0])
     && !entered.overview && entered.index === 1 && entered.shown === 1 && entered.active
     && !clicked.overview && clicked.index === 10 && clicked.lightsOn
     && !escaped.overview && escaped.active && escaped.index === 10 && escaped.shown === 1;
@@ -904,6 +945,7 @@ async function testStageOverviewPointer(browser) {
   });
   await page.keyboard.press('a');
   await page.waitForFunction(() => LucivoStage.showState().index === 0 && LucivoStage.showState().autoLooped, null, { timeout: 10000 });
+  const ambientScenes = await page.evaluate(() => LucivoStage.showState().scenes);
   const ambientState = await page.evaluate(() => ({
     autoLooped: LucivoStage.showState().autoLooped,
     ambientClass: document.documentElement.classList.contains('is-stage-ambient'),
@@ -912,7 +954,7 @@ async function testStageOverviewPointer(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   const show14Ok = curtainOpen.state && curtainOpen.htmlClass && curtainOpen.display === 'flex'
-    && curtainOpen.orbitMask && curtainOpen.pillCount === SHOWCASE_SCENES && curtainOpen.lightsOff
+    && curtainOpen.orbitMask && curtainOpen.pillCount === ambientScenes && ambientScenes >= SHOWCASE_SCENES && curtainOpen.lightsOff
     && !afterPillJump.curtain && afterPillJump.index === 8 && afterPillJump.active
     && qOpened && !escClosedCurtainOnly.curtain && escClosedCurtainOnly.active && escClosedCurtainOnly.index === 8
     && ambientState.autoLooped && ambientState.ambientClass && ambientState.titleAnim === 'lucivo-ambient-breathe';

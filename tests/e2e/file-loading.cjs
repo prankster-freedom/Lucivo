@@ -1276,7 +1276,8 @@ async function testLocalImages(browser) {
       const loaded = alt => { const i = img(alt); return Boolean(i && i.complete && i.naturalWidth > 0); };
       return {
         visual: state.isVisualMode,
-        fileUrl: loaded('file-url'), htmlFileUrl: loaded('html-file-url'), htmlWidth: img('html-file-url') && img('html-file-url').getBoundingClientRect().width, abs: loaded('abs'),
+        fileUrl: loaded('file-url'), htmlFileUrl: loaded('html-file-url'), // 指定した幅（width="48"）を、組んだときの幅で見る。版面の比率のページでは、詰める段階の zoom で画面上の幅が縮むため（DD-VTPL-152）
+        htmlWidth: img('html-file-url') && img('html-file-url').offsetWidth, abs: loaded('abs'),
         missing,
         jsSrc: img('js') ? img('js').getAttribute('src') : 'removed',
         fileLinks: Array.from(root.querySelectorAll('a')).filter(a => /^file:/i.test(a.getAttribute('href') || '')).length

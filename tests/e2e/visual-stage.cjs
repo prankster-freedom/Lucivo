@@ -884,14 +884,14 @@ async function testVisualTemplates(browser) {
   await page.click('.view-mode-btn[data-view-mode="canvas"]');
   await page.waitForTimeout(300);
   const canvasTableFits = await page.evaluate(() => {
-    const slab12 = document.querySelectorAll('#visual-stage-container .exhibition-slab')[12];
+    const slab12 = document.querySelectorAll('#visual-stage-container .exhibition-slab:not(.is-continuation)')[12];
     const tableWrap = slab12 ? slab12.querySelector('.table-container') : null;
     const tableEl = slab12 ? slab12.querySelector('table') : null;
     return !!(slab12 && tableWrap && tableEl
       && tableWrap.scrollWidth <= tableWrap.clientWidth + 1
       && tableEl.getBoundingClientRect().right <= slab12.getBoundingClientRect().right + 1);
   });
-  await page.locator('#visual-stage-container .exhibition-slab').nth(12).screenshot({ path: path.join(SHOT_DIR, 'vtpl-showcase-wide-table.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(12).screenshot({ path: path.join(SHOT_DIR, 'vtpl-showcase-wide-table.png') });
   await page.click('.view-mode-btn[data-view-mode="split"]');
   await page.waitForTimeout(300);
 
@@ -920,7 +920,7 @@ async function testVisualTemplates(browser) {
     [11, 'vtpl-showcase-tall-diagrams.png']
   ];
   for (const [idx, fname] of showcaseShots) {
-    const loc = page.locator('#visual-stage-container .exhibition-slab').nth(idx);
+    const loc = page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(idx);
     await loc.screenshot({ path: path.join(SHOT_DIR, fname) });
   }
 
@@ -988,7 +988,7 @@ async function testCoverAndTables(browser) {
   await page.click('#visual-stage-container .vs-cover-agenda-item[data-stage-target="03"]');
   await page.waitForTimeout(1200);
   const jump = await page.evaluate(() => {
-    const slab = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="03"]');
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="03"]');
     const scroller = document.getElementById('preview-scroll');
     // 短い文書では最下部までしかスクロールできないため、その場合は最下部に着いていればよい
     return {
@@ -1034,8 +1034,11 @@ async function testCoverAndTables(browser) {
   await page.click('.view-mode-btn[data-view-mode="split"]');
   await page.waitForTimeout(300);
   const tableRule = await page.evaluate(() => {
-    const slab = document.querySelectorAll('#visual-stage-container .exhibition-slab')[12];
-    const [wide, num] = slab.querySelectorAll('table');
+    const slab = document.querySelectorAll('#visual-stage-container .exhibition-slab:not(.is-continuation)')[12];
+    // 版面の比率で続きのページに分けた章は、続きのページの表も見る（複製した表は除く。DD-VTPL-155）
+    const pages = [slab];
+    for (let n = slab.nextElementSibling; n && n.classList.contains('is-continuation'); n = n.nextElementSibling) pages.push(n);
+    const [wide, num] = pages.flatMap(p => Array.from(p.querySelectorAll('table:not([data-pf-clone])')));
     const cs = el => getComputedStyle(el);
     const probe = document.createElement('span');
     probe.style.color = getComputedStyle(slab.closest('.exhibition-wrap')).getPropertyValue('--vs-c1').trim();
@@ -1050,10 +1053,16 @@ async function testCoverAndTables(browser) {
     };
     const cells = Array.from(wide.querySelectorAll('th, td'));
     const col = (table, n) => Array.from(table.querySelectorAll(`tr > :nth-child(${n})`));
+    // 版面の比率のページで詰めた章は、本文に zoom が掛かり、画面上の幅と線の太さが縮む（DD-VTPL-152）。
+    // 線の太さは画面の画素に丸められる（2px × 0.75 → 1 画素）ため、詰めていないときは 2px、詰めたときは 1 画素以上で見る
+    const k = wide.offsetWidth ? wide.getBoundingClientRect().width / wide.offsetWidth : 1;
+    const headWidth = cs(wide.querySelector('th')).borderBottomWidth;
+    const headRuleOk = Math.abs(k - 1) < 0.01 ? headWidth === '2px' : parseFloat(headWidth) * k >= 0.99;
     return {
-      minCellWidth: Math.round(Math.min(...cells.map(c => c.getBoundingClientRect().width))),
+      minCellWidth: Math.round(Math.min(...cells.map(c => c.getBoundingClientRect().width / k))),
       noVertical: cells.every(c => parseFloat(cs(c).borderLeftWidth) === 0 && parseFloat(cs(c).borderRightWidth) === 0),
-      headRule: [cs(wide.querySelector('th')).borderBottomWidth, cs(wide.querySelector('th')).borderBottomColor, c1],
+      headRule: [headRuleOk ? '2px' : headWidth, cs(wide.querySelector('th')).borderBottomColor, c1],
+      headZoom: +k.toFixed(3),
       labelOneLine: col(wide, 2).slice(1).map(td => [td.classList.contains('vs-label'), lines(td)]),
       numCols: [1, 2, 3, 4, 5].map(n => col(num, n).every(c => c.classList.contains('vs-num'))),
       numAlign: col(num, 2).map(c => cs(c).textAlign),
@@ -1061,7 +1070,7 @@ async function testCoverAndTables(browser) {
       firstColWeight: cs(col(num, 1)[1]).fontWeight
     };
   });
-  await page.locator('#visual-stage-container .exhibition-slab').nth(12).screenshot({ path: path.join(SHOT_DIR, 'vtpl-editorial-table.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(12).screenshot({ path: path.join(SHOT_DIR, 'vtpl-editorial-table.png') });
   await setDocument(page, TABLE_RULE_MD);
   const rule = await page.evaluate(() => {
     const t = document.querySelector('#visual-stage-container table');
@@ -1187,7 +1196,7 @@ async function testCoverAndTables(browser) {
       normalHasMetric
     };
   });
-  await page.locator('#visual-stage-container .exhibition-slab').nth(0).screenshot({ path: path.join(SHOT_DIR, 'vtpl-kpi-metrics.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(0).screenshot({ path: path.join(SHOT_DIR, 'vtpl-kpi-metrics.png') });
   const vtpl18Ok = vtpl18.tpl && vtpl18.metricCount === 3 && vtpl18.valCount === 3 && vtpl18.unitCount === 3
     && vtpl18.metricFontPx >= vtpl18.normalFontPx * 1.4 && vtpl18.unitFontPx > 0 && vtpl18.unitFontPx <= vtpl18.metricFontPx * 0.7
     && vtpl18.metricDisplayOk && vtpl18.tabular && vtpl18.barAfter && vtpl18.normalHasMetric === 0;
@@ -1227,8 +1236,8 @@ async function testCoverAndTables(browser) {
       afterBandHeight: afterCard ? parseFloat(getComputedStyle(afterCard, '::after').height) : 0
     };
   });
-  await page.locator('#visual-stage-container .exhibition-slab').nth(2).screenshot({ path: path.join(SHOT_DIR, 'vtpl-timeline-cards.png') });
-  await page.locator('#visual-stage-container .exhibition-slab').nth(3).screenshot({ path: path.join(SHOT_DIR, 'vtpl-compare-cards.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(2).screenshot({ path: path.join(SHOT_DIR, 'vtpl-timeline-cards.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(3).screenshot({ path: path.join(SHOT_DIR, 'vtpl-compare-cards.png') });
   const vtpl19Ok = vtpl19.tlHasClass && vtpl19.tlCount === 3 && vtpl19.tlBadgeCount === 3 && vtpl19.tlBadgeRadius >= 10 && vtpl19.tlBadgeOwnLine
     && vtpl19.cmpHasClass && vtpl19.hasBefore && vtpl19.hasAfter
     && vtpl19.beforeBorderStyle === 'dashed' && vtpl19.afterBandHeight >= 5;
@@ -1236,7 +1245,7 @@ async function testCoverAndTables(browser) {
 
   // TC-VTPL-027 章の中の小見出し（h1・h3〜h6）が本文に対して階層を持つ（DTP-004, #160）
   const headingScale = await page.evaluate(() => {
-    const slab = document.querySelectorAll('#visual-stage-container .exhibition-slab')[2];
+    const slab = document.querySelectorAll('#visual-stage-container .exhibition-slab:not(.is-continuation)')[2];
     const body = document.createElement('div');
     body.innerHTML = '<p>本文</p><h1>H1</h1><h3>H3</h3><h4>H4</h4><h5>H5</h5><h6>H6</h6>';
     slab.appendChild(body);
@@ -1654,9 +1663,9 @@ async function testCoverAndTables(browser) {
   });
 
   // ゲラ用スクリーンショット
-  const s1Locator = page.locator('#visual-stage-container .exhibition-slab').nth(0);
+  const s1Locator = page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(0);
   await s1Locator.screenshot({ path: path.join(SHOT_DIR, 'vtpl-featured-card.png') });
-  const s2Locator = page.locator('#visual-stage-container .exhibition-slab').nth(1);
+  const s2Locator = page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)').nth(1);
   await s2Locator.screenshot({ path: path.join(SHOT_DIR, 'vtpl-featured-multiple-kpi.png') });
 
   // 高速モードでの検証
@@ -1838,7 +1847,7 @@ async function testCoverAndTables(browser) {
 
   // TC-VTPL-032 章番号の透かしあしらい（#217）
   const readWatermark = () => page.evaluate(() => {
-    const slab = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no]');
+    const slab = document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no]');
     const cs = slab ? getComputedStyle(slab, '::after') : null;
     const h2 = slab ? slab.querySelector('h2') : null;
     return cs ? {
@@ -1957,6 +1966,9 @@ async function testCoverAndTables(browser) {
     '| 間隔 | 広め |'
   ].join('\n');
   await setMode(page, { style: 'shapes', appearance: 'light' });
+  // 長文の 2 段組みは、ページの箱を使わない表示（シングルページ表示）で使う。版面の比率のページでは 1 段にし、
+  // 収まらない分は続きのページに分ける（DD-VTPL-151）
+  await page.evaluate(() => document.querySelector('[data-layout-id="single"]').click());
   await setDocument(page, twoColMd);
   await page.waitForFunction(() => !!document.querySelector('#visual-stage-container .lucivo-math .katex'), null, { timeout: 10000 });
   const readTwoCol = () => page.evaluate(() => {
@@ -2016,6 +2028,7 @@ async function testCoverAndTables(browser) {
     && twoColPrint.columnCount === 'auto'
     && twoColFastCount === 0;
   record('TC-VTPL-034', twoColOk, JSON.stringify({ twoColWideCanvas, twoColNarrowCanvas, twoColWideSplit, twoColPrint, twoColFastCount }));
+  await page.evaluate(() => document.querySelector('[data-layout-id="page"]').click());
 
   // TC-VTPL-035 全トーン × Light / Dark の手順型視認性（#258）と Dark 背景・トーン調和（#260）
   const TONE_CHECK_MD = [
@@ -2082,7 +2095,7 @@ async function testCoverAndTables(browser) {
           const l1 = lum(a), l2 = lum(b);
           return +(((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)).toFixed(2));
         };
-        const slab = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="01"]');
+        const slab = document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="01"]');
         const slabBg = getComputedStyle(slab).backgroundColor;
         const slabRgb = toRgb(slabBg);
         const items = Array.from(slab.querySelectorAll('.vs-steps > li'));
@@ -2506,7 +2519,7 @@ async function testCalloutsGlossaryPrint(browser) {
   // コールアウトだけの章は、ステートメント型にしない
   await setMode(page, { style: 'cards', appearance: 'light' });
   await setDocument(page, '# 題名\n\n## 注意\n\n> [!WARNING]\n> 電源を切ってから作業します。\n');
-  const onlyAlertTpl = await page.evaluate(() => document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="01"]').className);
+  const onlyAlertTpl = await page.evaluate(() => document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="01"]').className);
   const expectedTypes = ['note', 'tip', 'important', 'warning', 'caution'];
   const alertOk = alertModes.every(m => JSON.stringify(m.types) === JSON.stringify(expectedTypes)
     && JSON.stringify(m.labels) === JSON.stringify(['Note', 'Tip', 'Important', 'Warning', 'Caution'])
@@ -2524,7 +2537,7 @@ async function testCalloutsGlossaryPrint(browser) {
   ].join('\n');
   await setDocument(page, glossaryMd);
   const inspectGlossary = () => {
-    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab[data-stage-no]'));
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no]'));
     const tpl = s => Array.from(s.classList).find(c => c.startsWith('vs-tpl-')).slice(7);
     const dl = slabs[0].querySelector('dl.vs-glossary');
     const dl8 = slabs[2].querySelector('dl.vs-glossary');
@@ -2544,7 +2557,7 @@ async function testCalloutsGlossaryPrint(browser) {
   await page.click('.view-mode-btn[data-view-mode="canvas"]');
   await page.waitForTimeout(300);
   const glossaryWide = await page.evaluate(inspectGlossary);
-  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="03"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-glossary-two-up.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="03"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-glossary-two-up.png') });
   await page.click('.view-mode-btn[data-view-mode="split"]');
   // Split 表示（版面 52rem 未満）は 1 段、スマートフォンの幅（版面 36rem 未満）は用語の下に説明を置く 1 列
   await page.setViewportSize({ width: 1200, height: 900 });
@@ -2622,6 +2635,10 @@ async function testCalloutsGlossaryPrint(browser) {
   });
   await page.emulateMedia({ media: null });
   await setMode(page, { style: 'shapes', appearance: 'light' });
+  // TC-VTPL-028・029・037 は、ページの箱を使わないとき（シングルページ表示。#308）の印刷の詰め方（DD-VTPL-132〜139）を確かめる。
+  // ページ単位（版面の比率のページ）の印刷は、画面のページを 1 対 1 で刷る（DD-VTPL-158）ため、TC-VTPL-047 で確かめる
+  await page.evaluate(() => document.querySelector('[data-layout-id="single"]').click());
+  await waitRendered(page);
   const slabCount = await page.evaluate(() => document.querySelectorAll('#visual-stage-container .exhibition-slab').length);
   for (let i = 0; i < slabCount; i++) await scrollToSlab(page, i);
   await page.waitForFunction(() => document.querySelectorAll('#visual-stage-container .exhibition-viewport > svg').length >= 3, null, { timeout: 30000 });
@@ -2698,8 +2715,8 @@ async function testCalloutsGlossaryPrint(browser) {
   await waitRendered(page);
 
   const splitScreenState = await page.evaluate(() => {
-    const s9 = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="09"]');
-    const s10 = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="10"]');
+    const s9 = document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="09"]');
+    const s10 = document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="10"]');
     return {
       s9ScreenStacked: s9 ? s9.classList.contains('is-stacked') : false,
       s9PrintStacked: s9 ? s9.hasAttribute('data-print-stacked') : null,
@@ -2720,19 +2737,19 @@ async function testCalloutsGlossaryPrint(browser) {
       el.style.minHeight = prev;
       return mm;
     };
-    const s9Body = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="09"] .exhibition-slab-body');
-    const s10Body = document.querySelector('#visual-stage-container .exhibition-slab[data-stage-no="10"] .exhibition-slab-body');
+    const s9Body = document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="09"] .exhibition-slab-body');
+    const s10Body = document.querySelector('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="10"] .exhibition-slab-body');
     return {
-      stage05Mm: measureMm('#visual-stage-container .exhibition-slab[data-stage-no="05"]'),
-      stage09Mm: measureMm('#visual-stage-container .exhibition-slab[data-stage-no="09"]'),
-      stage10Mm: measureMm('#visual-stage-container .exhibition-slab[data-stage-no="10"]'),
+      stage05Mm: measureMm('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="05"]'),
+      stage09Mm: measureMm('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="09"]'),
+      stage10Mm: measureMm('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="10"]'),
       s9Cols: s9Body ? getComputedStyle(s9Body).gridTemplateColumns.split(/\s+/).length : 0,
       s10Cols: s10Body ? getComputedStyle(s10Body).gridTemplateColumns.split(/\s+/).length : 0
     };
   });
-  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="05"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage05.png') });
-  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="09"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage09.png') });
-  await page.locator('#visual-stage-container .exhibition-slab[data-stage-no="10"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage10.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="05"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage05.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="09"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage09.png') });
+  await page.locator('#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="10"]').screenshot({ path: path.join(SHOT_DIR, 'vtpl-print-stage10.png') });
   await page.emulateMedia({ media: null });
 
   const vsPdfSplit = inspectPdf(await page.pdf({ preferCSSPageSize: true }));
@@ -2753,6 +2770,7 @@ async function testCalloutsGlossaryPrint(browser) {
     && vsPdfCanvas.pages === 25 && vsPdfCanvas.landscape === true;
   record('TC-VTPL-037', vtpl37Ok, JSON.stringify({ splitScreenState, printFitMetrics, vsPdfSplit, vsPdfCanvas }));
 
+  await page.evaluate(() => document.querySelector('[data-layout-id="page"]').click());
   await page.context().close();
 }
 
@@ -2789,10 +2807,14 @@ async function testDiagramScaleModes(browser) {
     const picker = vp.parentElement.querySelector('.scale-picker');
     const toggle = picker.querySelector('.scale-more-toggle');
     const round = v => +v.toFixed(1);
+    // 版面の比率のページでは、描画領域の高さを page-fit.ts がページの残りの高さで上書きし（DD-VTPL-153）、
+    // 詰める段階の zoom で画面上の大きさが縮む。画面上の大きさにそろえて比べる
+    const k = vp.offsetWidth ? vp.getBoundingClientRect().width / vp.offsetWidth : 1;
+    const pageArea = parseFloat(vp.style.getPropertyValue('--fit-area-height'));
     return {
       w: round(r.width), h: round(r.height), vbW: round(svg.viewBox.baseVal.width),
-      cw: round(vp.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)),
-      areaH: round(Math.max(16 * rem, window.innerHeight - 12 * rem)),
+      cw: round((vp.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) * k),
+      areaH: round(pageArea ? pageArea * k : Math.max(16 * rem, window.innerHeight - 12 * rem)),
       fitMax: parseFloat(svg.style.getPropertyValue('--fit-max-width')) || 1e9,
       scrolls: vp.scrollWidth > vp.clientWidth + 1,
       fit: vp.classList.contains('is-scale-fit'),
@@ -2884,6 +2906,8 @@ const TARGET_STAGE_NOS = ['01', '03', '04', '06', '08', '09', '10', '12', '13', 
 
 async function extractVisualFingerprint(page) {
   return page.evaluate((stageNos) => {
+    // 版面の比率のページ割り（DD-VTPL-156）を処理しきってから測る
+    if (window.LucivoPageFit) window.LucivoPageFit.flush();
     const cvs = document.createElement('canvas');
     cvs.width = 1;
     cvs.height = 1;
@@ -2923,7 +2947,7 @@ async function extractVisualFingerprint(page) {
     const hero = document.querySelector('#visual-stage-container .exhibition-hero');
     if (hero) targets.push(['hero', hero]);
     for (const no of stageNos) {
-      const el = document.querySelector(`#visual-stage-container .exhibition-slab[data-stage-no="${no}"]`);
+      const el = document.querySelector(`#visual-stage-container .exhibition-slab:not(.is-continuation)[data-stage-no="${no}"]`);
       if (el) targets.push([`STAGE_${no}`, el]);
     }
 
