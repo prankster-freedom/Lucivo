@@ -129,3 +129,140 @@ workspace "Documentation Pipeline" {
   }
 }
 ```
+
+## 3. 公式チュートリアル準拠 — 階層識別子・明示指定・関係スタイル
+
+[Structurizr DSL Tutorial](https://docs.structurizr.com/dsl/tutorial) で紹介されている代表的な記述パターンです。
+
+- `!identifiers hierarchical` は Lucivo では未対応のため警告を出したうえで `flat` として解釈します（要素同士が別名であればそのまま描画できます。`ss.wa` のようなドット修飾参照は未解決警告となります）。
+- `styles` では `element "Element"`・`element "Person"`・`element "Database"`（`shape cylinder`）に加え、`relationship "Relationship"` やカスタムタグ付きの `relationship` スタイル（`dashed false` 等）も指定できます。
+
+```structurizr
+workspace "Official Tutorial Pattern" "Structurizr DSL 公式チュートリアル準拠" {
+  !identifiers hierarchical
+
+  model {
+    u = person "User" "システムを利用するユーザー"
+    ss = softwareSystem "Software System" "中核システム" {
+      wa = container "Web Application" "ブラウザ UI を配信する" "Java / Spring Boot"
+      db = container "Database Schema" "業務データを永続化する" "PostgreSQL" {
+        tags "Database"
+      }
+    }
+
+    u -> wa "Uses" "HTTPS" {
+      tags "Sync"
+    }
+    wa -> db "Reads from and writes to" "JDBC"
+  }
+
+  views {
+    systemContext ss "Diagram1" {
+      include *
+      title "System Context (Tutorial)"
+      autoLayout lr
+    }
+
+    container ss "Diagram2" {
+      include u wa db
+      title "Container View (Explicit Include & Styles)"
+      autoLayout lr
+    }
+
+    styles {
+      element "Element" {
+        color #ffffff
+        background #1168bd
+        shape RoundedBox
+      }
+      element "Person" {
+        shape Person
+        background #08427b
+      }
+      element "Database" {
+        shape Cylinder
+        background #2563eb
+      }
+      relationship "Relationship" {
+        thickness 2
+      }
+      relationship "Sync" {
+        color #0f766e
+        dashed false
+      }
+    }
+  }
+}
+```
+
+## 4. 未対応構文を含む公式 Cookbook 例（安全スキップ＋警告バッジ）
+
+[Structurizr DSL Cookbook](https://docs.structurizr.com/dsl/cookbook) にある代表的な構文のうち、Lucivo（Phase 1）がまだ対応していない機能（`deploymentEnvironment` / `deploymentNode` / `containerInstance`・`deployment` ビュー・`dynamic` ビュー・`filtered` ビュー・外部 `theme`）を含めた例です。
+
+Lucivo は未対応の構文に出会っても描画全体を止めず、安全にスキップしたうえで図の隅に警告バッジ（`⚠ 未対応構文`）を表示します。バッジをクリックすると、スキップされた箇所と行番号の一覧を確認できます。
+
+```structurizr view=Containers
+workspace "Cookbook Unimplemented Features" "未対応構文の安全スキップ確認" {
+  model {
+    customer = person "Customer" "書籍を検索・購入する顧客"
+    onlineBookStore = softwareSystem "Online Book Store" "オンライン書店" {
+      tags "Core"
+      webapp = container "Web Application" "書店フロントエンド" "TypeScript"
+      database = container "Database" "注文・書籍データ" "PostgreSQL" {
+        tags "Database"
+      }
+    }
+
+    customer -> webapp "Browses and makes purchases using" "HTTPS"
+    webapp -> database "Reads from and writes to" "SQL"
+
+    development = deploymentEnvironment "Development" {
+      deploymentNode "Developer Laptop" {
+        containerInstance webapp
+        deploymentNode "MySQL" {
+          containerInstance database
+        }
+      }
+    }
+  }
+
+  views {
+    systemLandscape "Landscape" {
+      include *
+      title "System Landscape"
+      autoLayout lr
+    }
+
+    container onlineBookStore "Containers" {
+      include *
+      title "Online Book Store — Containers"
+      autoLayout lr
+    }
+
+    dynamic onlineBookStore "RequestPastOrders" {
+      title "Request past orders feature (Dynamic View)"
+      customer -> webapp "Requests past orders from"
+      webapp -> database "Queries for orders using"
+      autoLayout lr
+    }
+
+    deployment * development "DevelopmentDeployment" {
+      include *
+      autoLayout lr
+    }
+
+    filtered "Landscape" include "Core,Relationship" "FilteredCore"
+
+    theme https://static.structurizr.com/themes/default/theme.json
+
+    styles {
+      element "Database" {
+        shape Cylinder
+        background #2563eb
+        color #ffffff
+      }
+    }
+  }
+}
+```
+

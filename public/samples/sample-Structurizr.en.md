@@ -129,3 +129,140 @@ workspace "Documentation Pipeline" {
   }
 }
 ```
+
+## 3. Official Tutorial Pattern — Identifiers, Explicit Include & Styles
+
+This example follows the [Structurizr DSL Tutorial](https://docs.structurizr.com/dsl/tutorial).
+
+- `!identifiers hierarchical` is not yet supported in Lucivo; it emits a warning and falls back to `flat` identifier scoping (unique identifiers render normally, while dotted references such as `ss.wa` emit unresolved-reference warnings).
+- Inside `styles`, both element styles (`Element`, `Person`, `Database` with `shape Cylinder`) and relationship styles (`Relationship`, custom tag styles with `dashed false`) are applied.
+
+```structurizr
+workspace "Official Tutorial Pattern" "Based on the Structurizr DSL Tutorial" {
+  !identifiers hierarchical
+
+  model {
+    u = person "User" "Uses the software system"
+    ss = softwareSystem "Software System" "Core system" {
+      wa = container "Web Application" "Serves the browser UI" "Java / Spring Boot"
+      db = container "Database Schema" "Stores application data" "PostgreSQL" {
+        tags "Database"
+      }
+    }
+
+    u -> wa "Uses" "HTTPS" {
+      tags "Sync"
+    }
+    wa -> db "Reads from and writes to" "JDBC"
+  }
+
+  views {
+    systemContext ss "Diagram1" {
+      include *
+      title "System Context (Tutorial)"
+      autoLayout lr
+    }
+
+    container ss "Diagram2" {
+      include u wa db
+      title "Container View (Explicit Include & Styles)"
+      autoLayout lr
+    }
+
+    styles {
+      element "Element" {
+        color #ffffff
+        background #1168bd
+        shape RoundedBox
+      }
+      element "Person" {
+        shape Person
+        background #08427b
+      }
+      element "Database" {
+        shape Cylinder
+        background #2563eb
+      }
+      relationship "Relationship" {
+        thickness 2
+      }
+      relationship "Sync" {
+        color #0f766e
+        dashed false
+      }
+    }
+  }
+}
+```
+
+## 4. Official Cookbook Patterns Including Unimplemented Syntax (Safe Skip & Warning Badge)
+
+This example combines supported static views with [Structurizr DSL Cookbook](https://docs.structurizr.com/dsl/cookbook) constructs that Lucivo (Phase 1) does not yet render: `deploymentEnvironment` / `deploymentNode` / `containerInstance`, `deployment` views, `dynamic` views, `filtered` views, and external `theme` URLs.
+
+Instead of failing the entire diagram, Lucivo safely skips unsupported constructs, renders the supported views (`Landscape` / `Containers`), and shows a subtle warning badge (`⚠ Unsupported syntax`) in the corner so you can inspect skipped lines.
+
+```structurizr view=Containers
+workspace "Cookbook Unimplemented Features" "Safe skip demonstration" {
+  model {
+    customer = person "Customer" "Searches and purchases books"
+    onlineBookStore = softwareSystem "Online Book Store" "Online bookstore" {
+      tags "Core"
+      webapp = container "Web Application" "Storefront UI" "TypeScript"
+      database = container "Database" "Orders and catalog" "PostgreSQL" {
+        tags "Database"
+      }
+    }
+
+    customer -> webapp "Browses and makes purchases using" "HTTPS"
+    webapp -> database "Reads from and writes to" "SQL"
+
+    development = deploymentEnvironment "Development" {
+      deploymentNode "Developer Laptop" {
+        containerInstance webapp
+        deploymentNode "MySQL" {
+          containerInstance database
+        }
+      }
+    }
+  }
+
+  views {
+    systemLandscape "Landscape" {
+      include *
+      title "System Landscape"
+      autoLayout lr
+    }
+
+    container onlineBookStore "Containers" {
+      include *
+      title "Online Book Store — Containers"
+      autoLayout lr
+    }
+
+    dynamic onlineBookStore "RequestPastOrders" {
+      title "Request past orders feature (Dynamic View)"
+      customer -> webapp "Requests past orders from"
+      webapp -> database "Queries for orders using"
+      autoLayout lr
+    }
+
+    deployment * development "DevelopmentDeployment" {
+      include *
+      autoLayout lr
+    }
+
+    filtered "Landscape" include "Core,Relationship" "FilteredCore"
+
+    theme https://static.structurizr.com/themes/default/theme.json
+
+    styles {
+      element "Database" {
+        shape Cylinder
+        background #2563eb
+        color #ffffff
+      }
+    }
+  }
+}
+```
+
