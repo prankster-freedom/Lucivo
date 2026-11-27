@@ -751,7 +751,9 @@ export const LIBRARIES = {
   // Markdown の整形（FR-053, DD-FILE-088）。文書を読み込むときと「今の文書を整える」のときだけ読み込む（NFR-006）
   formatter: { script: './js/formatter.js', global: 'LucivoFormatter' },
   // 絵文字ショートコードの対応表（FR-058, DD-MD-070〜072）。ショートコードを含む文書を描くときだけ読み込む（NFR-006）
-  emoji: { script: './js/emoji.js', global: 'LucivoEmoji' }
+  emoji: { script: './js/emoji.js', global: 'LucivoEmoji' },
+  // Structurizr（C4 モデル）描画エンジン（FR-071, ARC-STR-002）。Web 版のみビルドし、対象ブロックを含む文書でのみ読み込む
+  structurizr: { script: './js/structurizr.js', global: 'LucivoStructurizr' }
 };
 export const libraryLoads = new Map();
 // 書き出した HTML はアプリの外へ持ち出すため、同梱ファイルの相対パスを CDN の URL に置き換える（DD-OFF-003）

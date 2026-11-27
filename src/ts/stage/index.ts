@@ -57,8 +57,8 @@ function buildHud() {
   hud.innerHTML = `
     <div class="stage-sweep" aria-hidden="true"></div>
     <div class="stage-hint">${en
-      ? '→ Next / ← Prev / O Overview / L Pointer / B·Q Curtain / A Auto / T Theme / ? Shortcuts / Esc Exit'
-      : '→ 次へ ／ ← 戻る ／ O 一覧 ／ L ポインター ／ B・Q 幕間 ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了'}</div>
+      ? '→ Next / ← Prev / [ ] Views / O Overview / L Pointer / B·Q Curtain / A Auto / T Theme / ? Shortcuts / Esc Exit'
+      : '→ 次へ ／ ← 戻る ／ [ ] ビュー切替 ／ O 一覧 ／ L ポインター ／ B・Q 幕間 ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了'}</div>
     <div class="stage-pointer" aria-hidden="true"><span class="stage-pointer-dot"></span></div>
     <div class="stage-curtain" aria-hidden="true">
       <div class="stage-curtain-inner">
@@ -74,6 +74,11 @@ function buildHud() {
     <div class="stage-hud-bar">
       <span class="stage-hud-title"></span>
       <span class="stage-hud-count"></span>
+      <div class="stage-c4-controls hidden" role="group" aria-label="${en ? 'Structurizr views' : 'Structurizr ビュー切替'}">
+        <button type="button" data-stage-action="c4-prev" aria-label="${en ? 'Previous view' : '前のビュー'}">◀</button>
+        <span class="stage-c4-label"></span>
+        <button type="button" data-stage-action="c4-next" aria-label="${en ? 'Next view' : '次のビュー'}">▶</button>
+      </div>
       <div class="stage-hud-actions">
         <button type="button" data-stage-action="prev" aria-label="${en ? 'Previous' : '前へ'}">←</button>
         <button type="button" data-stage-action="next" aria-label="${en ? 'Next' : '次へ'}">→</button>
@@ -106,7 +111,9 @@ function buildHud() {
       exit: exitShow,
       overview: overview.toggleOverview,
       pointer: overview.togglePointer,
-      curtain: toggleCurtain
+      curtain: toggleCurtain,
+      'c4-prev': () => { void stepStageC4View(-1); },
+      'c4-next': () => { void stepStageC4View(1); }
     })[action.dataset.stageAction]();
   });
   document.body.appendChild(hud);
@@ -153,6 +160,41 @@ function applyBuild(scene) {
   });
 }
 
+function getStageC4Controller() {
+  if (!window.LucivoStructurizr || typeof window.LucivoStructurizr.findControllerInScope !== 'function') return null;
+  return window.LucivoStructurizr.findControllerInScope(currentScene());
+}
+
+function syncStageC4Controls() {
+  const { hud } = show;
+  if (!hud) return;
+  const ctrlBox = hud.querySelector('.stage-c4-controls');
+  if (!ctrlBox) return;
+  const ctrl = (!ov.active && !curtain.active) ? getStageC4Controller() : null;
+  if (!ctrl) {
+    ctrlBox.classList.add('hidden');
+    return;
+  }
+  const summary = ctrl.getSummary();
+  const labelEl = ctrlBox.querySelector('.stage-c4-label');
+  if (labelEl) {
+    labelEl.textContent = `${summary.title} (${summary.index + 1}/${summary.total})`;
+  }
+  ctrlBox.classList.remove('hidden');
+}
+
+async function stepStageC4View(delta) {
+  const ctrl = getStageC4Controller();
+  if (!ctrl) return false;
+  await ctrl.stepView(delta);
+  if (show.active && currentScene()) {
+    fitSceneDiagrams(currentScene());
+    syncStageC4Controls();
+    wakeHud();
+  }
+  return true;
+}
+
 function updateHud() {
   const { hud, scenes } = show;
   const index = ov.active ? ov.index : show.index;
@@ -171,6 +213,7 @@ function updateHud() {
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
   });
+  syncStageC4Controls();
   document.documentElement.classList.toggle('is-stage-ambient', Boolean(show.active && show.auto && show.autoLooped && show.index === 0));
 }
 
@@ -314,8 +357,16 @@ function wakeHud() {
   show.idleTimer = setTimeout(() => document.documentElement.classList.add('is-stage-idle'), HUD_IDLE_MS);
 }
 
+function isEditableFocused() {
+  const el = document.activeElement;
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || Boolean(el.isContentEditable);
+}
+
 function onShowKey(event) {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (isEditableFocused()) return;
   if (typeof isModalOpen === 'function' && isModalOpen('shortcut-modal')) {
     if (event.key === 'Escape' || event.key === '?') {
       event.preventDefault();
@@ -350,6 +401,23 @@ function onShowKey(event) {
   if (ov.active) {
     overview.onOverviewKey(event);
     return;
+  }
+  // Structurizr ビュー切替ショートカット（[ / ] および補助 Shift+ArrowLeft / Shift+ArrowRight。ARC-STR-006）
+  if (event.key === '[' || (event.shiftKey && event.key === 'ArrowLeft')) {
+    if (getStageC4Controller()) {
+      event.preventDefault();
+      event.stopPropagation();
+      void stepStageC4View(-1);
+      return;
+    }
+  }
+  if (event.key === ']' || (event.shiftKey && event.key === 'ArrowRight')) {
+    if (getStageC4Controller()) {
+      event.preventDefault();
+      event.stopPropagation();
+      void stepStageC4View(1);
+      return;
+    }
   }
   const actions = {
     ArrowRight: () => next(), ArrowDown: () => next(), PageDown: () => next(), ' ': () => next(), Enter: () => next(),
@@ -387,7 +455,7 @@ function inHorizontalScroller(target) {
 function onShowTouchStart(event) {
   const target = event.target instanceof Element ? event.target : null;
   swipe.tracking = event.touches.length === 1 && !ov.active && !curtain.active
-    && !(target && target.closest('a, button')) && !inHorizontalScroller(target);
+    && !(target && target.closest('a, button, select, .lucivo-structurizr-bar, .c4-drilldown-badge')) && !inHorizontalScroller(target);
   if (!swipe.tracking) return;
   swipe.x = event.touches[0].clientX;
   swipe.y = event.touches[0].clientY;
@@ -425,7 +493,7 @@ function onShowClick(event) {
     if (tile) overview.openFromOverview(show.scenes.indexOf(tile));
     return;
   }
-  if (event.target.closest('a, button')) return;
+  if (event.target.closest('a, button, select, .lucivo-structurizr-bar, .c4-drilldown-badge')) return;
   event.stopPropagation();
   next();
 }

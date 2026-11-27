@@ -278,6 +278,7 @@ export const en: I18nDict = {
   'shortcut.stageAuto': 'Auto-advance ON / OFF',
   'shortcut.stageTheme': 'Toggle Light / Dark theme',
   'shortcut.stageHomeEnd': 'First / Last scene',
+  'shortcut.stageC4View': 'Switch Structurizr view (Prev / Next)',
   'shortcut.stageExit': 'Exit Stage Show',
 
   // Empty guide (EMPTY_GUIDE_HTML)
@@ -334,5 +335,6 @@ export const en: I18nDict = {
   'render.slabSavedFallbackToast': 'Clipboard unavailable; saved image instead',
   'render.slabSavedToast': 'Image saved',
   'render.slabExportedToast': 'Slab image saved',
-  'render.slabExportFailedToast': 'Failed to export image'
+  'render.slabExportFailedToast': 'Failed to export image',
+  'render.structurizrWebOnly': 'Structurizr DSL — Diagram rendering is available in the Web edition'
 };

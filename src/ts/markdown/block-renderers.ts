@@ -5,6 +5,7 @@
    本文にあるときだけ、従来の DOM の書き換え（wrapTables・decorateAlerts）を残す。
    ========================================================================== */
 import { state, runtime } from '../ui/state';
+import { t } from '../i18n';
 import { escapeHtml } from '../utils/escape';
 import { ALERT_LABELS, ALERT_MARKER_RE } from './callouts';
 import { highlightCodeSyntax } from './syntax-highlight';
@@ -68,6 +69,15 @@ export function setupMarkedBlocks(): void {
         name: 'lucivoDiagram',
         level: 'block',
         renderer(token: any) {
+          if (token.kind === 'structurizr') {
+            const webEnabled = typeof __LUCIVO_STRUCTURIZR__ !== 'undefined' ? __LUCIVO_STRUCTURIZR__ : false;
+            if (!webEnabled) {
+              const codeText = String(token.code || '').replace(/\n$/, '');
+              const notice = escapeHtml(t('render.structurizrWebOnly'));
+              return `<div class="lucivo-structurizr-standalone"><div class="lucivo-structurizr-standalone-notice" role="note">${notice}</div><pre><code class="language-structurizr">${highlightCodeSyntax(codeText, 'structurizr')}\n</code></pre></div>\n`;
+            }
+            return `${createDiagramFrameHtml(token.index, state.isVisualMode, null, 'structurizr')}\n`;
+          }
           return `${createDiagramFrameHtml(token.index, state.isVisualMode, token.curve)}\n`;
         }
       }

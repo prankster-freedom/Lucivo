@@ -2,8 +2,10 @@
 // 本体はそれぞれ public/vendor/ のライブラリと src/ts/emoji/index.ts が window に載せる。
 declare const marked: any;
 declare const DOMPurify: any;
+declare const __LUCIVO_STRUCTURIZR__: boolean;
 
 interface Window {
   LucivoEmoji: any;
+  LucivoStructurizr: any;
   katex: any;
 }

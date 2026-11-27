@@ -313,5 +313,55 @@
     box-shadow: none !important;
     overflow: visible !important;
   }
+  /* Structurizr（C4 モデル）: 画面用ビューを隠し、全ビュー印刷コンテナを出力する（FR-071, ARC-STR-007） */
+  .lucivo-structurizr-card {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  .lucivo-structurizr-card > .lucivo-structurizr-bar,
+  .lucivo-structurizr-card > .diagram-viewport,
+  .lucivo-structurizr-card > .exhibition-viewport {
+    display: none !important;
+  }
+  .lucivo-structurizr-card > .lucivo-structurizr-print-all {
+    display: block !important;
+    padding: 4mm;
+  }
+  .lucivo-structurizr-print-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0 0 8mm;
+  }
+  .lucivo-structurizr-print-item:last-child {
+    margin-bottom: 0;
+  }
+  .lucivo-structurizr-print-caption {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4mm;
+    margin-bottom: 3mm;
+    padding-bottom: 1.5mm;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .lucivo-structurizr-print-title {
+    font-size: 10pt;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .lucivo-structurizr-print-kind {
+    font-size: 8.5pt;
+    color: var(--text-muted);
+  }
+  .lucivo-structurizr-print-item > svg {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 185mm !important;
+  }
+  .exhibition-wrap .lucivo-structurizr-print-item > svg {
+    max-height: 105mm !important;
+  }
 }
 

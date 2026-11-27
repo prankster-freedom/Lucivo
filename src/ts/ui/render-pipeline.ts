@@ -154,6 +154,7 @@ function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
 
   const mermaidBlocks: any[] = [];
   runtime.lastMermaidSources = [];
+  const webStructurizr = typeof __LUCIVO_STRUCTURIZR__ !== 'undefined' ? __LUCIVO_STRUCTURIZR__ : false;
   const tokensToKeep: any[] = model.tokens.map(token => {
     if (token.type === 'lucivoDiagram' && token.__mermaid) {
       const idx = token.index;
@@ -163,12 +164,25 @@ function parseMarkdownAndMermaidSlots(rawMarkdown: string, body: string) {
       const hash = fnv1aHash(
         code + state.appearance + state.palette + state.tone + (curve || '') + state.infographicStyle + (state.isVisualMode ? 'vis' : 'std')
       );
-      mermaidBlocks.push({ index: idx, code, hash, curve });
+      mermaidBlocks[idx] = { index: idx, kind: 'mermaid', code, hash, curve };
       runtime.lastMermaidSources[idx] = code;
       return {
         ...token,
         curve,
         __mermaid: { index: idx, hash, curve }
+      };
+    }
+    if (token.type === 'lucivoDiagram' && token.__structurizr && webStructurizr) {
+      const idx = token.index;
+      const code = token.code;
+      const initialViewKey = token.initialViewKey;
+      const hash = fnv1aHash(
+        `${code}\0${initialViewKey || ''}\0${state.appearance}\0${state.palette}\0${state.tone}\0${state.infographicStyle}\0${state.isVisualMode ? 'vis' : 'std'}`
+      );
+      mermaidBlocks[idx] = { index: idx, kind: 'structurizr', code, hash, initialViewKey };
+      return {
+        ...token,
+        __structurizr: { index: idx, hash, contentHash: token.contentHash, initialViewKey }
       };
     }
     return token;
@@ -230,12 +244,17 @@ function buildStdBlockGroups(
       stableParts.push(stable);
       // svgCache から消えた図は未変更スキップさせず再描画対象にする（保存は安定キーで行う）
       matchParts.push(svgCache.has(cacheKey) ? stable : `miss:${generation}:${m.index}`);
+    } else if (token.__structurizr) {
+      const s = token.__structurizr;
+      const stable = `s:${s.index}:${s.contentHash}:${s.initialViewKey || ''}`;
+      stableParts.push(stable);
+      matchParts.push(stable);
     } else {
       const part = `${token.type}:${token.raw}${fnSig}`;
       stableParts.push(part);
       matchParts.push(part);
     }
-    if (token.type === 'html' && !token.__mermaid && !token.__isTree && !token.__isFootnotes) {
+    if (token.type === 'html' && !token.__mermaid && !token.__structurizr && !token.__isTree && !token.__isFootnotes) {
       htmlDepth += htmlTagBalance(token.raw || '');
       if (htmlDepth < 0) return null;
     }
@@ -354,7 +373,7 @@ function buildVisSlabGroups(
   };
 
   for (const token of tokensToKeep) {
-    if (token.type === 'html' && !token.__mermaid && !token.__isTree && !token.__isFootnotes) {
+    if (token.type === 'html' && !token.__mermaid && !token.__structurizr && !token.__isTree && !token.__isFootnotes) {
       // 生 HTML 内に見出しが含まれる場合は DOM 分割とずれうるため全体描画へフォールバック
       if (/<h[12]\b/i.test(token.raw || '')) return null;
       htmlDepth += htmlTagBalance(token.raw || '');
@@ -396,6 +415,11 @@ function buildVisSlabGroups(
       const stable = `m:${m.index}:${m.hash}:${m.curve || ''}`;
       curStable.push(stable);
       curMatch.push(svgCache.has(cacheKey) ? stable : `miss:${generation}:${m.index}`);
+    } else if (token.__structurizr) {
+      const s = token.__structurizr;
+      const stable = `s:${s.index}:${s.contentHash}:${s.initialViewKey || ''}`;
+      curStable.push(stable);
+      curMatch.push(stable);
     } else {
       const part = `${token.type}:${token.raw}${fnSig}`;
       curStable.push(part);
@@ -987,30 +1011,66 @@ async function processDirtyBlocks(dirtyBlocks, target) {
   updateStatus(`Rendering ${dirtyBlocks.length} diagrams...`, 'warning');
   const isStale = () => target.generation !== runtime.renderGeneration;
 
-  // Mermaid は、図が初めて現れたときに読み込む
-  const mermaidReady = await loadLibrary('mermaid');
+  const hasMermaid = dirtyBlocks.some(b => b.kind !== 'structurizr');
+  const hasStructurizr = dirtyBlocks.some(b => b.kind === 'structurizr');
+
+  // Mermaid / Structurizr は、それぞれの図が初めて現れたときに遅延読み込みする（NFR-006, ARC-STR-002）
+  const [mermaidReady, structurizrReady] = await Promise.all([
+    hasMermaid ? loadLibrary('mermaid') : Promise.resolve(true),
+    hasStructurizr ? loadLibrary('structurizr') : Promise.resolve(true)
+  ]);
   if (isStale()) return;
-  if (!mermaidReady) {
-    dirtyBlocks.forEach(block => {
+
+  if (hasMermaid && !mermaidReady) {
+    dirtyBlocks.filter(b => b.kind !== 'structurizr').forEach(block => {
       const vp = target.container.querySelector(`[data-stage-index="${block.index}"]`);
       if (vp) vp.innerHTML = '<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">Mermaid を読み込めませんでした（ネットワークの接続を確認してください）</div>';
     });
-    if (runtime.stdPendingGeneration === target.generation) runtime.stdPendingGeneration = 0;
-    if (runtime.visPendingGeneration === target.generation) runtime.visPendingGeneration = 0;
-    updateStatus('• Mermaid Unavailable', 'warning');
-    return;
+  }
+  if (hasStructurizr && !structurizrReady) {
+    dirtyBlocks.filter(b => b.kind === 'structurizr').forEach(block => {
+      const vp = target.container.querySelector(`[data-stage-index="${block.index}"]`);
+      if (vp) vp.innerHTML = '<div class="p-4 text-xs font-mono text-red-500 bg-red-500/10 rounded-xl">Structurizr 描画エンジンを読み込めませんでした</div>';
+    });
   }
 
   const scroller = document.getElementById('preview-scroll');
-  const remaining = [...dirtyBlocks];
+  const remaining = dirtyBlocks.filter(b => (b.kind === 'structurizr' ? structurizrReady : mermaidReady));
 
   while (remaining.length > 0) {
     if (isStale()) return;
     const nextIdx = pickNextDirtyBlockIndex(remaining, target.container, scroller);
     const [block] = remaining.splice(nextIdx, 1);
+    const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
+
+    if (block.kind === 'structurizr') {
+      const frameEl = stageViewport ? stageViewport.closest(`#diagram-frame-${block.index}`) : null;
+      if (stageViewport && frameEl && window.LucivoStructurizr) {
+        await window.LucivoStructurizr.mountBlock({
+          frameEl,
+          viewportEl: stageViewport,
+          code: block.code,
+          initialViewKey: block.initialViewKey,
+          isVisual: target.isVisual,
+          onRendered: (svgEl, viewKey) => {
+            if (isStale()) return;
+            applyReadableFit(svgEl, `${block.cacheKey}:${viewKey}`);
+            mountStage(stageViewport);
+            if (target.isVisual) linkSplitTerms(stageViewport.closest('.exhibition-slab-split'));
+            updatePannable(stageViewport);
+          }
+        });
+        if (isStale()) return;
+      }
+      if (remaining.length > 0) {
+        await yieldToMain();
+        if (isStale()) return;
+      }
+      continue;
+    }
+
     const renderId = `mermaid-render-${block.index}-${Date.now()}`;
     const lkgKey = `${block.index}-${block.modeTag}`;
-    const stageViewport = target.container.querySelector(`[data-stage-index="${block.index}"]`);
     try {
       let finalSvg = svgCache.get(block.cacheKey);
       if (!finalSvg) {
@@ -1066,8 +1126,19 @@ async function processDirtyBlocks(dirtyBlocks, target) {
 /* ==========================================================================
    ビューポート操作イベント
    ========================================================================== */
+function serializeDiagramSvgForExport(svgEl: SVGElement): string {
+  if (
+    svgEl.classList.contains('lucivo-c4-svg')
+    && window.LucivoStructurizr
+    && typeof window.LucivoStructurizr.serializeExportSvg === 'function'
+  ) {
+    return window.LucivoStructurizr.serializeExportSvg(svgEl);
+  }
+  return new XMLSerializer().serializeToString(svgEl);
+}
+
 export function downloadDiagramPng(svgEl: SVGElement, idx: string) {
-  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const svgData = serializeDiagramSvgForExport(svgEl);
   const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
   const URLObj = window.URL || window.webkitURL || window;
   const blobURL = URLObj.createObjectURL(svgBlob);
@@ -1095,6 +1166,15 @@ export function downloadDiagramPng(svgEl: SVGElement, idx: string) {
     URLObj.revokeObjectURL(blobURL);
   };
   image.src = blobURL;
+}
+
+function applyZoomModalSvgMetrics(zoomSvg: SVGSVGElement | null, zoomCanvas: HTMLElement) {
+  const viewBox = zoomSvg && zoomSvg.viewBox && zoomSvg.viewBox.baseVal;
+  if (viewBox && viewBox.width && viewBox.height) {
+    zoomSvg.style.setProperty('--fit-aspect', (viewBox.width / viewBox.height).toFixed(4));
+    zoomSvg.style.setProperty('--natural-width', `${Math.ceil(viewBox.width)}px`);
+  }
+  setScaleMode(zoomCanvas, document.getElementById('zoom-scale-picker'), 'scale-fit');
 }
 
 // scope: 新規にバインドする範囲、rootContainer: 表示中の全体コンテナ
@@ -1130,7 +1210,8 @@ export function bindViewportInteractions(scope, rootContainer = scope) {
       const vp = rootContainer.querySelector(`[data-stage-index="${idx}"]`);
       const svgEl = vp && vp.querySelector('svg');
       if (!svgEl) return;
-      downloadBlob(svgEl.outerHTML, `diagram-0${parseInt(idx, 10) + 1}.svg`, 'image/svg+xml');
+      const svgOut = serializeDiagramSvgForExport(svgEl);
+      downloadBlob(svgOut, `diagram-0${parseInt(idx, 10) + 1}.svg`, 'image/svg+xml');
       showToast(`Diagram 0${parseInt(idx, 10) + 1} SVGをダウンロード`);
     };
   });
@@ -1148,19 +1229,34 @@ export function bindViewportInteractions(scope, rootContainer = scope) {
     btn.onclick = () => {
       const idx = btn.getAttribute('data-index');
       const vp = rootContainer.querySelector(`[data-stage-index="${idx}"]`);
+      const frame = btn.closest(`#diagram-frame-${idx}`);
       const svgEl = vp && vp.querySelector('svg');
       if (!svgEl) return;
 
       const zoomCanvas = document.getElementById('zoom-canvas');
+      const zoomC4Bar = document.getElementById('zoom-c4-bar');
+      const c4Ctrl = (frame && window.LucivoStructurizr && typeof window.LucivoStructurizr.getControllerForFrame === 'function')
+        ? window.LucivoStructurizr.getControllerForFrame(frame)
+        : null;
+
+      if (c4Ctrl && zoomC4Bar) {
+        setModalOpen('zoom-modal', true);
+        const zoomViewport = document.getElementById('zoom-viewport');
+        zoomViewport.scrollTop = 0;
+        zoomViewport.scrollLeft = 0;
+        void c4Ctrl.mountExpandModalBar(zoomC4Bar, zoomCanvas, (zoomSvg: SVGSVGElement) => {
+          applyZoomModalSvgMetrics(zoomSvg, zoomCanvas);
+        });
+        return;
+      }
+
+      if (zoomC4Bar) {
+        zoomC4Bar.innerHTML = '';
+        zoomC4Bar.classList.add('hidden');
+      }
       zoomCanvas.innerHTML = svgEl.outerHTML;
       // Expand の画面も、図のカードと同じ倍率の部品で切り替える。開いたときは Fit（DD-DIAG-045）
-      const zoomSvg = zoomCanvas.querySelector('svg');
-      const viewBox = zoomSvg && (zoomSvg as SVGSVGElement).viewBox && (zoomSvg as SVGSVGElement).viewBox.baseVal;
-      if (viewBox && viewBox.width && viewBox.height) {
-        zoomSvg.style.setProperty('--fit-aspect', (viewBox.width / viewBox.height).toFixed(4));
-        zoomSvg.style.setProperty('--natural-width', `${Math.ceil(viewBox.width)}px`);
-      }
-      setScaleMode(zoomCanvas, document.getElementById('zoom-scale-picker'), 'scale-fit');
+      applyZoomModalSvgMetrics(zoomCanvas.querySelector('svg'), zoomCanvas);
       setModalOpen('zoom-modal', true);
       const zoomViewport = document.getElementById('zoom-viewport');
       zoomViewport.scrollTop = 0;

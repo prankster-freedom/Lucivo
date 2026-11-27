@@ -5,11 +5,16 @@
    ========================================================================== */
 import { fnv1aHash } from '../utils/hash';
 import { treeTokenFor } from './tree';
+import { parseStructurizrInfoString } from '../diagram/structurizr/info-string';
+
+export type DiagramKind = 'mermaid' | 'structurizr';
 
 export interface DiagramSpec {
   index: number;
+  kind?: DiagramKind;
   code: string;
   contentHash: string;
+  initialViewKey?: string;
 }
 
 export interface DocBlock {
@@ -106,6 +111,7 @@ function buildBlocksFromLexed(
 
     let outToken: any = rawToken;
     let diagram: DiagramSpec | null = null;
+    const structurizrInfo = rawToken.type === 'code' ? parseStructurizrInfoString(rawToken.lang) : null;
     if (rawToken.type === 'code' && (rawToken.lang || '').trim().toLowerCase() === 'mermaid') {
       const code = (rawToken.text || '').trim();
       const contentHash = fnv1aHash(code);
@@ -114,10 +120,33 @@ function buildBlocksFromLexed(
       outToken = {
         type: 'lucivoDiagram',
         raw,
+        kind: 'mermaid',
         index: diagIdx,
         code,
         contentHash,
         __mermaid: { index: diagIdx, contentHash }
+      };
+      diagIdx++;
+    } else if (structurizrInfo) {
+      const code = (rawToken.text || '').trim();
+      const contentHash = fnv1aHash(`${code}\0${structurizrInfo.initialViewKey || ''}`);
+      diagram = {
+        index: diagIdx,
+        kind: 'structurizr',
+        code,
+        contentHash,
+        initialViewKey: structurizrInfo.initialViewKey
+      };
+      diagrams.push(diagram);
+      outToken = {
+        type: 'lucivoDiagram',
+        raw,
+        kind: 'structurizr',
+        index: diagIdx,
+        code,
+        contentHash,
+        initialViewKey: structurizrInfo.initialViewKey,
+        __structurizr: { index: diagIdx, contentHash, initialViewKey: structurizrInfo.initialViewKey }
       };
       diagIdx++;
     } else {
@@ -134,7 +163,7 @@ function buildBlocksFromLexed(
     }
 
     const key = diagram
-      ? `m:${diagram.contentHash}`
+      ? (diagram.kind === 'structurizr' ? `s:${diagram.contentHash}` : `m:${diagram.contentHash}`)
       : `${outToken.type}:${fnv1aHash(raw)}`;
     blocks.push({
       type: outToken.type,
@@ -161,12 +190,27 @@ function shiftBlock(
   let diagram = block.diagram;
   if (diagram) {
     const idx = nextDiagIdx++;
-    diagram = { index: idx, code: diagram.code, contentHash: diagram.contentHash };
-    token = {
-      ...token,
-      index: idx,
-      __mermaid: { index: idx, contentHash: diagram.contentHash }
-    };
+    if (diagram.kind === 'structurizr') {
+      diagram = {
+        index: idx,
+        kind: 'structurizr',
+        code: diagram.code,
+        contentHash: diagram.contentHash,
+        initialViewKey: diagram.initialViewKey
+      };
+      token = {
+        ...token,
+        index: idx,
+        __structurizr: { index: idx, contentHash: diagram.contentHash, initialViewKey: diagram.initialViewKey }
+      };
+    } else {
+      diagram = { index: idx, code: diagram.code, contentHash: diagram.contentHash };
+      token = {
+        ...token,
+        index: idx,
+        __mermaid: { index: idx, contentHash: diagram.contentHash }
+      };
+    }
   } else if (token.type === 'heading') {
     token = { ...token, srcLine: block.startLine + lineDelta };
   }

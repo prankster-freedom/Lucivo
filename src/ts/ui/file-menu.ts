@@ -471,8 +471,15 @@ export function setupFileMenu() {
       showToast(t('lang.toastSwitched'));
     };
   });
-  document.getElementById('menu-print').onclick = () => {
+  document.getElementById('menu-print').onclick = async () => {
     closeHeaderMenus();
+    if (window.LucivoStructurizr && typeof window.LucivoStructurizr.ensureAllViewsRendered === 'function') {
+      try {
+        await window.LucivoStructurizr.ensureAllViewsRendered();
+      } catch (err) {
+        console.warn('Structurizr print pre-render failed:', err);
+      }
+    }
     window.print();
   };
   document.getElementById('btn-save-markdown').onclick = () => {

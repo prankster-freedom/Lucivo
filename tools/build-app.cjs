@@ -67,7 +67,11 @@ const LAZY_ENTRIES = [
   // Markdown の整形（FR-053, DD-FILE-088）。markdownlint を同梱する
   { entry: path.join(ROOT_DIR, 'src', 'ts', 'formatter', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'formatter.js') },
   // 絵文字ショートコードの対応表（FR-058, DD-MD-070〜072）。gemoji を同梱する
-  { entry: path.join(ROOT_DIR, 'src', 'ts', 'emoji', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'emoji.js') }
+  { entry: path.join(ROOT_DIR, 'src', 'ts', 'emoji', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'emoji.js') },
+  // Structurizr（C4 モデル）描画エンジン（FR-071, ARC-STR-002）。Web 版のみビルドし elkjs を同梱する
+  ...(channel === 'web'
+    ? [{ entry: path.join(ROOT_DIR, 'src', 'ts', 'diagram', 'structurizr', 'index.ts'), outfile: path.join(OUT_DIR, 'js', 'structurizr.js') }]
+    : [])
 ];
 
 function copyPublicToStandalone() {
@@ -169,6 +173,8 @@ async function build() {
         __LUCIVO_PRESENT_MODES__: JSON.stringify(MODES.map(({ id, label, labelEn }) => ({ id, label, labelEn }))),
         // Web 版のみスタイル別の見出し書体を遅延読み込みする（#218）
         __LUCIVO_STYLE_FONTS__: JSON.stringify(channel === 'web'),
+        // Web 版のみ Structurizr（C4 モデル）描画を有効化する（FR-071, ARC-STR-002）
+        __LUCIVO_STRUCTURIZR__: JSON.stringify(channel === 'web'),
         // standalone だけがサンプルを同梱する。Web 版は GitHub 上のサンプルを読む（ARC-PUB-007）
         __LUCIVO_BUNDLED_SAMPLES__: JSON.stringify(channel === 'standalone'),
         __LUCIVO_SAMPLES_REF__: JSON.stringify((process.env.LUCIVO_SAMPLES_REF || '').trim() || 'main')
@@ -223,6 +229,20 @@ async function build() {
     buildSamplesData(OUT_DIR);
   } else {
     fs.rmSync(path.join(OUT_DIR, 'samples', 'samples-data.js'), { force: true });
+    // Web 版限定バンドル（js/structurizr.js）に同梱する elkjs のライセンス表記を出力する（ARC-STR-002）
+    const elkDir = path.join(ROOT_DIR, 'node_modules', 'elkjs');
+    if (fs.existsSync(elkDir)) {
+      const elkPkg = JSON.parse(fs.readFileSync(path.join(elkDir, 'package.json'), 'utf8'));
+      const elkLicenseFile = fs.readdirSync(elkDir).find(f => /^LICENSE/i.test(f));
+      if (elkLicenseFile) {
+        const body = fs.readFileSync(path.join(elkDir, elkLicenseFile), 'utf8').trim();
+        fs.writeFileSync(
+          path.join(OUT_DIR, 'js', 'STRUCTURIZR_LICENSES.txt'),
+          `Lucivo Web 版の Structurizr 描画エンジン（js/structurizr.js）に同梱している第三者ソフトウェアのライセンスです。\n\n${'='.repeat(72)}\nelkjs ${elkPkg.version}\n${'='.repeat(72)}\n\n${body}\n`,
+          'utf8'
+        );
+      }
+    }
   }
 
   const duration = Date.now() - start;

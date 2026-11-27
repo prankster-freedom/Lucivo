@@ -417,17 +417,26 @@ export function diagramPlaceholderHtml(index: number): string {
 
 // 図の枠だけを文字列の段階で出力する（#287）。中身（SVG または描画待ち）は描画後に [data-stage-index] へ差し込む。
 // .lucivo-slot と data-slot を枠自身に持たせることで、Visual Stage のスラブ判定と差し込みの入口を保つ。
-export function createDiagramFrameHtml(index: number, isVisual: boolean, curve: string | null = null): string {
-  const cardClass = isVisual ? `exhibition-diagram-card infographic-bg-${state.infographicStyle}` : 'diagram-frame';
+export function createDiagramFrameHtml(
+  index: number,
+  isVisual: boolean,
+  curve: string | null = null,
+  kind: 'mermaid' | 'structurizr' = 'mermaid'
+): string {
+  const isC4 = kind === 'structurizr';
+  const cardClass = (isVisual ? `exhibition-diagram-card infographic-bg-${state.infographicStyle}` : 'diagram-frame')
+    + (isC4 ? ' lucivo-structurizr-card' : '');
   const headerClass = isVisual ? 'exhibition-diagram-header' : 'diagram-frame-header';
   const viewportClass = isVisual ? 'exhibition-viewport' : 'diagram-viewport';
-  const badgeLabel = isVisual ? `INFOGRAPHIC // 0${index + 1}` : `DIAGRAM 0${index + 1}`;
-  const curvePicker = curve
+  const badgeLabel = isC4
+    ? (isVisual ? `C4 ARCHITECTURE // 0${index + 1}` : `STRUCTURIZR 0${index + 1}`)
+    : (isVisual ? `INFOGRAPHIC // 0${index + 1}` : `DIAGRAM 0${index + 1}`);
+  const curvePicker = (!isC4 && curve)
     ? `<div class="pill-container mr-1.5" role="group" aria-label="${t('curve.groupAria')}">${Object.keys(CURVE_LABELS).map(key =>
         `<button type="button" data-curve="${key}" data-index="${index}" aria-pressed="${key === curve}" class="edge-curve-btn pill-btn text-[10px]${key === curve ? ' is-active' : ''}">${t(`curve.${key}` as any)}</button>`).join('')}</div>`
     : '';
 
-  return `<div id="diagram-frame-${index}" class="${cardClass} lucivo-slot" data-slot="${index}"><div class="${headerClass}"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full ${isVisual ? 'bg-amber-500 shadow-sm' : 'bg-blue-500'}"></span><span class="font-mono text-[11px] font-bold tracking-wider" style="color: var(--text-primary);">${badgeLabel}</span></div><div class="flex items-center gap-1">${curvePicker}${scalePickerHtml(index)}<button type="button" data-action="png" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">PNG</button><button type="button" data-action="svg" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">SVG</button><button type="button" data-action="zoom" data-index="${index}" class="text-[11px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer">Expand</button></div></div><div class="${viewportClass} is-scale-fit" data-stage-index="${index}"></div></div>`;
+  return `<div id="diagram-frame-${index}" class="${cardClass} lucivo-slot" data-slot="${index}" data-diagram-kind="${kind}"><div class="${headerClass}"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full ${isVisual ? 'bg-amber-500 shadow-sm' : 'bg-blue-500'}"></span><span class="font-mono text-[11px] font-bold tracking-wider" style="color: var(--text-primary);">${badgeLabel}</span></div><div class="flex items-center gap-1">${curvePicker}${scalePickerHtml(index)}<button type="button" data-action="png" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">PNG</button><button type="button" data-action="svg" data-index="${index}" class="text-[11px] font-semibold px-2 py-1 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" style="color: var(--text-primary);">SVG</button><button type="button" data-action="zoom" data-index="${index}" class="text-[11px] font-bold px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors cursor-pointer">Expand</button></div></div><div class="${viewportClass} is-scale-fit" data-stage-index="${index}"></div></div>`;
 }
 
 // curve: 矢印の形状を選べる図ではその形状、選べない図では null（DD-EDGE-010）

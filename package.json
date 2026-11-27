@@ -7,7 +7,7 @@
   "scripts": {
     "pretest": "node tools/build-app.cjs --prod && node tools/build-app.cjs --prod --channel standalone",
     "test": "node tests/e2e.cjs",
-    "test:unit": "node tests/document-model.test.cjs && node tests/align-tables.test.cjs && node tests/analytics.test.cjs && node tests/resolve-affected-suites.test.cjs && node tests/build-color-tone-tables.test.cjs && node tests/url-loader.test.cjs && node tests/build-html-pages.test.cjs",
+    "test:unit": "node tests/document-model.test.cjs && node tests/structurizr-core.test.cjs && node tests/align-tables.test.cjs && node tests/analytics.test.cjs && node tests/resolve-affected-suites.test.cjs && node tests/build-color-tone-tables.test.cjs && node tests/url-loader.test.cjs && node tests/build-html-pages.test.cjs",
     "test:update-baseline": "node tools/update-visual-baseline.cjs",
     "build": "node tools/build-app.cjs",
     "build:prod": "node tools/build-app.cjs --prod",
@@ -27,6 +27,7 @@
     "@fontsource-variable/plus-jakarta-sans": "5.3.0",
     "@fontsource/m-plus-rounded-1c": "5.3.0",
     "dompurify": "^3.4.18",
+    "elkjs": "0.12.2",
     "esbuild": "^0.28.2",
     "eslint": "^10.15.0",
     "gemoji": "8.1.0",

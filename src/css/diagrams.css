@@ -175,3 +175,286 @@ html:is(:not(.is-stage-show), [data-page-ratio]) .exhibition-slab-split:not(.is-
 :is(.diagram-viewport, .exhibition-viewport).is-pannable a {
   cursor: pointer;
 }
+
+/* ==========================================================================
+   Structurizr（C4 モデル）配色トークン・UI バー・印刷コンテナ（FR-071, ARC-STR-005〜007）
+   ========================================================================== */
+:root,
+body[data-appearance="light"] {
+  --c4-person-bg: #08427B;
+  --c4-person-stroke: #073B6F;
+  --c4-person-text: #FFFFFF;
+  --c4-system-bg: #1168BD;
+  --c4-system-stroke: #0E569E;
+  --c4-system-text: #FFFFFF;
+  --c4-container-bg: #438DD5;
+  --c4-container-stroke: #2E74B8;
+  --c4-container-text: #FFFFFF;
+  --c4-component-bg: #85BBF0;
+  --c4-component-stroke: #5E97D1;
+  --c4-component-text: #0F172A;
+  --c4-external-bg: #64748B;
+  --c4-external-stroke: #475569;
+  --c4-external-text: #FFFFFF;
+  --c4-boundary-bg: rgba(148, 163, 184, 0.07);
+  --c4-boundary-stroke: var(--diag-cluster-border, #94A3B8);
+  --c4-boundary-text: #334155;
+  --c4-boundary-sub: #64748B;
+  --c4-edge-stroke: var(--diag-edge, #475569);
+  --c4-edge-label-bg: #FFFFFF;
+  --c4-edge-label-border: #CBD5E1;
+  --c4-edge-label-text: #1E293B;
+  --c4-edge-label-sub: #475569;
+}
+
+body[data-appearance="dark"] {
+  --c4-person-bg: #1D4ED8;
+  --c4-person-stroke: #60A5FA;
+  --c4-person-text: #F8FAFC;
+  --c4-system-bg: #0369A1;
+  --c4-system-stroke: #38BDF8;
+  --c4-system-text: #F8FAFC;
+  --c4-container-bg: #1E3A5F;
+  --c4-container-stroke: #38BDF8;
+  --c4-container-text: #F8FAFC;
+  --c4-component-bg: #1E293B;
+  --c4-component-stroke: #7DD3FC;
+  --c4-component-text: #E2E8F0;
+  --c4-external-bg: #334155;
+  --c4-external-stroke: #64748B;
+  --c4-external-text: #F1F5F9;
+  --c4-boundary-bg: rgba(15, 23, 42, 0.45);
+  --c4-boundary-stroke: #475569;
+  --c4-boundary-text: #CBD5E1;
+  --c4-boundary-sub: #94A3B8;
+  --c4-edge-stroke: #94A3B8;
+  --c4-edge-label-bg: #1E293B;
+  --c4-edge-label-border: #475569;
+  --c4-edge-label-text: #F1F5F9;
+  --c4-edge-label-sub: #CBD5E1;
+}
+
+/* Visual モード: スタイル・カスタムトーンの 4 色トークン（--vs-c1〜c4）に連動 */
+.exhibition-wrap .lucivo-structurizr-card {
+  --c4-person-bg: color-mix(in oklab, var(--vs-c1, #2563EB) 82%, #0F172A);
+  --c4-person-stroke: var(--vs-c1, #2563EB);
+  --c4-person-text: #FFFFFF;
+  --c4-system-bg: color-mix(in oklab, var(--vs-c3, #0E7490) 80%, #0F172A);
+  --c4-system-stroke: var(--vs-c3, #0E7490);
+  --c4-system-text: #FFFFFF;
+  --c4-container-bg: color-mix(in oklab, var(--vs-c2, #D97706) 24%, var(--vs-card-bg, #FFFFFF));
+  --c4-container-stroke: var(--vs-c2, #D97706);
+  --c4-container-text: var(--text-primary, #0F172A);
+  --c4-component-bg: color-mix(in oklab, var(--vs-c4, #059669) 18%, var(--vs-card-bg, #FFFFFF));
+  --c4-component-stroke: var(--vs-c4, #059669);
+  --c4-component-text: var(--text-primary, #0F172A);
+  --c4-boundary-bg: color-mix(in oklab, var(--vs-card-bg, #FFFFFF) 48%, transparent);
+  --c4-boundary-stroke: var(--vs-card-border, #94A3B8);
+  --c4-boundary-text: var(--text-primary, #0F172A);
+  --c4-boundary-sub: var(--text-muted, #64748B);
+  --c4-edge-label-bg: var(--vs-card-bg, #FFFFFF);
+  --c4-edge-label-border: var(--vs-card-border, #CBD5E1);
+  --c4-edge-label-text: var(--text-primary, #0F172A);
+}
+
+.lucivo-structurizr-bar,
+.zoom-c4-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: color-mix(in oklab, var(--panel-sub) 78%, transparent);
+  position: relative;
+  z-index: 5;
+}
+.lucivo-structurizr-bar.hidden,
+.zoom-c4-bar.hidden {
+  display: none;
+}
+
+.c4-view-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.c4-view-tab {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.c4-view-tab:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.c4-view-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
+}
+
+.c4-view-select {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.c4-breadcrumb-btn {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel-bg);
+  color: var(--accent);
+  cursor: pointer;
+}
+.c4-breadcrumb-btn:hover {
+  background: var(--accent-soft);
+}
+
+.c4-warning-wrap {
+  margin-left: auto;
+  position: relative;
+}
+
+.c4-warning-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #B45309;
+  cursor: pointer;
+}
+body[data-appearance="dark"] .c4-warning-badge {
+  color: #FCD34D;
+  background: rgba(245, 158, 11, 0.18);
+}
+
+.c4-warning-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 260px;
+  max-width: 420px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel-bg);
+  box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.c4-warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.c4-warning-loc {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #B45309;
+  flex-shrink: 0;
+}
+body[data-appearance="dark"] .c4-warning-loc {
+  color: #FCD34D;
+}
+
+.c4-drilldown-badge {
+  cursor: pointer;
+}
+.c4-node.has-drilldown {
+  cursor: pointer;
+}
+
+.c4-error-panel {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+.c4-error-title {
+  font-weight: 700;
+  color: #DC2626;
+  margin-bottom: 4px;
+}
+body[data-appearance="dark"] .c4-error-title {
+  color: #F87171;
+}
+.c4-error-detail {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* スタンドアロン版の控えめな案内（FR-071, NFR-008） */
+.lucivo-structurizr-standalone {
+  margin: 1rem 0;
+}
+.lucivo-structurizr-standalone-notice {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--panel-sub);
+  color: var(--text-secondary);
+}
+
+/* 印刷専用コンテナ（通常画面では非表示、@media print で表示） */
+.lucivo-structurizr-print-all {
+  display: none;
+}
+
+/* ステージ発表 HUD 内の Structurizr ビュー切替操作部（ARC-STR-006） */
+.stage-c4-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.32);
+}
+.stage-c4-controls.hidden {
+  display: none;
+}
+.stage-c4-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

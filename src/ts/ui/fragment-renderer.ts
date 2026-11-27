@@ -16,7 +16,7 @@ import {
 
 export const SANITIZE_OPTIONS = {
   ADD_TAGS: ['div', 'span', 'strong', 'small'],
-  ADD_ATTR: ['class', 'data-slot', 'style']
+  ADD_ATTR: ['class', 'data-slot', 'data-diagram-kind', 'style']
 };
 
 export function sanitizeMarkdownHtml(rawHtml: string): string {
@@ -46,6 +46,12 @@ export function hydrateDiagramSlots(scope: ParentNode, ctx: FragmentRenderContex
     const block = ctx.mermaidBlocks[idx];
     if (!block) return;
     const cacheKey = `${block.hash}-${ctx.modeTag}`;
+    if (block.kind === 'structurizr') {
+      const vp = slot.querySelector(`[data-stage-index="${idx}"]`) as HTMLElement | null;
+      if (vp) vp.innerHTML = diagramPlaceholderHtml(idx);
+      ctx.dirtyBlocks.push({ ...block, modeTag: ctx.modeTag, cacheKey });
+      return;
+    }
     const hasCache = svgCache.has(cacheKey);
     const vp = slot.querySelector(`[data-stage-index="${idx}"]`) as HTMLElement | null;
     if (vp) {

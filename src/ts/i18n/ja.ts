@@ -276,6 +276,7 @@ export const ja = {
   'shortcut.stageAuto': '自動進行 ON / OFF',
   'shortcut.stageTheme': '発表テーマ明暗切替',
   'shortcut.stageHomeEnd': '先頭 / 末尾シーンへ',
+  'shortcut.stageC4View': 'Structurizr ビュー切替（前 / 次）',
   'shortcut.stageExit': 'ステージ発表終了',
 
   // 起動画面（EMPTY_GUIDE_HTML）
@@ -332,7 +333,8 @@ export const ja = {
   'render.slabSavedFallbackToast': 'クリップボード非対応のため画像を保存しました',
   'render.slabSavedToast': '画像を保存しました',
   'render.slabExportedToast': 'スラブ画像を保存しました',
-  'render.slabExportFailedToast': '画像のエクスポートに失敗しました'
+  'render.slabExportFailedToast': '画像のエクスポートに失敗しました',
+  'render.structurizrWebOnly': 'Structurizr DSL — 図の表示は Web 版で対応'
 } as const;
 
 export type I18nKey = keyof typeof ja;
