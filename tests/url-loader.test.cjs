@@ -202,6 +202,22 @@ async function run() {
     'スタンドアロン版は従来どおり lang=en を書くこと'
   );
 
+  // 版面の比率（FR-070）: ratio=16:10 / 10:16 / auto を受け付け、それ以外は無視する。自動は URL に書かず、コロンはエスケープしない
+  assert.strictEqual(parseDisplayStateParams('?ratio=10:16', '', ['shapes'], ['default']).pageRatio, '10:16', 'ratio=10:16 を読むこと');
+  assert.strictEqual(parseDisplayStateParams('?ratio=10%3A16', '', ['shapes'], ['default']).pageRatio, '10:16', 'エスケープした ratio も読むこと');
+  assert.strictEqual(parseDisplayStateParams('', '#ratio=16:10', ['shapes'], ['default']).pageRatio, '16:10', 'ハッシュの ratio も読むこと');
+  assert.strictEqual(parseDisplayStateParams('?ratio=4:3', '', ['shapes'], ['default']).pageRatio, undefined, '未定義の比率は無視すること');
+  assert.strictEqual(
+    buildAppUrlWithState('https://example.com/ja/?mode=visual', { ...baseState, pageRatio: '10:16', lang: 'ja', pageLang: 'ja' }, null, 'split'),
+    'https://example.com/ja/?mode=visual&ratio=10:16',
+    '手で選んだ比率を ratio=10:16 と書くこと'
+  );
+  assert.strictEqual(
+    buildAppUrlWithState('https://example.com/ja/?mode=visual&ratio=10:16', { ...baseState, pageRatio: 'auto', lang: 'ja', pageLang: 'ja' }, null, 'split'),
+    'https://example.com/ja/?mode=visual',
+    '自動のときは ratio を消すこと'
+  );
+
   console.log('url-loader.test.cjs: all assertions passed');
 }
 

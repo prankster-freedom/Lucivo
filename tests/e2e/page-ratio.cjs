@@ -55,7 +55,8 @@ const inspectPages = () => {
       const r = p.getBoundingClientRect();
       const kids = Array.from(p.children).filter(c => c.tagName !== 'H2' && !c.matches('.front-matter, .slab-actions, .page-continued, .vs-cover-texture'));
       const last = kids[kids.length - 1];
-      const pad = p.dataset.fitStep && p.dataset.fitStep !== '0' ? 22 : 32;
+      const portrait = document.documentElement.dataset.pageRatio === '10:16';
+      const pad = p.dataset.fitStep && p.dataset.fitStep !== '0' ? (portrait ? 18 : 22) : (portrait ? 24 : 32);
       const h2 = p.querySelector(':scope > h2');
       return {
         title: (p.querySelector(':scope > h2 > span:last-of-type')?.textContent || '').trim(),
@@ -97,17 +98,16 @@ async function testPageRatio(browser) {
   const backToPage = await page.evaluate(() => document.documentElement.dataset.pageRatio || null);
   const portrait = await openStagePage(browser, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await openVisual(portrait, visualMd);
-  const onPortrait = await portrait.evaluate(() => ({
-    attr: document.documentElement.dataset.pageRatio || null,
-    marks: document.querySelectorAll('#visual-stage-container .is-continuation, #visual-stage-container [data-fit-step]').length
-  }));
+  // 縦長の画面は、自動で縦 10:16 になる（#438 の 7c）
+  const onPortraitAll = await portrait.evaluate(inspectPages);
+  const onPortrait = { attr: onPortraitAll.attr, pages: onPortraitAll.pages.length, bad: onPortraitAll.pages.filter(p => Math.abs(p.ratio - 0.625) >= 0.01 || p.over > 1) };
   await portrait.context().close();
   const ratioOk = onPage.attr === '16:10'
     && onPage.pages.length > 0
     && onPage.pages.every(p => Math.abs(p.ratio - 1.6) < 0.016 && p.over <= 1)
     && onSingle.attr === null && onSingle.marks === 0
     && onFast === null && backToPage === '16:10'
-    && onPortrait.attr === null && onPortrait.marks === 0;
+    && onPortrait.attr === '10:16' && onPortrait.pages > 0 && onPortrait.bad.length === 0;
   record('TC-VTPL-042', ratioOk, JSON.stringify({
     attr: onPage.attr, pages: onPage.pages.length,
     bad: onPage.pages.filter(p => Math.abs(p.ratio - 1.6) >= 0.016 || p.over > 1),

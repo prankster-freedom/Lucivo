@@ -687,6 +687,9 @@ async function testPerfOptimizations(browser) {
     ].join('\n'))
   ].join('\n');
 
+  // シングルページ表示で確かめる。ページ単位（版面の比率のページ）では、ページ割りが画面外の章も測るため、
+  // 2 段組みの判定を画面外の章も含めてその場で決める（DD-VTPL-156）。画面外の章の判定を後回しにするのは、章の高さが中身で決まる表示だけ
+  await p14.evaluate(() => { state.visualLayout = 'single'; });
   await p14.evaluate(text => {
     const editor = document.getElementById('markdown-editor');
     editor.value = text;
@@ -698,7 +701,7 @@ async function testPerfOptimizations(browser) {
 
   // 末尾の画面外スラブの scrollWidth 読み取り回数を監視した状態で幅を狭くする
   await p14.evaluate(() => {
-    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split:not(.is-continuation)'));
     const lastVp = slabs[slabs.length - 1]?.querySelector('.exhibition-viewport');
     window.__lastSlabScrollReads = 0;
     if (lastVp) {
@@ -716,7 +719,8 @@ async function testPerfOptimizations(browser) {
   await p14.waitForTimeout(200);
 
   const beforeScroll14 = await p14.evaluate(() => {
-    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    // 章を数えるため、版面のページ割りの続きのページ（狭い幅で分かれる）を除く
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split:not(.is-continuation)'));
     const firstStacked = slabs[0]?.classList.contains('is-stacked') || false;
     const lastVp = slabs[slabs.length - 1]?.querySelector('.exhibition-viewport');
     if (lastVp) delete lastVp.scrollWidth;
@@ -730,12 +734,12 @@ async function testPerfOptimizations(browser) {
 
   // 末尾スラブを画面内へスクロールし、contentvisibilityautostatechange で遅延更新されて is-stacked が付くか確認
   await p14.evaluate(() => {
-    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab-split');
+    const slabs = document.querySelectorAll('#visual-stage-container .exhibition-slab-split:not(.is-continuation)');
     slabs[slabs.length - 1].scrollIntoView({ block: 'center' });
   });
   await p14.waitForTimeout(250);
   const afterScroll14 = await p14.evaluate(() => {
-    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split'));
+    const slabs = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-slab-split:not(.is-continuation)'));
     return {
       lastStackedAfterScroll: slabs[slabs.length - 1]?.classList.contains('is-stacked') || false
     };

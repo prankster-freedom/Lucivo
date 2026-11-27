@@ -58,6 +58,7 @@ const {
 } = require('./e2e/stage-show.cjs');
 
 const { testPageRatio } = require('./e2e/page-ratio.cjs');
+const { testPageRatioPortrait } = require('./e2e/page-ratio-portrait.cjs');
 
 const {
   testInteractionDetails,
@@ -116,6 +117,8 @@ const SUITES = [
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025', 'TC-SHOW-028'], fn: testStageOverviewPointer },
   // 版面の比率とページ割り（FR-070, #438）。同梱サンプル 6 本の全ページのゲラを撮るため、既定より長くする
   { name: 'testPageRatio', tcPrefix: ['TC-VTPL-042', 'TC-VTPL-043', 'TC-VTPL-044', 'TC-VTPL-045', 'TC-VTPL-046', 'TC-VTPL-047', 'TC-VTPL-048', 'TC-VTPL-049'], fn: testPageRatio, timeoutMs: 240000 },
+  // 縦 10:16 の版面と、比率の選び方（#438 の 7c）
+  { name: 'testPageRatioPortrait', tcPrefix: ['TC-VTPL-050', 'TC-VTPL-051', 'TC-VTPL-052', 'TC-VTPL-053', 'TC-VTPL-054'], fn: testPageRatioPortrait, timeoutMs: 180000 },
   { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022', 'TC-VTPL-028', 'TC-VTPL-029', 'TC-VTPL-037'], fn: testCalloutsGlossaryPrint },
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },

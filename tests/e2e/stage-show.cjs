@@ -849,22 +849,39 @@ async function testStageOverviewPointer(browser) {
   await page.evaluate(() => { document.getElementById('preview-scroll').scrollTop = 0; lastNavTargetTop = null; });
   await page.waitForTimeout(100);
   const scrollBefore = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
-  await page.keyboard.press('j');
-  await page.waitForTimeout(600);
-  const scrollAfterJ1 = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
-  await page.keyboard.press('j');
-  await page.waitForTimeout(600);
-  const scrollAfterJ2 = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
-  await page.keyboard.press('k');
-  await page.waitForTimeout(600);
-  const scrollAfterK = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  // キーを押したあと、決まった時間ではなく、スクロールが落ち着くまで待つ（なめらかなスクロールは、遅い環境では 600ms を超えることがある）。
+  // 落ち着いたとは、300ms の間 scrollTop が変わらないこと（最大 3 秒）。失敗したときに、キーが無視されたのか、遅いだけなのかを見分けられるよう、経過を残す
+  const navTimeline = [];
+  const pressAndSettle = async key => {
+    await page.keyboard.press(key);
+    const samples = await page.evaluate(() => new Promise(resolve => {
+      const el = document.getElementById('preview-scroll');
+      const t0 = performance.now();
+      const list = [[0, Math.round(el.scrollTop), Math.round(el.scrollHeight)]];
+      let last = el.scrollTop;
+      let stableSince = t0;
+      const tick = () => {
+        const now = performance.now();
+        const top = el.scrollTop;
+        if (top !== last) { last = top; stableSince = now; list.push([Math.round(now - t0), Math.round(top), Math.round(el.scrollHeight)]); }
+        if ((now - stableSince >= 300 && now - t0 >= 400) || now - t0 >= 3000) {
+          list.push([Math.round(now - t0), Math.round(top), Math.round(el.scrollHeight), document.documentElement.dataset.pageFit || '']);
+          resolve(list);
+          return;
+        }
+        setTimeout(tick, 30);
+      };
+      setTimeout(tick, 30);
+    }));
+    navTimeline.push({ key, samples });
+    return samples[samples.length - 1][1];
+  };
+  const scrollAfterJ1 = await pressAndSettle('j');
+  const scrollAfterJ2 = await pressAndSettle('j');
+  const scrollAfterK = await pressAndSettle('k');
   // ] / [ も J / K と同じく次章・前章へ移り、ショートカット一覧に載っていること（FR-025, DD-KEY-002）
-  await page.keyboard.press(']');
-  await page.waitForTimeout(600);
-  const scrollAfterBracketR = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
-  await page.keyboard.press('[');
-  await page.waitForTimeout(600);
-  const scrollAfterBracketL = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
+  const scrollAfterBracketR = await pressAndSettle(']');
+  const scrollAfterBracketL = await pressAndSettle('[');
   const modalListsBrackets = await page.evaluate(() => {
     const keys = Array.from(document.querySelectorAll('#shortcut-modal kbd')).map(k => k.textContent.trim());
     return keys.includes('[') && keys.includes(']');
@@ -893,7 +910,7 @@ async function testStageOverviewPointer(browser) {
     && scrollAfterBracketR > scrollAfterK && scrollAfterBracketL < scrollAfterBracketR && modalListsBrackets
     && guideHasQuestion && f5NotIntercepted
     && editorValAfter.includes('m1234') && editorStyle === 'shapes';
-  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, scrollAfterBracketR, scrollAfterBracketL, modalListsBrackets, guideHasQuestion, f5NotIntercepted, editorValAfter: editorValAfter.slice(-10) }));
+  record('TC-SHOW-013', show13Ok, JSON.stringify({ modalOpen, modalClosed, toggledMode, style3, style1, scrollBefore, scrollAfterJ1, scrollAfterJ2, scrollAfterK, scrollAfterBracketR, scrollAfterBracketL, modalListsBrackets, guideHasQuestion, f5NotIntercepted, editorValAfter: editorValAfter.slice(-10), ...(show13Ok ? {} : { navTimeline }) }));
 
   // TC-SHOW-014 幕間・質疑（Q&A）スタンバイカーテン（FR-028）と自動進行ループ待機パルス（FR-033）
   await setDocument(page, showcaseMd);

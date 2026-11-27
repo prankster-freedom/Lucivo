@@ -214,6 +214,14 @@ async function testVisualStageQuality(browser) {
   record('TC-DIAG-032', tag.lines === 1 && tag.whiteSpace === 'nowrap' && tag.height <= tag.fontSize * 2, JSON.stringify(tag));
 
   // TC-DIAG-038 2 段組みの解説の置き方と、図の拡大の上限（DTP-VTPL-060, DD-DIAG-044, #146）
+  // 章の高さが中身で決まる表示（シングルページ表示）で確かめる。ページ単位では、章が版面の比率の箱になり、
+  // 図の高さは版面の残りで決まるため（DD-VTPL-153）、画面より長い図の上限は働かない
+  const setLayout038 = async id => {
+    await page.evaluate(layoutId => document.querySelector(`#layout-menu [data-layout-id="${layoutId}"]`).click(), id);
+    await page.waitForTimeout(400);
+    await page.waitForFunction(() => !document.documentElement.dataset.pageFit, null, { timeout: 30000 });
+  };
+  await setLayout038('single');
   const proseFit = await page.evaluate(() => {
     const root = document.getElementById('visual-stage-container');
     const slabs = Array.from(root.querySelectorAll('.exhibition-slab'));
@@ -244,6 +252,7 @@ async function testVisualStageQuality(browser) {
   proseFit.bigState24 = await page.evaluate(() => window.__measureSplitProse('大きな状態遷移図'));
   await page.click('[data-view-mode="split"]');
   await waitRendered(page);
+  await setLayout038('page');
   const offsetCap = 18 * proseFit.rem;
   const heightCap = 30 * proseFit.rem;
   // 上の空きは下の空きと同じ（中央）か、上限（--split-prose-offset）で止まる
@@ -833,7 +842,8 @@ async function testVisualTemplates(browser) {
   await setMode(page, { style: 'shapes', appearance: 'light' });
   const showcase = await page.evaluate(() => {
     const root = document.getElementById('visual-stage-container');
-    const slabs = Array.from(root.querySelectorAll('.exhibition-slab'));
+    // 章を位置で探すため、続きのページ（版面の比率のページ割り。縦長の画面は 10:16）を除く
+    const slabs = Array.from(root.querySelectorAll('.exhibition-slab:not(.is-continuation)'));
     const tpls = slabs.map(s => Array.from(s.classList).filter(c => c.startsWith('vs-tpl-')).map(c => c.slice(7))[0]);
     const splitStd = slabs[9];
     const splitWide = slabs[10];
