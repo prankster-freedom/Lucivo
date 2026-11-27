@@ -318,7 +318,8 @@ sequenceDiagram
 
 - `ts/ui/url-loader.ts` に `parseDisplayStateParams(search, hash, validStyles, validTones)` と `syncBrowserUrl(displayState, remoteUrl, defaultViewMode)` を置く。
 - 起動時（`app.ts` の `DOMContentLoaded`）は、`setupEventListeners()` と `setupViewModeControls()` の完了後、`setupMermaid()`・`renderApp()` の前に `applyInitialDisplayStateFromUrl()` を実行し、`state.isVisualMode` / `state.appearance` / `state.infographicStyle` / `state.tone` / `state.viewMode` と各 UI（`data-appearance`・Favicon・モードボタン・スタイルボタン・トーンメニュー・ビューモード）を初期化する。
-- 表示状態の変更ハンドラ（`setStageMode`、`selectInfographicStyle`、`selectTone`、`setViewMode`、`btnTheme.onclick`）は、状態変更後に `syncUrlFromState()` を呼ぶ（発表モード中 `is-stage-show` は一時変更のためスキップする）。
+- 版面の比率 `ratio`（`FR-070`）の読み書きは、`DD-VTPL-162` による。
+- 表示状態の変更ハンドラ（`setStageMode`、`selectInfographicStyle`、`selectTone`、`setViewMode`、`selectVisualLayout`、`selectPageRatio`、`btnTheme.onclick`）は、状態変更後に `syncUrlFromState()` を呼ぶ（発表モード中 `is-stage-show` は一時変更のためスキップする）。
 - `syncBrowserUrl()` は `URL` オブジェクトの `searchParams` を構築し、既定値（`mode=fast`, `theme=light`, `style=shapes`, `tone=default`, `view=defaultViewMode`）と一致するキーは削除し、`hash` の旧パラメータ（`#url=` 等）は整理して `window.history.replaceState(null, '', nextUrl)` で更新する。`file://` 等で `replaceState` が例外を投げた場合は `try/catch` で無視して処理を継続する。
 
 ### DD-FILE-094 ローカルファイルの外部更新検知と自動反映（`FR-062`）
