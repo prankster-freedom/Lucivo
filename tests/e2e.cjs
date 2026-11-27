@@ -114,7 +114,7 @@ const SUITES = [
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007', 'TC-SHOW-026', 'TC-SHOW-027'], fn: testStageShow, timeoutMs: 180000 },
   { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025', 'TC-SHOW-028'], fn: testStageOverviewPointer },
   // 版面の比率とページ割り（FR-070, #438）。同梱サンプル 6 本の全ページのゲラを撮るため、既定より長くする
-  { name: 'testPageRatio', tcPrefix: ['TC-VTPL-042', 'TC-VTPL-043', 'TC-VTPL-044', 'TC-VTPL-045', 'TC-VTPL-046', 'TC-VTPL-047', 'TC-VTPL-048'], fn: testPageRatio, timeoutMs: 240000 },
+  { name: 'testPageRatio', tcPrefix: ['TC-VTPL-042', 'TC-VTPL-043', 'TC-VTPL-044', 'TC-VTPL-045', 'TC-VTPL-046', 'TC-VTPL-047', 'TC-VTPL-048', 'TC-VTPL-049'], fn: testPageRatio, timeoutMs: 240000 },
   { name: 'testCalloutsGlossaryPrint', tcPrefix: ['TC-MD-012', 'TC-VTPL-021', 'TC-VTPL-022', 'TC-VTPL-028', 'TC-VTPL-029', 'TC-VTPL-037'], fn: testCalloutsGlossaryPrint },
   { name: 'testEditFollow', tcPrefix: ['TC-DIAG-022', 'TC-DIAG-023'], fn: testEditFollow },
   { name: 'testStyleBar', tcPrefix: ['TC-DIAG-024'], fn: testStyleBar },

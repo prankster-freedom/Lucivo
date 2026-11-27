@@ -269,6 +269,45 @@ async function testPageRatio(browser) {
   const pdfPages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
   record('TC-VTPL-047', pdfPages === printPages, JSON.stringify({ pdfPages, printPages }));
 
+  // TC-VTPL-049 ページの大きさ（#455）: 縦の短い横長の画面（スマホの横向き）でも、1 ページの全体が表示枠に収まり、左右の中央に置かれる。
+  // 高さが足りる画面では、ページの幅は今までどおり（上限 62rem）
+  const inspectFit = () => {
+    const scroller = document.getElementById('preview-scroll');
+    const sr = scroller.getBoundingClientRect();
+    const pages = Array.from(document.querySelectorAll('#visual-stage-container .exhibition-wrap > :is(.exhibition-hero, .exhibition-slab):not(.vs-endcard)'));
+    return {
+      attr: document.documentElement.dataset.pageRatio || null,
+      viewH: scroller.clientHeight,
+      pages: pages.length,
+      width: pages[0] ? Math.round(pages[0].getBoundingClientRect().width) : 0,
+      tooTall: pages.filter(p => p.getBoundingClientRect().height > scroller.clientHeight - 30).length,
+      offCenter: pages.filter(p => {
+        const r = p.getBoundingClientRect();
+        return Math.abs((r.left - sr.left) - (sr.right - r.right - (scroller.offsetWidth - scroller.clientWidth))) > 3;
+      }).length,
+      badRatio: pages.filter(p => { const r = p.getBoundingClientRect(); return Math.abs(r.width / r.height - 1.6) > 0.016; }).length,
+      over: pages.filter(p => {
+        const r = p.getBoundingClientRect();
+        const kids = Array.from(p.children).filter(c => c.tagName !== 'H2' && !c.matches('.front-matter, .slab-actions, .page-continued, .vs-cover-texture'));
+        const last = kids[kids.length - 1];
+        return last && last.getBoundingClientRect().bottom > r.bottom - (p.dataset.fitStep && p.dataset.fitStep !== '0' ? 22 : 32) + 1;
+      }).length
+    };
+  };
+  const phone = await openStagePage(browser, { viewport: { width: 915, height: 412 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  await openVisual(phone, visualMd);
+  await phone.evaluate(() => document.querySelector('[data-view-mode="canvas"]')?.click());
+  await phone.waitForTimeout(800);
+  await waitPageFit(phone);
+  const phoneFit = await phone.evaluate(inspectFit);
+  await phone.screenshot({ path: path.join(SHOT_DIR, 'page-ratio-phone-landscape.png') });
+  await phone.context().close();
+  const wideFit = await page.evaluate(inspectFit);
+  const sizeOk = phoneFit.attr === '16:10' && phoneFit.pages > 0 && phoneFit.tooTall === 0 && phoneFit.offCenter === 0 && phoneFit.badRatio === 0 && phoneFit.over === 0
+    && phoneFit.width <= (phoneFit.viewH - 32) * 1.6 + 2
+    && wideFit.tooTall === 0 && wideFit.width === 992;
+  record('TC-VTPL-049', sizeOk, JSON.stringify({ phoneFit, wideFit }));
+
   // TC-VTPL-048 版面のゲラ（目視）
   const samples = ['visual-sample.md', 'print-sample.md', 'color-museum-sample.md', 'museum-walk-sample.md', 'notation_sample.md', 'notation_sample_extra1.md'];
   const galley = [];
