@@ -23,6 +23,8 @@ const OUT_DIR = channel === 'standalone' ? path.join(ROOT_DIR, 'dist') : PUBLIC_
 // standalone は、これ以外のファイル（コミットするファイル）だけを public/ から写し、出力は dist/ にビルドで作る
 // index.html・ja/・en/ は、ひな形 src/index.html から作る（ARC-PUB-009）
 const BUILD_OUTPUTS = ['index.html', 'ja', 'en', 'js', 'css/style.css', 'css/modes', 'samples/samples-data.js', 'vendor/style-fonts'];
+// コミットするが、Web 版でしか使わないもの。standalone には写さない（OGP の画像。AST-147、ARC-PUB-009）
+const WEB_ONLY = ['assets/ogp'];
 // 言語別のページの canonical・hreflang・noindex の出し分け（production（既定）/ preview。ARC-PUB-009）
 const pagesTarget = (process.env.LUCIVO_PAGES_TARGET || '').trim() || 'production';
 
@@ -72,7 +74,10 @@ function copyPublicToStandalone() {
   fs.rmSync(OUT_DIR, { recursive: true, force: true });
   fs.cpSync(PUBLIC_DIR, OUT_DIR, {
     recursive: true,
-    filter: src => !BUILD_OUTPUTS.includes(path.relative(PUBLIC_DIR, src).split(path.sep).join('/'))
+    filter: src => {
+      const rel = path.relative(PUBLIC_DIR, src).split(path.sep).join('/');
+      return !BUILD_OUTPUTS.includes(rel) && !WEB_ONLY.includes(rel);
+    }
   });
 }
 

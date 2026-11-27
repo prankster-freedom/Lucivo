@@ -16,6 +16,29 @@ const ANALYTICS_PATTERN = /[ \t]*<!-- LUCIVO_WEB_ANALYTICS_START -->[\s\S]*?<!--
 const README_URL_JA = 'Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md';
 const README_URL_EN = 'Lucivo/preview/en/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.en.md';
 
+// 言語別のページの説明文と OGP（FR-065、#443 の方針 12）。日本語版を正とし、日本語版を変えたら英語版も合わせて訳す
+// （AGENTS.repo.md 12 章）。タイトル（<title>・og:title）は、ひな形の <title> を両方の言語でそのまま使う
+const PAGE_META = {
+  ja: {
+    locale: 'ja_JP',
+    description: 'Markdown と Mermaid をブラウザ単体で表示するビューアー。読むための軽快な仕様書レイアウトと、講演・展示・印刷に使える展示品質のレイアウトを、瞬時に切り替えられます。'
+  },
+  en: {
+    locale: 'en_US',
+    description: 'A browser-only viewer for Markdown and Mermaid. Switch instantly between a fast reading layout and an exhibition-grade layout for talks and print.'
+  }
+};
+// OGP の画像（AST-147。文字を入れず、言語で共通。1200×630 の PNG）。配布先ごとのアセットを指す
+const OGP_IMAGE = { path: 'assets/ogp/lucivo-ogp.png', width: 1200, height: 630 };
+
+const escapeAttr = value => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+function readTitle(template) {
+  const match = template.match(/<title>([^<]*)<\/title>/);
+  if (!match) throw new Error('src/index.html に <title> がありません');
+  return match[1];
+}
+
 // ルートと言語別のページの <head> の先頭で動かす、言語の転送（FR-065）。文字列にして埋め込むため、外の変数を参照しない。
 // pageLang が null のとき（ルート）: ?lang= / #lang=、localStorage、ブラウザの言語の順で言語を決め、その言語のディレクトリへ転送する。
 // pageLang があるとき（言語別のページ）: ?lang= / #lang= があるときだけ動き、ページの言語と同じなら lang を消すだけ、違えばもう一方のページへ転送する。
@@ -77,9 +100,23 @@ function insertAfterCharset(html, lines) {
 // 言語別のページ。参照を 1 階層上（アセットは配布先に 1 組だけ置く）に向け、言語・canonical・hreflang または noindex を書く
 function buildLanguagePage(template, lang, target) {
   const base = pagesBaseUrl(target);
+  const url = `${base}${lang}/`;
+  const meta = PAGE_META[lang];
+  const title = readTitle(template);
   const head = [
     `<script>${langRedirectScript(lang)}</script>`,
-    `<link rel="canonical" href="${base}${lang}/" />`
+    `<link rel="canonical" href="${url}" />`,
+    `<meta name="description" content="${escapeAttr(meta.description)}" />`,
+    '<meta property="og:type" content="website" />',
+    '<meta property="og:site_name" content="Lucivo" />',
+    `<meta property="og:title" content="${escapeAttr(title)}" />`,
+    `<meta property="og:description" content="${escapeAttr(meta.description)}" />`,
+    `<meta property="og:url" content="${url}" />`,
+    `<meta property="og:locale" content="${meta.locale}" />`,
+    `<meta property="og:image" content="${base}${OGP_IMAGE.path}" />`,
+    `<meta property="og:image:width" content="${OGP_IMAGE.width}" />`,
+    `<meta property="og:image:height" content="${OGP_IMAGE.height}" />`,
+    '<meta name="twitter:card" content="summary_large_image" />'
   ];
   if (target === 'preview') {
     head.push('<meta name="robots" content="noindex" />');
@@ -123,4 +160,4 @@ function writeHtmlPages(outDir, channel, target = 'production') {
   fs.writeFileSync(path.join(outDir, 'index.html'), buildRedirectPage(target), 'utf8');
 }
 
-module.exports = { writeHtmlPages, buildLanguagePage, buildRedirectPage, buildStandalonePage, readTemplate, LANGS, SITE_URL };
+module.exports = { writeHtmlPages, buildLanguagePage, buildRedirectPage, buildStandalonePage, readTemplate, LANGS, SITE_URL, PAGE_META, OGP_IMAGE };
