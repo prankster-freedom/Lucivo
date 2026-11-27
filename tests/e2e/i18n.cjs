@@ -13,7 +13,7 @@ async function collectUiJapaneseLeaks(page, excludeSelectors = []) {
     const leaks = [];
     const isExcluded = el => {
       if (!el) return false;
-      // 言語切替の自言語名「日本語」は仕様上の例外（FR-066）
+      // 言語切替の、切り替え先の言語で書く文言（「日本語」「日本語に切り替え」）は仕様上の例外（FR-066 の例外 1）
       if (el.id === 'menu-lang-ja') return true;
       if (el.id === 'menu-more-language') return true;
       for (const sel of excludes) {
@@ -41,8 +41,8 @@ async function collectUiJapaneseLeaks(page, excludeSelectors = []) {
       for (const attr of attrs) {
         const val = el.getAttribute(attr);
         if (!val) continue;
-        // 言語切替ボタンのツールチップ「日本語 / English」は自言語名のため例外
-        if (el.id === 'btn-lang-menu' && attr === 'title') continue;
+        // 言語切替ボタンのツールチップ・読み上げは、切り替え先の言語を添えるため例外（FR-066 の例外 1）
+        if (el.id === 'btn-lang-menu' && (attr === 'title' || attr === 'aria-label')) continue;
         if (re.test(val)) {
           leaks.push(`attr[${attr}](${el.id || el.className || el.tagName}): ${val.slice(0, 80)}`);
         }
@@ -329,6 +329,8 @@ async function testLangPages(browser) {
       await page.goto(`${root}ja/?view=split#memo`);
       await page.waitForFunction(() => typeof renderApp === 'function' && document.getElementById('telemetry-status'));
       const cardHrefs = await page.evaluate(() => Array.from(document.querySelectorAll('.empty-guide-sample-link')).map(a => a.getAttribute('href')));
+      // 「その他」の切り替えの項目は、切り替え先の言語で書く（FR-065。切り替えたい人は今の言語を読めない）
+      const moreJa = await page.evaluate(() => document.getElementById('menu-more-language')?.textContent?.trim());
       await page.fill('#markdown-editor', '# 編集中の文書\n\n本文\n');
       await page.evaluate(() => { window.__e2eNoReload = true; });
       await page.click('#btn-lang-menu');
@@ -344,19 +346,21 @@ async function testLangPages(browser) {
         pageLang: document.documentElement.getAttribute('data-page-lang'),
         canonical: document.querySelector('link[rel="canonical"]')?.href,
         stored: localStorage.getItem('lucivo-lang'),
-        help: document.getElementById('btn-header-help')?.getAttribute('href') || ''
+        help: document.getElementById('btn-header-help')?.getAttribute('href') || '',
+        more: document.getElementById('menu-more-language')?.textContent?.trim()
       }));
-      await page.click('#btn-lang-menu');
-      await page.click('#menu-lang-ja');
+      // 戻すときは「その他」メニューの項目（日本語に切り替え）を使う。幅 1280px ではメニューのボタンが隠れているため、項目を直接押す
+      await page.evaluate(() => document.getElementById('menu-more-language').click());
       await page.waitForFunction(() => location.pathname.endsWith('/ja/'), null, { timeout: 5000 }).catch(() => {});
-      const toJa = await page.evaluate(() => ({ path: location.pathname, noReload: window.__e2eNoReload === true, lang: document.documentElement.lang }));
+      const toJa = await page.evaluate(() => ({ path: location.pathname, noReload: window.__e2eNoReload === true, lang: document.documentElement.lang, more: document.getElementById('menu-more-language')?.textContent?.trim() }));
       const ok = toEn.path === '/en/' && !/lang=/.test(toEn.search) && toEn.hash === '#memo' && toEn.noReload
         && toEn.editor.includes('編集中の文書') && toEn.lang === 'en' && toEn.pageLang === 'en'
         && toEn.canonical === `${SITE}en/` && toEn.stored === 'en'
         && toEn.help.startsWith(`${SITE}preview/en/?url=`) && toEn.help.includes('README.en.md') && !toEn.help.includes('lang=')
         && toJa.path === '/ja/' && toJa.noReload && toJa.lang === 'ja'
+        && moreJa === 'Switch to English' && toEn.more === '日本語に切り替え' && toJa.more === 'Switch to English'
         && cardHrefs.length > 0 && cardHrefs.every(h => h.startsWith('./?url=') && !h.includes('lang='));
-      record('TC-I18N-008', ok, JSON.stringify({ toEn, toJa, cardHrefs: cardHrefs.length }));
+      record('TC-I18N-008', ok, JSON.stringify({ moreJa, toEn, toJa, cardHrefs: cardHrefs.length }));
       await context.close();
     }
 
