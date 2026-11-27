@@ -5,6 +5,7 @@ import { state } from './state';
 import { showToast } from './toast';
 import { trackWebEvent } from './analytics';
 import { parseDisplayStateParams } from './url-loader';
+import { assetUrl } from './asset-url';
 import { getLang, onLangChange, t, type Lang } from '../i18n';
 
 // ビルドが埋め込む、この配布先で出すモードの表（modes.json の行から stage を除いたもの）
@@ -138,10 +139,10 @@ function loadMode(id: string): Promise<boolean> {
     loads.set(id, new Promise<boolean>(resolve => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = `./css/modes/${id}.css`;
+      link.href = assetUrl(`css/modes/${id}.css`);
       document.head.appendChild(link);
       const script = document.createElement('script');
-      script.src = `./js/modes/${id}.js`;
+      script.src = assetUrl(`js/modes/${id}.js`);
       script.onload = () => resolve(modes.has(id));
       script.onerror = () => resolve(false);
       document.head.appendChild(script);

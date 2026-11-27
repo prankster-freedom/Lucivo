@@ -9,6 +9,10 @@ work/
 /public/css/modes/
 /public/samples/samples-data.js
 /public/vendor/style-fonts/
+# 転送用のページと言語別のページ（ひな形は src/index.html。4.14 ARC-PUB-009）
+/public/index.html
+/public/ja/
+/public/en/
 
 # スタンドアロン版のビルド出力（tools/build-app.cjs --channel standalone）
 dist/

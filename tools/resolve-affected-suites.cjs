@@ -30,7 +30,7 @@ const DOC_PATTERNS = [
 
 // 変更時に全スイート実行（mode: 'all'）へ倒す安全対象
 const FORCE_ALL_EXACT = new Set([
-  'public/index.html',
+  'src/index.html',
   'package.json',
   'package-lock.json',
   'tsconfig.json',

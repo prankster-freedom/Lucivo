@@ -128,8 +128,8 @@ jobs:
             fi
           fi
 
-          # 2. Canary（/preview/）を main からビルド
-          LUCIVO_VERSION_OVERRIDE="$CANARY_VERSION" LUCIVO_SAMPLES_REF="main" node tools/build-app.cjs --prod
+          # 2. Canary（/preview/）を main からビルド。言語別のページ（/preview/ja/・/preview/en/）は noindex にし、hreflang を書かない（ARC-PUB-009）
+          LUCIVO_VERSION_OVERRIDE="$CANARY_VERSION" LUCIVO_SAMPLES_REF="main" LUCIVO_PAGES_TARGET="preview" node tools/build-app.cjs --prod
           cp -R public/. _site/preview/
           rm -rf _site/preview/samples
       - uses: actions/configure-pages@v6.0.0

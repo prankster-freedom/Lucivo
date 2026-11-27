@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
 const { buildSamplesData } = require('./build-samples-data.cjs');
+const { writeHtmlPages } = require('./build-html-pages.cjs');
 // 起動時の案内に表示し、更新の確認で比べる版（FR-049）。package.json の version を正とし、CI ビルド時は LUCIVO_VERSION_OVERRIDE で上書き可
 const { version } = require('../package.json');
 const appVersion = (process.env.LUCIVO_VERSION_OVERRIDE || '').trim() || version;
@@ -20,7 +21,10 @@ const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const OUT_DIR = channel === 'standalone' ? path.join(ROOT_DIR, 'dist') : PUBLIC_DIR;
 // ビルドの出力（コミットしない。doc/2.ARCHITECTURE.md 4.14 ARC-PUB-001）の public/ からの相対パス（POSIX 区切り）。
 // standalone は、これ以外のファイル（コミットするファイル）だけを public/ から写し、出力は dist/ にビルドで作る
-const BUILD_OUTPUTS = ['js', 'css/style.css', 'css/modes', 'samples/samples-data.js', 'vendor/style-fonts'];
+// index.html・ja/・en/ は、ひな形 src/index.html から作る（ARC-PUB-009）
+const BUILD_OUTPUTS = ['index.html', 'ja', 'en', 'js', 'css/style.css', 'css/modes', 'samples/samples-data.js', 'vendor/style-fonts'];
+// 言語別のページの canonical・hreflang・noindex の出し分け（production（既定）/ preview。ARC-PUB-009）
+const pagesTarget = (process.env.LUCIVO_PAGES_TARGET || '').trim() || 'production';
 
 // Web 版専用のスタイル別見出し書体（#218, DTP-004）。配布サイズを抑えるため standalone（dist/・ZIP）には含めない
 const STYLE_FONT_SPECS = [
@@ -70,14 +74,6 @@ function copyPublicToStandalone() {
     recursive: true,
     filter: src => !BUILD_OUTPUTS.includes(path.relative(PUBLIC_DIR, src).split(path.sep).join('/'))
   });
-  // スタンドアロン版は完全オフライン動作（NFR-008）のため、Web 版専用の解析タグを除外する
-  const standaloneHtmlPath = path.join(OUT_DIR, 'index.html');
-  const html = fs.readFileSync(standaloneHtmlPath, 'utf8');
-  fs.writeFileSync(
-    standaloneHtmlPath,
-    html.replace(/[ \t]*<!-- LUCIVO_WEB_ANALYTICS_START -->[\s\S]*?<!-- LUCIVO_WEB_ANALYTICS_END -->\r?\n?/g, ''),
-    'utf8'
-  );
 }
 
 // 廃止したモードの出力が残って紛れ込まないように、モードの出力のフォルダを書き込む前に空にする（ARC-PUB-006）
@@ -143,6 +139,8 @@ async function build() {
   if (channel === 'standalone') copyPublicToStandalone();
   else buildStyleFonts();
   cleanModeOutputs();
+  // web は言語別のページと転送用のページ、standalone は計測のスニペットを除いた 1 つの index.html（ARC-PUB-009、NFR-008）
+  writeHtmlPages(OUT_DIR, channel, pagesTarget);
 
   const commonJsOptions = {
     bundle: true,

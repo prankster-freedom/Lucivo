@@ -5,6 +5,7 @@ import { showToast } from './toast';
 import { trackWebEvent } from './analytics';
 import { parseDisplayStateParams, syncBrowserUrl } from './url-loader';
 import { ensureStyleFont } from './style-fonts';
+import { assetUrl } from './asset-url';
 import { setupMermaid } from '../diagram/mermaid-config';
 import { updateAllSlabSplits } from '../diagram/svg-postprocess';
 import {
@@ -18,7 +19,7 @@ import {
   state,
   runtime
 } from './state';
-import { getLang, setLang, t } from '../i18n';
+import { getLang, getPageLang, setLang, t } from '../i18n';
 
 // モードの切替ボタンの選択状態と、スタイルバーの表示を揃える。
 // スタイルバーは Visualモードの配色・装飾にしか効かないため、Visualモードのときだけ表示する（DD-DIAG-063）
@@ -370,7 +371,7 @@ export function syncUrlFromState(push = false) {
   if (!runtime.urlSyncReady) return;
   if (document.documentElement.classList.contains('is-stage-show')) return;
   // 人へリンクを共有した際に画面幅の違いで view=canvas 等が落ちないよう、既定値は常に 'split' 基準とする（#307）
-  syncBrowserUrl({ ...state, lang: getLang() }, runtime.currentRemoteUrl, 'split', push);
+  syncBrowserUrl({ ...state, lang: getLang(), pageLang: getPageLang() }, runtime.currentRemoteUrl, 'split', push);
 }
 
 export function applyInitialDisplayStateFromUrl() {
@@ -387,7 +388,7 @@ export function applyInitialDisplayStateFromUrl() {
     state.appearance = params.appearance;
     document.body.setAttribute('data-appearance', state.appearance);
     const appFavicon = document.getElementById('app-favicon');
-    if (appFavicon) appFavicon.setAttribute('href', `./assets/logos/${state.appearance}/favicon.svg`);
+    if (appFavicon) appFavicon.setAttribute('href', assetUrl(`assets/logos/${state.appearance}/favicon.svg`));
     document.getElementById('icon-sun')?.classList.toggle('hidden', state.appearance === 'dark');
     document.getElementById('icon-moon')?.classList.toggle('hidden', state.appearance !== 'dark');
   }

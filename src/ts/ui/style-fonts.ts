@@ -1,5 +1,7 @@
 // Visualモードのスタイル別見出し書体（Web 版のみ遅延読み込み。DTP-004, DD-VTPL-035, #218）
 // スタンドアロン版（__LUCIVO_STYLE_FONTS__ === false）ではフォントファイルを同梱せず、共通の書体のままにする。
+import { assetUrl } from './asset-url';
+
 declare const __LUCIVO_STYLE_FONTS__: boolean;
 
 const STYLE_FONTS_ENABLED = typeof __LUCIVO_STYLE_FONTS__ !== 'undefined' && !!__LUCIVO_STYLE_FONTS__;
@@ -84,7 +86,7 @@ export function ensureStyleFont(style: string): Promise<boolean> {
   if (running) return running;
 
   const task = (async () => {
-    const ok = await loadStylesheet(spec.cssHref);
+    const ok = await loadStylesheet(assetUrl(spec.cssHref));
     if (!ok) {
       pendingLoads.delete(style);
       return false;

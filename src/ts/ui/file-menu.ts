@@ -6,6 +6,7 @@ import { getLang, setLang, t, resolveSampleFileName } from '../i18n';
 import { registerEscapeHandler } from './keymap';
 import { extractDroppedUrl, fetchMarkdownFromUrl } from './url-loader';
 import { hasBundledSamples, samplesRawUrl } from './sample-source';
+import { assetUrl } from './asset-url';
 import { watchFile, clearWatchedFile } from './file-watch';
 import { applyUpdateCheckState, checkForUpdate } from './update-check';
 import { setupPresentModes } from './present-modes';
@@ -240,7 +241,7 @@ async function openMarkdownFileWithPicker(input: HTMLInputElement) {
 async function fetchOrLoadSampleText(targetFileName: string): Promise<string | null> {
   if (window.location.protocol !== 'file:') {
     try {
-      const res = await fetch(`./samples/${encodeURIComponent(targetFileName)}`);
+      const res = await fetch(assetUrl(`samples/${encodeURIComponent(targetFileName)}`));
       if (res.ok) return await res.text();
     } catch (_) {
       // fetch 失敗時は samples-data.js にフォールバックする

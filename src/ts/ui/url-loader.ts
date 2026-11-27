@@ -12,6 +12,8 @@ export interface DisplayStateSnapshot {
   viewMode: string;
   visualLayout?: string;
   lang?: 'ja' | 'en';
+  /** ページの言語のディレクトリ（Web 版の言語別のページ /ja/・/en/。スタンドアロン版は null。ARC-PUB-009） */
+  pageLang?: 'ja' | 'en' | null;
 }
 
 export interface DisplayStateParams {
@@ -405,7 +407,12 @@ export function buildAppUrlWithState(
     next.searchParams.delete('layout');
   }
 
-  if (displayState.lang === 'en') {
+  if (displayState.pageLang && (displayState.lang === 'ja' || displayState.lang === 'en')) {
+    // 言語別のページでは、言語をパスの言語のディレクトリで表し、lang を付けない（FR-065, ARC-PUB-009）。
+    // /ja/ と /en/ は同じ深さのため、パスを書き換えても相対パスの参照は変わらない
+    next.pathname = next.pathname.replace(/\/(?:ja|en)\/(index\.html)?$/, `/${displayState.lang}/$1`);
+    next.searchParams.delete('lang');
+  } else if (displayState.lang === 'en') {
     next.searchParams.set('lang', 'en');
   } else if (displayState.lang === 'ja') {
     next.searchParams.delete('lang');

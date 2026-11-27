@@ -6,7 +6,8 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 
 const REPO = path.resolve(__dirname, '..');
-const APP_URL = 'file:///' + path.join(REPO, 'public', 'index.html').replace(/\\/g, '/');
+// 日本語版のページ（npm run build で作る。doc/2.ARCHITECTURE.md 4.14 ARC-PUB-009）を開く
+const APP_URL = 'file:///' + path.join(REPO, 'public', 'ja', 'index.html').replace(/\\/g, '/');
 const SAMPLE = path.join(REPO, 'public', 'samples', 'visual-sample.md');
 const OUT = path.resolve(process.argv[2] || path.join(REPO, 'doc', 'images', 'readme'));
 

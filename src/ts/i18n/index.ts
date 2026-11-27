@@ -43,8 +43,19 @@ export function detectBrowserLang(): Lang {
   return /^ja\b/i.test(navLang) ? 'ja' : 'en';
 }
 
+/**
+ * ページの言語のディレクトリ（Web 版の言語別のページ /ja/・/en/ の <html data-page-lang>。ARC-PUB-009）。
+ * スタンドアロン版（1 つの index.html）は null
+ */
+export function getPageLang(): Lang | null {
+  if (typeof document === 'undefined' || !document.documentElement) return null;
+  const lang = document.documentElement.getAttribute('data-page-lang');
+  return lang === 'ja' || lang === 'en' ? lang : null;
+}
+
+// 言語別のページでは、?lang= は読み込む前に <head> の転送で消えるため、ページの言語が最優先になる（FR-065）
 export function detectInitialLang(): Lang {
-  return readLangFromUrl() || readLangFromStorage() || detectBrowserLang();
+  return getPageLang() || readLangFromUrl() || readLangFromStorage() || detectBrowserLang();
 }
 
 export function initI18n(): Lang {
@@ -64,6 +75,12 @@ export function getLang(): Lang {
 function syncHtmlLang(): void {
   if (typeof document !== 'undefined' && document.documentElement) {
     document.documentElement.lang = currentLang;
+    // 言語別のページでは、切り替えでアドレスバーがもう一方の言語のディレクトリに変わるため、ページの言語と canonical も合わせる（FR-065）
+    if (getPageLang() && getPageLang() !== currentLang) {
+      document.documentElement.setAttribute('data-page-lang', currentLang);
+      const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+      if (canonical) canonical.href = canonical.href.replace(/\/(?:ja|en)\/$/, `/${currentLang}/`);
+    }
   }
 }
 
@@ -101,11 +118,11 @@ export function t(key: I18nKey, vars?: Record<string, string | number>): string 
   return text;
 }
 
+// README を Lucivo で開く公開 URL（FR-024, FR-049）。言語は ?lang= ではなく、言語のディレクトリで表す（FR-065）
 export function getReadmeViewerUrl(lang: Lang = getLang()): string {
   const file = lang === 'en' ? 'README.en.md' : 'README.md';
   const rawBlob = `https://github.com/prankster-freedom/Lucivo/blob/main/${file}`;
-  const langParam = lang === 'en' ? '&lang=en' : '';
-  return `https://prankster-freedom.github.io/Lucivo/preview/?url=${encodeURIComponent(rawBlob)}&view=canvas&mode=visual${langParam}`;
+  return `https://prankster-freedom.github.io/Lucivo/preview/${lang}/?url=${encodeURIComponent(rawBlob)}&view=canvas&mode=visual`;
 }
 
 export function resolveSampleFileName(baseFileName: string, lang: Lang = getLang()): string {

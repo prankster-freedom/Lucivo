@@ -2,6 +2,7 @@
 import { mixHex } from '../utils/color';
 import { t, getLang, resolveSampleFileName, getReadmeViewerUrl, type I18nKey } from '../i18n';
 import { hasBundledSamples, samplesRawUrl, isPresentModeAvailable } from './sample-source';
+import { assetUrl } from './asset-url';
 export const APP_TITLE_SUFFIX = ' - Lucivo';
 export const DROPPABLE_FILE_PATTERN = /\.(md|markdown|txt)$/i;
 
@@ -553,12 +554,10 @@ export const CIRCLE_DARK_TEXT_FILLS = ['#ECB674'];
 // シーケンス図のメッセージの数式を、メッセージ線から離す量（SVG の座標単位）
 export const SEQUENCE_MATH_LIFT = 6;
 
-// 公開リポジトリ（最新版の配布元）と Lucivo で README を開く公開 URL（FR-024, FR-049, #298）
+// 公開リポジトリ（最新版の配布元。FR-024）。README を Lucivo で開く公開 URL は、言語で変わるため i18n の getReadmeViewerUrl() で作る
 export const REPOSITORY_URL = 'https://github.com/prankster-freedom/Lucivo';
-export const README_VIEWER_URL = `https://prankster-freedom.github.io/Lucivo/preview/?url=${encodeURIComponent('https://github.com/prankster-freedom/Lucivo/blob/main/README.md')}&view=canvas&mode=visual`;
 // 新しいタブで開き、開いたページから Lucivo の画面を操作されないようにする
 export const REPOSITORY_LINK_ATTRS = `href="${REPOSITORY_URL}" target="_blank" rel="noopener noreferrer"`;
-export const README_VIEWER_LINK_ATTRS = `href="${README_VIEWER_URL}" target="_blank" rel="noopener noreferrer"`;
 
 export function getToneLabel(toneId = state.tone): string {
   const key = `tone.${toneId}` as I18nKey;
@@ -591,14 +590,13 @@ function escapeAttr(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
-// リンク先。Web 版は GitHub 上のサンプルを開く URL、スタンドアロン版は同梱を開くので移動しない
+// リンク先。Web 版は GitHub 上のサンプルを開く URL、スタンドアロン版は同梱を開くので移動しない。
+// Web 版は言語別のページ（/ja/・/en/）にいるため、言語は ./ の言語のディレクトリで表し、?lang= を付けない（FR-065）
 function sampleCardHref(file: string, presentMode?: string, mode?: 'visual'): string {
-  const lang = getLang();
   if (hasBundledSamples()) return '#';
   const params = [`url=${encodeURIComponent(samplesRawUrl(resolveSampleFileName(file)))}`];
   if (presentMode) params.push('mode=visual', 'theme=dark', `present=${presentMode}`);
   else if (mode === 'visual') params.push('mode=visual');
-  if (lang === 'en') params.push('lang=en');
   return `./?${params.join('&')}`;
 }
 
@@ -619,7 +617,7 @@ export function getSampleCardsHtml(): string {
         .join('');
       return `      <div class="empty-guide-sample-card" data-sample-card="${card.id}">
         <a class="empty-guide-sample-thumb" href="${escapeAttr(sampleCardHref(first.file, card.presentMode, card.mode))}"${attr(first.file)} tabindex="-1" aria-hidden="true">
-          <img src="./assets/thumbs/${card.id}.${lang}.webp" width="640" height="400" loading="lazy" decoding="async" alt="${escapeAttr(t(card.thumbAlt))}" />
+          <img src="${assetUrl(`assets/thumbs/${card.id}.${lang}.webp`)}" width="640" height="400" loading="lazy" decoding="async" alt="${escapeAttr(t(card.thumbAlt))}" />
         </a>
         <div class="empty-guide-sample-body">
           <div class="empty-guide-sample-links">${links}</div>
@@ -637,8 +635,8 @@ export function getEmptyGuideHtml(): string {
 <div class="empty-guide">
   <div class="empty-guide-logo">
     <a class="brand-link" ${readmeAttrs} title="${t('brand.openReadmeTitle')}">
-      <img class="brand-logo-light" src="./assets/logos/light/logo_full.svg" alt="${t('brand.fullLogoAlt')}" width="264" height="72" />
-      <img class="brand-logo-dark" src="./assets/logos/dark/logo_full.svg" alt="${t('brand.fullLogoAlt')}" width="264" height="72" />
+      <img class="brand-logo-light" src="${assetUrl('assets/logos/light/logo_full.svg')}" alt="${t('brand.fullLogoAlt')}" width="264" height="72" />
+      <img class="brand-logo-dark" src="${assetUrl('assets/logos/dark/logo_full.svg')}" alt="${t('brand.fullLogoAlt')}" width="264" height="72" />
     </a>
   </div>
   <h3 class="empty-guide-title">${t('empty.title')}</h3>
@@ -773,11 +771,12 @@ export function loadLibrary(name) {
       if (lib.style) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = lib.style;
+        link.href = assetUrl(lib.style);
         document.head.appendChild(link);
       }
       const script = document.createElement('script');
-      script.src = lib.script;
+      // 言語別のページ（/ja/・/en/）では 1 階層上のアセットを読む（ARC-PUB-009）
+      script.src = assetUrl(lib.script);
       script.onload = () => resolve(!!window[lib.global]);
       script.onerror = () => {
         console.warn(`Failed to load ${name}`);

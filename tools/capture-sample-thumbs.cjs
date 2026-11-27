@@ -30,8 +30,10 @@ function startStaticServer() {
     '.png': 'image/png'
   };
   const server = http.createServer((req, res) => {
-    const rel = ((req.url || '/').split('?')[0].replace(/^\/+/, '')) || 'index.html';
-    const fp = path.join(PUBLIC_DIR, decodeURIComponent(rel));
+    // GitHub Pages と同じく、フォルダ（言語別のページ /ja/・/en/）へのリクエストには、その index.html を返す
+    const rel = (req.url || '/').split('?')[0].replace(/^\/+/, '');
+    let fp = path.join(PUBLIC_DIR, decodeURIComponent(rel));
+    if (fp.startsWith(PUBLIC_DIR) && fs.existsSync(fp) && fs.statSync(fp).isDirectory()) fp = path.join(fp, 'index.html');
     if (!fp.startsWith(PUBLIC_DIR) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
       res.writeHead(404);
       res.end('Not found');
@@ -114,7 +116,7 @@ async function main() {
       if (TARGETS.includes('visual')) {
       const visualUrl = `https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/visual-sample${suffix}`;
       const headingRe = lang === 'ja' ? /4列カード/ : /4-Column Cards/i;
-      await page.goto(`${server.url}?url=${encodeURIComponent(visualUrl)}&mode=visual&theme=light&style=cards&view=canvas&lang=${lang}`);
+      await page.goto(`${server.url}${lang}/?url=${encodeURIComponent(visualUrl)}&mode=visual&theme=light&style=cards&view=canvas`);
       await page.addStyleTag({ content: HIDE_CSS });
       await waitRendered(page);
       const targetSlab = page.locator('.exhibition-slab', { has: page.locator('h2', { hasText: headingRe }) }).first();
@@ -146,7 +148,7 @@ async function main() {
       // 2. 記法サンプル（Split 表示・Light・数式パート周辺）
       if (TARGETS.includes('notation')) {
       const notationUrl = `https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/notation_sample${suffix}`;
-      await page.goto(`${server.url}?url=${encodeURIComponent(notationUrl)}&mode=fast&theme=light&view=split&lang=${lang}`);
+      await page.goto(`${server.url}${lang}/?url=${encodeURIComponent(notationUrl)}&mode=fast&theme=light&view=split`);
       await page.addStyleTag({ content: HIDE_CSS });
       await waitRendered(page);
       await page.evaluate(() => {
@@ -168,7 +170,7 @@ async function main() {
       // 3. 配色ミュージアム（ミュージアム・ウォーク・Dark）
       if (TARGETS.includes('color-museum')) {
       const museumUrl = `https://raw.githubusercontent.com/prankster-freedom/Lucivo/main/public/samples/color-museum-sample${suffix}`;
-      await page.goto(`${server.url}?url=${encodeURIComponent(museumUrl)}&mode=visual&theme=dark&present=museum-walk&lang=${lang}`);
+      await page.goto(`${server.url}${lang}/?url=${encodeURIComponent(museumUrl)}&mode=visual&theme=dark&present=museum-walk`);
       await page.waitForFunction(() => document.documentElement.classList.contains('is-museum-walk'), null, { timeout: 25000 });
       await page.waitForTimeout(1200);
       // 「一日の光をたどる」の章に入った直後のアングル: 左の壁に小見出し「六つの窓」と本文、その先に窓の作品、

@@ -4,6 +4,7 @@ import { escapeHtml } from './utils/escape';
 import { hexToRgba } from './utils/color';
 import { downloadBlob } from './utils/download';
 import { showToast } from './ui/toast';
+import { assetUrl } from './ui/asset-url';
 import { initI18n, applyStaticI18n, onLangChange, t, getSampleBaseFileName } from './i18n';
 import { applyUpdateCheckState, setupUpdateCheck } from './ui/update-check';
 import { registerEscapeHandler, registerShortcutAction, renderShortcutModalList, setupGlobalKeymap } from './ui/keymap';
@@ -290,7 +291,7 @@ function setupEventListeners() {
   btnTheme.onclick = () => {
     state.appearance = state.appearance === 'light' ? 'dark' : 'light';
     document.body.setAttribute('data-appearance', state.appearance);
-    if (appFavicon) appFavicon.setAttribute('href', `./assets/logos/${state.appearance}/favicon.svg`);
+    if (appFavicon) appFavicon.setAttribute('href', assetUrl(`assets/logos/${state.appearance}/favicon.svg`));
     iconSun.classList.toggle('hidden', state.appearance === 'dark');
     iconMoon.classList.toggle('hidden', state.appearance !== 'dark');
     syncToneUi();
@@ -319,8 +320,9 @@ function setupEventListeners() {
 
   const exportHtmlBtn = document.getElementById('btn-export-html');
   if (exportHtmlBtn) exportHtmlBtn.onclick = () => {
+    // 言語別のページ（/ja/・/en/）では参照が ../ から始まるため、このページから見たパスで引く（ARC-PUB-009）
     const fullHtml = Object.entries(EXPORT_URLS).reduce(
-      (html, [local, url]) => html.split(local).join(url),
+      (html, [local, url]) => html.split(assetUrl(local)).join(url),
       document.documentElement.outerHTML
     );
     downloadBlob(fullHtml, 'lucivo-architecture-export.html', 'text/html');
