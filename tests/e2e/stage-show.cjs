@@ -844,6 +844,8 @@ async function testStageOverviewPointer(browser) {
   const style1 = await page.evaluate(() => ({ isVis: state.isVisualMode, style: state.infographicStyle }));
 
   // 4. J / K キーで #preview-scroll が確実に次章・前章へスクロールすること
+  // スタイルの切り替えで描き直したページ割り（DD-VTPL-156）が終わってから確かめる（終わる前は章の位置が動く）
+  await page.waitForFunction(() => !document.documentElement.dataset.pageFit, null, { timeout: 30000 });
   await page.evaluate(() => { document.getElementById('preview-scroll').scrollTop = 0; lastNavTargetTop = null; });
   await page.waitForTimeout(100);
   const scrollBefore = await page.evaluate(() => document.getElementById('preview-scroll').scrollTop);
