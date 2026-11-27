@@ -286,12 +286,14 @@ async function testPageRatio(browser) {
         return Math.abs((r.left - sr.left) - (sr.right - r.right - (scroller.offsetWidth - scroller.clientWidth))) > 3;
       }).length,
       badRatio: pages.filter(p => { const r = p.getBoundingClientRect(); return Math.abs(r.width / r.height - 1.6) > 0.016; }).length,
-      over: pages.filter(p => {
+      // あふれるページは、位置・題・印・あふれる量を記録する（環境の書体の違いで起きたときに追えるように）
+      overPages: pages.map((p, i) => {
         const r = p.getBoundingClientRect();
         const kids = Array.from(p.children).filter(c => c.tagName !== 'H2' && !c.matches('.front-matter, .slab-actions, .page-continued, .vs-cover-texture'));
         const last = kids[kids.length - 1];
-        return last && last.getBoundingClientRect().bottom > r.bottom - (p.dataset.fitStep && p.dataset.fitStep !== '0' ? 22 : 32) + 1;
-      }).length
+        const over = last ? Math.round(last.getBoundingClientRect().bottom - (r.bottom - (p.dataset.fitStep && p.dataset.fitStep !== '0' ? 22 : 32))) : 0;
+        return { i, over, title: (p.querySelector(':scope > h2 > span:last-of-type')?.textContent || '').trim().slice(0, 20), pill: p.querySelector('.page-no-pill')?.textContent || '', zoom: p.style.getPropertyValue('--page-zoom') };
+      }).filter(x => x.over > 1)
     };
   };
   const phone = await openStagePage(browser, { viewport: { width: 915, height: 412 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
@@ -303,9 +305,9 @@ async function testPageRatio(browser) {
   await phone.screenshot({ path: path.join(SHOT_DIR, 'page-ratio-phone-landscape.png') });
   await phone.context().close();
   const wideFit = await page.evaluate(inspectFit);
-  const sizeOk = phoneFit.attr === '16:10' && phoneFit.pages > 0 && phoneFit.tooTall === 0 && phoneFit.offCenter === 0 && phoneFit.badRatio === 0 && phoneFit.over === 0
+  const sizeOk = phoneFit.attr === '16:10' && phoneFit.pages > 0 && phoneFit.tooTall === 0 && phoneFit.offCenter === 0 && phoneFit.badRatio === 0 && phoneFit.overPages.length === 0
     && phoneFit.width <= (phoneFit.viewH - 32) * 1.6 + 2
-    && wideFit.tooTall === 0 && wideFit.width === 992;
+    && wideFit.tooTall === 0 && wideFit.overPages.length === 0 && wideFit.width === 992;
   record('TC-VTPL-049', sizeOk, JSON.stringify({ phoneFit, wideFit }));
 
   // TC-VTPL-048 版面のゲラ（目視）
