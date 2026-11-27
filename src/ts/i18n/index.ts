@@ -176,7 +176,8 @@ export function applyStaticI18n(root: ParentNode = document): void {
     ['menu-sample-notation-extra', 'sample.notationExtraWithFile', 'notation_sample_extra1.md'],
     ['menu-sample-museum-walk', 'sample.museumWalkWithFile', 'museum-walk-sample.md'],
     ['menu-sample-color-museum', 'sample.colorMuseumWithFile', 'color-museum-sample.md'],
-    ['menu-sample-print', 'sample.printWithFile', 'print-sample.md']
+    ['menu-sample-print', 'sample.printWithFile', 'print-sample.md'],
+    ['menu-sample-structurizr', 'sample.structurizrWithFile', 'sample-Structurizr.md']
   ];
   for (const [id, key, baseFile] of sampleMap) {
     const btn = document.getElementById(id);

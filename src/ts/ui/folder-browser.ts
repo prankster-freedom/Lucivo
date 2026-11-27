@@ -53,12 +53,14 @@ export const BUNDLED_SAMPLES = [
   'museum-walk-sample.md',
   'color-museum-sample.md',
   'print-sample.md',
+  'sample-Structurizr.md',
   'visual-sample.en.md',
   'notation_sample.en.md',
   'notation_sample_extra1.en.md',
   'museum-walk-sample.en.md',
   'color-museum-sample.en.md',
-  'print-sample.en.md'
+  'print-sample.en.md',
+  'sample-Structurizr.en.md'
 ];
 // フォルダの画像のパス → blob URL（読み込み中は Promise）（DD-FILE-076）
 export const folderImageUrls = new Map();

@@ -44,6 +44,8 @@ export const en: I18nDict = {
   'sample.printWithFile': 'Print / PDF Check Sample ({file})',
   'sample.colorMuseum': 'Color Museum',
   'sample.colorMuseumWithFile': 'Color Museum ({file})',
+  'sample.structurizr': 'Structurizr (C4 Model) Sample',
+  'sample.structurizrWithFile': 'Structurizr (C4 Model) Sample ({file})',
   'empty.sampleVisualDesc': 'Visual Mode · Light',
   'empty.sampleNotationDesc': 'Split view · Light · Math',
   'empty.sampleColorMuseumDesc': 'Museum Walk · Dark',

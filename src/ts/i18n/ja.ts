@@ -42,6 +42,8 @@ export const ja = {
   'sample.printWithFile': '印刷・PDF の確認サンプル ({file})',
   'sample.colorMuseum': '配色ミュージアム',
   'sample.colorMuseumWithFile': '配色ミュージアム ({file})',
+  'sample.structurizr': 'Structurizr（C4 モデル）サンプル',
+  'sample.structurizrWithFile': 'Structurizr（C4 モデル）サンプル ({file})',
   'empty.sampleVisualDesc': 'Visualモード・Light',
   'empty.sampleNotationDesc': 'Split 表示・Light・数式',
   'empty.sampleColorMuseumDesc': 'ミュージアム・ウォーク・Dark',

@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SAMPLES_DIR = path.resolve(__dirname, '..', 'public', 'samples');
-const BASE_FILES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md', 'museum-walk-sample.md', 'print-sample.md'];
+const BASE_FILES = ['visual-sample.md', 'notation_sample.md', 'notation_sample_extra1.md', 'museum-walk-sample.md', 'print-sample.md', 'sample-Structurizr.md'];
 const FILES = BASE_FILES.flatMap(name => {
   const enName = name.replace(/\.md$/i, '.en.md');
   return fs.existsSync(path.join(SAMPLES_DIR, enName)) ? [name, enName] : [name];
