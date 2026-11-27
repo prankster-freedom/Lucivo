@@ -597,6 +597,10 @@ function fitGroup(first: HTMLElement) {
     pages[0].querySelectorAll(':scope > h2 > .page-no-pill').forEach(n => n.remove());
   }
   finalizeGroup(pages);
+  // 印の文字（1 / 1 → 10 / 11 など）が広がると、題の折り返しが増えて本文を押し下げることがある。最後に測り直して収める
+  pages.forEach(page => {
+    if (overflowOf(page) > TOLERANCE) shrinkToFit(page);
+  });
   // 分けた章のページは上から詰めて置く（中央に置くと、ページの末尾で切れた本文の上に空きができる）
   if (pages.length === 1) centerPage(pages[0]);
 }
