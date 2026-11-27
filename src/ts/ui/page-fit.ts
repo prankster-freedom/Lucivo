@@ -348,6 +348,9 @@ function splitIn(items: HTMLElement[], limit: number, target: HTMLElement, bodyH
   let start = idx;
   if (isFigure(el) && limit - rect.top >= FIGURE_MIN_RATIO * bodyH) start = idx + 1;
   else if (start > 0 && SUBHEADING_TAGS.has(items[start - 1].tagName)) start--;
+  // 先頭の要素が、それだけで 1 ページより大きく分けられないときは、その要素だけをこのページに残し（版面に縮めて収める）、
+  // 後ろの要素を次のページへ送る（後ろまで抱えたまま縮めると、ページの全体が読めない大きさになる）
+  if (start <= 0) start = idx === 0 && items.length > 1 ? 1 : 0;
   if (start <= 0 || start >= items.length) return false;
   moveFrom(items, start, target);
   return true;
@@ -390,17 +393,22 @@ function splitPage(page: HTMLElement): HTMLElement | null {
 }
 
 // 分けられない要素が 1 ページより大きいときは、その本文を内容の箱に収まるまで縮める（DTP-VTPL-150）
+// zoom を変えると折り返しが変わり、高さは倍率に比例しないため、収まるまで測り直して縮める（最大 4 回）
 function shrinkToFit(page: HTMLElement) {
   const kids = bodyChildren(page);
   if (!kids.length) return;
-  const top = kids[0].getBoundingClientRect().top;
-  const bottom = kids[kids.length - 1].getBoundingClientRect().bottom;
-  const avail = contentLimit(page) - top;
-  const used = bottom - top;
-  if (used <= 0 || avail <= 0 || used <= avail) return;
-  const extra = Math.max(0.2, (avail / used) * 0.98);
-  page.style.setProperty('--page-zoom-extra', extra.toFixed(4));
-  page.style.setProperty('--page-zoom', (STEP_ZOOM[stepOf(page)] * extra).toFixed(4));
+  let extra = 1;
+  for (let round = 0; round < 4; round++) {
+    const top = kids[0].getBoundingClientRect().top;
+    const bottom = kids[kids.length - 1].getBoundingClientRect().bottom;
+    const avail = contentLimit(page) - top;
+    const used = bottom - top;
+    if (used <= 0 || avail <= 0 || used <= avail + TOLERANCE) return;
+    extra = Math.max(0.1, extra * (avail / used) * 0.97);
+    page.style.setProperty('--page-zoom-extra', extra.toFixed(4));
+    page.style.setProperty('--page-zoom', (STEP_ZOOM[stepOf(page)] * extra).toFixed(4));
+    if (extra <= 0.1) return;
+  }
 }
 
 /* ==========================================================================
@@ -616,6 +624,42 @@ function updatePageSize(wrap: HTMLElement) {
   host.style.setProperty('--page-print-zoom', zoom.toFixed(4));
 }
 
+/* ==========================================================================
+   ページの大きさの上限（#455, DD-VTPL-151）
+   ========================================================================== */
+// 表示枠の上下に残す余白（px）と、ページの幅の下限（px）
+const PAGE_VIEW_MARGIN = 16;
+const PAGE_MIN_WIDTH = 240;
+let scrollerObserver: ResizeObserver | null = null;
+let observedScroller: Element | null = null;
+
+function ratioValue(): number {
+  const [w, h] = (document.documentElement.dataset.pageRatio || '16:10').split(':').map(Number);
+  return w && h ? w / h : 1.6;
+}
+
+// 1 ページの全体（上下）が表示枠に収まるよう、ページの幅の上限を表示枠の高さから決め、--page-max-width に書く。
+// 表示枠の高さは CSS から参照できないため、ここで測る。発表と印刷の間は、画面で決めたページの幅を保つため書き換えない
+function updatePageMaxWidth() {
+  if (document.documentElement.classList.contains('is-stage-show') || isPrinting()) return;
+  const scroller = document.getElementById('preview-scroll');
+  const host = document.getElementById('visual-stage-container');
+  if (!scroller || !host) return;
+  const h = scroller.clientHeight;
+  if (!h) return;
+  const max = `${Math.max(PAGE_MIN_WIDTH, Math.floor((h - PAGE_VIEW_MARGIN * 2) * ratioValue()))}px`;
+  if (host.style.getPropertyValue('--page-max-width') !== max) host.style.setProperty('--page-max-width', max);
+}
+
+function observeScroller() {
+  const scroller = document.getElementById('preview-scroll');
+  if (!scroller || scroller === observedScroller || typeof ResizeObserver !== 'function') return;
+  if (!scrollerObserver) scrollerObserver = new ResizeObserver(() => updatePageMaxWidth());
+  if (observedScroller) scrollerObserver.unobserve(observedScroller);
+  observedScroller = scroller;
+  scrollerObserver.observe(scroller);
+}
+
 let printQuery: MediaQueryList | null = null;
 function isPrinting(): boolean {
   if (!printQuery && typeof matchMedia === 'function') printQuery = matchMedia('print');
@@ -665,7 +709,11 @@ function processQueue(budget: number) {
   } finally {
     if (measuringHidden) wrap.classList.remove('is-page-measuring');
   }
-  if (wrap) updatePageSize(wrap);
+  if (wrap) {
+    updatePageSize(wrap);
+    // 今の幅で決めたので、同じ幅の変化の知らせ（ResizeObserver）では決め直さない
+    if (!measuringHidden && !isPrinting()) lastWrapWidth = wrap.clientWidth;
+  }
 }
 
 function fitItems(budget: number) {
@@ -702,6 +750,9 @@ function scheduleFrame() {
 export function requestPageFit(scope: 'all' | Element | Element[] | null) {
   installPageFit();
   if (syncPageRatio() && scope !== null) scope = 'all';
+  // ページの幅の上限を先に決める（変われば .exhibition-wrap の幅が変わり、幅の変化として決め直す）
+  observeScroller();
+  updatePageMaxWidth();
   const wrap = getWrap();
   observeWrap(wrap);
   if (!wrap) return;

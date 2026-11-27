@@ -7,6 +7,15 @@ html[data-page-ratio="16:10"] {
   --page-aspect-ratio: 16 / 10;
 }
 
+/* ページの大きさ（#455, DD-VTPL-151）: 1 ページの全体が表示枠に収まるよう、ページの幅（.exhibition-wrap の幅）の上限を、
+   表示枠の高さから決める（--page-max-width は page-fit.ts が測る）。縦の短い画面では、余る幅が左右の余白になる。
+   ステージ発表と印刷は、画面で決めたページの幅（--page-width）を使うため、画面の表示だけに効かせる */
+@media screen {
+  html[data-page-ratio]:not(.is-stage-show) .exhibition-wrap:not(.is-single-page) {
+    max-width: min(var(--visual-page-width, 62rem), var(--page-max-width, 100%));
+  }
+}
+
 /* ページの箱（DD-VTPL-151）: 中身の量で高さを変えない。余白は画面の幅（vw）によらない固定の値にし、発表と印刷で同じ組みにする */
 html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-hero, .exhibition-slab) {
   --page-pad-y: 32px;
