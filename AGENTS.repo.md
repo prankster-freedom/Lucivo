@@ -65,7 +65,7 @@ dtp スキルの本番素材の置き場所 `<プロジェクト>/assets/` は�
 本定型依頼では、ユーザーから特別な停止指示がない限り、途中工程の【承認】を省略して次の工程を最後まで一気通貫で実行し、Pull Request の発行まで完了させてから結果をまとめて報告する（マージはユーザーの指示があるときに行う）。
 
 1. **`dtp`（Phase 1: デザイン設計）**: 定型依頼事項および今回の特記事項を踏まえ、ラフ案（`doc/0.DTP/roughs/`）や素材（本番 `public/assets/` および `doc/0.DTP/assets/`）を検討・整理し、デザイン仕様書（`doc/0.DTP/`）を更新する。
-2. **`swe1` → `swe2` → `swe3`**: 要求仕様書（`doc/1.SRS.md`, `doc/1.SRS/features/`）、アーキテクチャ設計書（`doc/2.ARCHITECTURE.md`）、詳細設計ノート（`doc/3.sw_design_notes/`）、実装ドキュメント（`doc/3.implementation/`）、ソースコード（`public/index.html`, `src/css/`, `src/ts/`, `src/js/` 等）および同梱サンプル（`public/samples/`）を更新する。
+2. **`swe1` → `swe2` → `swe3`**: 要求仕様書（`doc/1.SRS.md`, `doc/1.SRS/features/`）、アーキテクチャ設計書（`doc/2.ARCHITECTURE.md`）、詳細設計ノート（`doc/3.sw_design_notes/`）、実装ドキュメント（`doc/3.implementation/`）、ソースコード（`src/index.html`, `src/css/`, `src/ts/`, `src/js/` 等）および同梱サンプル（`public/samples/`）を更新する。
 3. **`test`（E2E 自動検証）**: テスト仕様書（`doc/4.test_spec/`）と Playwright テスト（`tests/e2e.cjs`）を更新・実行し、全テストケースの合格とスクリーンショット（ゲラ）出力を確認する。特にビューモード切替（Split / Canvas）、図表倍率切替（Fit / 1:1）、多列テーブルの枠内収容など、表示崩れや動作逆転が起きやすい境界値の検証を含める。
 4. **`dtp`（Phase 2: 校正・デザインチェック）**: 出力されたゲラを用いてデザイン仕様および校正チェックリストに照らして検査し、枠はみ出しや文字潰れ、倍率異常がないか目視確認したうえで校正結果（`work/dtp_review/`）を記録して校了とする。
 5. **`commit` → PR 発行**: feature ブランチを作成し、Conventional Commits に従ってコミットを分割・push し、`gh pr create` で Pull Request を発行する。
@@ -149,3 +149,11 @@ Dependabot security updates はオフにする。自動の PR は `package.json`
 - ユーザーから「PR 作成まで」と明示的に限定されていない限り、**PR を作成しただけで作業完了とみなさず、CI の通過・自動マージ（または `/self-approve` によるマージ後の `Release` 実行）・`Deploy` 完了・ローカル `main` の同期までを見届ける**。
 - PR 作成後や push 後に待機が必要な場合は、「CI 通過後に自動マージされます」といった報告だけでターンを終了せず、**必ず `schedule` 等のタイマー（Markdown のみの場合は 1 分、E2E を含む場合は 6〜10 分程度）を起動してからターンを終了する**。
 - タイマー起床時に別の PR が先にマージされて `BEHIND` になっていた場合は、`gh pr update-branch <PR番号> --rebase` 等で最新の `main` へ追従させ、再度タイマーを起動してマージ・デプロイ完了まで追跡する。
+
+## 12. 言語別ページの文言（日本語版を正とする）
+
+Web 版の言語別ページ（`/ja/`・`/en/`。#443）の `<title>`・`<meta name="description">`・OGP の文言は、日本語版を正とする。
+
+- 日本語版の文言を更新するときは、同じ作業の中で、英語版を、日本語版に合わせて適切に英訳して更新する。日本語版だけを更新して終わらせない。
+- 英語版の説明文は、検索結果に出る長さ（155 字前後）に収め、日本語版は 120 字前後を目安にする。
+- 背景: 検索結果に出るタイトルと説明文の言語を、ページの言語と揃えるため。片方だけ更新すると、言語によって内容が食い違う。
