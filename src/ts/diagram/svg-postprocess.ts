@@ -219,12 +219,16 @@ export function ensureSlabVisibilityTracking(root: Element | null): void {
   }, true);
 }
 
-export function updateAllSlabSplits(container) {
+// includeSkipped: 画面外に省略中の章も、後回しにせずその場で決める。版面の比率のページ（html[data-page-ratio]）では、いつもそうする。
+// page-fit.ts が画面外の章も測ってページを割るため、後回しにしても軽くならず、画面に入ったときに判定が変わると、
+// スクロールの途中でページ割りが変わって章の位置が動く（DD-VTPL-156）
+export function updateAllSlabSplits(container, includeSkipped = false) {
   if (!container) return;
+  if (document.documentElement.dataset.pageRatio) includeSkipped = true;
   ensureSlabVisibilityTracking(container);
   const targets: { slab: Element; vp: Element; svg: SVGElement; actualSize: boolean; needStack: boolean }[] = [];
   container.querySelectorAll('.exhibition-slab-split').forEach(slab => {
-    if (skippedSlabs.has(slab)) {
+    if (!includeSkipped && skippedSlabs.has(slab)) {
       dirtySplitSlabs.add(slab);
       return;
     }
@@ -260,12 +264,12 @@ export function updateAllSlabSplits(container) {
     }
   }
   updateTwoColWideTables(container, slab => {
-    if (!skippedSlabs.has(slab)) return false;
+    if (includeSkipped || !skippedSlabs.has(slab)) return false;
     dirtyTableSlabs.add(slab);
     return true;
   });
   fitTwoColMath(container, slab => {
-    if (!skippedSlabs.has(slab)) return false;
+    if (includeSkipped || !skippedSlabs.has(slab)) return false;
     dirtyMathSlabs.add(slab);
     return true;
   });

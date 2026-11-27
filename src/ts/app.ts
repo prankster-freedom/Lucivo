@@ -93,6 +93,10 @@ import {
   syncStyleUi,
   setStyleMenuOpen,
   selectVisualLayout,
+  buildRatioMenuItems,
+  setRatioMenuOpen,
+  selectPageRatio,
+  syncRatioUi,
   setStageMode,
   selectInfographicStyle,
   setupViewModeControls,
@@ -283,6 +287,37 @@ function setupEventListeners() {
     });
   }
   syncLayoutUi();
+
+  // ページの比率（FR-070, DD-VTPL-161）
+  const ratioBtn = document.getElementById('btn-ratio-menu');
+  const ratioMenu = document.getElementById('ratio-menu');
+  if (ratioBtn && ratioMenu) {
+    ratioMenu.innerHTML = buildRatioMenuItems();
+    ratioMenu.querySelectorAll('.tone-menu-item').forEach((item: any) => {
+      item.onclick = () => selectPageRatio(item.getAttribute('data-ratio-id'));
+    });
+    ratioBtn.onclick = e => {
+      e.stopPropagation();
+      setRatioMenuOpen(ratioMenu.classList.contains('hidden'));
+    };
+    document.addEventListener('click', e => {
+      if (!ratioMenu.classList.contains('hidden') && !ratioMenu.contains(e.target as Node) && !ratioBtn.contains(e.target as Node)) {
+        setRatioMenuOpen(false);
+      }
+    });
+    registerEscapeHandler('ratio-menu', 88, () => {
+      if (ratioMenu.classList.contains('hidden')) return false;
+      setRatioMenuOpen(false);
+      ratioBtn.focus();
+      return true;
+    });
+    // 自動のときは、画面の向きが変わると比率が変わるため、アイコンと文言を合わせる
+    if (typeof matchMedia === 'function') {
+      const portrait = matchMedia('(orientation: portrait)');
+      if (portrait.addEventListener) portrait.addEventListener('change', () => syncRatioUi());
+    }
+  }
+  syncRatioUi();
 
   const btnTheme = document.getElementById('btn-theme-toggle');
   const iconSun = document.getElementById('icon-sun');

@@ -2,7 +2,7 @@
 // パラメータが指定されていない通常起動では外部通信を行わない（NFR-008）
 
 const FETCH_TIMEOUT_MS = 10000;
-const MANAGED_PARAM_KEYS = ['url', 'mode', 'theme', 'style', 'tone', 'view', 'layout', 'lang', 'present'];
+const MANAGED_PARAM_KEYS = ['url', 'mode', 'theme', 'style', 'tone', 'view', 'layout', 'ratio', 'lang', 'present'];
 
 export interface DisplayStateSnapshot {
   isVisualMode: boolean;
@@ -11,6 +11,8 @@ export interface DisplayStateSnapshot {
   tone: string;
   viewMode: string;
   visualLayout?: string;
+  /** 版面の比率の選択（FR-070。auto は省略） */
+  pageRatio?: string;
   lang?: 'ja' | 'en';
   /** ページの言語のディレクトリ（Web 版の言語別のページ /ja/・/en/。スタンドアロン版は null。ARC-PUB-009） */
   pageLang?: 'ja' | 'en' | null;
@@ -23,6 +25,7 @@ export interface DisplayStateParams {
   tone?: string;
   viewMode?: 'split' | 'canvas' | 'editor';
   visualLayout?: 'page' | 'single';
+  pageRatio?: 'auto' | '16:10' | '10:16';
   lang?: 'ja' | 'en';
   present?: string;
 }
@@ -93,6 +96,10 @@ export function parseDisplayStateParams(
     result.visualLayout = layout;
     if (layout === 'single' && result.isVisualMode === undefined) result.isVisualMode = true;
   }
+
+  // 版面の比率（FR-070）。省略と auto は自動（画面の向きで決める）
+  const ratio = getMergedParam(searchParams, hashParams, 'ratio')?.toLowerCase();
+  if (ratio === '16:10' || ratio === '10:16' || ratio === 'auto') result.pageRatio = ratio;
 
   const lang = getMergedParam(searchParams, hashParams, 'lang')?.toLowerCase();
   if (lang === 'ja' || lang === 'en') {
@@ -407,6 +414,12 @@ export function buildAppUrlWithState(
     next.searchParams.delete('layout');
   }
 
+  if (displayState.pageRatio === '16:10' || displayState.pageRatio === '10:16') {
+    next.searchParams.set('ratio', displayState.pageRatio);
+  } else {
+    next.searchParams.delete('ratio');
+  }
+
   if (displayState.pageLang && (displayState.lang === 'ja' || displayState.lang === 'en')) {
     // 言語別のページでは、言語をパスの言語のディレクトリで表し、lang を付けない（FR-065, ARC-PUB-009）。
     // /ja/ と /en/ は同じ深さのため、パスを書き換えても相対パスの参照は変わらない
@@ -428,7 +441,8 @@ export function buildAppUrlWithState(
     }
   }
 
-  return next.toString();
+  // ratio のコロンは、クエリにそのまま書ける。共有するときに読みやすいよう、エスケープ（%3A）を戻す
+  return next.toString().replace(/([?&]ratio=)(\d+)%3A(\d+)/i, '$1$2:$3');
 }
 
 /**

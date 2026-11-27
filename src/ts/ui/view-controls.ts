@@ -8,7 +8,7 @@ import { ensureStyleFont } from './style-fonts';
 import { assetUrl } from './asset-url';
 import { setupMermaid } from '../diagram/mermaid-config';
 import { updateAllSlabSplits } from '../diagram/svg-postprocess';
-import { requestPageFit } from './page-fit';
+import { requestPageFit, resolvedPageRatio } from './page-fit';
 import {
   VISUAL_STYLE_KEYS,
   COLOR_TONES,
@@ -104,6 +104,7 @@ export function setToneMenuOpen(open: boolean) {
   if (open) {
     setStyleMenuOpen(false);
     setLayoutMenuOpen(false);
+    setRatioMenuOpen(false);
     const rect = btn.getBoundingClientRect();
     const top = Math.round(rect.bottom + 6);
     menu.style.top = `${top}px`;
@@ -150,6 +151,80 @@ export function syncLayoutUi() {
     const lbl = btn.querySelector('.tone-menu-label');
     if (lbl) lbl.textContent = getLayoutLabel(layoutId);
   });
+  syncRatioUi();
+}
+
+// ページの比率（FR-070, DTP-VTPL-150, DD-VTPL-161）: 小さな横長・縦長の版面のアイコン。自動は 2 つを重ねる
+export const PAGE_RATIO_IDS = ['auto', '16:10', '10:16'] as const;
+type PageRatioId = typeof PAGE_RATIO_IDS[number];
+const RATIO_ICONS: Record<PageRatioId, string> = {
+  auto: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="5.2" width="9.6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="8.6" y="2.2" width="5.9" height="9.4" rx="1" stroke="currentColor" stroke-width="1.3" fill="currentColor" fill-opacity="0.16"/><path d="M3.2 14h9.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="1.2 1.8"/></svg>',
+  '16:10': '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.6" y="3.5" width="12.8" height="8" rx="1.2" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity="0.14"/></svg>',
+  '10:16': '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="4" y="1.6" width="8" height="12.8" rx="1.2" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity="0.14"/></svg>'
+};
+
+export function getRatioLabel(id: string): string {
+  if (id === '16:10' || id === '10:16') return t(`ratio.${id}`);
+  return t('ratio.auto');
+}
+
+// 比率の切り替え: ページ単位のときだけ出す。自動のときは、今の実際の比率をアイコンと読み上げで示す
+export function syncRatioUi() {
+  const btn = document.getElementById('btn-ratio-menu');
+  if (!btn) return;
+  btn.classList.toggle('hidden', state.visualLayout === 'single');
+  const choice = (PAGE_RATIO_IDS as readonly string[]).includes(state.pageRatio) ? state.pageRatio as PageRatioId : 'auto';
+  const now = resolvedPageRatio();
+  const label = choice === 'auto' ? t('ratio.autoNow', { label: getRatioLabel(now) }) : getRatioLabel(choice);
+  const nameEl = document.getElementById('active-ratio-name');
+  if (nameEl) nameEl.textContent = choice === 'auto' ? getRatioLabel('auto') : getRatioLabel(choice);
+  const iconEl = document.getElementById('active-ratio-icon');
+  if (iconEl) iconEl.innerHTML = RATIO_ICONS[now];
+  btn.setAttribute('aria-label', `${t('styleBar.ratioTitle')}: ${label}`);
+  btn.dataset.ratio = choice;
+  document.querySelectorAll('#ratio-menu .tone-menu-item').forEach(item => {
+    const id = item.getAttribute('data-ratio-id') || 'auto';
+    const active = id === choice;
+    item.classList.toggle('is-active', active);
+    item.setAttribute('aria-checked', active ? 'true' : 'false');
+    const lbl = item.querySelector('.tone-menu-label');
+    if (lbl) lbl.textContent = id === 'auto' ? t('ratio.autoNow', { label: getRatioLabel(now) }) : getRatioLabel(id);
+  });
+}
+
+export function buildRatioMenuItems(): string {
+  return PAGE_RATIO_IDS.map(id =>
+    `<button type="button" role="menuitemradio" aria-checked="false" data-ratio-id="${id}" class="tone-menu-item">`
+    + `${RATIO_ICONS[id]}<span class="tone-menu-label">${getRatioLabel(id)}</span>`
+    + `</button>`
+  ).join('');
+}
+
+export function setRatioMenuOpen(open: boolean) {
+  const btn = document.getElementById('btn-ratio-menu');
+  const menu = document.getElementById('ratio-menu');
+  if (!btn || !menu) return;
+  if (open) {
+    setStyleMenuOpen(false);
+    setToneMenuOpen(false);
+    setLayoutMenuOpen(false);
+    syncRatioUi();
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = `${Math.round(rect.bottom + 6)}px`;
+    menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
+  }
+  menu.classList.toggle('hidden', !open);
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+export function selectPageRatio(id: string) {
+  const next = (PAGE_RATIO_IDS as readonly string[]).includes(id) ? id as PageRatioId : 'auto';
+  state.pageRatio = next;
+  setRatioMenuOpen(false);
+  syncRatioUi();
+  requestPageFit('all');
+  syncUrlFromState();
+  showToast(t('toast.ratioApplied', { label: next === 'auto' ? t('ratio.autoNow', { label: getRatioLabel(resolvedPageRatio()) }) : getRatioLabel(next) }));
 }
 
 export function setLayoutMenuOpen(open: boolean) {
@@ -159,6 +234,7 @@ export function setLayoutMenuOpen(open: boolean) {
   if (open) {
     setStyleMenuOpen(false);
     setToneMenuOpen(false);
+    setRatioMenuOpen(false);
     const rect = btn.getBoundingClientRect();
     menu.style.top = `${Math.round(rect.bottom + 6)}px`;
     menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
@@ -197,6 +273,7 @@ export function setStyleMenuOpen(open: boolean) {
   if (open) {
     setToneMenuOpen(false);
     setLayoutMenuOpen(false);
+    setRatioMenuOpen(false);
     const rect = btn.getBoundingClientRect();
     menu.style.top = `${Math.round(rect.bottom + 6)}px`;
     menu.style.left = `${Math.max(8, Math.round(Math.min(rect.left, window.innerWidth - 236)))}px`;
@@ -409,6 +486,10 @@ export function applyInitialDisplayStateFromUrl() {
   if (params.visualLayout) {
     state.visualLayout = params.visualLayout;
     syncLayoutUi();
+  }
+  if (params.pageRatio) {
+    state.pageRatio = params.pageRatio;
+    syncRatioUi();
   }
   if (params.appearance || params.infographicStyle || params.tone) {
     syncToneUi();

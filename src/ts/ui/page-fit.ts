@@ -6,10 +6,17 @@
 // 計算後のスタイル（getComputedStyle）は読まない（TC-VTPL-010）。余白は CSS（visual-page.css）と同じ定数で持つ。
 import { state } from './state';
 import { t } from '../i18n';
+import { updateAllSlabSplits } from '../diagram/svg-postprocess';
 
-// 段階ごとの本文の zoom と、章の下の余白（px。visual-page.css の --page-pad と同じ値）
+// 段階ごとの本文の zoom と、章の下の余白（px。visual-page.css の --page-pad-y と同じ値。縦 10:16 は余白を詰める）
 const STEP_ZOOM = [1, 1, 0.92, 0.84, 0.75];
-const STEP_PAD_BOTTOM = [32, 22, 22, 22, 22];
+const STEP_PAD_BOTTOM: Record<string, number[]> = {
+  '16:10': [32, 22, 22, 22, 22],
+  '10:16': [24, 18, 18, 18, 18]
+};
+function padBottom(step: number): number {
+  return (STEP_PAD_BOTTOM[document.documentElement.dataset.pageRatio || '16:10'] || STEP_PAD_BOTTOM['16:10'])[step];
+}
 const STEP_MAX = STEP_ZOOM.length - 1;
 // 段階ごとの本文の高さの目安（段階 0 に対する比。余白・行間を詰める分と zoom を合わせた見積もり）
 const STEP_ESTIMATE = [1, 0.94, 0.87, 0.79, 0.71];
@@ -41,14 +48,18 @@ let portraitQuery: MediaQueryList | null = null;
 /* ==========================================================================
    比率（DD-VTPL-150）
    ========================================================================== */
-// 実際に使う比率。7b では横 16:10 だけを当て、縦長の画面（auto で 10:16 になる場合）は比率を当てない
+// 選んだ比率から決まる比率。自動（auto）なら画面の向き（縦長は 10:16、横長は 16:10）で決める（DD-VTPL-150）
+export function resolvedPageRatio(): '16:10' | '10:16' {
+  const choice = state.pageRatio || 'auto';
+  if (choice === '16:10' || choice === '10:16') return choice;
+  if (!portraitQuery && typeof matchMedia === 'function') portraitQuery = matchMedia('(orientation: portrait)');
+  return portraitQuery && portraitQuery.matches ? '10:16' : '16:10';
+}
+
+// 実際に当てる比率。Visualモードのページ単位のときだけ
 function effectiveRatio(): string | null {
   if (!state.isVisualMode || state.visualLayout !== 'page') return null;
-  const choice = state.pageRatio || 'auto';
-  if (choice === '16:10') return '16:10';
-  if (choice === '10:16') return null;
-  if (!portraitQuery && typeof matchMedia === 'function') portraitQuery = matchMedia('(orientation: portrait)');
-  return portraitQuery && portraitQuery.matches ? null : '16:10';
+  return resolvedPageRatio();
 }
 
 export function isPageBoxActive(): boolean {
@@ -57,14 +68,19 @@ export function isPageBoxActive(): boolean {
 
 // <html data-page-ratio> を、今の状態に合わせる。変わったら true
 export function syncPageRatio(): boolean {
+  // 印刷の間は、用紙の向き（A4 縦）で画面の向きの問い合わせが変わっても、画面で決めた比率を保つ（DD-VTPL-158）
+  if (isPrinting()) return false;
   const root = document.documentElement;
   const next = effectiveRatio();
   const prev = root.dataset.pageRatio || null;
   if (next === prev) return false;
   if (next) root.dataset.pageRatio = next;
   else delete root.dataset.pageRatio;
+  // 比率が変わるとページの幅が変わる。ウィンドウの大きさは変わらないため、2 段組み・ワイドテーブル・数式の判定を、次に決める前に決め直す
+  splitsDirty = true;
   return true;
 }
+let splitsDirty = false;
 
 /* ==========================================================================
    ページの要素
@@ -127,7 +143,7 @@ function applyStep(page: HTMLElement, step: number) {
 function contentLimit(page: HTMLElement): number {
   const rect = page.getBoundingClientRect();
   const k = pageScale(page);
-  return rect.top + (page.clientTop + page.clientHeight - STEP_PAD_BOTTOM[stepOf(page)]) * k;
+  return rect.top + (page.clientTop + page.clientHeight - padBottom(stepOf(page))) * k;
 }
 
 function overflowOf(page: HTMLElement): number {
@@ -284,6 +300,8 @@ function splitText(el: HTMLElement, limit: number, target: HTMLElement): boolean
   range.setStart(found.node, found.offset);
   range.setEnd(host, host.childNodes.length);
   const frag = range.extractContents();
+  // 切れ目を含んでいた要素（コードの色分けの span など）は、後ろ半分の複製になる。戻すときに元の要素へつなげ直すため印を付ける
+  for (let part = frag.firstChild; part && part.nodeType === 1; part = part.firstChild) (part as HTMLElement).dataset.pfPart = '1';
   ensureId(el);
   let clone: HTMLElement;
   if (el.tagName === 'PRE') {
@@ -414,15 +432,40 @@ function shrinkToFit(page: HTMLElement) {
 /* ==========================================================================
    戻す（DD-VTPL-155）
    ========================================================================== */
-function findOriginal(wrap: Element, id: string): HTMLElement | null {
+// 戻した複製の ID から、中身を戻した先の元の要素を引く（複製が、さらに次のページへ複製されているときに、その先の複製が元をたどれるように）
+type Aliases = Map<string, HTMLElement>;
+
+function findOriginal(wrap: Element, id: string, aliases: Aliases): HTMLElement | null {
+  const alias = aliases.get(id);
+  if (alias && alias.isConnected) return alias;
   return wrap.querySelector(`[data-pf-id="${id}"]`);
 }
 
-function mergeChildren(clone: HTMLElement, orig: HTMLElement, wrap: Element) {
-  Array.from(clone.childNodes).forEach(node => mergeNode(node, orig, wrap));
+function noteAlias(el: HTMLElement, orig: HTMLElement, aliases: Aliases) {
+  if (el.dataset.pfId) aliases.set(el.dataset.pfId, orig);
 }
 
-function mergeNode(node: ChildNode, parent: HTMLElement, wrap: Element) {
+// 文の続きを元の要素の末尾へ戻す。分けたときに後ろ半分の複製になった要素（data-pf-part）は、元の要素の最後の子へつなげ直し、
+// 分ける前と同じ DOM に戻す（要素が 2 つに分かれたままだと、次に決め直すときの切れ目が変わる）
+function appendJoiningParts(parent: Node, node: ChildNode) {
+  const el = node.nodeType === 1 ? node as HTMLElement : null;
+  if (el && el.dataset.pfPart) {
+    delete el.dataset.pfPart;
+    const last = parent.lastChild as HTMLElement | null;
+    if (last && last.nodeType === 1 && last.tagName === el.tagName && last.className === el.className) {
+      Array.from(el.childNodes).forEach(n => appendJoiningParts(last, n));
+      el.remove();
+      return;
+    }
+  }
+  parent.appendChild(node);
+}
+
+function mergeChildren(clone: HTMLElement, orig: HTMLElement, wrap: Element, aliases: Aliases) {
+  Array.from(clone.childNodes).forEach(node => mergeNode(node, orig, wrap, aliases));
+}
+
+function mergeNode(node: ChildNode, parent: HTMLElement, wrap: Element, aliases: Aliases) {
   if (node.nodeType !== 1) {
     parent.appendChild(node);
     return;
@@ -433,20 +476,22 @@ function mergeNode(node: ChildNode, parent: HTMLElement, wrap: Element) {
     return;
   }
   if (el.dataset.pfClone) {
-    const orig = findOriginal(wrap, el.dataset.pfClone);
+    const orig = findOriginal(wrap, el.dataset.pfClone, aliases);
     if (orig) {
-      mergeChildren(el, orig, wrap);
+      noteAlias(el, orig, aliases);
+      mergeChildren(el, orig, wrap, aliases);
       el.remove();
       return;
     }
   }
   if (el.dataset.pfSplit) {
-    const orig = findOriginal(wrap, el.dataset.pfSplit);
+    const orig = findOriginal(wrap, el.dataset.pfSplit, aliases);
     if (orig) {
+      noteAlias(el, orig, aliases);
       const fromHost = el.tagName === 'PRE' ? el.querySelector(':scope > code') : el;
       const toHost = orig.tagName === 'PRE' ? orig.querySelector(':scope > code') : orig;
       if (fromHost && toHost) {
-        Array.from(fromHost.childNodes).forEach(n => toHost.appendChild(n));
+        Array.from(fromHost.childNodes).forEach(n => appendJoiningParts(toHost, n));
         toHost.normalize();
       }
       el.remove();
@@ -470,17 +515,21 @@ function restoreGroup(first: HTMLElement) {
   const wrap = first.parentElement;
   const conts = continuationsOf(first);
   if (wrap && conts.length) {
-    const pages = [first, ...conts];
-    for (let i = pages.length - 1; i >= 1; i--) {
-      const prev = pages[i - 1];
-      Array.from(pages[i].children).forEach(child => {
+    // 前のページから順に、各要素を元の要素（なければ最初のページ）の末尾へ戻す。ページの並びは本文の並びと同じため、
+    // 前から末尾へ足していけば元の並びになる。複製は、前のページの要素だけでなく、さらに前のページの要素を指すこともある
+    // （同じページを続けて分けたとき）ため、後ろから 1 つ前のページへ戻す方法では並びが崩れる
+    const aliases: Aliases = new Map();
+    conts.forEach(cont => {
+      Array.from(cont.children).forEach(child => {
         const el = child as HTMLElement;
         if (!isBodyChild(el)) return;
-        mergeNode(el, prev, wrap);
+        mergeNode(el, first, wrap, aliases);
       });
-      if (window.LucivoStage && typeof window.LucivoStage.unmountLights === 'function') window.LucivoStage.unmountLights(pages[i]);
-      pages[i].remove();
-    }
+    });
+    conts.forEach(cont => {
+      if (window.LucivoStage && typeof window.LucivoStage.unmountLights === 'function') window.LucivoStage.unmountLights(cont);
+      cont.remove();
+    });
     first.querySelectorAll('[data-pf-id]').forEach(n => delete (n as HTMLElement).dataset.pfId);
     first.querySelectorAll('.is-pf-split-item').forEach(n => n.classList.remove('is-pf-split-item'));
   }
@@ -622,9 +671,11 @@ function updatePageSize(wrap: HTMLElement) {
   const host = (wrap.parentElement || wrap) as HTMLElement;
   host.style.setProperty('--page-width', `${sample.offsetWidth}px`);
   host.style.setProperty('--page-height', `${sample.offsetHeight}px`);
-  // 印刷: 版面 277 × 172mm に収める倍率（DD-VTPL-158）
+  // 印刷: 版面（16:10 は A4 横の 277 × 172mm、10:16 は A4 縦の 173 × 276mm）に収める倍率（DD-VTPL-158）。
+  // 高さは、端数で次の用紙にあふれないよう 1mm 引く
   const mm = 96 / 25.4;
-  const zoom = Math.min(277 * mm / sample.offsetWidth, 172 * mm / sample.offsetHeight) * 0.995;
+  const [areaW, areaH] = document.documentElement.dataset.pageRatio === '10:16' ? [173, 276] : [277, 172];
+  const zoom = Math.min(areaW * mm / sample.offsetWidth, areaH * mm / sample.offsetHeight) * 0.995;
   host.style.setProperty('--page-print-zoom', zoom.toFixed(4));
 }
 
@@ -702,8 +753,21 @@ function distanceToViewport(el: HTMLElement): number {
   return 0;
 }
 
+// 比率が変わった後の最初の決め直し: 分けたページを元に戻し、詰める前の組み（初めて描いたときと同じ）で、
+// 2 段組み・ワイドテーブル・数式の判定を決め直す（DD-VTPL-156）。分けたままや詰めたままで測ると、初めて開いたときと判定が食い違う
+function refreshSplitsIfNeeded(wrap: HTMLElement | null) {
+  if (!splitsDirty || !wrap) return;
+  splitsDirty = false;
+  if (!state.isVisualMode) return;
+  Array.from(wrap.children).forEach(el => {
+    if (isPage(el) && !el.classList.contains('is-continuation')) restoreGroup(el as HTMLElement);
+  });
+  updateAllSlabSplits(wrap.parentElement, true);
+}
+
 function processQueue(budget: number) {
   const wrap = getWrap();
+  refreshSplitsIfNeeded(wrap);
   if (wrap) updatePageSize(wrap);
   // ステージ発表の間は、今のシーン以外のページが隠れていて測れないため、測る間だけ見えない形で組む
   const measuringHidden = Boolean(wrap && document.documentElement.classList.contains('is-stage-show'));

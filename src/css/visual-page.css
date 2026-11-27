@@ -6,6 +6,9 @@
 html[data-page-ratio="16:10"] {
   --page-aspect-ratio: 16 / 10;
 }
+html[data-page-ratio="10:16"] {
+  --page-aspect-ratio: 10 / 16;
+}
 
 /* ページの大きさ（#455, DD-VTPL-151）: 1 ページの全体が表示枠に収まるよう、ページの幅（.exhibition-wrap の幅）の上限を、
    表示枠の高さから決める（--page-max-width は page-fit.ts が測る）。縦の短い画面では、余る幅が左右の余白になる。
@@ -54,6 +57,39 @@ html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-slab >
 }
 html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > .exhibition-slab[data-fit-step]:not([data-fit-step="0"]) > h2 {
   margin-bottom: calc(0.6rem + var(--page-center-pad, 0px));
+}
+/* 縦 10:16（DTP-VTPL-150, DD-VTPL-160）: 幅の狭いページで題が上を占めないよう、余白を詰め、題を一段小さくする。
+   札（STAGE nn）と印（2 / 3）を 1 行目の左右に置き、題を 2 行目に置く（目安は題 2 行まで）。
+   余白の値は page-fit.ts の STEP_PAD_BOTTOM['10:16'] と同じにする */
+html[data-page-ratio="10:16"] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-hero, .exhibition-slab) {
+  --page-pad-y: 24px;
+  --page-pad-x: 22px;
+}
+html[data-page-ratio="10:16"] .exhibition-wrap:not(.is-single-page) > [data-fit-step]:not([data-fit-step="0"]) {
+  --page-pad-y: 18px;
+  --page-pad-x: 18px;
+}
+html[data-page-ratio="10:16"] .exhibition-wrap:not(.is-single-page) > .exhibition-slab > h2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.5rem;
+  row-gap: 0.4rem;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  padding-bottom: 0.55rem;
+  margin-bottom: calc(0.75rem + var(--page-center-pad, 0px));
+}
+html[data-page-ratio="10:16"] .exhibition-wrap:not(.is-single-page) > .exhibition-slab > h2 > .exhibition-num-badge {
+  grid-column: 1;
+  justify-self: start;
+}
+html[data-page-ratio="10:16"] .exhibition-wrap:not(.is-single-page) > .exhibition-slab > h2 > :not(.exhibition-num-badge, .page-no-pill) {
+  grid-column: 1 / -1;
+}
+html[data-page-ratio="10:16"] .exhibition-wrap:not(.is-single-page) > .exhibition-slab > h2 > .page-no-pill {
+  grid-column: 2;
+  grid-row: 1;
 }
 /* 表紙・ステートメント型・リード型は、全体を上下中央に置く */
 html[data-page-ratio] .exhibition-wrap:not(.is-single-page) > :is(.exhibition-hero, .exhibition-slab.vs-tpl-statement, .exhibition-slab.vs-tpl-lead) {

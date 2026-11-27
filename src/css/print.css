@@ -25,6 +25,27 @@
     padding-top: 3mm;
   }
 }
+/* 縦 10:16 の版面（FR-070, ARC-PAGE-007, DD-VTPL-158）: A4 縦に、16:10 と同じ考え方（長い辺の余白 10mm、短い辺の余白 18.5mm）で置く。
+   A4 縦 210 × 297mm、余白 上下 10mm・左右 18.5mm → 版面 173 × 277mm */
+@page lucivo-visual-portrait {
+  size: A4 portrait;
+  margin: 10mm 18.5mm;
+  @bottom-left {
+    content: var(--print-doc-title, "");
+    font-size: 8.5pt;
+    color: #64748b;
+    vertical-align: top;
+    padding-top: 2.5mm;
+  }
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-size: 8.5pt;
+    font-variant-numeric: tabular-nums;
+    color: #64748b;
+    vertical-align: top;
+    padding-top: 2.5mm;
+  }
+}
 @page :first {
   @bottom-left {
     content: none;
@@ -139,6 +160,9 @@
     margin: 0 !important;
     box-shadow: none !important;
     border: 1px solid var(--vs-card-border);
+  }
+  html[data-page-ratio="10:16"] .exhibition-wrap > * {
+    page: lucivo-visual-portrait;
   }
   /* 1 ページに収まる表紙と章は、発表と同じくページの上下中央に置く（DTP-SHOW-020 にそろえる。DD-VTPL-137）。
      章の枠を版面の高さいっぱい（173mm。端数で次のページにあふれないよう 1mm 引く）にし、中身を上下中央にそろえる。
