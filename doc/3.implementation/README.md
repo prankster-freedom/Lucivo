@@ -19,6 +19,7 @@ tags: ["Lucivo", "実装"]
 | [src/ts/modes/](../../src/ts/modes/)                               | [js/modes/README.md](js/modes/README.md)                           | 発表モード（登録表と、モードごとの実装ドキュメントの目次） |
 | [tools/build-tailwind-css.cjs](../../tools/build-tailwind-css.cjs) | [tools/build-tailwind-css.cjs.md](tools/build-tailwind-css.cjs.md) | Tailwind の CSS の事前生成                                 |
 | [tools/build-html-pages.cjs](../../tools/build-html-pages.cjs)     | [tools/build-html-pages.cjs.md](tools/build-html-pages.cjs.md)     | ひな形から言語別のページ・転送用のページ・スタンドアロン版の HTML を作る |
+| [tools/build-ogp-image.cjs](../../tools/build-ogp-image.cjs)       | [tools/build-ogp-image.cjs.md](tools/build-ogp-image.cjs.md)       | OGP の画像（`AST-147`）を作図元の SVG から PNG に書き出す |
 | [tools/build-samples-data.cjs](../../tools/build-samples-data.cjs) | [tools/build-samples-data.cjs.md](tools/build-samples-data.cjs.md) | `file://` 直開き時の同梱サンプル遅延読み込みデータの生成   |
 | [tools/build-vendor.cjs](../../tools/build-vendor.cjs)             | [tools/build-vendor.cjs.md](tools/build-vendor.cjs.md)             | ライブラリとフォントの同梱ファイルの生成                   |
 | [tools/capture-readme-shots.cjs](../../tools/capture-readme-shots.cjs) | [tools/capture-readme-shots.cjs.md](tools/capture-readme-shots.cjs.md) | README の画面写真の撮り直し（主にエージェントが実行） |

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- AST-147 OGP 画像の作図元（DTP-010）。文字を入れず、言語で共通にする。
+       tools/build-ogp-image.cjs が 1200×630 の PNG（public/assets/ogp/lucivo-ogp.png）に書き出す -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#05070d"/>
+      <stop offset="0.55" stop-color="#0b1222"/>
+      <stop offset="1" stop-color="#111c33"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#00f0ff" stop-opacity="0.34"/>
+      <stop offset="0.45" stop-color="#38bdf8" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e0fbff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#e0fbff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#e0fbff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e293b" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#0f172a" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#38bdf8" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1.1" fill="#94a3b8" fill-opacity="0.16"/>
+    </pattern>
+    <!-- 小さな円にも掛けるため、ぼかしが切れて四角く見えないよう、範囲を広く取る -->
+    <filter id="glow" x="-200%" y="-200%" width="500%" height="500%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-50%" y="-400%" width="200%" height="900%">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+
+  <!-- 地: オブシディアンブラック〜ディープスレート、点の質感 -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+
+  <!-- 床の反射の帯（展示室の奥行き） -->
+  <rect x="0" y="470" width="1200" height="160" fill="url(#floor)" opacity="0.7"/>
+  <line x1="0" y1="470" x2="1200" y2="470" stroke="#38bdf8" stroke-opacity="0.18" stroke-width="1.5"/>
+
+  <!-- 左右の展示パネル（奥へ並ぶ文書の誌面を、文字なしの図形で表す） -->
+  <g opacity="0.9">
+    <!-- 左手前 -->
+    <path d="M 40 150 L 300 190 L 300 400 L 40 420 Z" fill="url(#panel)" stroke="#38bdf8" stroke-opacity="0.45" stroke-width="1.5"/>
+    <path d="M 70 200 L 270 222" stroke="#e2e8f0" stroke-opacity="0.55" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 70 230 L 210 244" stroke="#94a3b8" stroke-opacity="0.45" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 74 270 L 140 278 L 140 360 L 74 366 Z" fill="#00f0ff" fill-opacity="0.22" stroke="#00f0ff" stroke-opacity="0.5"/>
+    <path d="M 160 282 L 270 294 L 270 356 L 160 362 Z" fill="#38bdf8" fill-opacity="0.12" stroke="#38bdf8" stroke-opacity="0.4"/>
+    <!-- 左奥 -->
+    <path d="M 318 214 L 420 228 L 420 382 L 318 392 Z" fill="url(#panel)" stroke="#38bdf8" stroke-opacity="0.3" stroke-width="1.2"/>
+    <circle cx="368" cy="300" r="26" fill="none" stroke="#00f0ff" stroke-opacity="0.45" stroke-width="5"/>
+    <path d="M 368 274 A 26 26 0 0 1 392 309" fill="none" stroke="#e0fbff" stroke-opacity="0.7" stroke-width="5" stroke-linecap="round"/>
+    <!-- 右手前（図のノードと矢印） -->
+    <path d="M 1160 150 L 900 190 L 900 400 L 1160 420 Z" fill="url(#panel)" stroke="#38bdf8" stroke-opacity="0.45" stroke-width="1.5"/>
+    <rect x="940" y="226" width="64" height="34" rx="10" fill="#38bdf8" fill-opacity="0.18" stroke="#38bdf8" stroke-opacity="0.6"/>
+    <rect x="1060" y="214" width="64" height="34" rx="10" fill="#00f0ff" fill-opacity="0.18" stroke="#00f0ff" stroke-opacity="0.6"/>
+    <rect x="1000" y="318" width="70" height="38" rx="10" fill="#38bdf8" fill-opacity="0.18" stroke="#38bdf8" stroke-opacity="0.6"/>
+    <path d="M 1004 243 L 1058 233 M 972 260 L 1020 316 M 1092 248 L 1052 316" stroke="#e0fbff" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>
+    <!-- 右奥（棒グラフ） -->
+    <path d="M 882 214 L 780 228 L 780 382 L 882 392 Z" fill="url(#panel)" stroke="#38bdf8" stroke-opacity="0.3" stroke-width="1.2"/>
+    <path d="M 800 352 L 800 318 M 822 354 L 822 292 M 844 356 L 844 270 M 864 358 L 864 304" stroke="#00f0ff" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <!-- 光の差し込み -->
+  <polygon points="430,0 610,0 900,630 620,630" fill="url(#sweep)"/>
+
+  <!-- 中央のモノグラム（AST-010〜012 の記号。文字は入れない） -->
+  <ellipse cx="600" cy="300" rx="250" ry="210" fill="url(#halo)"/>
+  <ellipse cx="600" cy="476" rx="170" ry="16" fill="#00f0ff" fill-opacity="0.22" filter="url(#soft)"/>
+  <g transform="translate(600 300) scale(1.55) translate(-113 -86)">
+    <path d="M 30 18 L 30 130 A 24 24 0 0 0 54 154 L 110 154" fill="none" stroke="#00f0ff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    <path d="M 96 68 L 134 140 A 14 14 0 0 0 158 140 L 196 68" fill="none" stroke="#38bdf8" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 30 84 L 96 68" fill="none" stroke="#0284c7" stroke-width="8" stroke-linecap="round" stroke-dasharray="4 8"/>
+    <circle cx="30" cy="18" r="14" fill="#ffffff" filter="url(#glow)"/>
+    <circle cx="110" cy="154" r="12" fill="#00f0ff"/>
+    <circle cx="96" cy="68" r="11" fill="#38bdf8"/>
+    <circle cx="196" cy="68" r="13" fill="#00f0ff" filter="url(#glow)"/>
+  </g>
+
+  <!-- 下端のプリズムの帯 -->
+  <rect x="0" y="622" width="1200" height="8" fill="#00f0ff" fill-opacity="0.55"/>
+</svg>
