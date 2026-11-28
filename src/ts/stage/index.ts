@@ -18,6 +18,7 @@ import {
   getLightPlans
 } from './stage-lights';
 import { createStageOverview } from './stage-overview';
+import { createStageMagnifier, MAGNIFIER_PRESETS } from './stage-magnifier';
 
 const AUTO_DWELL = { scene: 7000, build: 2400, afterLight: 800 };
 const SCENE_FIT = { maxScale: 2.4, bottomMargin: 108, minHeightRatio: 0.6, scrollRatio: 0.8 };
@@ -30,6 +31,7 @@ const stageContainer = () => document.getElementById('visual-stage-container');
 const currentScene = () => show.scenes[show.index];
 const buildItems = scene => (scene ? Array.from(scene.querySelectorAll('.vs-steps > li, .vs-points > li')) : []);
 
+let magnifier;
 const overview = createStageOverview({
   show,
   curtain,
@@ -40,9 +42,19 @@ const overview = createStageOverview({
   applyScene,
   setCurtain,
   toggleAuto,
-  toggleShowAppearance
+  toggleShowAppearance,
+  setMagnifier: on => magnifier && magnifier.setMagnifier(on)
 });
 const { ov, pointer } = overview;
+magnifier = createStageMagnifier({
+  show,
+  ov,
+  curtain,
+  stageContainer,
+  currentScene,
+  setPointer: overview.setPointer,
+  updateHud
+});
 
 function isEn(): boolean {
   return typeof document !== 'undefined' && document.documentElement.lang === 'en';
@@ -57,9 +69,10 @@ function buildHud() {
   hud.innerHTML = `
     <div class="stage-sweep" aria-hidden="true"></div>
     <div class="stage-hint">${en
-      ? '→ Next / ← Prev / [ ] Views / O Overview / L Pointer / B·Q Curtain / A Auto / T Theme / ? Shortcuts / Esc Exit'
-      : '→ 次へ ／ ← 戻る ／ [ ] ビュー切替 ／ O 一覧 ／ L ポインター ／ B・Q 幕間 ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了'}</div>
+      ? '→ Next / ← Prev / [ ] Views / O Overview / L Pointer / M Magnifier / B·Q Curtain / A Auto / T Theme / ? Shortcuts / Esc Exit'
+      : '→ 次へ ／ ← 戻る ／ [ ] ビュー切替 ／ O 一覧 ／ L ポインター ／ M 拡大鏡 ／ B・Q 幕間 ／ A 自動進行 ／ T 明暗 ／ ? ショートカット一覧 ／ Esc 終了'}</div>
     <div class="stage-pointer" aria-hidden="true"><span class="stage-pointer-dot"></span></div>
+    <div class="stage-magnifier" aria-hidden="true"></div>
     <div class="stage-curtain" aria-hidden="true">
       <div class="stage-curtain-inner">
         <span class="stage-curtain-orbit" aria-hidden="true"></span>
@@ -79,11 +92,19 @@ function buildHud() {
         <span class="stage-c4-label"></span>
         <button type="button" data-stage-action="c4-next" aria-label="${en ? 'Next view' : '次のビュー'}">▶</button>
       </div>
+      <div class="stage-mag-controls hidden" role="group" aria-label="${en ? 'Magnifier presets' : '拡大鏡プリセット'}">
+        <span class="stage-mag-label">${en ? 'Size' : '径'}</span>
+        ${MAGNIFIER_PRESETS.diameterRatios.map((r, i) => `<button type="button" data-mag-size="${i}" aria-pressed="false">${Math.round(r * 100)}%</button>`).join('')}
+        <span class="stage-mag-sep" aria-hidden="true"></span>
+        <span class="stage-mag-label">${en ? 'Zoom' : '倍率'}</span>
+        ${MAGNIFIER_PRESETS.zoomPresets.map((z, i) => `<button type="button" data-mag-zoom="${i}" aria-pressed="false">${z.toFixed(1)}x</button>`).join('')}
+      </div>
       <div class="stage-hud-actions">
         <button type="button" data-stage-action="prev" aria-label="${en ? 'Previous' : '前へ'}">←</button>
         <button type="button" data-stage-action="next" aria-label="${en ? 'Next' : '次へ'}">→</button>
         <button type="button" data-stage-action="overview" aria-pressed="false">${en ? 'Overview' : '一覧'}</button>
         <button type="button" data-stage-action="pointer" aria-pressed="false">${en ? 'Pointer' : 'ポインター'}</button>
+        <button type="button" data-stage-action="magnifier" aria-pressed="false">${en ? 'Magnifier' : '拡大鏡'}</button>
         <button type="button" data-stage-action="curtain" aria-pressed="false">${en ? 'Curtain' : '幕間'}</button>
         <button type="button" data-stage-action="auto" aria-pressed="false">${en ? 'Auto' : '自動進行'}</button>
         <button type="button" data-stage-action="exit">${en ? 'Exit' : '終了'}</button>
@@ -91,6 +112,18 @@ function buildHud() {
     </div>
     <div class="stage-hud-rail" aria-hidden="true"><span class="stage-hud-fill"></span></div>`;
   hud.addEventListener('click', event => {
+    const magSizeBtn = event.target.closest('[data-mag-size]');
+    if (magSizeBtn) {
+      event.stopPropagation();
+      magnifier.setSizeIndex(parseInt(magSizeBtn.dataset.magSize, 10));
+      return;
+    }
+    const magZoomBtn = event.target.closest('[data-mag-zoom]');
+    if (magZoomBtn) {
+      event.stopPropagation();
+      magnifier.setZoomIndex(parseInt(magZoomBtn.dataset.magZoom, 10));
+      return;
+    }
     const pill = event.target.closest('.stage-curtain-pill[data-curtain-scene]');
     if (pill) {
       event.stopPropagation();
@@ -111,6 +144,7 @@ function buildHud() {
       exit: exitShow,
       overview: overview.toggleOverview,
       pointer: overview.togglePointer,
+      magnifier: magnifier.toggleMagnifier,
       curtain: toggleCurtain,
       'c4-prev': () => { void stepStageC4View(-1); },
       'c4-next': () => { void stepStageC4View(1); }
@@ -207,12 +241,26 @@ function updateHud() {
   const auto = hud.querySelector('[data-stage-action="auto"]');
   auto.setAttribute('aria-pressed', String(show.auto));
   auto.classList.toggle('is-active', show.auto);
-  [['overview', ov.active], ['pointer', pointer.on], ['curtain', curtain.active]].forEach(([name, on]) => {
+  [['overview', ov.active], ['pointer', pointer.on], ['magnifier', magnifier.mag.on], ['curtain', curtain.active]].forEach(([name, on]) => {
     const button = hud.querySelector(`[data-stage-action="${name}"]`);
     if (!button) return;
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
   });
+  const magControls = hud.querySelector('.stage-mag-controls');
+  if (magControls) {
+    magControls.classList.toggle('hidden', !magnifier.mag.on);
+    magControls.querySelectorAll('[data-mag-size]').forEach(btn => {
+      const active = parseInt(btn.dataset.magSize, 10) === magnifier.mag.sizeIdx;
+      btn.setAttribute('aria-pressed', String(active));
+      btn.classList.toggle('is-active', active);
+    });
+    magControls.querySelectorAll('[data-mag-zoom]').forEach(btn => {
+      const active = parseInt(btn.dataset.magZoom, 10) === magnifier.mag.zoomIdx;
+      btn.setAttribute('aria-pressed', String(active));
+      btn.classList.toggle('is-active', active);
+    });
+  }
   syncStageC4Controls();
   document.documentElement.classList.toggle('is-stage-ambient', Boolean(show.active && show.auto && show.autoLooped && show.index === 0));
 }
@@ -238,6 +286,7 @@ function applyScene(animate) {
   else fitSceneDiagrams(scene);
   if (animate) replaySceneEntrance(scene);
   updateHud();
+  if (magnifier.mag.on) magnifier.refreshSnapshot();
   scheduleAuto();
 }
 
@@ -333,6 +382,7 @@ function setCurtain(on) {
     if (ov.active) overview.closeOverview(show.index, show.build);
     if (show.auto) toggleAuto();
     overview.setPointer(false);
+    magnifier.setMagnifier(false);
     curtain.active = true;
     suspendLights(true, currentScene());
     renderCurtainChapters();
@@ -419,6 +469,12 @@ function onShowKey(event) {
       return;
     }
   }
+  if (magnifier.mag.on && (event.key === '1' || event.key === '2' || event.key === '3')) {
+    event.preventDefault();
+    event.stopPropagation();
+    magnifier.setSizeIndex(parseInt(event.key, 10) - 1);
+    return;
+  }
   const actions = {
     ArrowRight: () => next(), ArrowDown: () => next(), PageDown: () => next(), ' ': () => next(), Enter: () => next(),
     ArrowLeft: prev, ArrowUp: prev, PageUp: prev, Backspace: prev,
@@ -428,6 +484,7 @@ function onShowKey(event) {
     t: toggleShowAppearance, T: toggleShowAppearance,
     o: overview.toggleOverview, O: overview.toggleOverview,
     l: overview.togglePointer, L: overview.togglePointer,
+    m: magnifier.toggleMagnifier, M: magnifier.toggleMagnifier,
     b: toggleCurtain, B: toggleCurtain,
     q: toggleCurtain, Q: toggleCurtain,
     Escape: exitShow
@@ -577,6 +634,7 @@ function enterShow() {
   document.addEventListener('keydown', onShowKey, true);
   document.addEventListener('mousemove', wakeHud);
   document.addEventListener('pointermove', overview.onPointerMove);
+  document.addEventListener('pointermove', magnifier.onPointerMove);
   document.addEventListener('fullscreenchange', onFullscreenChange);
   stageContainer().addEventListener('click', onShowClick, true);
   stageContainer().addEventListener('touchstart', onShowTouchStart, { capture: true, passive: true });
@@ -598,6 +656,7 @@ function refitScene() {
   if (ov.active) overview.layoutOverview();
   else if (isPageMode()) updatePageStageScale();
   else fitSceneDiagrams(currentScene());
+  if (magnifier.mag.on) magnifier.refreshSnapshot();
 }
 
 // 発表中にページ割りが決め直されたら（明暗の切り替えで作り直したときなど）、続きのページを含めてシーンを取り直す
@@ -633,15 +692,17 @@ function exitShow() {
     clearLightsSuspendedFlag();
   }
   overview.setPointer(false);
+  magnifier.setMagnifier(false);
   show.active = false;
   show.auto = false;
   show.autoLooped = false;
   clearTimeout(show.timer);
   clearTimeout(show.idleTimer);
-  document.documentElement.classList.remove('is-stage-show', 'is-stage-idle', 'is-stage-ambient', 'is-stage-curtain');
+  document.documentElement.classList.remove('is-stage-show', 'is-stage-idle', 'is-stage-ambient', 'is-stage-curtain', 'is-stage-magnifier');
   document.removeEventListener('keydown', onShowKey, true);
   document.removeEventListener('mousemove', wakeHud);
   document.removeEventListener('pointermove', overview.onPointerMove);
+  document.removeEventListener('pointermove', magnifier.onPointerMove);
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   stageContainer().removeEventListener('click', onShowClick, true);
   stageContainer().removeEventListener('touchstart', onShowTouchStart, true);
@@ -697,6 +758,9 @@ window.LucivoStage = {
   lightPlans: getLightPlans,
   showState: () => ({
     active: show.active, index: show.index, build: show.build, auto: show.auto, autoLooped: Boolean(show.autoLooped), scenes: show.scenes.length,
-    overview: ov.active, selected: ov.index, pointer: pointer.on, curtain: curtain.active
+    overview: ov.active, selected: ov.index, pointer: pointer.on,
+    magnifier: magnifier.mag.on, magnifierSize: magnifier.mag.sizeIdx, magnifierZoom: magnifier.mag.zoomIdx,
+    magnifierFallback: magnifier.mag.fallback, magnifierFallbackReason: magnifier.mag.fallbackReason,
+    curtain: curtain.active
   })
 };

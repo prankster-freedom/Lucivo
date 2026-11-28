@@ -258,6 +258,7 @@ body:not([data-appearance="dark"]) .stage-hud::before {
 }
 .stage-hud-bar {
   position: absolute;
+  z-index: 2;
   left: 2.5vw;
   right: 2.5vw;
   bottom: calc(1.4vh + env(safe-area-inset-bottom, 0px));
@@ -498,6 +499,87 @@ body:not([data-appearance="dark"]) .stage-pointer-dot {
     0 0 0 4px rgba(225, 29, 72, 0.85),
     0 0 20px 6px rgba(244, 63, 94, 0.5),
     0 0 48px 18px rgba(244, 63, 94, 0.22);
+}
+
+/* 円形拡大鏡（DTP-SHOW-085, FR-072） */
+.stage-magnifier {
+  display: none;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+html.is-stage-magnifier .stage-magnifier {
+  display: block;
+}
+html.is-stage-magnifier,
+html.is-stage-magnifier #visual-stage-container {
+  cursor: none;
+}
+.stage-magnifier-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.stage-magnifier-fallback {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  clip-path: circle(var(--mr, 220px) at var(--mx, 50%) var(--my, 50%));
+}
+.stage-magnifier-fallback-inner {
+  position: absolute;
+  inset: 0;
+  transform-origin: var(--mx, 50%) var(--my, 50%);
+  transform: scale(var(--mz, 2.2));
+}
+.stage-mag-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  pointer-events: auto;
+  transition: opacity 0.4s ease;
+}
+html.is-stage-idle .stage-mag-controls {
+  opacity: 0;
+  pointer-events: none;
+}
+.stage-mag-controls.hidden {
+  display: none;
+}
+.stage-mag-label {
+  font-size: 0.72rem;
+  opacity: 0.78;
+}
+.stage-mag-sep {
+  width: 1px;
+  height: 0.9rem;
+  background: rgba(148, 163, 184, 0.35);
+  margin: 0 0.15rem;
+}
+.stage-mag-controls button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.22rem 0.45rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.stage-mag-controls button.is-active {
+  background: rgba(125, 227, 255, 0.28);
+  color: #E0F7FF;
+  font-weight: 600;
+}
+body:not([data-appearance="dark"]) .stage-mag-controls button.is-active {
+  background: rgba(8, 145, 178, 0.2);
+  color: #0F172A;
 }
 
 #shortcut-modal {

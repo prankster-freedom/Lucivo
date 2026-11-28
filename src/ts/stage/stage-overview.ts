@@ -76,6 +76,7 @@ export function createStageOverview(ctx) {
     if (ctx.curtain.active) ctx.setCurtain(false);
     if (ctx.show.auto) ctx.toggleAuto();
     setPointer(false);
+    ctx.setMagnifier?.(false);
     ov.active = true;
     suspendLights(true, ctx.currentScene());
     layoutOverview();
@@ -166,6 +167,7 @@ export function createStageOverview(ctx) {
 
   function setPointer(on) {
     pointer.on = Boolean(on) && ctx.show.active && !ov.active && !ctx.curtain.active;
+    if (pointer.on) ctx.setMagnifier?.(false);
     document.documentElement.classList.toggle('is-stage-pointer', pointer.on);
     if (pointer.on) {
       if (!pointer.moved) {

@@ -114,7 +114,7 @@ const SUITES = [
   { name: 'testCoverAndTables', tcPrefix: ['TC-VTPL-015', 'TC-VTPL-016', 'TC-VTPL-018', 'TC-VTPL-019', 'TC-VTPL-020', 'TC-VTPL-024', 'TC-VTPL-025', 'TC-VTPL-026', 'TC-VTPL-027', 'TC-VTPL-030', 'TC-VTPL-031', 'TC-VTPL-032', 'TC-VTPL-033', 'TC-VTPL-034', 'TC-VTPL-035', 'TC-VTPL-036', 'TC-VTPL-038', 'TC-VTPL-039'], fn: testCoverAndTables, timeoutMs: 150000 },
   { name: 'testSignalLight', tcPrefix: ['TC-LIGHT-'], fn: testSignalLight, serial: true },
   { name: 'testStageShow', tcPrefix: ['TC-SHOW-001', 'TC-SHOW-002', 'TC-SHOW-003', 'TC-SHOW-004', 'TC-SHOW-005', 'TC-SHOW-006', 'TC-SHOW-007', 'TC-SHOW-026', 'TC-SHOW-027'], fn: testStageShow, timeoutMs: 180000 },
-  { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025', 'TC-SHOW-028'], fn: testStageOverviewPointer },
+  { name: 'testStageOverviewPointer', tcPrefix: ['TC-SHOW-008', 'TC-SHOW-009', 'TC-SHOW-010', 'TC-SHOW-011', 'TC-SHOW-012', 'TC-SHOW-013', 'TC-SHOW-014', 'TC-SHOW-025', 'TC-SHOW-028', 'TC-SHOW-029'], fn: testStageOverviewPointer },
   // 版面の比率とページ割り（FR-070, #438）。同梱サンプル 6 本の全ページのゲラを撮るため、既定より長くする
   { name: 'testPageRatio', tcPrefix: ['TC-VTPL-042', 'TC-VTPL-043', 'TC-VTPL-044', 'TC-VTPL-045', 'TC-VTPL-046', 'TC-VTPL-047', 'TC-VTPL-048', 'TC-VTPL-049'], fn: testPageRatio, timeoutMs: 240000 },
   // 縦 10:16 の版面と、比率の選び方（#438 の 7c）

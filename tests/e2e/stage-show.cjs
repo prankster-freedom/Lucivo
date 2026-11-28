@@ -979,6 +979,84 @@ async function testStageOverviewPointer(browser) {
     && ambientState.autoLooped && ambientState.ambientClass && ambientState.titleAnim === 'lucivo-ambient-breathe';
   record('TC-SHOW-014', show14Ok, JSON.stringify({ curtainOpen, afterPillJump, qOpened, escClosedCurtainOnly, ambientState }));
 
+  // TC-SHOW-029 円形拡大鏡（FR-072, DTP-SHOW-085, NFR-007）
+  await page.click('#btn-stage-show');
+  await page.waitForFunction(() => typeof LucivoStage !== 'undefined' && LucivoStage.showState().active);
+  await page.keyboard.press('o');
+  await page.waitForTimeout(500);
+  await page.locator('#visual-stage-container .exhibition-wrap > *').nth(10).click();
+  await page.waitForTimeout(900);
+  await page.keyboard.press('m');
+  await page.waitForTimeout(400);
+  await page.mouse.move(320, 260);
+  await page.evaluate(() => {
+    window.__magLayoutReads = 0;
+    const count = (obj, name) => {
+      const orig = obj[name];
+      obj[name] = function (...args) { window.__magLayoutReads++; return orig.apply(this, args); };
+      return () => { obj[name] = orig; };
+    };
+    window.__restoreMagReads = [count(Element.prototype, 'getBoundingClientRect'), count(window, 'getComputedStyle'), count(Element.prototype, 'getClientRects')];
+  });
+  await page.mouse.move(780, 440, { steps: 30 });
+  await page.waitForTimeout(200);
+  const magFollow = await page.evaluate(() => {
+    window.__restoreMagReads.forEach(restore => restore());
+    const layer = document.querySelector('.stage-magnifier');
+    const st = LucivoStage.showState();
+    return {
+      reads: window.__magLayoutReads,
+      on: st.magnifier,
+      size: st.magnifierSize,
+      zoom: st.magnifierZoom,
+      htmlClass: document.documentElement.classList.contains('is-stage-magnifier'),
+      display: layer ? getComputedStyle(layer).display : 'none',
+      cursor: getComputedStyle(document.getElementById('visual-stage-container')).cursor,
+      fallback: st.magnifierFallback,
+      fallbackReason: st.magnifierFallbackReason,
+      hasCanvasOrFallback: Boolean(layer && (layer.querySelector('.stage-magnifier-canvas') || layer.querySelector('.stage-magnifier-fallback')))
+    };
+  });
+  await page.screenshot({ path: path.join(SHOT_DIR, 'show-magnifier.png') });
+  await page.mouse.move(760, 430);
+  await page.keyboard.press('3');
+  await page.click('#stage-hud [data-mag-zoom="2"]');
+  await page.waitForTimeout(100);
+  const magPresets = await page.evaluate(() => {
+    const st = LucivoStage.showState();
+    return { size: st.magnifierSize, zoom: st.magnifierZoom };
+  });
+  const beforeClickIdx = await page.evaluate(() => LucivoStage.showState().index);
+  await page.mouse.click(780, 440);
+  await page.waitForTimeout(150);
+  const afterClickIdx = await page.evaluate(() => LucivoStage.showState().index);
+  await page.keyboard.press('l');
+  await page.waitForTimeout(100);
+  const magOffByPointer = await page.evaluate(() => {
+    const st = LucivoStage.showState();
+    return { pointer: st.pointer, magnifier: st.magnifier };
+  });
+  await page.keyboard.press('m');
+  await page.waitForTimeout(150);
+  await page.keyboard.press('o');
+  await page.waitForTimeout(300);
+  const magOffByOverview = await page.evaluate(() => {
+    const st = LucivoStage.showState();
+    return { overview: st.overview, magnifier: st.magnifier };
+  });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const mag29Ok = magFollow.on && magFollow.htmlClass && magFollow.display === 'block'
+    && magFollow.cursor === 'none' && magFollow.reads === 0
+    && magFollow.size === 1 && magFollow.zoom === 1 && magFollow.hasCanvasOrFallback
+    && magPresets.size === 2 && magPresets.zoom === 2
+    && afterClickIdx !== beforeClickIdx
+    && magOffByPointer.pointer && !magOffByPointer.magnifier
+    && magOffByOverview.overview && !magOffByOverview.magnifier;
+  record('TC-SHOW-029', mag29Ok, JSON.stringify({ magFollow, magPresets, beforeClickIdx, afterClickIdx, magOffByPointer, magOffByOverview }));
+
   if (page.consoleErrors.length) record('TC-SHOW-CONSOLE2', false, JSON.stringify(page.consoleErrors));
   await page.context().close();
 
