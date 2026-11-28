@@ -19,49 +19,10 @@ export interface MagnifierMatrixConfig {
   };
 }
 
+import rawMagnifierPresets from './stage-magnifier-presets.json';
+
 // 直径（長辺基準 30% / 45% / 60%、既定 45%）× 倍率（3 段階）× 明暗テーマのデザイン定数マトリクス（ARC-MAG-003）
-export const MAGNIFIER_PRESETS: MagnifierMatrixConfig = {
-  diameterRatios: [0.30, 0.45, 0.60],
-  defaultDiameterIndex: 1,
-  zoomPresets: [1.5, 2.2, 3.2],
-  defaultZoomIndex: 1,
-  themes: {
-    dark: [
-      [
-        { rim: 0.34, gloss: 0.28, shadow: 0.24, plateau: 0.78 },
-        { rim: 0.36, gloss: 0.28, shadow: 0.26, plateau: 0.76 },
-        { rim: 0.40, gloss: 0.30, shadow: 0.28, plateau: 0.74 }
-      ],
-      [
-        { rim: 0.26, gloss: 0.20, shadow: 0.20, plateau: 0.78 },
-        { rim: 0.28, gloss: 0.22, shadow: 0.20, plateau: 0.76 },
-        { rim: 0.32, gloss: 0.24, shadow: 0.22, plateau: 0.74 }
-      ],
-      [
-        { rim: 0.18, gloss: 0.14, shadow: 0.16, plateau: 0.80 },
-        { rim: 0.20, gloss: 0.16, shadow: 0.18, plateau: 0.78 },
-        { rim: 0.24, gloss: 0.18, shadow: 0.20, plateau: 0.75 }
-      ]
-    ],
-    light: [
-      [
-        { rim: 0.24, gloss: 0.16, shadow: 0.26, plateau: 0.78 },
-        { rim: 0.26, gloss: 0.18, shadow: 0.28, plateau: 0.76 },
-        { rim: 0.28, gloss: 0.20, shadow: 0.30, plateau: 0.74 }
-      ],
-      [
-        { rim: 0.18, gloss: 0.12, shadow: 0.22, plateau: 0.78 },
-        { rim: 0.20, gloss: 0.14, shadow: 0.24, plateau: 0.76 },
-        { rim: 0.22, gloss: 0.16, shadow: 0.26, plateau: 0.74 }
-      ],
-      [
-        { rim: 0.12, gloss: 0.08, shadow: 0.18, plateau: 0.80 },
-        { rim: 0.14, gloss: 0.10, shadow: 0.20, plateau: 0.78 },
-        { rim: 0.16, gloss: 0.12, shadow: 0.22, plateau: 0.75 }
-      ]
-    ]
-  }
-};
+export const MAGNIFIER_PRESETS: MagnifierMatrixConfig = rawMagnifierPresets as unknown as MagnifierMatrixConfig;
 
 export interface StageMagnifierContext {
   show: { active: boolean; hud: HTMLElement | null };

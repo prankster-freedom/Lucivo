@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DTP-SHOW-085 ステージ拡大鏡 光学チューナー</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --background: #f8fafc;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --foreground: #0f172a;
+      --muted-foreground: #64748b;
+      --primary: #0284c7;
+      --primary-foreground: #ffffff;
+      --secondary: #e2e8f0;
+      --secondary-foreground: #0f172a;
+      --success: #059669;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #0b1120;
+        --card: #111827;
+        --border: #334155;
+        --foreground: #f1f5f9;
+        --muted-foreground: #94a3b8;
+        --primary: #38bdf8;
+        --primary-foreground: #0f172a;
+        --secondary: #1e293b;
+        --secondary-foreground: #e2e8f0;
+        --success: #34d399;
+      }
+    }
+    canvas {
+      touch-action: none;
+    }
+    .stage-cursor-none {
+      cursor: none;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased m-0 p-0">
+  <div class="max-w-6xl mx-auto p-3 sm:p-5 space-y-4">
+    <!-- Header -->
+    <header class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-semibold text-[var(--foreground)]">
+            DTP-SHOW-085 ステージ拡大鏡 光学チューナー
+          </h1>
+          <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--secondary)] text-[var(--secondary-foreground)]">
+            3×3 マトリクス調整ツール
+          </span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)] mt-1">
+          ユーザー向け UI は「直径 3段階（長辺基準 30% / 45% / 60%）」×「拡大率 3段階」。下のマトリクスで 9 パターンごとの光学値を調整・書き出しできます。
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-mode-toggle" type="button"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary)] text-[var(--foreground)] transition">
+          比較: 連続減衰 (Issue #450)
+        </button>
+        <button id="btn-theme-toggle" type="button"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary)] text-[var(--foreground)] transition">
+          ステージ: ダーク
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Stage Viewport -->
+    <section class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-2 sm:p-3 space-y-3">
+      <div id="stage-wrapper" class="relative w-full aspect-[16/10] rounded-lg overflow-hidden border border-[var(--border)] select-none">
+        <canvas id="stage-canvas" class="w-full h-full block stage-cursor-none"></canvas>
+
+        <!-- Minimal Stage HUD (Lucivo Stage Show style + simple 3-step controls) -->
+        <div id="stage-hud"
+          class="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-wrap items-center justify-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md border text-xs shadow-lg max-w-[96%]"
+          style="background: rgba(15, 23, 42, 0.80); border-color: rgba(148, 163, 184, 0.25); color: #f8fafc;">
+          <button id="hud-prev" type="button" title="前のスライド"
+            class="px-2 py-1 rounded-full hover:bg-white/10 transition">◀</button>
+          <span id="hud-counter" class="px-1.5 font-mono tabular-nums">1 / 3</span>
+          <button id="hud-next" type="button" title="次のスライド"
+            class="px-2 py-1 rounded-full hover:bg-white/10 transition">▶</button>
+
+          <span class="h-3.5 w-px bg-white/20 mx-0.5"></span>
+
+          <button id="hud-pointer" type="button" title="光のポインター (P)"
+            class="px-2.5 py-1 rounded-full hover:bg-white/10 transition flex items-center gap-1">
+            <span>●</span><span>ポインター</span>
+          </button>
+          <button id="hud-magnifier" type="button" title="拡大鏡 (M)"
+            class="px-2.5 py-1 rounded-full bg-sky-500/30 text-sky-200 border border-sky-400/40 transition flex items-center gap-1">
+            <span>◎</span><span>拡大鏡</span>
+          </button>
+
+          <!-- User-facing 3-step Diameter & Zoom controls -->
+          <div id="hud-mag-controls" class="flex items-center gap-1.5 pl-1 border-l border-white/20">
+            <span class="text-[11px] text-slate-300 hidden sm:inline">径</span>
+            <div class="flex items-center rounded-full bg-white/5 p-0.5">
+              <button type="button" data-size-idx="0" class="size-btn px-2 py-0.5 rounded-full transition">30%</button>
+              <button type="button" data-size-idx="1" class="size-btn px-2 py-0.5 rounded-full transition">45%</button>
+              <button type="button" data-size-idx="2" class="size-btn px-2 py-0.5 rounded-full transition">60%</button>
+            </div>
+            <span class="text-[11px] text-slate-300 hidden sm:inline">倍率</span>
+            <div class="flex items-center rounded-full bg-white/5 p-0.5">
+              <button type="button" data-zoom-idx="0" class="zoom-btn px-2 py-0.5 rounded-full transition">1.5x</button>
+              <button type="button" data-zoom-idx="1" class="zoom-btn px-2 py-0.5 rounded-full transition">2.2x</button>
+              <button type="button" data-zoom-idx="2" class="zoom-btn px-2 py-0.5 rounded-full transition">3.2x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live readout badge -->
+        <div id="hud-status"
+          class="absolute top-3 right-3 px-2.5 py-1 rounded-md text-xs font-mono tabular-nums pointer-events-none backdrop-blur-sm"
+          style="background: rgba(15, 23, 42, 0.72); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.2);">
+          直径 45%(長辺) / 2.2x
+        </div>
+      </div>
+    </section>
+
+    <!-- Designer-only 3x3 Matrix & Export Panel -->
+    <details open class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 sm:p-4 space-y-4">
+      <summary class="cursor-pointer text-xs font-semibold text-[var(--foreground)] flex items-center justify-between">
+        <span>デザイン調整用 3×3 マトリクス &amp; 書き出し（製品版では非表示・定数テーブル管理想定）</span>
+        <span class="text-[var(--muted-foreground)] font-normal">クリックで開閉</span>
+      </summary>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-1">
+        <!-- 3x3 Matrix Selector -->
+        <div class="lg:col-span-7 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="text-xs font-medium text-[var(--foreground)]">
+              現在のテーマ: <span id="matrix-theme-label" class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">ダーク</span>
+              <span class="text-[var(--muted-foreground)] font-normal ml-1">セルをクリックして選択・調整</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button id="btn-apply-row" type="button"
+                class="px-2 py-1 text-xs rounded border border-[var(--border)] hover:bg-[var(--secondary)] transition">
+                同サイズ(3倍率)に適用
+              </button>
+              <button id="btn-apply-all" type="button"
+                class="px-2 py-1 text-xs rounded border border-[var(--border)] hover:bg-[var(--secondary)] transition">
+                全9セルに適用
+              </button>
+              <button id="btn-reset-matrix" type="button"
+                class="px-2 py-1 text-xs rounded border border-[var(--border)] hover:bg-[var(--secondary)] text-[var(--muted-foreground)] transition">
+                初期値に戻す
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-xs">
+              <thead>
+                <tr class="text-[var(--muted-foreground)]">
+                  <th class="p-2 text-left font-medium border border-[var(--border)] bg-[var(--background)]">直径 ＼ 倍率</th>
+                  <th id="th-zoom-0" class="p-2 text-center font-medium border border-[var(--border)] bg-[var(--background)]">小 (1.5x)</th>
+                  <th id="th-zoom-1" class="p-2 text-center font-medium border border-[var(--border)] bg-[var(--background)]">中 (2.2x)</th>
+                  <th id="th-zoom-2" class="p-2 text-center font-medium border border-[var(--border)] bg-[var(--background)]">大 (3.2x)</th>
+                </tr>
+              </thead>
+              <tbody id="matrix-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Selected Cell Sliders + Zoom Presets -->
+        <div class="lg:col-span-5 space-y-3">
+          <div class="border border-[var(--border)] rounded-lg p-3 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-[var(--foreground)]">選択中セルの光学調整</span>
+              <span id="active-cell-badge" class="font-mono text-[var(--primary)]">45% × 2.2x (ダーク)</span>
+            </div>
+
+            <div class="space-y-1.5 pt-1">
+              <div class="flex items-center justify-between text-xs">
+                <label for="ctrl-rim" class="text-[var(--foreground)]">縁のハイライト（輪郭）</label>
+                <span id="val-rim" class="font-mono tabular-nums text-[var(--muted-foreground)]">28%</span>
+              </div>
+              <input id="ctrl-rim" type="range" min="0" max="100" step="2" value="28" class="w-full accent-[var(--primary)]" />
+
+              <div class="flex items-center justify-between text-xs">
+                <label for="ctrl-gloss" class="text-[var(--foreground)]">光沢ハイライト（レンズ反射）</label>
+                <span id="val-gloss" class="font-mono tabular-nums text-[var(--muted-foreground)]">22%</span>
+              </div>
+              <input id="ctrl-gloss" type="range" min="0" max="100" step="2" value="22" class="w-full accent-[var(--primary)]" />
+
+              <div class="flex items-center justify-between text-xs">
+                <label for="ctrl-shadow" class="text-[var(--foreground)]">外周ドロップシャドウ</label>
+                <span id="val-shadow" class="font-mono tabular-nums text-[var(--muted-foreground)]">20%</span>
+              </div>
+              <input id="ctrl-shadow" type="range" min="0" max="80" step="2" value="20" class="w-full accent-[var(--primary)]" />
+
+              <div class="flex items-center justify-between text-xs">
+                <label for="ctrl-plateau" class="text-[var(--foreground)]">平坦エリアの割合</label>
+                <span id="val-plateau" class="font-mono tabular-nums text-[var(--muted-foreground)]">76%</span>
+              </div>
+              <input id="ctrl-plateau" type="range" min="0.55" max="0.92" step="0.01" value="0.76" class="w-full accent-[var(--primary)]" />
+            </div>
+          </div>
+
+          <div class="border border-[var(--border)] rounded-lg p-3 space-y-2">
+            <div class="text-xs font-semibold text-[var(--foreground)]">中心拡大率 3段階の微調整</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <div class="flex justify-between text-xs">
+                  <label for="tune-zoom-0" class="text-[var(--muted-foreground)]">小</label>
+                  <span id="val-zoom-0" class="font-mono tabular-nums">1.50x</span>
+                </div>
+                <input id="tune-zoom-0" type="range" min="1.3" max="2.2" step="0.05" value="1.5" class="w-full accent-[var(--primary)]" />
+              </div>
+              <div>
+                <div class="flex justify-between text-xs">
+                  <label for="tune-zoom-1" class="text-[var(--muted-foreground)]">中</label>
+                  <span id="val-zoom-1" class="font-mono tabular-nums">2.20x</span>
+                </div>
+                <input id="tune-zoom-1" type="range" min="1.6" max="3.2" step="0.05" value="2.2" class="w-full accent-[var(--primary)]" />
+              </div>
+              <div>
+                <div class="flex justify-between text-xs">
+                  <label for="tune-zoom-2" class="text-[var(--muted-foreground)]">大</label>
+                  <span id="val-zoom-2" class="font-mono tabular-nums">3.20x</span>
+                </div>
+                <input id="tune-zoom-2" type="range" min="2.2" max="4.0" step="0.05" value="3.2" class="w-full accent-[var(--primary)]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export JSON section -->
+      <div class="border border-[var(--border)] rounded-lg p-3 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs font-semibold text-[var(--foreground)]">
+            設定 JSON 書き出し（ダーク・ライト両テーマの 3×3 マトリクスを含む）
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-copy-json" type="button"
+              class="px-2.5 py-1 text-xs font-medium rounded bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition">
+              JSON をコピー
+            </button>
+            <button id="btn-download-json" type="button"
+              class="px-2.5 py-1 text-xs font-medium rounded border border-[var(--border)] hover:bg-[var(--secondary)] transition">
+              .json ダウンロード
+            </button>
+            <span id="copy-feedback" class="text-xs text-[var(--success)] hidden">コピーしました</span>
+          </div>
+        </div>
+        <textarea id="export-json" readonly rows="6"
+          class="w-full font-mono text-xs p-2.5 rounded border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-none"></textarea>
+        <p class="text-xs text-[var(--muted-foreground)]">
+          調整内容はブラウザの localStorage に自動保存されます。ショートカット: <kbd class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">1/2/3</kbd> 直径、<kbd class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">P/M</kbd> ツール切替、<kbd class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">←/→</kbd> スライド移動。
+        </p>
+      </div>
+    </details>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = 'lucivo_stage_magnifier_matrix_v1';
+      const SIZE_PRESETS = [0.30, 0.45, 0.60];
+      const SIZE_LABELS = ['30%', '45%', '60%'];
+      const ZOOM_LABELS = ['小', '中', '大'];
+
+      function createDefaultMatrix() {
+        return {
+          zoomPresets: [1.5, 2.2, 3.2],
+          themes: {
+            dark: [
+              // 30% (small) - slightly stronger rim & gloss to draw focus
+              [
+                { rim: 0.34, gloss: 0.28, shadow: 0.24, plateau: 0.78 },
+                { rim: 0.36, gloss: 0.28, shadow: 0.26, plateau: 0.76 },
+                { rim: 0.40, gloss: 0.30, shadow: 0.28, plateau: 0.74 }
+              ],
+              // 45% (medium / default)
+              [
+                { rim: 0.26, gloss: 0.20, shadow: 0.20, plateau: 0.78 },
+                { rim: 0.28, gloss: 0.22, shadow: 0.20, plateau: 0.76 },
+                { rim: 0.32, gloss: 0.24, shadow: 0.22, plateau: 0.74 }
+              ],
+              // 60% (large) - subtler rim & gloss so it doesn't overpower the slide
+              [
+                { rim: 0.18, gloss: 0.14, shadow: 0.16, plateau: 0.80 },
+                { rim: 0.20, gloss: 0.16, shadow: 0.18, plateau: 0.78 },
+                { rim: 0.24, gloss: 0.18, shadow: 0.20, plateau: 0.75 }
+              ]
+            ],
+            light: [
+              // 30% (small) - light theme relies more on outer shadow & subtle rim
+              [
+                { rim: 0.24, gloss: 0.16, shadow: 0.26, plateau: 0.78 },
+                { rim: 0.26, gloss: 0.18, shadow: 0.28, plateau: 0.76 },
+                { rim: 0.28, gloss: 0.20, shadow: 0.30, plateau: 0.74 }
+              ],
+              // 45% (medium / default)
+              [
+                { rim: 0.18, gloss: 0.12, shadow: 0.22, plateau: 0.78 },
+                { rim: 0.20, gloss: 0.14, shadow: 0.24, plateau: 0.76 },
+                { rim: 0.22, gloss: 0.16, shadow: 0.26, plateau: 0.74 }
+              ],
+              // 60% (large)
+              [
+                { rim: 0.12, gloss: 0.08, shadow: 0.18, plateau: 0.80 },
+                { rim: 0.14, gloss: 0.10, shadow: 0.20, plateau: 0.78 },
+                { rim: 0.16, gloss: 0.12, shadow: 0.22, plateau: 0.75 }
+              ]
+            ]
+          }
+        };
+      }
+
+      function loadConfig() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.zoomPresets?.length === 3 && parsed?.themes?.dark?.length === 3 && parsed?.themes?.light?.length === 3) {
+              return parsed;
+            }
+          }
+        } catch (_) {}
+        return createDefaultMatrix();
+      }
+
+      function saveConfig() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        } catch (_) {}
+      }
+
+      let config = loadConfig();
+
+      const canvas = document.getElementById('stage-canvas');
+      const hudStatus = document.getElementById('hud-status');
+      const hudCounter = document.getElementById('hud-counter');
+      const hudMagControls = document.getElementById('hud-mag-controls');
+      const btnModeToggle = document.getElementById('btn-mode-toggle');
+      const btnThemeToggle = document.getElementById('btn-theme-toggle');
+      const btnPrev = document.getElementById('hud-prev');
+      const btnNext = document.getElementById('hud-next');
+      const btnPointer = document.getElementById('hud-pointer');
+      const btnMagnifier = document.getElementById('hud-magnifier');
+
+      const sizeBtns = Array.from(document.querySelectorAll('.size-btn'));
+      const zoomBtns = Array.from(document.querySelectorAll('.zoom-btn'));
+
+      const matrixThemeLabel = document.getElementById('matrix-theme-label');
+      const matrixTbody = document.getElementById('matrix-tbody');
+      const activeCellBadge = document.getElementById('active-cell-badge');
+      const thZooms = [
+        document.getElementById('th-zoom-0'),
+        document.getElementById('th-zoom-1'),
+        document.getElementById('th-zoom-2')
+      ];
+
+      const tuneZoomInputs = [
+        document.getElementById('tune-zoom-0'),
+        document.getElementById('tune-zoom-1'),
+        document.getElementById('tune-zoom-2')
+      ];
+      const tuneZoomVals = [
+        document.getElementById('val-zoom-0'),
+        document.getElementById('val-zoom-1'),
+        document.getElementById('val-zoom-2')
+      ];
+
+      const ctrlPlateau = document.getElementById('ctrl-plateau');
+      const ctrlRim = document.getElementById('ctrl-rim');
+      const ctrlGloss = document.getElementById('ctrl-gloss');
+      const ctrlShadow = document.getElementById('ctrl-shadow');
+
+      const valPlateau = document.getElementById('val-plateau');
+      const valRim = document.getElementById('val-rim');
+      const valGloss = document.getElementById('val-gloss');
+      const valShadow = document.getElementById('val-shadow');
+
+      const exportTextarea = document.getElementById('export-json');
+      const btnCopyJson = document.getElementById('btn-copy-json');
+      const btnDownloadJson = document.getElementById('btn-download-json');
+      const copyFeedback = document.getElementById('copy-feedback');
+      const btnApplyRow = document.getElementById('btn-apply-row');
+      const btnApplyAll = document.getElementById('btn-apply-all');
+      const btnResetMatrix = document.getElementById('btn-reset-matrix');
+
+      const state = {
+        slideIndex: 0,
+        slideCount: 3,
+        toolMode: 'magnifier',
+        lensStyle: 'radial',
+        stageTheme: 'dark',
+        sizeIdx: 1,
+        zoomIdx: 1,
+        mouseX: 0.54,
+        mouseY: 0.48,
+        targetX: 0.54,
+        targetY: 0.48,
+        active: true
+      };
+
+      function getCurrentCell() {
+        return config.themes[state.stageTheme][state.sizeIdx][state.zoomIdx];
+      }
+
+      const SLIDE_W = 2560;
+      const SLIDE_H = 1600;
+      const slideCanvas = document.createElement('canvas');
+      slideCanvas.width = SLIDE_W;
+      slideCanvas.height = SLIDE_H;
+      const sctx = slideCanvas.getContext('2d');
+
+      function palette() {
+        if (state.stageTheme === 'dark') {
+          return {
+            bg: '#0b1220',
+            grid: 'rgba(148, 163, 184, 0.09)',
+            gridBold: 'rgba(148, 163, 184, 0.16)',
+            card: '#131f35',
+            cardBorder: '#2a3b5c',
+            title: '#f1f5f9',
+            text: '#cbd5e1',
+            muted: '#94a3b8',
+            accent: '#38bdf8',
+            accent2: '#818cf8',
+            success: '#34d399',
+            warn: '#fbbf24',
+            codeBg: '#090f1b'
+          };
+        }
+        return {
+          bg: '#f8fafc',
+          grid: 'rgba(15, 23, 42, 0.06)',
+          gridBold: 'rgba(15, 23, 42, 0.12)',
+          card: '#ffffff',
+          cardBorder: '#cbd5e1',
+          title: '#0f172a',
+          text: '#334155',
+          muted: '#64748b',
+          accent: '#0284c7',
+          accent2: '#4f46e5',
+          success: '#059669',
+          warn: '#d97706',
+          codeBg: '#f1f5f9'
+        };
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+      }
+
+      function drawArrow(ctx, x1, y1, x2, y2, color, width = 4) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const head = 18;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawBackgroundGrid(p) {
+        sctx.fillStyle = p.bg;
+        sctx.fillRect(0, 0, SLIDE_W, SLIDE_H);
+        const step = 80;
+        sctx.lineWidth = 2;
+        for (let x = 0; x <= SLIDE_W; x += step) {
+          sctx.strokeStyle = (x % 320 === 0) ? p.gridBold : p.grid;
+          sctx.beginPath();
+          sctx.moveTo(x, 0);
+          sctx.lineTo(x, SLIDE_H);
+          sctx.stroke();
+        }
+        for (let y = 0; y <= SLIDE_H; y += step) {
+          sctx.strokeStyle = (y % 320 === 0) ? p.gridBold : p.grid;
+          sctx.beginPath();
+          sctx.moveTo(0, y);
+          sctx.lineTo(SLIDE_W, y);
+          sctx.stroke();
+        }
+      }
+
+      function drawSlide() {
+        const p = palette();
+        drawBackgroundGrid(p);
+
+        if (state.slideIndex === 0) {
+          sctx.fillStyle = p.title;
+          sctx.font = '700 62px system-ui, -apple-system, sans-serif';
+          sctx.fillText('Lucivo Stage Architecture (C4 Container)', 120, 145);
+
+          sctx.fillStyle = p.muted;
+          sctx.font = '400 32px system-ui, sans-serif';
+          sctx.fillText('3×3 マトリクスの各セルごとに、縁ハイライト・光沢・シャドウを個別調整できます', 120, 205);
+
+          sctx.save();
+          sctx.setLineDash([14, 10]);
+          sctx.strokeStyle = p.cardBorder;
+          sctx.lineWidth = 3;
+          roundRect(sctx, 640, 280, 1800, 1140, 28);
+          sctx.stroke();
+          sctx.restore();
+
+          sctx.fillStyle = p.muted;
+          sctx.font = '600 28px system-ui, sans-serif';
+          sctx.fillText('Lucivo Browser Runtime [Boundary]', 680, 335);
+
+          const drawNode = (x, y, w, h, title, sub, badge, color) => {
+            sctx.fillStyle = p.card;
+            sctx.strokeStyle = color || p.cardBorder;
+            sctx.lineWidth = 3;
+            roundRect(sctx, x, y, w, h, 20);
+            sctx.fill();
+            sctx.stroke();
+
+            sctx.fillStyle = color || p.accent;
+            roundRect(sctx, x + 24, y + 22, 16, 16, 8);
+            sctx.fill();
+
+            sctx.fillStyle = p.title;
+            sctx.font = '700 32px system-ui, sans-serif';
+            sctx.fillText(title, x + 54, y + 40);
+
+            sctx.fillStyle = p.accent;
+            sctx.font = '600 22px ui-monospace, monospace';
+            sctx.fillText(badge, x + 24, y + 84);
+
+            sctx.fillStyle = p.text;
+            sctx.font = '400 24px system-ui, sans-serif';
+            sub.forEach((line, i) => {
+              sctx.fillText(line, x + 24, y + 128 + i * 34);
+            });
+          };
+
+          drawNode(120, 560, 420, 240, 'Presenter', ['発表者（キーボード / マウス）', 'クリックで進行 / M で拡大鏡'], '[Person]', p.accent2);
+          drawNode(720, 380, 480, 250, 'Markdown Parser', ['frontmatter / slide 分割', 'Mermaid & Structurizr 抽出', 'AST キャッシュ生成'], '[TS Module]', p.accent);
+          drawNode(720, 740, 480, 260, 'Stage Presenter', ['16:10 スライドスケーリング', '光のポインター (DTP-SHOW-080)', '円形拡大鏡オーバーレイ'], '[TS Module]', p.success);
+          drawNode(720, 1110, 480, 240, 'Overview & HUD', ['サムネイル一覧・タイマー', '最小限の 3段階切替 UI'], '[UI Layer]', p.warn);
+
+          drawNode(1400, 420, 460, 240, 'Kroki / Mermaid', ['SVG ダイアグラム描画', 'クライアント側キャッシュ'], '[Renderer]', p.accent);
+          drawNode(1400, 760, 460, 250, 'Optical Lens Engine', ['平坦コア + 外周 1.0x 減衰', '30/45/60% 長辺基準直径', '3×3 デザイン定数マトリクス'], '[WebGL / SVG]', p.success);
+          drawNode(1960, 580, 420, 260, 'Display Output', ['プロジェクター / 共有画面', '60fps スムーズ追従', 'カーソル非表示制御'], '[Viewport]', p.accent2);
+
+          drawArrow(sctx, 540, 680, 720, 860, p.accent2, 5);
+          drawArrow(sctx, 960, 630, 960, 740, p.accent, 5);
+          drawArrow(sctx, 960, 1000, 960, 1110, p.warn, 5);
+          drawArrow(sctx, 1200, 505, 1400, 540, p.accent, 5);
+          drawArrow(sctx, 1200, 880, 1400, 880, p.success, 5);
+          drawArrow(sctx, 1860, 540, 1960, 660, p.accent, 5);
+          drawArrow(sctx, 1860, 885, 1960, 750, p.success, 5);
+
+          sctx.fillStyle = p.muted;
+          sctx.font = '500 22px ui-monospace, monospace';
+          sctx.fillText('pointermove (x, y)', 1220, 856);
+          sctx.fillText('render SVG', 1235, 495);
+        } else if (state.slideIndex === 1) {
+          sctx.fillStyle = p.title;
+          sctx.font = '700 60px system-ui, sans-serif';
+          sctx.fillText('仕様確認: 3段階プリセットと光学パラメータ', 120, 145);
+
+          sctx.fillStyle = p.muted;
+          sctx.font = '400 30px system-ui, sans-serif';
+          sctx.fillText('小さなコードや表の上で、倍率「小 / 中 / 大」と直径「30% / 45% / 60%」を比較できます', 120, 202);
+
+          sctx.fillStyle = p.codeBg;
+          sctx.strokeStyle = p.cardBorder;
+          sctx.lineWidth = 3;
+          roundRect(sctx, 120, 270, 1120, 1120, 24);
+          sctx.fill();
+          sctx.stroke();
+
+          sctx.fillStyle = p.accent;
+          sctx.font = '700 28px ui-monospace, monospace';
+          sctx.fillText('// 長辺基準の直径 & 3段階プリセット定義', 170, 345);
+
+          const codeLines = [
+            'const DIAMETER_RATIOS = [0.30, 0.45, 0.60]; // default: 0.45',
+            'const ZOOM_LEVELS     = [1.50, 2.20, 3.20]; // 1.3x ~ 4.0x',
+            '',
+            'float lensRadius = max(res.x, res.y) * diameterRatio * 0.5;',
+            '',
+            'float flatCoreFalloff(float r, float zoom, float plateau) {',
+            '  float t = clamp((r - plateau) / (1.0 - plateau), 0.0, 1.0);',
+            '  float w = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);',
+            '  return mix(1.0 / zoom, 1.0, w);',
+            '}',
+            '',
+            '// 縁ハイライト・光沢はサイズ×倍率の組み合わせに応じて',
+            '// 3x3 マトリクス定数側で微調整可能にする'
+          ];
+          sctx.font = '400 26px ui-monospace, monospace';
+          codeLines.forEach((line, idx) => {
+            sctx.fillStyle = line.startsWith('//') ? p.muted : p.title;
+            sctx.fillText(line, 170, 420 + idx * 54);
+          });
+
+          sctx.fillStyle = p.card;
+          sctx.strokeStyle = p.cardBorder;
+          roundRect(sctx, 1300, 270, 1140, 1120, 24);
+          sctx.fill();
+          sctx.stroke();
+
+          sctx.fillStyle = p.title;
+          sctx.font = '700 34px system-ui, sans-serif';
+          sctx.fillText('プリセット組み合わせの狙い', 1360, 350);
+
+          const rows = [
+            ['直径（長辺比）', '用途イメージ', '推奨倍率の目安'],
+            ['30%（小）', '表の数値・コード 1〜2行をピンポイント強調', '中〜大 (2.2x〜3.2x)'],
+            ['45%（中・初期）', '構成図の1ノード＋周辺矢印をまとめて拡大', '小〜中 (1.5x〜2.2x)'],
+            ['60%（大）', '画面の広い領域を大胆にフォーカスして説明', '小〜中 (1.5x〜2.2x)']
+          ];
+          rows.forEach((row, rIdx) => {
+            const y = 440 + rIdx * 160;
+            if (rIdx === 0) {
+              sctx.fillStyle = p.accent2;
+              sctx.font = '700 26px system-ui, sans-serif';
+            } else {
+              sctx.strokeStyle = p.cardBorder;
+              sctx.lineWidth = 2;
+              sctx.beginPath();
+              sctx.moveTo(1350, y - 50);
+              sctx.lineTo(2390, y - 50);
+              sctx.stroke();
+              sctx.fillStyle = p.text;
+              sctx.font = '400 25px system-ui, sans-serif';
+            }
+            sctx.fillText(row[0], 1360, y);
+            sctx.fillText(row[1], 1640, y);
+            sctx.fillText(row[2], 2120, y);
+          });
+        } else {
+          sctx.fillStyle = p.title;
+          sctx.font = '700 60px system-ui, sans-serif';
+          sctx.fillText('光学キャリブレーション用スライド', 120, 145);
+
+          sctx.fillStyle = p.muted;
+          sctx.font = '400 30px system-ui, sans-serif';
+          sctx.fillText('縁ハイライト・光沢ハイライトと、外周 1.0x 接続の自然さを確認できます', 120, 202);
+
+          sctx.strokeStyle = p.accent;
+          sctx.lineWidth = 2;
+          for (let i = 0; i <= 16; i++) {
+            const x = 200 + i * 135;
+            sctx.beginPath();
+            sctx.moveTo(x, 280);
+            sctx.lineTo(x, 1400);
+            sctx.stroke();
+
+            sctx.fillStyle = p.muted;
+            sctx.font = '500 20px ui-monospace, monospace';
+            sctx.fillText(`${i * 100}`, x - 18, 265);
+          }
+          for (let j = 0; j <= 8; j++) {
+            const y = 280 + j * 140;
+            sctx.strokeStyle = j % 2 === 0 ? p.accent2 : p.cardBorder;
+            sctx.lineWidth = j % 2 === 0 ? 3 : 2;
+            sctx.beginPath();
+            sctx.moveTo(200, y);
+            sctx.lineTo(2360, y);
+            sctx.stroke();
+          }
+
+          const sizes = [18, 22, 26, 32, 40];
+          sizes.forEach((sz, idx) => {
+            sctx.fillStyle = p.title;
+            sctx.font = `500 ${sz}px system-ui, sans-serif`;
+            sctx.fillText(`Font ${sz}px: 直径60%でも縁が1.0倍へ滑らかに戻るテスト文字列 0123456789`, 240, 480 + idx * 165);
+          });
+        }
+      }
+
+      const gl = canvas.getContext('webgl', { antialias: true, alpha: false });
+      if (!gl) {
+        alert('WebGL が利用できません。');
+        return;
+      }
+
+      const vsSource = `
+        attribute vec2 a_pos;
+        varying vec2 v_uv;
+        void main() {
+          v_uv = a_pos * 0.5 + 0.5;
+          v_uv.y = 1.0 - v_uv.y;
+          gl_Position = vec4(a_pos, 0.0, 1.0);
+        }
+      `;
+
+      const fsSource = `
+        precision highp float;
+        varying vec2 v_uv;
+        uniform sampler2D u_tex;
+        uniform vec2 u_res;
+        uniform vec2 u_mouse;
+        uniform float u_radius;
+        uniform float u_zoom;
+        uniform float u_plateau;
+        uniform float u_rim;
+        uniform float u_gloss;
+        uniform float u_shadow;
+        uniform int u_toolMode;
+        uniform int u_lensStyle;
+        uniform int u_active;
+
+        void main() {
+          vec2 px = v_uv * u_res;
+          vec2 center = u_mouse * u_res;
+          vec2 delta = px - center;
+          float dist = length(delta);
+
+          if (u_active == 0) {
+            gl_FragColor = texture2D(u_tex, v_uv);
+            return;
+          }
+
+          if (u_toolMode == 1) {
+            vec4 base = texture2D(u_tex, v_uv);
+            float core = smoothstep(14.0, 6.0, dist);
+            float halo = exp(-dist * 0.045) * 0.65;
+            vec3 glow = vec3(1.0, 0.28, 0.28) * (core + halo);
+            gl_FragColor = vec4(mix(base.rgb, vec3(1.0, 0.92, 0.92), core * 0.85) + glow * 0.65, 1.0);
+            return;
+          }
+
+          if (dist < u_radius) {
+            float r = dist / u_radius;
+            vec2 sampleUv;
+
+            if (u_lensStyle == 0) {
+              float t = clamp((r - u_plateau) / max(1.0 - u_plateau, 0.001), 0.0, 1.0);
+              float w = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+              float scale = mix(1.0 / u_zoom, 1.0, w);
+              vec2 srcPx = center + delta * scale;
+              sampleUv = clamp(srcPx / u_res, 0.0, 1.0);
+            } else {
+              vec2 srcPx = center + delta / u_zoom;
+              sampleUv = clamp(srcPx / u_res, 0.0, 1.0);
+            }
+
+            vec4 col = texture2D(u_tex, sampleUv);
+
+            float edge = smoothstep(0.955, 0.996, r) * (1.0 - smoothstep(0.996, 1.0, r));
+            col.rgb += vec3(0.60, 0.85, 1.0) * (edge * 0.75 * u_rim);
+
+            vec2 nd = delta / u_radius;
+            float specDir = clamp(dot(normalize(nd + 0.0001), normalize(vec2(-0.7, -0.7))), 0.0, 1.0);
+            float rimSheen = pow(r, 5.0) * (0.25 + 0.75 * pow(specDir, 2.0));
+            float topArc = smoothstep(0.86, 0.55, r) * smoothstep(0.35, 0.90, -nd.y - nd.x * 0.35) * 0.28;
+            col.rgb += vec3(0.82, 0.93, 1.0) * ((rimSheen * 0.45 + topArc) * u_gloss);
+
+            gl_FragColor = col;
+          } else {
+            vec4 base = texture2D(u_tex, v_uv);
+            float outerDist = dist - u_radius;
+            float shadow = exp(-outerDist * (6.0 / max(u_radius, 1.0))) * u_shadow;
+            base.rgb *= (1.0 - shadow);
+            gl_FragColor = base;
+          }
+        }
+      `;
+
+      function compileShader(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+      }
+
+      const program = gl.createProgram();
+      gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vsSource));
+      gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fsSource));
+      gl.linkProgram(program);
+      gl.useProgram(program);
+
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const aPos = gl.getAttribLocation(program, 'a_pos');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+      function uploadSlideTexture() {
+        drawSlide();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, slideCanvas);
+        hudCounter.textContent = `${state.slideIndex + 1} / ${state.slideCount}`;
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(1, Math.round(rect.width * dpr));
+        const h = Math.max(1, Math.round(rect.height * dpr));
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          gl.viewport(0, 0, w, h);
+        }
+      }
+
+      const uRes = gl.getUniformLocation(program, 'u_res');
+      const uMouse = gl.getUniformLocation(program, 'u_mouse');
+      const uRadius = gl.getUniformLocation(program, 'u_radius');
+      const uZoom = gl.getUniformLocation(program, 'u_zoom');
+      const uPlateau = gl.getUniformLocation(program, 'u_plateau');
+      const uRim = gl.getUniformLocation(program, 'u_rim');
+      const uGloss = gl.getUniformLocation(program, 'u_gloss');
+      const uShadow = gl.getUniformLocation(program, 'u_shadow');
+      const uToolMode = gl.getUniformLocation(program, 'u_toolMode');
+      const uLensStyle = gl.getUniformLocation(program, 'u_lensStyle');
+      const uActive = gl.getUniformLocation(program, 'u_active');
+
+      function render() {
+        resizeCanvas();
+        state.mouseX += (state.targetX - state.mouseX) * 0.35;
+        state.mouseY += (state.targetY - state.mouseY) * 0.35;
+
+        const longSide = Math.max(canvas.width, canvas.height);
+        const radiusPx = longSide * SIZE_PRESETS[state.sizeIdx] * 0.5;
+        const currentZoom = config.zoomPresets[state.zoomIdx];
+        const cell = getCurrentCell();
+
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+        gl.uniform2f(uMouse, state.mouseX, state.mouseY);
+        gl.uniform1f(uRadius, radiusPx);
+        gl.uniform1f(uZoom, currentZoom);
+        gl.uniform1f(uPlateau, cell.plateau);
+        gl.uniform1f(uRim, cell.rim);
+        gl.uniform1f(uGloss, cell.gloss);
+        gl.uniform1f(uShadow, cell.shadow);
+        gl.uniform1i(uToolMode, state.toolMode === 'magnifier' ? 0 : 1);
+        gl.uniform1i(uLensStyle, state.lensStyle === 'radial' ? 0 : 1);
+        gl.uniform1i(uActive, state.active ? 1 : 0);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        requestAnimationFrame(render);
+      }
+
+      function renderMatrixTable() {
+        const themeMatrix = config.themes[state.stageTheme];
+        matrixThemeLabel.textContent = state.stageTheme === 'dark' ? 'ダーク' : 'ライト';
+        thZooms.forEach((th, idx) => {
+          th.textContent = `${ZOOM_LABELS[idx]} (${config.zoomPresets[idx].toFixed(2)}x)`;
+        });
+
+        matrixTbody.innerHTML = '';
+        SIZE_LABELS.forEach((sLabel, sIdx) => {
+          const tr = document.createElement('tr');
+          const th = document.createElement('th');
+          th.className = 'p-2 text-left font-medium border border-[var(--border)] bg-[var(--background)] whitespace-nowrap';
+          th.textContent = `直径 ${sLabel}`;
+          tr.appendChild(th);
+
+          for (let zIdx = 0; zIdx < 3; zIdx++) {
+            const c = themeMatrix[sIdx][zIdx];
+            const isSelected = (sIdx === state.sizeIdx && zIdx === state.zoomIdx);
+            const td = document.createElement('td');
+            td.className = 'p-1.5 border border-[var(--border)] cursor-pointer transition text-center ' +
+              (isSelected
+                ? 'bg-sky-500/15 ring-2 ring-inset ring-sky-500 font-medium'
+                : 'hover:bg-[var(--secondary)]');
+            td.innerHTML = `
+              <div class="font-mono text-[11px] leading-tight">
+                縁${Math.round(c.rim * 100)} / 光${Math.round(c.gloss * 100)}
+              </div>
+              <div class="font-mono text-[11px] text-[var(--muted-foreground)] leading-tight mt-0.5">
+                影${Math.round(c.shadow * 100)} / 平${Math.round(c.plateau * 100)}
+              </div>
+            `;
+            td.addEventListener('click', () => {
+              state.sizeIdx = sIdx;
+              state.zoomIdx = zIdx;
+              syncAllUI();
+            });
+            tr.appendChild(td);
+          }
+          matrixTbody.appendChild(tr);
+        });
+      }
+
+      function syncSlidersFromCell() {
+        const cell = getCurrentCell();
+        ctrlRim.value = Math.round(cell.rim * 100);
+        ctrlGloss.value = Math.round(cell.gloss * 100);
+        ctrlShadow.value = Math.round(cell.shadow * 100);
+        ctrlPlateau.value = cell.plateau.toFixed(2);
+
+        valRim.textContent = `${Math.round(cell.rim * 100)}%`;
+        valGloss.textContent = `${Math.round(cell.gloss * 100)}%`;
+        valShadow.textContent = `${Math.round(cell.shadow * 100)}%`;
+        valPlateau.textContent = `${Math.round(cell.plateau * 100)}%`;
+
+        const themeName = state.stageTheme === 'dark' ? 'ダーク' : 'ライト';
+        activeCellBadge.textContent = `${SIZE_LABELS[state.sizeIdx]} × ${config.zoomPresets[state.zoomIdx].toFixed(2)}x (${themeName})`;
+      }
+
+      function updateExportJson() {
+        const payload = {
+          diameterRatios: SIZE_PRESETS,
+          defaultDiameterIndex: 1,
+          zoomPresets: config.zoomPresets.map((v) => Number(v.toFixed(2))),
+          defaultZoomIndex: 1,
+          themes: config.themes
+        };
+        exportTextarea.value = JSON.stringify(payload, null, 2);
+      }
+
+      function syncPresetButtons() {
+        sizeBtns.forEach((btn, idx) => {
+          btn.className = idx === state.sizeIdx
+            ? 'size-btn px-2 py-0.5 rounded-full bg-sky-500/40 text-sky-100 font-medium transition'
+            : 'size-btn px-2 py-0.5 rounded-full text-slate-300 hover:text-white transition';
+        });
+        zoomBtns.forEach((btn, idx) => {
+          const z = config.zoomPresets[idx];
+          btn.textContent = `${z.toFixed(1)}x`;
+          btn.className = idx === state.zoomIdx
+            ? 'zoom-btn px-2 py-0.5 rounded-full bg-sky-500/40 text-sky-100 font-medium transition'
+            : 'zoom-btn px-2 py-0.5 rounded-full text-slate-300 hover:text-white transition';
+        });
+      }
+
+      function syncAllUI() {
+        syncPresetButtons();
+        tuneZoomInputs.forEach((el, idx) => {
+          el.value = config.zoomPresets[idx];
+          tuneZoomVals[idx].textContent = `${config.zoomPresets[idx].toFixed(2)}x`;
+        });
+        syncSlidersFromCell();
+        renderMatrixTable();
+        updateExportJson();
+
+        const pct = Math.round(SIZE_PRESETS[state.sizeIdx] * 100);
+        const z = config.zoomPresets[state.zoomIdx];
+        if (state.toolMode === 'pointer') {
+          hudStatus.textContent = '光のポインター (DTP-SHOW-080)';
+        } else if (state.lensStyle === 'radial') {
+          hudStatus.textContent = `直径 ${pct}%(長辺) / ${z.toFixed(2)}x → 縁 1.0x`;
+        } else {
+          hudStatus.textContent = `比較(通常): 直径 ${pct}% / 一律 ${z.toFixed(2)}x`;
+        }
+      }
+
+      function setToolMode(mode) {
+        state.toolMode = mode;
+        if (mode === 'magnifier') {
+          btnMagnifier.className = 'px-2.5 py-1 rounded-full bg-sky-500/30 text-sky-200 border border-sky-400/40 transition flex items-center gap-1';
+          btnPointer.className = 'px-2.5 py-1 rounded-full hover:bg-white/10 transition flex items-center gap-1';
+          hudMagControls.style.display = 'flex';
+        } else {
+          btnPointer.className = 'px-2.5 py-1 rounded-full bg-rose-500/30 text-rose-200 border border-rose-400/40 transition flex items-center gap-1';
+          btnMagnifier.className = 'px-2.5 py-1 rounded-full hover:bg-white/10 transition flex items-center gap-1';
+          hudMagControls.style.display = 'none';
+        }
+        syncAllUI();
+      }
+
+      function updatePointerPos(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        state.targetX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        state.targetY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+        state.active = true;
+      }
+
+      canvas.addEventListener('pointermove', (e) => updatePointerPos(e.clientX, e.clientY));
+      canvas.addEventListener('pointerdown', (e) => updatePointerPos(e.clientX, e.clientY));
+
+      sizeBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.sizeIdx = parseInt(btn.dataset.sizeIdx, 10);
+          syncAllUI();
+        });
+      });
+
+      zoomBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.zoomIdx = parseInt(btn.dataset.zoomIdx, 10);
+          syncAllUI();
+        });
+      });
+
+      tuneZoomInputs.forEach((input, idx) => {
+        input.addEventListener('input', () => {
+          config.zoomPresets[idx] = parseFloat(input.value);
+          saveConfig();
+          syncAllUI();
+        });
+      });
+
+      ctrlRim.addEventListener('input', () => {
+        getCurrentCell().rim = parseInt(ctrlRim.value, 10) / 100;
+        saveConfig();
+        syncAllUI();
+      });
+      ctrlGloss.addEventListener('input', () => {
+        getCurrentCell().gloss = parseInt(ctrlGloss.value, 10) / 100;
+        saveConfig();
+        syncAllUI();
+      });
+      ctrlShadow.addEventListener('input', () => {
+        getCurrentCell().shadow = parseInt(ctrlShadow.value, 10) / 100;
+        saveConfig();
+        syncAllUI();
+      });
+      ctrlPlateau.addEventListener('input', () => {
+        getCurrentCell().plateau = parseFloat(ctrlPlateau.value);
+        saveConfig();
+        syncAllUI();
+      });
+
+      btnApplyRow.addEventListener('click', () => {
+        const src = { ...getCurrentCell() };
+        for (let z = 0; z < 3; z++) {
+          config.themes[state.stageTheme][state.sizeIdx][z] = { ...src };
+        }
+        saveConfig();
+        syncAllUI();
+      });
+
+      btnApplyAll.addEventListener('click', () => {
+        const src = { ...getCurrentCell() };
+        for (let s = 0; s < 3; s++) {
+          for (let z = 0; z < 3; z++) {
+            config.themes[state.stageTheme][s][z] = { ...src };
+          }
+        }
+        saveConfig();
+        syncAllUI();
+      });
+
+      btnResetMatrix.addEventListener('click', () => {
+        config = createDefaultMatrix();
+        saveConfig();
+        syncAllUI();
+      });
+
+      btnCopyJson.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(exportTextarea.value);
+          copyFeedback.classList.remove('hidden');
+          setTimeout(() => copyFeedback.classList.add('hidden'), 1800);
+        } catch (_) {
+          exportTextarea.select();
+          document.execCommand('copy');
+        }
+      });
+
+      btnDownloadJson.addEventListener('click', () => {
+        const blob = new Blob([exportTextarea.value], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'stage-magnifier-presets.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      btnPrev.addEventListener('click', () => {
+        state.slideIndex = (state.slideIndex - 1 + state.slideCount) % state.slideCount;
+        uploadSlideTexture();
+      });
+      btnNext.addEventListener('click', () => {
+        state.slideIndex = (state.slideIndex + 1) % state.slideCount;
+        uploadSlideTexture();
+      });
+      btnPointer.addEventListener('click', () => setToolMode('pointer'));
+      btnMagnifier.addEventListener('click', () => setToolMode('magnifier'));
+
+      btnModeToggle.addEventListener('click', () => {
+        state.lensStyle = state.lensStyle === 'radial' ? 'flat' : 'radial';
+        btnModeToggle.textContent = state.lensStyle === 'radial'
+          ? '比較: 連続減衰 (Issue #450)'
+          : '比較: 通常の拡大鏡 (一律)';
+        syncAllUI();
+      });
+
+      btnThemeToggle.addEventListener('click', () => {
+        state.stageTheme = state.stageTheme === 'dark' ? 'light' : 'dark';
+        btnThemeToggle.textContent = state.stageTheme === 'dark'
+          ? 'ステージ: ダーク'
+          : 'ステージ: ライト';
+        uploadSlideTexture();
+        syncAllUI();
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'p' || e.key === 'P') setToolMode('pointer');
+        if (e.key === 'm' || e.key === 'M') setToolMode('magnifier');
+        if (e.key === '1') { state.sizeIdx = 0; syncAllUI(); }
+        if (e.key === '2') { state.sizeIdx = 1; syncAllUI(); }
+        if (e.key === '3') { state.sizeIdx = 2; syncAllUI(); }
+        if (e.key === 'ArrowRight') {
+          state.slideIndex = (state.slideIndex + 1) % state.slideCount;
+          uploadSlideTexture();
+        }
+        if (e.key === 'ArrowLeft') {
+          state.slideIndex = (state.slideIndex - 1 + state.slideCount) % state.slideCount;
+          uploadSlideTexture();
+        }
+      });
+
+      uploadSlideTexture();
+      syncAllUI();
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

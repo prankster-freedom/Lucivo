@@ -1,0 +1,42 @@
+{
+  "diameterRatios": [0.3, 0.45, 0.6],
+  "defaultDiameterIndex": 1,
+  "zoomPresets": [1.5, 2.2, 3.2],
+  "defaultZoomIndex": 1,
+  "themes": {
+    "dark": [
+      [
+        { "rim": 0.34, "gloss": 0.28, "shadow": 0.24, "plateau": 0.78 },
+        { "rim": 0.36, "gloss": 0.28, "shadow": 0.26, "plateau": 0.76 },
+        { "rim": 0.4, "gloss": 0.3, "shadow": 0.28, "plateau": 0.74 }
+      ],
+      [
+        { "rim": 0.26, "gloss": 0.2, "shadow": 0.2, "plateau": 0.78 },
+        { "rim": 0.28, "gloss": 0.22, "shadow": 0.2, "plateau": 0.76 },
+        { "rim": 0.32, "gloss": 0.24, "shadow": 0.22, "plateau": 0.74 }
+      ],
+      [
+        { "rim": 0.18, "gloss": 0.14, "shadow": 0.16, "plateau": 0.8 },
+        { "rim": 0.2, "gloss": 0.16, "shadow": 0.18, "plateau": 0.78 },
+        { "rim": 0.24, "gloss": 0.18, "shadow": 0.2, "plateau": 0.75 }
+      ]
+    ],
+    "light": [
+      [
+        { "rim": 0.24, "gloss": 0.16, "shadow": 0.26, "plateau": 0.78 },
+        { "rim": 0.26, "gloss": 0.18, "shadow": 0.28, "plateau": 0.76 },
+        { "rim": 0.28, "gloss": 0.2, "shadow": 0.3, "plateau": 0.74 }
+      ],
+      [
+        { "rim": 0.18, "gloss": 0.12, "shadow": 0.22, "plateau": 0.78 },
+        { "rim": 0.2, "gloss": 0.14, "shadow": 0.24, "plateau": 0.76 },
+        { "rim": 0.22, "gloss": 0.16, "shadow": 0.26, "plateau": 0.74 }
+      ],
+      [
+        { "rim": 0.12, "gloss": 0.08, "shadow": 0.18, "plateau": 0.8 },
+        { "rim": 0.14, "gloss": 0.1, "shadow": 0.2, "plateau": 0.78 },
+        { "rim": 0.16, "gloss": 0.12, "shadow": 0.22, "plateau": 0.75 }
+      ]
+    ]
+  }
+}
