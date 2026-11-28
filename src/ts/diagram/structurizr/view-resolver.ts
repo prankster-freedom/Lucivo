@@ -1,6 +1,12 @@
 /* ==========================================================================
    Structurizr View Resolver（暗黙的関係集約・include/exclude・境界ツリー・ドリルダウン解決）
    ========================================================================== */
+import {
+  evaluateElementExpression,
+  evaluateRelationshipExpression,
+  isFilterExpressionSyntax,
+  parseFilterExpression
+} from './expression';
 import type {
   ResolvedBoundary,
   ResolvedNode,
@@ -9,6 +15,7 @@ import type {
   StructurizrRelationship,
   StructurizrViewSpec,
   StructurizrWorkspace,
+  ViewFilterRule,
   ViewKind
 } from './types';
 
@@ -16,7 +23,8 @@ const VIEW_KIND_LABELS: Record<ViewKind, string> = {
   systemLandscape: 'System Landscape',
   systemContext: 'System Context',
   container: 'Container',
-  component: 'Component'
+  component: 'Component',
+  filtered: 'Filtered'
 };
 
 function buildAncestorsMap(elements: Record<string, StructurizrElement>): Map<string, string[]> {
@@ -200,18 +208,82 @@ function isExternalInView(el: StructurizrElement, view: StructurizrViewSpec): bo
   return el.parentId !== view.scopeElementId;
 }
 
+function isElementAllowedInView(
+  el: StructurizrElement,
+  view: StructurizrViewSpec,
+  elements: Record<string, StructurizrElement>
+): boolean {
+  if (view.kind === 'systemLandscape' || view.kind === 'systemContext') {
+    return el.kind === 'person' || el.kind === 'softwareSystem';
+  }
+  if (view.kind === 'container') {
+    if (el.kind === 'person' || el.kind === 'container') return true;
+    return el.kind === 'softwareSystem' && el.id !== view.scopeElementId;
+  }
+  if (view.kind === 'component') {
+    if (el.kind === 'person' || el.kind === 'component') return true;
+    const scopeContainer = view.scopeElementId ? elements[view.scopeElementId] : undefined;
+    const systemId = scopeContainer?.parentId;
+    if (el.kind === 'softwareSystem') return el.id !== systemId;
+    if (el.kind === 'container') return el.id !== view.scopeElementId;
+  }
+  return false;
+}
+
+function isCouplingNeighborAllowedInView(
+  el: StructurizrElement,
+  view: StructurizrViewSpec,
+  elements: Record<string, StructurizrElement>
+): boolean {
+  if (view.kind === 'systemLandscape' || view.kind === 'systemContext') {
+    return el.kind === 'person' || el.kind === 'softwareSystem';
+  }
+  if (view.kind === 'container') {
+    if (el.kind === 'person') return true;
+    if (el.kind === 'softwareSystem') return el.id !== view.scopeElementId;
+    return el.kind === 'container' && el.parentId === view.scopeElementId;
+  }
+  if (view.kind === 'component') {
+    if (el.kind === 'person') return true;
+    const scopeContainer = view.scopeElementId ? elements[view.scopeElementId] : undefined;
+    const systemId = scopeContainer?.parentId;
+    if (el.kind === 'softwareSystem') return el.id !== systemId;
+    if (el.kind === 'container') return el.parentId === systemId && el.id !== view.scopeElementId;
+    return el.kind === 'component' && el.parentId === view.scopeElementId;
+  }
+  return false;
+}
+
+function getHiddenBaseViewKeys(views: StructurizrViewSpec[]): Set<string> {
+  const hidden = new Set<string>();
+  for (const v of views) {
+    if (v.kind === 'filtered' && v.filter?.baseKey) {
+      hidden.add(v.filter.baseKey);
+    }
+  }
+  return hidden;
+}
+
 function findDrillDownViewKey(
   el: StructurizrElement,
   currentViewKey: string,
-  views: StructurizrViewSpec[]
+  views: StructurizrViewSpec[],
+  hiddenBaseKeys: Set<string>
 ): string | undefined {
+  const resolveVisibleTarget = (base: StructurizrViewSpec | undefined): string | undefined => {
+    if (!base) return undefined;
+    if (!hiddenBaseKeys.has(base.key)) return base.key;
+    const filtered = views.find(v => v.kind === 'filtered' && v.filter?.baseKey === base.key && v.key !== currentViewKey);
+    return filtered?.key;
+  };
+
   if (el.kind === 'softwareSystem') {
     const target = views.find(v => v.kind === 'container' && v.scopeElementId === el.id && v.key !== currentViewKey);
-    return target?.key;
+    return resolveVisibleTarget(target);
   }
   if (el.kind === 'container') {
     const target = views.find(v => v.kind === 'component' && v.scopeElementId === el.id && v.key !== currentViewKey);
-    return target?.key;
+    return resolveVisibleTarget(target);
   }
   return undefined;
 }
@@ -283,6 +355,72 @@ function buildViewTitle(view: StructurizrViewSpec, workspace: StructurizrWorkspa
   };
 }
 
+function getEffectiveRules(view: StructurizrViewSpec): ViewFilterRule[] {
+  if (view.rules && view.rules.length > 0) return view.rules;
+  const rules: ViewFilterRule[] = [];
+  for (const inc of view.includes) rules.push({ action: 'include', expression: inc });
+  for (const exc of view.excludes) rules.push({ action: 'exclude', expression: exc });
+  return rules;
+}
+
+function matchesAnyTag(itemTags: string[], filterTags: string[]): boolean {
+  return filterTags.some(t => itemTags.includes(t));
+}
+
+function resolveFilteredView(
+  workspace: StructurizrWorkspace,
+  view: StructurizrViewSpec,
+  combinedRelationships: StructurizrRelationship[]
+): ResolvedView {
+  const filter = view.filter;
+  const baseView = filter
+    ? workspace.views.find(v => v.kind !== 'filtered' && v.key === filter.baseKey)
+      ?? workspace.views.find(v => v.kind !== 'filtered' && v.key.toLowerCase() === filter.baseKey.toLowerCase())
+    : undefined;
+
+  if (!filter || !baseView) {
+    const { title, subtitle } = buildViewTitle(view, workspace);
+    return { spec: view, title, subtitle, nodes: [], boundaries: [], edges: [] };
+  }
+
+  const baseResolved = resolveStructurizrView(workspace, baseView, combinedRelationships);
+  const hiddenBaseKeys = getHiddenBaseViewKeys(workspace.views);
+
+  const keptNodes: ResolvedNode[] = baseResolved.nodes
+    .filter(n => {
+      const hit = matchesAnyTag(n.element.tags, filter.tags);
+      return filter.mode === 'include' ? hit : !hit;
+    })
+    .map(n => ({
+      ...n,
+      boundaryId: undefined,
+      drillDownViewKey: findDrillDownViewKey(n.element, view.key, workspace.views, hiddenBaseKeys)
+    }));
+
+  const keptNodeIds = new Set(keptNodes.map(n => n.element.id));
+  const keptEdges = baseResolved.edges.filter(rel => {
+    if (!keptNodeIds.has(rel.sourceId) || !keptNodeIds.has(rel.destinationId)) return false;
+    const hit = matchesAnyTag(rel.tags, filter.tags);
+    return filter.mode === 'include' ? hit : !hit;
+  });
+
+  const boundaries = buildBoundariesForNodes(keptNodes, baseView, workspace.elements);
+  const mergedSpec: StructurizrViewSpec = {
+    ...view,
+    scopeElementId: baseView.scopeElementId,
+    autoLayout: view.autoLayout ?? baseView.autoLayout
+  };
+
+  return {
+    spec: mergedSpec,
+    title: view.title || baseResolved.title,
+    subtitle: `${baseResolved.subtitle} (Filtered)`,
+    nodes: keptNodes,
+    boundaries,
+    edges: keptEdges
+  };
+}
+
 export function resolveStructurizrView(
   workspace: StructurizrWorkspace,
   view: StructurizrViewSpec,
@@ -293,20 +431,96 @@ export function resolveStructurizrView(
     ...buildImpliedRelationships(workspace.elements, workspace.relationships)
   ];
 
-  const includedIds = new Set<string>();
-  for (const inc of view.includes) {
-    if (inc === '*') {
-      for (const id of expandWildcard(view, workspace.elements, combinedRelationships)) {
-        includedIds.add(id);
-      }
-    } else if (workspace.elements[inc]) {
-      includedIds.add(inc);
-    }
-  }
-  for (const exc of view.excludes) {
-    includedIds.delete(exc);
+  if (view.kind === 'filtered') {
+    return resolveFilteredView(workspace, view, combinedRelationships);
   }
 
+  const includedIds = new Set<string>();
+  const activeEdgeIds = new Set<string>();
+  const allowedElement = (el: StructurizrElement): boolean => isElementAllowedInView(el, view, workspace.elements);
+  const allowedCouplingNeighbor = (el: StructurizrElement): boolean => isCouplingNeighborAllowedInView(el, view, workspace.elements);
+
+  const addElements = (ids: Iterable<string>): void => {
+    const newlyAdded = new Set<string>();
+    for (const id of ids) {
+      if (workspace.elements[id] && !includedIds.has(id)) {
+        includedIds.add(id);
+        newlyAdded.add(id);
+      }
+    }
+    if (newlyAdded.size === 0) return;
+    for (const rel of combinedRelationships) {
+      if (includedIds.has(rel.sourceId) && includedIds.has(rel.destinationId)) {
+        if (newlyAdded.has(rel.sourceId) || newlyAdded.has(rel.destinationId)) {
+          activeEdgeIds.add(rel.id);
+        }
+      }
+    }
+  };
+
+  const removeElements = (ids: Iterable<string>): void => {
+    let removedAny = false;
+    for (const id of ids) {
+      if (includedIds.delete(id)) removedAny = true;
+    }
+    if (!removedAny) return;
+    for (const rel of combinedRelationships) {
+      if (!includedIds.has(rel.sourceId) || !includedIds.has(rel.destinationId)) {
+        activeEdgeIds.delete(rel.id);
+      }
+    }
+  };
+
+  for (const rule of getEffectiveRules(view)) {
+    const raw = rule.expression;
+    if (raw === '*') {
+      if (rule.action === 'include') {
+        addElements(expandWildcard(view, workspace.elements, combinedRelationships));
+      } else {
+        includedIds.clear();
+        activeEdgeIds.clear();
+      }
+      continue;
+    }
+
+    if (!isFilterExpressionSyntax(raw)) {
+      if (workspace.elements[raw]) {
+        if (rule.action === 'include') addElements([raw]);
+        else removeElements([raw]);
+      }
+      continue;
+    }
+
+    const parsed = parseFilterExpression(raw);
+    if (!parsed) continue;
+
+    if (parsed.domain === 'element') {
+      const matched = evaluateElementExpression(
+        parsed.expr,
+        workspace.elements,
+        combinedRelationships,
+        allowedElement,
+        allowedCouplingNeighbor
+      );
+      if (rule.action === 'include') addElements(matched);
+      else removeElements(matched);
+    } else {
+      const matchedRels = evaluateRelationshipExpression(parsed.expr, workspace.elements, combinedRelationships);
+      if (rule.action === 'include') {
+        for (const rel of combinedRelationships) {
+          if (matchedRels.has(rel.id) && includedIds.has(rel.sourceId) && includedIds.has(rel.destinationId)) {
+            activeEdgeIds.add(rel.id);
+          }
+        }
+      } else {
+        for (const relId of matchedRels) {
+          activeEdgeIds.delete(relId);
+        }
+      }
+    }
+  }
+
+  const hiddenBaseKeys = getHiddenBaseViewKeys(workspace.views);
   const nodes: ResolvedNode[] = Array.from(includedIds)
     .map(id => workspace.elements[id])
     .filter((el): el is StructurizrElement => Boolean(el))
@@ -314,13 +528,13 @@ export function resolveStructurizrView(
     .map(element => ({
       element,
       external: isExternalInView(element, view),
-      drillDownViewKey: findDrillDownViewKey(element, view.key, workspace.views)
+      drillDownViewKey: findDrillDownViewKey(element, view.key, workspace.views, hiddenBaseKeys)
     }));
 
   const boundaries = buildBoundariesForNodes(nodes, view, workspace.elements);
 
   const edges = combinedRelationships
-    .filter(rel => includedIds.has(rel.sourceId) && includedIds.has(rel.destinationId))
+    .filter(rel => activeEdgeIds.has(rel.id) && includedIds.has(rel.sourceId) && includedIds.has(rel.destinationId))
     .sort((a, b) => a.sourceOrder - b.sourceOrder);
 
   const { title, subtitle } = buildViewTitle(view, workspace);
@@ -340,5 +554,9 @@ export function resolveAllStructurizrViews(workspace: StructurizrWorkspace): Res
     ...workspace.relationships,
     ...buildImpliedRelationships(workspace.elements, workspace.relationships)
   ];
-  return workspace.views.map(view => resolveStructurizrView(workspace, view, allRelationships));
+  // 公式 Structurizr 仕様に従い、filtered ビューの baseKey として参照されたベースビューは表示一覧から除外する
+  const hiddenBaseKeys = getHiddenBaseViewKeys(workspace.views);
+  return workspace.views
+    .filter(view => !hiddenBaseKeys.has(view.key))
+    .map(view => resolveStructurizrView(workspace, view, allRelationships));
 }

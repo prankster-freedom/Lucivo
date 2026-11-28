@@ -189,9 +189,97 @@ workspace "Official Tutorial Pattern" "Structurizr DSL 公式チュートリア�
 }
 ```
 
-## 4. 未対応構文を含む公式 Cookbook 例（安全スキップ＋警告バッジ）
+## 4. `filtered` ビューと式フィルタ（公式 Cookbook 準拠）
 
-[Structurizr DSL Cookbook](https://docs.structurizr.com/dsl/cookbook) にある代表的な構文のうち、Lucivo（Phase 1）がまだ対応していない機能（`deploymentEnvironment` / `deploymentNode` / `containerInstance`・`deployment` ビュー・`dynamic` ビュー・`filtered` ビュー・外部 `theme`）を含めた例です。
+[Structurizr DSL Expressions](https://docs.structurizr.com/dsl/expressions) および [Filtered view](https://docs.structurizr.com/dsl/cookbook/filtered-view/) の公式構文により、1 つのモデルから切り口の異なるビューを宣言的に生成できます。
+
+- `filtered "<baseKey>" include|exclude "<tags>" "<key>"` でベースビューをタグ単位に絞り込めます（公式仕様に従い、ベースビュー自体は一覧から隠れます）。
+- `include "element.tag==..."`、`exclude relationship.tag==Async`、`include ->api->`（流入・流出カップリング）などの式フィルタを記述順に評価できます。
+
+```structurizr
+workspace "Filtered & Expressions Demo" "式フィルタと filtered ビューの公式構文例" {
+  model {
+    customer = person "顧客" "商品閲覧と注文を行う利用者" {
+      tags "Frontend"
+    }
+    shop = softwareSystem "注文プラットフォーム" {
+      web = container "Web ストア" "顧客向け SPA" "TypeScript" {
+        tags "Frontend,Core"
+      }
+      api = container "注文 API" "注文受付と在庫確認" "Go" {
+        tags "Core"
+      }
+      worker = container "非同期ワーカー" "通知・集計バッチ" "Go" {
+        tags "AsyncWorker"
+      }
+      db = container "注文 DB" "注文履歴ストア" "PostgreSQL" {
+        tags "Core,Database"
+      }
+    }
+    mail = softwareSystem "メール配信基盤" "外部通知 SaaS" {
+      tags "External"
+    }
+
+    customer -> web "商品閲覧・注文" "HTTPS" "Sync"
+    web -> api "注文リクエスト" "JSON / HTTPS" "Sync"
+    api -> db "注文永続化" "SQL" "Sync"
+    api -> worker "通知イベント発行" "Queue" "Async"
+    worker -> mail "確認メール送信" "SMTP" "Async"
+  }
+
+  views {
+    container shop "BaseContainers" {
+      include *
+      title "全コンテナ構成（ベース）"
+      autoLayout lr
+    }
+
+    filtered "BaseContainers" include "Element,Relationship" "AllContainers" {
+      title "全体表示（Filtered All）"
+      default
+    }
+
+    filtered "BaseContainers" include "Core,Frontend,Relationship" "CoreFlow" {
+      title "コア注文経路のみ（Filtered Include）"
+    }
+
+    filtered "BaseContainers" exclude "AsyncWorker,External" "WithoutAsync" {
+      title "非同期・外部除外（Filtered Exclude）"
+    }
+
+    container shop "SyncOnlyExpr" {
+      include *
+      exclude relationship.tag==Async
+      title "同期通信のみ（式フィルタ: exclude relationship.tag==Async）"
+      autoLayout lr
+    }
+
+    container shop "ApiNeighbors" {
+      include ->api->
+      title "API の直接接続先のみ（式フィルタ: ->api->）"
+      autoLayout lr
+    }
+
+    theme default
+
+    styles {
+      element "Database" {
+        shape Cylinder
+        background #2563eb
+        color #ffffff
+      }
+      relationship "Async" {
+        color #d97706
+        dashed true
+      }
+    }
+  }
+}
+```
+
+## 5. 未対応構文を含む公式 Cookbook 例（安全スキップ＋警告バッジ）
+
+[Structurizr DSL Cookbook](https://docs.structurizr.com/dsl/cookbook) にある代表的な構文のうち、Lucivo がまだ対応していない機能（`deploymentEnvironment` / `deploymentNode` / `containerInstance`・`deployment` ビュー・`dynamic` ビュー・外部 URL の `theme`）を含めた例です。
 
 Lucivo は未対応の構文に出会っても描画全体を止めず、安全にスキップしたうえで図の隅に警告バッジ（`⚠ 未対応構文`）を表示します。バッジをクリックすると、スキップされた箇所と行番号の一覧を確認できます。
 
@@ -244,8 +332,6 @@ workspace "Cookbook Unimplemented Features" "未対応構文の安全スキッ�
       include *
       autoLayout lr
     }
-
-    filtered "Landscape" include "Core,Relationship" "FilteredCore"
 
     theme https://static.structurizr.com/themes/default/theme.json
 

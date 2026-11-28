@@ -189,9 +189,97 @@ workspace "Official Tutorial Pattern" "Based on the Structurizr DSL Tutorial" {
 }
 ```
 
-## 4. Official Cookbook Patterns Including Unimplemented Syntax (Safe Skip & Warning Badge)
+## 4. `filtered` Views & Filter Expressions (Official Cookbook)
 
-This example combines supported static views with [Structurizr DSL Cookbook](https://docs.structurizr.com/dsl/cookbook) constructs that Lucivo (Phase 1) does not yet render: `deploymentEnvironment` / `deploymentNode` / `containerInstance`, `deployment` views, `dynamic` views, `filtered` views, and external `theme` URLs.
+Using [Structurizr DSL Expressions](https://docs.structurizr.com/dsl/expressions) and [Filtered views](https://docs.structurizr.com/dsl/cookbook/filtered-view/), you can project multiple focused diagrams from a single model.
+
+- `filtered "<baseKey>" include|exclude "<tags>" "<key>"` filters a base view by tags (following the official specification, the base view itself is hidden from the view list).
+- Expressions such as `include "element.tag==..."`, `exclude relationship.tag==Async`, and `include ->api->` (afferent/efferent couplings) are evaluated sequentially in declaration order.
+
+```structurizr
+workspace "Filtered & Expressions Demo" "Official filtered view and expression patterns" {
+  model {
+    customer = person "Customer" "Browses and places orders" {
+      tags "Frontend"
+    }
+    shop = softwareSystem "Order Platform" {
+      web = container "Web Store" "Customer SPA" "TypeScript" {
+        tags "Frontend,Core"
+      }
+      api = container "Order API" "Order intake and inventory checks" "Go" {
+        tags "Core"
+      }
+      worker = container "Async Worker" "Notifications and batch jobs" "Go" {
+        tags "AsyncWorker"
+      }
+      db = container "Order DB" "Persistent order store" "PostgreSQL" {
+        tags "Core,Database"
+      }
+    }
+    mail = softwareSystem "Email Platform" "External notification SaaS" {
+      tags "External"
+    }
+
+    customer -> web "Browses and orders" "HTTPS" "Sync"
+    web -> api "Submits orders" "JSON / HTTPS" "Sync"
+    api -> db "Persists orders" "SQL" "Sync"
+    api -> worker "Publishes events" "Queue" "Async"
+    worker -> mail "Sends confirmation emails" "SMTP" "Async"
+  }
+
+  views {
+    container shop "BaseContainers" {
+      include *
+      title "All Containers (Base)"
+      autoLayout lr
+    }
+
+    filtered "BaseContainers" include "Element,Relationship" "AllContainers" {
+      title "Full View (Filtered All)"
+      default
+    }
+
+    filtered "BaseContainers" include "Core,Frontend,Relationship" "CoreFlow" {
+      title "Core Order Path Only (Filtered Include)"
+    }
+
+    filtered "BaseContainers" exclude "AsyncWorker,External" "WithoutAsync" {
+      title "Exclude Async & External (Filtered Exclude)"
+    }
+
+    container shop "SyncOnlyExpr" {
+      include *
+      exclude relationship.tag==Async
+      title "Sync Only (Expression: exclude relationship.tag==Async)"
+      autoLayout lr
+    }
+
+    container shop "ApiNeighbors" {
+      include ->api->
+      title "Direct API Couplings (Expression: ->api->)"
+      autoLayout lr
+    }
+
+    theme default
+
+    styles {
+      element "Database" {
+        shape Cylinder
+        background #2563eb
+        color #ffffff
+      }
+      relationship "Async" {
+        color #d97706
+        dashed true
+      }
+    }
+  }
+}
+```
+
+## 5. Official Cookbook Patterns Including Unimplemented Syntax (Safe Skip & Warning Badge)
+
+This example combines supported static views with [Structurizr DSL Cookbook](https://docs.structurizr.com/dsl/cookbook) constructs that Lucivo does not yet render: `deploymentEnvironment` / `deploymentNode` / `containerInstance`, `deployment` views, `dynamic` views, and external `theme` URLs.
 
 Instead of failing the entire diagram, Lucivo safely skips unsupported constructs, renders the supported views (`Landscape` / `Containers`), and shows a subtle warning badge (`⚠ Unsupported syntax`) in the corner so you can inspect skipped lines.
 
@@ -244,8 +332,6 @@ workspace "Cookbook Unimplemented Features" "Safe skip demonstration" {
       include *
       autoLayout lr
     }
-
-    filtered "Landscape" include "Core,Relationship" "FilteredCore"
 
     theme https://static.structurizr.com/themes/default/theme.json
 

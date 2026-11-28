@@ -9,7 +9,7 @@
 import { escapeHtml } from '../../utils/escape';
 import { fnv1aHash } from '../../utils/hash';
 import { parseStructurizrDsl } from './parser';
-import { resolveAllStructurizrViews } from './view-resolver';
+import { resolveAllStructurizrViews, resolveStructurizrView } from './view-resolver';
 import { computeViewLayout } from './layout/layout-engine';
 import { ElkLayoutEngine } from './layout/elk-layout';
 import { renderStructurizrSvg } from './renderer/svg-renderer';
@@ -130,6 +130,13 @@ export class StructurizrBlockController {
       if (exact >= 0) return exact;
       const ci = this.views.findIndex(v => v.spec.key.toLowerCase() === initialViewKey.toLowerCase());
       if (ci >= 0) return ci;
+      // filtered ビューによって一覧から隠されたベースビューが明示指定された場合は表示対象へ追加する
+      const hiddenBase = this.workspace.views.find(v => v.key === initialViewKey)
+        ?? this.workspace.views.find(v => v.key.toLowerCase() === initialViewKey.toLowerCase());
+      if (hiddenBase) {
+        this.views.unshift(resolveStructurizrView(this.workspace, hiddenBase));
+        return 0;
+      }
       this.warnings.push({
         line: 1,
         column: 1,

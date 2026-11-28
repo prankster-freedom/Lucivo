@@ -369,13 +369,16 @@ workspace "Hierarchical Identifiers" {
   assert.strictEqual(sysAApiComp.spec.scopeElementId, hierById['sysA.api'].id);
   assert.ok(sysAApiComp.nodes.some(n => n.element.identifier === 'sysA.api.ctrl'));
 
-  // 式フィルタ（element.tag==...）は引き続き警告スキップされつつ、同ビューのドット修飾識別子は受理されること
+  // 式フィルタ（element.tag==...）と同ビューのドット修飾識別子が両方警告なしで受理されること
   const exprFilterWs = parseStructurizrDsl(`
 workspace {
   !identifiers hierarchical
   model {
     ss = softwareSystem "S" {
       wa = container "W"
+      api = container "API" {
+        tags "Core"
+      }
     }
   }
   views {
@@ -385,9 +388,10 @@ workspace {
   }
 }
 `);
-  assert.strictEqual(exprFilterWs.warnings.length, 1);
-  assert.strictEqual(exprFilterWs.warnings[0].code, 'UNSUPPORTED_SYNTAX');
-  assert.strictEqual(exprFilterWs.views[0].includes.length, 1);
+  assert.strictEqual(exprFilterWs.warnings.length, 0);
+  assert.strictEqual(exprFilterWs.views[0].includes.length, 2);
+  const exprFilterResolved = resolveAllStructurizrViews(exprFilterWs)[0];
+  assert.strictEqual(exprFilterResolved.nodes.length, 2);
 
   // 10. Phase 2a: !const / !constant / !var 定数・変数展開と未定義保持
   const constDsl = `
@@ -497,6 +501,211 @@ workspace "Mixed Theme" {
   assert.ok(mixedThemeWs.styles.elements.some(s => s.tag === 'Person' && s.background === '#08427b'));
   assert.strictEqual(mixedThemeWs.warnings.length, 1);
   assert.strictEqual(mixedThemeWs.warnings[0].code, 'THEME_IGNORED');
+
+  // 12. Phase 2b: 要素式フィルタ（tag AND/!=, type, parent, technology, properties, group, && / ||, 引用符付き式）
+  const elExprDsl = `
+workspace "Expressions Test" {
+  model {
+    u = person "User" {
+      tags "Tag 1"
+    }
+    s1 = softwareSystem "System 1" {
+      group "Frontend" {
+        web = container "Web" "" "TypeScript" {
+          tags "Core,Tier 1"
+          properties {
+            owner "team-a"
+          }
+        }
+      }
+      api = container "API" "" "Go" {
+        tags "Core"
+        properties {
+          owner "team-a"
+        }
+      }
+      worker = container "Worker" "" "Go" {
+        tags "Batch"
+        properties {
+          owner "team-b"
+        }
+      }
+    }
+    s2 = softwareSystem "System 2" {
+      extApi = container "External API" "" "Go" {
+        tags "Core"
+      }
+    }
+    u -> web "Uses"
+    web -> api "Calls"
+    api -> worker "Queues"
+    api -> extApi "Integrates"
+  }
+  views {
+    container s1 "TagAnd" {
+      include "element.tag==Core,Tier 1"
+    }
+    container s1 "TypeAndParent" {
+      include "element.type==Container && element.parent==s1"
+      exclude element.tag==Batch
+    }
+    container s1 "TechOrGroup" {
+      include "element.technology==Go || element.group==Frontend"
+    }
+    container s1 "PropAndNotTag" {
+      include element.properties[owner]==team-a
+      exclude "element.tag!=Tier 1"
+    }
+    container s1 "MultiSystemContainers" {
+      include element.parent==s1 element.parent==s2
+    }
+    container s1 "CouplingBoth" {
+      include ->api->
+    }
+    container s1 "CouplingAfferent" {
+      include element==->api
+    }
+    container s1 "CouplingExpr" {
+      include ->element.tag==Batch
+    }
+  }
+}
+`;
+  const elExprWs = parseStructurizrDsl(elExprDsl);
+  assert.strictEqual(elExprWs.warnings.length, 0, `unexpected warnings: ${JSON.stringify(elExprWs.warnings)}`);
+  const elExprViews = Object.fromEntries(resolveAllStructurizrViews(elExprWs).map(v => [v.spec.key, v]));
+
+  assert.deepStrictEqual(elExprViews.TagAnd.nodes.map(n => n.element.identifier), ['web']);
+  assert.deepStrictEqual(elExprViews.TypeAndParent.nodes.map(n => n.element.identifier), ['web', 'api']);
+  assert.deepStrictEqual(elExprViews.TechOrGroup.nodes.map(n => n.element.identifier), ['web', 'api', 'worker', 'extApi']);
+  assert.deepStrictEqual(elExprViews.PropAndNotTag.nodes.map(n => n.element.identifier), ['web']);
+  assert.deepStrictEqual(elExprViews.MultiSystemContainers.nodes.map(n => n.element.identifier), ['web', 'api', 'worker', 'extApi']);
+  // ->api-> は api + web(流入) + worker(流出) + 外部システム s2(流出・C4 抽象度準拠)
+  assert.deepStrictEqual(elExprViews.CouplingBoth.nodes.map(n => n.element.identifier), ['web', 'api', 'worker', 's2']);
+  // element==->api は api + web(流入)
+  assert.deepStrictEqual(elExprViews.CouplingAfferent.nodes.map(n => n.element.identifier), ['web', 'api']);
+  // ->element.tag==Batch は worker + api(流入)
+  assert.deepStrictEqual(elExprViews.CouplingExpr.nodes.map(n => n.element.identifier), ['api', 'worker']);
+
+  // 13. Phase 2b: 関係式フィルタと記述順の逐次評価
+  const relExprDsl = `
+workspace "Relationship Expressions" {
+  model {
+    a = softwareSystem "A"
+    b = softwareSystem "B"
+    c = softwareSystem "C" {
+      tags "Internal"
+    }
+    a -> b "Sync Call" "HTTPS" "Sync" {
+      properties {
+        protocol "http2"
+      }
+    }
+    a -> c "Async Event" "Kafka" "Async"
+    b -> c "DB Sync" "TCP" "Sync"
+  }
+  views {
+    systemLandscape "ExcludeAsync" {
+      include *
+      exclude relationship.tag==Async
+    }
+    systemLandscape "OnlySyncViaWildcard" {
+      include *
+      exclude *->*
+      include relationship.tag==Sync
+    }
+    systemLandscape "ExcludeThenReinclude" {
+      include *
+      exclude element.tag==Internal
+      include c
+      exclude a->b
+    }
+    systemLandscape "RelPropAndSource" {
+      include *
+      exclude *->*
+      include "relationship.source==a && relationship.properties[protocol]==http2"
+    }
+  }
+}
+`;
+  const relExprWs = parseStructurizrDsl(relExprDsl);
+  assert.strictEqual(relExprWs.warnings.length, 0, `unexpected warnings: ${JSON.stringify(relExprWs.warnings)}`);
+  const relExprViews = Object.fromEntries(resolveAllStructurizrViews(relExprWs).map(v => [v.spec.key, v]));
+
+  // ExcludeAsync: 全 3 要素が残り、Async エッジのみ除外（残り 2 本）
+  assert.strictEqual(relExprViews.ExcludeAsync.nodes.length, 3);
+  assert.strictEqual(relExprViews.ExcludeAsync.edges.length, 2);
+  assert.ok(relExprViews.ExcludeAsync.edges.every(e => !e.tags.includes('Async')));
+
+  // OnlySyncViaWildcard: *->* で全関係除外後、Sync のみ復活（2 本）
+  assert.strictEqual(relExprViews.OnlySyncViaWildcard.nodes.length, 3);
+  assert.strictEqual(relExprViews.OnlySyncViaWildcard.edges.length, 2);
+
+  // ExcludeThenReinclude: c が復活し、a->b のみ除外（残り a->c, b->c の 2 本）
+  assert.strictEqual(relExprViews.ExcludeThenReinclude.nodes.length, 3);
+  assert.strictEqual(relExprViews.ExcludeThenReinclude.edges.length, 2);
+  assert.ok(relExprViews.ExcludeThenReinclude.edges.every(e => e.description !== 'Sync Call'));
+
+  // RelPropAndSource: a->b（protocol=http2）の 1 本のみ
+  assert.strictEqual(relExprViews.RelPropAndSource.edges.length, 1);
+  assert.strictEqual(relExprViews.RelPropAndSource.edges[0].description, 'Sync Call');
+
+  // 14. Phase 2b: filtered ビュー（公式 Cookbook 準拠: OR タグ判定・ベースビュー非表示・境界再構築・未定義 baseKey 警告）
+  const filteredDsl = `
+workspace "Filtered Views" {
+  model {
+    group "Group A" {
+      a = softwareSystem "A" {
+        tags "Tag 1"
+      }
+    }
+    group "Group B" {
+      b = softwareSystem "B" {
+        tags "Tag 2"
+      }
+    }
+    c = softwareSystem "C" {
+      tags "Tag 3"
+    }
+    a -> b "A to B"
+    b -> c "B to C"
+  }
+  views {
+    systemLandscape "landscape" {
+      include *
+      autoLayout lr
+    }
+    filtered "landscape" include "Tag 1,Tag 2,Relationship" "landscape1" {
+      title "Tag 1 & 2 Only"
+      default
+    }
+    filtered "landscape" exclude "Tag 1" "landscape2"
+    filtered "missingBase" include "Tag 1" "broken"
+  }
+}
+`;
+  const filteredWs = parseStructurizrDsl(filteredDsl);
+  assert.strictEqual(filteredWs.warnings.length, 1);
+  assert.strictEqual(filteredWs.warnings[0].code, 'UNKNOWN_REFERENCE');
+  // ベースビュー "landscape" は公式仕様どおり一覧から隠れ、landscape1 と landscape2 の 2 件が表示される
+  const filteredResolved = resolveAllStructurizrViews(filteredWs);
+  assert.deepStrictEqual(filteredResolved.map(v => v.spec.key), ['landscape1', 'landscape2']);
+
+  const f1 = filteredResolved[0];
+  assert.strictEqual(f1.title, 'Tag 1 & 2 Only');
+  assert.strictEqual(f1.spec.isDefault, true);
+  assert.strictEqual(f1.spec.autoLayout.direction, 'lr');
+  assert.deepStrictEqual(f1.nodes.map(n => n.element.identifier), ['a', 'b']);
+  assert.strictEqual(f1.edges.length, 1);
+  assert.strictEqual(f1.edges[0].description, 'A to B');
+  assert.strictEqual(f1.boundaries.length, 2);
+
+  const f2 = filteredResolved[1];
+  assert.deepStrictEqual(f2.nodes.map(n => n.element.identifier), ['b', 'c']);
+  assert.strictEqual(f2.edges.length, 1);
+  assert.strictEqual(f2.edges[0].description, 'B to C');
+  // Group A はノードが除外されたため境界も消えていること
+  assert.deepStrictEqual(f2.boundaries.map(b => b.label), ['Group B']);
 
   console.log('PASS: structurizr-core.test.cjs (all assertions passed)');
 }

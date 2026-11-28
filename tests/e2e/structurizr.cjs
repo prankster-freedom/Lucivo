@@ -366,6 +366,120 @@ workspace "\${APP_NAME}" {
         && drilledOk
         && page.consoleErrors.length === 0;
       record('TC-DIAG-048', ok48, JSON.stringify({ p2aState, drilledOk, errors: page.consoleErrors }));
+
+      // TC-DIAG-049: Phase 2b（filtered ビュー・ベースビュー非表示・式フィルタ）
+      const PHASE2B_MD = `# Phase 2b Structurizr
+
+\`\`\`structurizr
+workspace "Phase 2b Filter Demo" {
+  model {
+    u = person "顧客" {
+      tags "Frontend"
+    }
+    shop = softwareSystem "Shop" {
+      web = container "Web UI" "SPA" "TypeScript" {
+        tags "Frontend,Core"
+      }
+      api = container "Order API" "REST" "Go" {
+        tags "Core"
+      }
+      worker = container "Async Worker" "Batch" "Go" {
+        tags "AsyncWorker"
+      }
+    }
+    u -> web "Browse" "HTTPS" "Sync"
+    web -> api "Order" "HTTPS" "Sync"
+    api -> worker "Notify" "Queue" "Async"
+  }
+
+  views {
+    container shop "BaseContainers" {
+      include *
+      autoLayout lr
+    }
+    filtered "BaseContainers" include "Core,Relationship" "FilteredCore" {
+      title "Core Only"
+      default
+    }
+    container shop "SyncOnly" {
+      include *
+      exclude relationship.tag==Async
+      title "Sync Only"
+      autoLayout lr
+    }
+    container shop "ApiCoupling" {
+      include ->api->
+      title "API Neighbors"
+      autoLayout lr
+    }
+  }
+}
+\`\`\`
+`;
+      await setDocument(page, PHASE2B_MD);
+      await waitStructurizrReady(page);
+
+      const p2bInitial = await page.evaluate(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        const tabTexts = Array.from(document.querySelectorAll('#standard-doc-container .c4-view-tab'))
+          .map(t => t.textContent.trim());
+        const warnBadge = document.querySelector('#standard-doc-container .c4-warning-badge');
+        const text = svg ? (svg.textContent || '') : '';
+        return {
+          viewKey: svg ? svg.getAttribute('data-c4-view-key') : null,
+          tabTexts,
+          hasWarnBadge: Boolean(warnBadge),
+          hasWeb: text.includes('Web UI'),
+          hasApi: text.includes('Order API'),
+          hasWorker: text.includes('Async Worker'),
+          hasCustomer: text.includes('顧客')
+        };
+      });
+
+      // SyncOnly タブへ切替（Async エッジのみ除外され、Async Worker ノード自体は残る）
+      await page.click('#standard-doc-container .c4-view-tab[data-c4-view-idx="1"]');
+      await page.waitForFunction(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        return svg && svg.getAttribute('data-c4-view-key') === 'SyncOnly';
+      });
+      const p2bSync = await page.evaluate(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        const text = svg ? (svg.textContent || '') : '';
+        return {
+          hasWorker: text.includes('Async Worker'),
+          hasNotifyEdge: text.includes('Notify'),
+          hasOrderEdge: text.includes('Order')
+        };
+      });
+
+      // ApiCoupling タブへ切替（->api-> により Web UI / Order API / Async Worker のみ表示され、顧客は含まれない）
+      await page.click('#standard-doc-container .c4-view-tab[data-c4-view-idx="2"]');
+      await page.waitForFunction(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        return svg && svg.getAttribute('data-c4-view-key') === 'ApiCoupling';
+      });
+      const p2bCoupling = await page.evaluate(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        const text = svg ? (svg.textContent || '') : '';
+        return {
+          hasWeb: text.includes('Web UI'),
+          hasApi: text.includes('Order API'),
+          hasWorker: text.includes('Async Worker'),
+          hasCustomer: text.includes('顧客')
+        };
+      });
+
+      const ok49 = !p2bInitial.hasWarnBadge
+        && p2bInitial.viewKey === 'FilteredCore'
+        && p2bInitial.tabTexts.length === 3
+        && p2bInitial.tabTexts[0] === 'Core Only'
+        && p2bInitial.tabTexts[1] === 'Sync Only'
+        && p2bInitial.tabTexts[2] === 'API Neighbors'
+        && p2bInitial.hasWeb && p2bInitial.hasApi && !p2bInitial.hasWorker && !p2bInitial.hasCustomer
+        && p2bSync.hasWorker && !p2bSync.hasNotifyEdge && p2bSync.hasOrderEdge
+        && p2bCoupling.hasWeb && p2bCoupling.hasApi && p2bCoupling.hasWorker && !p2bCoupling.hasCustomer
+        && page.consoleErrors.length === 0;
+      record('TC-DIAG-049', ok49, JSON.stringify({ p2bInitial, p2bSync, p2bCoupling, errors: page.consoleErrors }));
     } finally {
       await page.close();
     }

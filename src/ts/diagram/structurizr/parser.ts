@@ -6,6 +6,7 @@
    ========================================================================== */
 import { tokenizeStructurizrDsl, type Token } from './lexer';
 import { resolveBuiltinTheme } from './themes';
+import { isFilterExpressionSyntax, normalizeFilterExpression } from './expression';
 import {
   StructurizrSyntaxError,
   type AutoLayoutDirection,
@@ -13,6 +14,7 @@ import {
   type ElementKind,
   type ElementShape,
   type ElementStyle,
+  type FilteredViewFilter,
   type ParseWarning,
   type ParseWarningCode,
   type RelationshipStyle,
@@ -20,6 +22,7 @@ import {
   type StructurizrRelationship,
   type StructurizrViewSpec,
   type StructurizrWorkspace,
+  type ViewFilterRule,
   type ViewKind
 } from './types';
 
@@ -51,6 +54,7 @@ interface RawRelationship {
   description?: string;
   technology?: string;
   tags: string[];
+  properties: Record<string, string>;
   line: number;
   column: number;
   sourceOrder: number;
@@ -62,14 +66,25 @@ interface RawRefToken {
   column: number;
 }
 
+interface RawViewRule {
+  action: 'include' | 'exclude';
+  ref: RawRefToken;
+}
+
+interface RawFilteredSpec {
+  baseKey: RawRefToken;
+  mode: 'include' | 'exclude';
+  tags: string[];
+}
+
 interface RawView {
   key?: string;
   kind: ViewKind;
   scopeRef?: RawRefToken;
   title?: string;
   description?: string;
-  rawIncludes: RawRefToken[];
-  rawExcludes: RawRefToken[];
+  rawRules: RawViewRule[];
+  filteredSpec?: RawFilteredSpec;
   autoLayout?: AutoLayoutSpec;
   isDefault?: boolean;
   line: number;
@@ -567,6 +582,7 @@ class DslParser {
       description: args[1]?.value || undefined,
       technology: args[2]?.value || undefined,
       tags: mergeTags(['Relationship'], args[3]?.value ? splitTags([args[3].value]) : []),
+      properties: {},
       line,
       column,
       sourceOrder: ++this.orderSeq
@@ -597,14 +613,27 @@ class DslParser {
       const { args, hasBlock } = this.readLineTokens();
       if (lower === 'tags') {
         rel.tags = mergeTags(rel.tags, splitTags(args.map(a => a.value)));
+        if (hasBlock) this.skipBlockBody(kw.line, kw.column);
       } else if (lower === 'description' && args[0]) {
         rel.description = args[0].value;
+        if (hasBlock) this.skipBlockBody(kw.line, kw.column);
       } else if (lower === 'technology' && args[0]) {
         rel.technology = args[0].value;
+        if (hasBlock) this.skipBlockBody(kw.line, kw.column);
+      } else if (lower === 'properties') {
+        if (hasBlock) {
+          this.parsePropertiesBlock(rel.properties, kw.line, kw.column);
+        } else {
+          this.skipNewlines();
+          if (this.peek().type === 'LBRACE') {
+            this.next();
+            this.parsePropertiesBlock(rel.properties, kw.line, kw.column);
+          }
+        }
       } else {
         this.addWarning(kw.line, kw.column, 'UNSUPPORTED_SYNTAX', `未対応構文 "${kw.value}" をスキップしました`);
+        if (hasBlock) this.skipBlockBody(kw.line, kw.column);
       }
-      if (hasBlock) this.skipBlockBody(kw.line, kw.column);
     }
   }
 
@@ -633,6 +662,8 @@ class DslParser {
         this.parseViewDef('container', kw, true);
       } else if (lower === 'component') {
         this.parseViewDef('component', kw, true);
+      } else if (lower === 'filtered') {
+        this.parseFilteredViewDef(kw);
       } else if (lower === 'styles') {
         this.enterNamedBlock(kw, () => this.parseStylesBody(kw.line, kw.column));
       } else if (lower === 'theme' || lower === 'themes') {
@@ -674,8 +705,7 @@ class DslParser {
       kind,
       scopeRef,
       description,
-      rawIncludes: [],
-      rawExcludes: [],
+      rawRules: [],
       line: kw.line,
       column: kw.column
     };
@@ -689,6 +719,83 @@ class DslParser {
       }
     }
     this.rawViews.push(rawView);
+  }
+
+  private parseFilteredViewDef(kw: Token): void {
+    const { args, hasBlock } = this.readLineTokens();
+    const baseTok = args[0];
+    const modeTok = args[1];
+    const tagsTok = args[2];
+    const modeLower = (modeTok?.value || '').toLowerCase();
+
+    if (!baseTok || !modeTok || !tagsTok || (modeLower !== 'include' && modeLower !== 'exclude')) {
+      this.addWarning(
+        kw.line,
+        kw.column,
+        'UNSUPPORTED_SYNTAX',
+        'filtered ビューは "filtered <baseKey> <include|exclude> <tags> [key] [description]" の形式で指定してください'
+      );
+      if (hasBlock) this.skipBlockBody(kw.line, kw.column);
+      return;
+    }
+
+    const key = args[3]?.value || undefined;
+    const description = args[4]?.value || undefined;
+    const rawView: RawView = {
+      key,
+      kind: 'filtered',
+      description,
+      rawRules: [],
+      filteredSpec: {
+        baseKey: { value: baseTok.value, line: baseTok.line, column: baseTok.column },
+        mode: modeLower,
+        tags: splitTags([tagsTok.value])
+      },
+      line: kw.line,
+      column: kw.column
+    };
+    if (hasBlock) {
+      this.parseFilteredViewBlock(rawView, kw.line, kw.column);
+    } else {
+      this.skipNewlines();
+      if (this.peek().type === 'LBRACE') {
+        this.next();
+        this.parseFilteredViewBlock(rawView, kw.line, kw.column);
+      }
+    }
+    this.rawViews.push(rawView);
+  }
+
+  private parseFilteredViewBlock(view: RawView, openLine: number, openCol: number): void {
+    while (true) {
+      this.skipNewlines();
+      const tok = this.peek();
+      if (tok.type === 'RBRACE') {
+        this.next();
+        return;
+      }
+      if (tok.type === 'EOF') {
+        throw new StructurizrSyntaxError('filtered ビューブロックが "}" で閉じられていません', openLine, openCol);
+      }
+      if (tok.type === 'WORD' && tok.value.startsWith('!')) {
+        this.handleDirective(this.next());
+        continue;
+      }
+      const kw = this.next();
+      const lower = kw.value.toLowerCase();
+      const { args, hasBlock } = this.readLineTokens();
+
+      if (lower === 'title' && args[0]) {
+        view.title = args[0].value;
+      } else if (lower === 'description' && args[0]) {
+        view.description = args[0].value;
+      } else if (lower === 'default') {
+        view.isDefault = true;
+      } else {
+        this.addWarning(kw.line, kw.column, 'UNSUPPORTED_SYNTAX', `未対応構文 "${kw.value}" をスキップしました`);
+      }
+      if (hasBlock) this.skipBlockBody(kw.line, kw.column);
+    }
   }
 
   private parseViewBlock(view: RawView, openLine: number, openCol: number): void {
@@ -711,9 +818,9 @@ class DslParser {
       const { args, hasBlock } = this.readLineTokens();
 
       if (lower === 'include') {
-        this.collectViewRefs(args, view.rawIncludes);
+        this.collectViewRules(args, 'include', view.rawRules);
       } else if (lower === 'exclude') {
-        this.collectViewRefs(args, view.rawExcludes);
+        this.collectViewRules(args, 'exclude', view.rawRules);
       } else if (lower === 'autolayout') {
         view.autoLayout = this.parseAutoLayout(args);
       } else if (lower === 'title' && args[0]) {
@@ -729,44 +836,75 @@ class DslParser {
     }
   }
 
-  private collectViewRefs(args: Token[], target: RawRefToken[]): void {
+  private collectViewRules(args: Token[], action: 'include' | 'exclude', target: RawViewRule[]): void {
+    // 1. 空白なしで隣接するトークン（例: element.tag + = + = + Core, -> + api + ->, * + -> + *）を 1 原子へ連結する
+    interface Atom {
+      value: string;
+      line: number;
+      column: number;
+      quoted: boolean;
+    }
+    const atoms: Atom[] = [];
     let i = 0;
     while (i < args.length) {
-      const a = args[i];
-      const nextTok = args[i + 1];
-      // 式フィルタ（element.tag==..., relationship.tag==..., -> 表現等）は Phase 2b 対応予定のため警告スキップ。
-      // ドット修飾識別子（例: ss.wa, ss.api.ctrl）は式フィルタではないため通常参照として受理する。
-      const isExprToken = a.type === 'EQUALS'
-        || a.type === 'ARROW'
-        || nextTok?.type === 'EQUALS'
-        || nextTok?.type === 'ARROW'
-        || a.value.includes('=')
-        || a.value.startsWith('!')
-        || a.value === '->';
-
-      if (isExprToken) {
-        const exprParts: string[] = [a.value];
+      const start = args[i];
+      if (start.type === 'STRING') {
+        atoms.push({ value: start.value, line: start.line, column: start.column, quoted: true });
         i += 1;
-        while (i < args.length) {
-          const cur = args[i];
-          const prev = args[i - 1];
-          if (
-            cur.type === 'EQUALS'
-            || cur.type === 'ARROW'
-            || prev.type === 'EQUALS'
-            || prev.type === 'ARROW'
-          ) {
-            exprParts.push(cur.value);
-            i += 1;
-            continue;
-          }
-          break;
-        }
-        this.addWarning(a.line, a.column, 'UNSUPPORTED_SYNTAX', `式フィルタ "${exprParts.join('')}" は未対応のためスキップしました`);
         continue;
       }
-      target.push({ value: a.value, line: a.line, column: a.column });
+      let combined = start.value;
+      let endCol = start.column + start.value.length;
       i += 1;
+      while (i < args.length) {
+        const cur = args[i];
+        if (cur.type === 'STRING') break;
+        if (cur.line === start.line && cur.column === endCol) {
+          combined += cur.value;
+          endCol += cur.value.length;
+          i += 1;
+        } else {
+          break;
+        }
+      }
+      atoms.push({ value: combined, line: start.line, column: start.column, quoted: false });
+    }
+
+    // 2. スペース区切りの矢印式（例: a -> b, * -> *）を 1 原子へ結合する
+    const mergedArrows: Atom[] = [];
+    for (let j = 0; j < atoms.length; j += 1) {
+      const cur = atoms[j];
+      if (!cur.quoted && cur.value === '->' && mergedArrows.length > 0 && j + 1 < atoms.length) {
+        const prev = mergedArrows[mergedArrows.length - 1];
+        const next = atoms[j + 1];
+        if (!prev.quoted && !next.quoted) {
+          prev.value = `${prev.value}->${next.value}`;
+          j += 1;
+          continue;
+        }
+      }
+      mergedArrows.push({ ...cur });
+    }
+
+    // 3. スペース区切りの論理結合（&& / ||）を 1 式へ結合する
+    const mergedLogical: Atom[] = [];
+    for (let j = 0; j < mergedArrows.length; j += 1) {
+      const cur = mergedArrows[j];
+      if (!cur.quoted && (cur.value === '&&' || cur.value === '||') && mergedLogical.length > 0 && j + 1 < mergedArrows.length) {
+        const prev = mergedLogical[mergedLogical.length - 1];
+        const next = mergedArrows[j + 1];
+        prev.value = `${prev.value} ${cur.value} ${next.value}`;
+        j += 1;
+        continue;
+      }
+      mergedLogical.push(cur);
+    }
+
+    for (const atom of mergedLogical) {
+      target.push({
+        action,
+        ref: { value: atom.value, line: atom.line, column: atom.column }
+      });
     }
   }
 
@@ -914,21 +1052,44 @@ class DslParser {
         description: raw.description,
         technology: raw.technology,
         tags: raw.tags,
+        properties: Object.keys(raw.properties).length > 0 ? raw.properties : undefined,
         implied: false,
         sourceOrder: raw.sourceOrder
       });
     }
 
     const usedKeys = new Set<string>();
-    const views: StructurizrViewSpec[] = [];
     const kindCounter: Record<ViewKind, number> = {
       systemLandscape: 0,
       systemContext: 0,
       container: 0,
-      component: 0
+      component: 0,
+      filtered: 0
     };
 
+    const allocateViewKey = (raw: RawView): string => {
+      let key = raw.key;
+      if (!key) {
+        kindCounter[raw.kind] += 1;
+        const prefix = raw.kind.charAt(0).toUpperCase() + raw.kind.slice(1);
+        key = `${prefix}-${kindCounter[raw.kind]}`;
+      }
+      if (usedKeys.has(key)) {
+        let suffix = 2;
+        while (usedKeys.has(`${key}-${suffix}`)) suffix += 1;
+        key = `${key}-${suffix}`;
+      }
+      usedKeys.add(key);
+      return key;
+    };
+
+    // 1. 通常ビューを先に解決して baseKey 参照テーブルを構築する
+    const resolvedByRaw = new Map<RawView, StructurizrViewSpec>();
+    const baseKeyExact = new Map<string, string>();
+    const baseKeyLower = new Map<string, string>();
+
     for (const raw of this.rawViews) {
+      if (raw.kind === 'filtered') continue;
       let scopeElementId: string | undefined;
       if (raw.scopeRef) {
         scopeElementId = this.resolveIdentifier(raw.scopeRef.value);
@@ -943,44 +1104,53 @@ class DslParser {
         }
       }
 
+      const rules: ViewFilterRule[] = [];
       const includes: string[] = [];
-      for (const ref of raw.rawIncludes) {
-        if (ref.value === '*') {
-          if (!includes.includes('*')) includes.push('*');
-          continue;
-        }
-        const resolved = this.resolveIdentifier(ref.value);
-        if (!resolved) {
-          this.addWarning(ref.line, ref.column, 'UNKNOWN_REFERENCE', `include 対象 "${ref.value}" が未定義です`);
-          continue;
-        }
-        if (!includes.includes(resolved)) includes.push(resolved);
-      }
-
       const excludes: string[] = [];
-      for (const ref of raw.rawExcludes) {
-        const resolved = this.resolveIdentifier(ref.value);
-        if (!resolved) {
-          this.addWarning(ref.line, ref.column, 'UNKNOWN_REFERENCE', `exclude 対象 "${ref.value}" が未定義です`);
+
+      for (const rule of raw.rawRules) {
+        const ref = rule.ref;
+        if (ref.value === '*') {
+          rules.push({ action: rule.action, expression: '*' });
+          if (rule.action === 'include' && !includes.includes('*')) includes.push('*');
+          if (rule.action === 'exclude' && !excludes.includes('*')) excludes.push('*');
           continue;
         }
-        if (!excludes.includes(resolved)) excludes.push(resolved);
+
+        if (isFilterExpressionSyntax(ref.value)) {
+          const { normalized, issues } = normalizeFilterExpression(ref.value, id => this.resolveIdentifier(id));
+          for (const issue of issues) {
+            this.addWarning(ref.line, ref.column, issue.code, issue.message);
+          }
+          if (normalized) {
+            rules.push({ action: rule.action, expression: normalized });
+            if (rule.action === 'include' && !includes.includes(normalized)) includes.push(normalized);
+            if (rule.action === 'exclude' && !excludes.includes(normalized)) excludes.push(normalized);
+          }
+          continue;
+        }
+
+        const resolved = this.resolveIdentifier(ref.value);
+        if (!resolved) {
+          this.addWarning(ref.line, ref.column, 'UNKNOWN_REFERENCE', `${rule.action} 対象 "${ref.value}" が未定義です`);
+          continue;
+        }
+        rules.push({ action: rule.action, expression: resolved });
+        if (rule.action === 'include' && !includes.includes(resolved)) includes.push(resolved);
+        if (rule.action === 'exclude' && !excludes.includes(resolved)) excludes.push(resolved);
       }
 
-      let key = raw.key;
-      if (!key) {
-        kindCounter[raw.kind] += 1;
-        const prefix = raw.kind.charAt(0).toUpperCase() + raw.kind.slice(1);
-        key = `${prefix}-${kindCounter[raw.kind]}`;
+      const hasIncludeRule = rules.some(r => r.action === 'include');
+      if (!hasIncludeRule) {
+        rules.unshift({ action: 'include', expression: '*' });
+        if (!includes.includes('*')) includes.unshift('*');
       }
-      if (usedKeys.has(key)) {
-        let suffix = 2;
-        while (usedKeys.has(`${key}-${suffix}`)) suffix += 1;
-        key = `${key}-${suffix}`;
-      }
-      usedKeys.add(key);
 
-      views.push({
+      const key = allocateViewKey(raw);
+      baseKeyExact.set(key, key);
+      baseKeyLower.set(key.toLowerCase(), key);
+
+      resolvedByRaw.set(raw, {
         key,
         kind: raw.kind,
         scopeElementId,
@@ -988,7 +1158,49 @@ class DslParser {
         description: raw.description,
         includes: includes.length > 0 ? includes : ['*'],
         excludes,
+        rules,
         autoLayout: raw.autoLayout ?? { direction: 'tb' },
+        isDefault: raw.isDefault
+      });
+    }
+
+    // 2. filtered ビューの baseKey を解決し、宣言順を維持して views を組み立てる
+    const views: StructurizrViewSpec[] = [];
+    for (const raw of this.rawViews) {
+      if (raw.kind !== 'filtered') {
+        const spec = resolvedByRaw.get(raw);
+        if (spec) views.push(spec);
+        continue;
+      }
+
+      const fspec = raw.filteredSpec;
+      if (!fspec) continue;
+      const canonicalBaseKey = baseKeyExact.get(fspec.baseKey.value)
+        ?? baseKeyLower.get(fspec.baseKey.value.toLowerCase());
+      if (!canonicalBaseKey) {
+        this.addWarning(
+          fspec.baseKey.line,
+          fspec.baseKey.column,
+          'UNKNOWN_REFERENCE',
+          `filtered ビューのベースビュー "${fspec.baseKey.value}" が見つからないためスキップしました`
+        );
+        continue;
+      }
+
+      const key = allocateViewKey(raw);
+      const filter: FilteredViewFilter = {
+        baseKey: canonicalBaseKey,
+        mode: fspec.mode,
+        tags: fspec.tags
+      };
+      views.push({
+        key,
+        kind: 'filtered',
+        title: raw.title,
+        description: raw.description,
+        includes: [],
+        excludes: [],
+        filter,
         isDefault: raw.isDefault
       });
     }
@@ -1000,6 +1212,7 @@ class DslParser {
         title: this.workspaceName || 'System Landscape',
         includes: ['*'],
         excludes: [],
+        rules: [{ action: 'include', expression: '*' }],
         autoLayout: { direction: 'tb' }
       });
     }

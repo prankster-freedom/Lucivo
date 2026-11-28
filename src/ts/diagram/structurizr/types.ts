@@ -14,7 +14,8 @@ export type ViewKind =
   | 'systemLandscape'
   | 'systemContext'
   | 'container'
-  | 'component';
+  | 'component'
+  | 'filtered';
 
 export type AutoLayoutDirection = 'tb' | 'bt' | 'lr' | 'rl';
 
@@ -66,6 +67,7 @@ export interface StructurizrRelationship {
   description?: string;
   technology?: string;
   tags: string[];
+  properties?: Record<string, string>;
   implied: boolean;
   sourceOrder: number;
 }
@@ -76,6 +78,17 @@ export interface AutoLayoutSpec {
   nodeSeparation?: number;
 }
 
+export interface ViewFilterRule {
+  action: 'include' | 'exclude';
+  expression: string;
+}
+
+export interface FilteredViewFilter {
+  baseKey: string;
+  mode: 'include' | 'exclude';
+  tags: string[];
+}
+
 export interface StructurizrViewSpec {
   key: string;
   kind: ViewKind;
@@ -84,6 +97,8 @@ export interface StructurizrViewSpec {
   description?: string;
   includes: string[];
   excludes: string[];
+  rules?: ViewFilterRule[];
+  filter?: FilteredViewFilter;
   autoLayout?: AutoLayoutSpec;
   manualLayout?: ViewLayout;
   isDefault?: boolean;
