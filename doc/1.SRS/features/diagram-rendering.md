@@ -150,13 +150,14 @@ tags: ["Lucivo", "SRS", "diagram-rendering"]
 - **提供形態（Web 版／スタンドアロン版）**:
   - **Web 版**: Markdown のコードブロック ```` ```structurizr ````（エイリアス ```` ```structurizr-dsl ````、大文字小文字不問）をサーバー通信なし・ブラウザ単体（`NFR-001`）で解析し、C4 ダイアグラム（`<svg>`）として描画すること。コードブロックの info string 引数 `view=<key>`（または `view="<key>"`）で初期表示ビューを指定できる。指定キーが存在しない場合は先頭ビューへフォールバックし、警告として通知する。
   - **スタンドアロン版（`NFR-008`）**: レイアウトエンジンを同梱せず配布サイズを維持する。対象コードブロックはエラーにせず通常のコードブロックとして表示し、「Structurizr DSL — 図の表示は Web 版で対応」（英語表示時は英語）の控えめな案内を添える。
-- **DSL 対応範囲（Phase 1）**:
-  - 識別子スコープ: `flat` を対象とする。
+- **DSL 対応範囲（Phase 1 + Phase 2a）**:
+  - 識別子スコープ: `flat`（既定）および `hierarchical`（`!identifiers hierarchical`、ドット修飾参照 `ss.wa` / `ss.api.ctrl` およびブロック内相対・上位参照に対応。公式仕様に従い `group` は階層識別子に含めない）。
+  - 定数・変数展開: `!const` / `!constant`（再定義不可）および `!var`（再定義可）による `${NAME}` 文字列置換（未定義の `${...}` はそのまま保持）。
   - Model 構文: `person`, `softwareSystem`, `container`, `component`, `group`, `->`（ブロック内省略記法を含む）, `tags`, `description`, `technology`, `properties`。
   - **暗黙的関係（Implied Relationships）**: 下位要素間の明示的関係から上位ビュー間の関係を自動集約して描画する。
-  - Views 構文: `systemLandscape`, `systemContext`, `container`, `component`, `include *`, 個別 `include`, `exclude`, `autoLayout [tb|bt|lr|rl] [rankSep] [nodeSep]`, `title`, `description`。`views` が省略または空の場合は、既定の `systemLandscape`（`include *`）を 1 件自動生成する。
-  - Styles 構文: `styles { element "<tag>" { ... } relationship "<tag>" { ... } }`（形状・背景色・文字色・枠線色・線種・不透明度・寸法・破線・太さ・ルーティング）。外部 URL を読む `theme https://...` はオフライン原則に反するため非対応とする。
-  - **未対応構文とエラーの扱い**: 未対応構文（`!include`, `!script`, `!docs`, `!adrs`, `!identifiers hierarchical`, `theme`, `deploymentEnvironment`, `dynamic`, `deployment`, `filtered` 等）は描画を止めずに安全にスキップし、図の隅に控えめな警告バッジ（クリックで行番号と理由を展開）を表示する。波括弧不一致など致命的な構文エラーのみ行番号付きのエラーパネルを表示する。
+  - Views 構文: `systemLandscape`, `systemContext`, `container`, `component`, `include *`, 個別 `include`（ドット修飾識別子含む）, `exclude`, `autoLayout [tb|bt|lr|rl] [rankSep] [nodeSep]`, `title`, `description`。`views` が省略または空の場合は、既定の `systemLandscape`（`include *`）を 1 件自動生成する。
+  - Styles・Theme 構文: `styles { element "<tag>" { ... } relationship "<tag>" { ... } }`（形状・背景色・文字色・枠線色・線種・不透明度・寸法・破線・太さ・ルーティング）、および内蔵 `default` テーマプリセット（`theme default` / `themes default`、ワークスペース `styles` による上書きを優先）。外部 URL を読む `theme https://...` はオフライン原則に反するため非対応を維持する。
+  - **未対応構文とエラーの扱い**: 未対応構文（`!include`, `!script`, `!docs`, `!adrs`, 外部 URL の `theme`, `deploymentEnvironment`, `dynamic`, `deployment`, `filtered`, 式フィルタ等）は描画を止めずに安全にスキップし、図の隅に控えめな警告バッジ（クリックで行番号と理由を展開）を表示する。波括弧不一致など致命的な構文エラーのみ行番号付きのエラーパネルを表示する。
 - **ビュー切替と階層ドリルダウン**:
   - 複数ビューが存在するときのみ、カード内にビュー切替 UI（タブ。ビュー数が多い場合はドロップダウン）を表示する。単一ビューのときは切替 UI を隠しノイズを増やさない。
   - 下位ビュー（`softwareSystem` → `container`、`container` → `component`）が存在する要素にはズームインアイコンを配置し、クリックで下位ビューへ遷移するとともに、親ビューへ戻るパンくず導線を表示する。
