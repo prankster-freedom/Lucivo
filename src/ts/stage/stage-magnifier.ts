@@ -280,10 +280,14 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
         .replace(/(^|[},\s>+~(])body(?=[.#\[:\s,{])/gi, '$1.lucivo-snap-body')
         .replace(/:root\b/gi, '.lucivo-snap-html');
 
+    const rootFontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const resolveRootRem = (css: string) =>
+      css.replace(/(-?\d*\.?\d+)rem\b/gi, (_, num) => `${(parseFloat(num) * rootFontPx).toFixed(2)}px`);
+
     const cssResult = collectStylesCss();
-    const cssText = rewriteRootSelectors(resolveViewportUnits(sanitizeCssUrls(cssResult.cssText)));
+    const cssText = rewriteRootSelectors(resolveRootRem(resolveViewportUnits(sanitizeCssUrls(cssResult.cssText))));
     const needInline = true;
-    htmlClone.style.fontSize = getComputedStyle(document.documentElement).fontSize;
+    htmlClone.style.fontSize = `${rootFontPx}px`;
 
     const styleEl = document.createElementNS(ns, 'style');
     styleEl.textContent = `${cssText}
@@ -432,12 +436,18 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
       });
 
       wrapClone.appendChild(sceneClone);
-      containerClone.appendChild(wrapClone);
+      if (container.scrollTop > 0 || container.scrollLeft > 0) {
+        const scrollWrap = document.createElementNS(ns, 'div');
+        scrollWrap.style.transform = `translate(${-container.scrollLeft}px, ${-container.scrollTop}px)`;
+        scrollWrap.style.transformOrigin = '0 0';
+        scrollWrap.appendChild(wrapClone);
+        containerClone.appendChild(scrollWrap);
+      } else {
+        containerClone.appendChild(wrapClone);
+      }
     }
 
-    if (container.scrollTop > 0) {
-      containerClone.scrollTop = container.scrollTop;
-    }
+    containerClone.style.overflow = 'hidden';
 
     bodyClone.appendChild(containerClone);
     htmlClone.appendChild(bodyClone);
@@ -571,21 +581,48 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
     if (mag.on && !mag.frame) mag.frame = requestAnimationFrame(paint);
   }
 
+  let scrollTimer = 0;
+  let boundScrollContainer: HTMLElement | null = null;
+  function onContainerScroll() {
+    if (!mag.on) return;
+    if (scrollTimer) window.clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(() => {
+      scrollTimer = 0;
+      if (mag.on) refreshSnapshot();
+    }, 60);
+  }
+
   function setMagnifier(on: boolean) {
     const nextOn = Boolean(on) && ctx.show.active && !ctx.ov.active && !ctx.curtain.active;
     if (nextOn) ctx.setPointer(false);
     mag.on = nextOn;
     document.documentElement.classList.toggle('is-stage-magnifier', mag.on);
+    const sc = ctx.stageContainer();
     if (mag.on) {
+      if (sc && boundScrollContainer !== sc) {
+        if (boundScrollContainer) boundScrollContainer.removeEventListener('scroll', onContainerScroll);
+        sc.addEventListener('scroll', onContainerScroll, { passive: true });
+        boundScrollContainer = sc;
+      }
       if (!mag.moved) {
         mag.x = window.innerWidth / 2;
         mag.y = window.innerHeight / 2;
       }
       refreshSnapshot();
       paint();
-    } else if (gl && canvas) {
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
+    } else {
+      if (boundScrollContainer) {
+        boundScrollContainer.removeEventListener('scroll', onContainerScroll);
+        boundScrollContainer = null;
+      }
+      if (scrollTimer) {
+        window.clearTimeout(scrollTimer);
+        scrollTimer = 0;
+      }
+      if (gl && canvas) {
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
     }
     ctx.updateHud();
   }
