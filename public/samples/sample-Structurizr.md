@@ -130,61 +130,55 @@ workspace "Documentation Pipeline" {
 }
 ```
 
-## 3. 公式チュートリアル準拠 — 階層識別子・明示指定・関係スタイル
+## 3. 公式チュートリアル準拠 — 階層識別子・定数・内蔵 `default` テーマ
 
 [Structurizr DSL Tutorial](https://docs.structurizr.com/dsl/tutorial) で紹介されている代表的な記述パターンです。
 
-- `!identifiers hierarchical` は Lucivo では未対応のため警告を出したうえで `flat` として解釈します（要素同士が別名であればそのまま描画できます。`ss.wa` のようなドット修飾参照は未解決警告となります）。
-- `styles` では `element "Element"`・`element "Person"`・`element "Database"`（`shape cylinder`）に加え、`relationship "Relationship"` やカスタムタグ付きの `relationship` スタイル（`dashed false` 等）も指定できます。
+- `!identifiers hierarchical` により、親要素の識別子で修飾したドット参照（`ss.wa`, `ss.db`）やブロック内の相対参照を警告なしで解決できます。
+- `!const` / `!constant` / `!var` で定義した定数・変数を `${NAME}` で展開できます。
+- `theme default` で公式の `default` テーマプリセットをオフライン適用しつつ、`styles` で `Database`（`shape Cylinder`）やカスタム関係スタイル（`dashed false` 等）を上書きできます。
 
 ```structurizr
+!const SYSTEM_NAME "Software System"
+
 workspace "Official Tutorial Pattern" "Structurizr DSL 公式チュートリアル準拠" {
   !identifiers hierarchical
 
   model {
     u = person "User" "システムを利用するユーザー"
-    ss = softwareSystem "Software System" "中核システム" {
+    ss = softwareSystem "${SYSTEM_NAME}" "中核システム" {
       wa = container "Web Application" "ブラウザ UI を配信する" "Java / Spring Boot"
       db = container "Database Schema" "業務データを永続化する" "PostgreSQL" {
         tags "Database"
       }
     }
 
-    u -> wa "Uses" "HTTPS" {
+    u -> ss.wa "Uses" "HTTPS" {
       tags "Sync"
     }
-    wa -> db "Reads from and writes to" "JDBC"
+    ss.wa -> ss.db "Reads from and writes to" "JDBC"
   }
 
   views {
     systemContext ss "Diagram1" {
       include *
-      title "System Context (Tutorial)"
+      title "${SYSTEM_NAME} - System Context (Tutorial)"
       autoLayout lr
     }
 
     container ss "Diagram2" {
-      include u wa db
-      title "Container View (Explicit Include & Styles)"
+      include u ss.wa ss.db
+      title "${SYSTEM_NAME} - Container View (Explicit Include & Default Theme)"
       autoLayout lr
     }
 
+    theme default
+
     styles {
-      element "Element" {
-        color #ffffff
-        background #1168bd
-        shape RoundedBox
-      }
-      element "Person" {
-        shape Person
-        background #08427b
-      }
       element "Database" {
         shape Cylinder
         background #2563eb
-      }
-      relationship "Relationship" {
-        thickness 2
+        color #ffffff
       }
       relationship "Sync" {
         color #0f766e

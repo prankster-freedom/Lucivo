@@ -279,6 +279,93 @@ async function testStructurizr(browser) {
         && srv.notFound.length === 0
         && page.consoleErrors.length === 0;
       record('TC-DIAG-046', ok46, JSON.stringify({ stageBefore, stageAfterBracket, stageAfterShiftLeft, notFound: srv.notFound, errors: page.consoleErrors }));
+
+      // TC-DIAG-048: Phase 2a（!identifiers hierarchical・!const/!constant/!var・theme default＋styles 上書き）
+      const PHASE2A_MD = `# Phase 2a Structurizr
+
+\`\`\`structurizr view=Containers
+!const APP_NAME "Order Hub"
+!constant DB_COLOR #dc2626
+
+workspace "\${APP_NAME}" {
+  !identifiers hierarchical
+
+  model {
+    u = person "顧客" "利用者"
+    ss = softwareSystem "\${APP_NAME}" {
+      wa = container "Web UI" "SPA" "TypeScript"
+      api = container "Order API" "Backend" "Go" {
+        ctrl = component "Order Controller" "HTTP Handler"
+      }
+      db = container "Order DB" "PostgreSQL" "PostgreSQL" {
+        tags "Database"
+      }
+      wa -> api "API 呼出" "HTTPS"
+      api.ctrl -> db "SQL"
+    }
+    u -> ss.wa "アクセス" "HTTPS"
+  }
+
+  views {
+    container ss "Containers" {
+      include u ss.wa ss.api ss.db
+      title "\${APP_NAME} Containers"
+      autoLayout lr
+    }
+    component ss.api "ApiComponents" {
+      include *
+      autoLayout tb
+    }
+    theme default
+    styles {
+      element "Database" {
+        shape Cylinder
+        background \${DB_COLOR}
+        color #ffffff
+      }
+    }
+  }
+}
+\`\`\`
+`;
+      await setMode(page, { style: 'std', appearance: 'light' });
+      await setDocument(page, PHASE2A_MD);
+      await waitStructurizrReady(page);
+
+      const p2aState = await page.evaluate(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        const warnBadge = document.querySelector('#standard-doc-container .c4-warning-badge');
+        const activeTab = document.querySelector('#standard-doc-container .c4-view-tab.is-active');
+        const drillBadge = svg && svg.querySelector('.c4-drilldown-badge[data-drilldown-view="ApiComponents"]');
+        return {
+          viewKey: svg ? svg.getAttribute('data-c4-view-key') : null,
+          hasWarnBadge: Boolean(warnBadge),
+          activeTabText: activeTab ? activeTab.textContent.trim() : '',
+          hasDefaultThemePersonColor: svg ? svg.outerHTML.toLowerCase().includes('#08427b') : false,
+          hasOverrideDbColor: svg ? svg.outerHTML.toLowerCase().includes('#dc2626') : false,
+          hasDrillBadge: Boolean(drillBadge)
+        };
+      });
+
+      await page.click('#standard-doc-container .c4-drilldown-badge[data-drilldown-view="ApiComponents"]');
+      await page.waitForFunction(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        return svg && svg.getAttribute('data-c4-view-key') === 'ApiComponents';
+      });
+      const drilledOk = await page.evaluate(() => {
+        const svg = document.querySelector('#standard-doc-container svg.lucivo-c4-svg');
+        return Boolean(svg && svg.textContent && svg.textContent.includes('Order Controller'));
+      });
+
+      const ok48 = p2aState.viewKey === 'Containers'
+        && !p2aState.hasWarnBadge
+        && p2aState.activeTabText === 'Order Hub Containers'
+        && p2aState.hasDefaultThemePersonColor
+        && p2aState.hasOverrideDbColor
+        && p2aState.hasDrillBadge
+        && drilledOk
+        && page.consoleErrors.length === 0;
+      record('TC-DIAG-048', ok48, JSON.stringify({ p2aState, drilledOk, errors: page.consoleErrors }));
     } finally {
       await page.close();
     }

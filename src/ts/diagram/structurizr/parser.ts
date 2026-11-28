@@ -5,6 +5,7 @@
    Pass 2: 関係・ビューの識別子参照解決、既定 systemLandscape ビュー生成。
    ========================================================================== */
 import { tokenizeStructurizrDsl, type Token } from './lexer';
+import { resolveBuiltinTheme } from './themes';
 import {
   StructurizrSyntaxError,
   type AutoLayoutDirection,
@@ -37,10 +38,16 @@ const VALID_SHAPES = new Set<string>([
 
 const VALID_DIRECTIONS = new Set<string>(['tb', 'bt', 'lr', 'rl']);
 
+const CONSTANT_NAME_RE = /^[a-zA-Z0-9_-]+$/;
+const CONSTANT_REF_RE = /\$\{([a-zA-Z0-9_-]+)\}/g;
+
+type IdentifierMode = 'flat' | 'hierarchical';
+
 interface RawRelationship {
   sourceId?: string;
   sourceRef?: string;
   destRef: string;
+  scopePath: string[];
   description?: string;
   technology?: string;
   tags: string[];
@@ -93,10 +100,15 @@ class DslParser {
   private pos = 0;
   private elementSeq = 0;
   private orderSeq = 0;
+  private identifierMode: IdentifierMode = 'flat';
+  private readonly constants = new Map<string, string>();
+  private readonly immutableConstants = new Set<string>();
   private readonly elements: Record<string, StructurizrElement> = {};
   private readonly identifierMap = new Map<string, string>();
   private readonly rawRelationships: RawRelationship[] = [];
   private readonly rawViews: RawView[] = [];
+  private readonly themeElementStyles: ElementStyle[] = [];
+  private readonly themeRelationshipStyles: RelationshipStyle[] = [];
   private readonly elementStyles: ElementStyle[] = [];
   private readonly relationshipStyles: RelationshipStyle[] = [];
   private readonly warnings: ParseWarning[] = [];
@@ -107,6 +119,14 @@ class DslParser {
     this.tokens = tokens;
   }
 
+  private expandConstants(raw: string): string {
+    if (this.constants.size === 0 || !raw.includes('${')) return raw;
+    return raw.replace(CONSTANT_REF_RE, (match, name: string) => {
+      const resolved = this.constants.get(name);
+      return resolved !== undefined ? resolved : match;
+    });
+  }
+
   private peek(offset = 0): Token {
     const idx = Math.min(this.pos + offset, this.tokens.length - 1);
     return this.tokens[idx];
@@ -115,6 +135,12 @@ class DslParser {
   private next(): Token {
     const tok = this.peek();
     if (this.pos < this.tokens.length - 1) this.pos += 1;
+    if ((tok.type === 'WORD' || tok.type === 'STRING') && this.constants.size > 0 && tok.value.includes('${')) {
+      const expanded = this.expandConstants(tok.value);
+      if (expanded !== tok.value) {
+        return { ...tok, value: expanded };
+      }
+    }
     return tok;
   }
 
@@ -225,11 +251,34 @@ class DslParser {
     const { args, hasBlock } = this.readLineTokens();
     if (lower === '!identifiers') {
       const mode = (args[0]?.value || '').toLowerCase();
-      if (mode === 'flat') {
+      if (mode === 'flat' || mode === 'hierarchical') {
+        this.identifierMode = mode;
         if (hasBlock) this.skipBlockBody(dir.line, dir.column);
         return;
       }
-      this.addWarning(dir.line, dir.column, 'UNSUPPORTED_DIRECTIVE', `未対応ディレクティブ "!identifiers ${args[0]?.value || ''}" は flat として扱います`);
+      this.addWarning(dir.line, dir.column, 'UNSUPPORTED_DIRECTIVE', `未対応ディレクティブ "!identifiers ${args[0]?.value || ''}" は現在の設定（${this.identifierMode}）を維持します`);
+      if (hasBlock) this.skipBlockBody(dir.line, dir.column);
+      return;
+    }
+    if (lower === '!const' || lower === '!constant' || lower === '!var') {
+      const nameTok = args[0];
+      const valueTokens = args.slice(1);
+      if (!nameTok || valueTokens.length === 0 || !CONSTANT_NAME_RE.test(nameTok.value)) {
+        this.addWarning(dir.line, dir.column, 'UNSUPPORTED_DIRECTIVE', `ディレクティブ "${dir.value}" の書式が不正です（例: !constant NAME "value"）`);
+        if (hasBlock) this.skipBlockBody(dir.line, dir.column);
+        return;
+      }
+      const name = nameTok.value;
+      const value = valueTokens.map(t => t.value).join(' ');
+      if (this.immutableConstants.has(name)) {
+        this.addWarning(nameTok.line, nameTok.column, 'DUPLICATE_IDENTIFIER', `定数 "${name}" はすでに定義されています`);
+        if (hasBlock) this.skipBlockBody(dir.line, dir.column);
+        return;
+      }
+      this.constants.set(name, value);
+      if (lower !== '!var') {
+        this.immutableConstants.add(name);
+      }
       if (hasBlock) this.skipBlockBody(dir.line, dir.column);
       return;
     }
@@ -255,7 +304,7 @@ class DslParser {
       const kw = this.next();
       const lower = kw.value.toLowerCase();
       if (lower === 'model') {
-        this.enterNamedBlock(kw, () => this.parseModelBody(undefined, [], kw.line, kw.column));
+        this.enterNamedBlock(kw, () => this.parseModelBody(undefined, [], [], kw.line, kw.column));
       } else if (lower === 'views') {
         this.enterNamedBlock(kw, () => this.parseViewsBody(kw.line, kw.column));
       } else if (lower === 'name') {
@@ -285,7 +334,13 @@ class DslParser {
     throw new StructurizrSyntaxError(`"${kw.value}" の後ろに "{" が必要です`, kw.line, kw.column);
   }
 
-  private parseModelBody(parentId: string | undefined, groupPath: string[], openLine: number, openCol: number): void {
+  private parseModelBody(
+    parentId: string | undefined,
+    groupPath: string[],
+    identifierScope: string[],
+    openLine: number,
+    openCol: number
+  ): void {
     while (true) {
       this.skipNewlines();
       const tok = this.peek();
@@ -300,16 +355,20 @@ class DslParser {
         this.handleDirective(this.next());
         continue;
       }
-      this.parseModelStatement(parentId, groupPath);
+      this.parseModelStatement(parentId, groupPath, identifierScope);
     }
   }
 
-  private parseModelStatement(parentId: string | undefined, groupPath: string[]): void {
+  private parseModelStatement(
+    parentId: string | undefined,
+    groupPath: string[],
+    identifierScope: string[]
+  ): void {
     const first = this.peek();
     // ブロック内省略記法: -> target "desc" "tech"
     if (first.type === 'ARROW') {
       this.next();
-      this.parseRelationshipRest(parentId, undefined, first.line, first.column);
+      this.parseRelationshipRest(parentId, undefined, identifierScope, first.line, first.column);
       return;
     }
     // 変数束縛: id = keyword ...
@@ -317,37 +376,39 @@ class DslParser {
       const idTok = this.next();
       this.next(); // '='
       const kw = this.next();
-      this.parseElementOrUnsupported(idTok, kw, parentId, groupPath);
+      this.parseElementOrUnsupported(idTok, kw, parentId, groupPath, identifierScope);
       return;
     }
     // 明示的関係: src -> dst ...
     if (first.type === 'WORD' && this.peek(1).type === 'ARROW') {
       const srcTok = this.next();
       this.next(); // '->'
-      this.parseRelationshipRest(undefined, srcTok.value, srcTok.line, srcTok.column);
+      this.parseRelationshipRest(undefined, srcTok.value, identifierScope, srcTok.line, srcTok.column);
       return;
     }
     const kw = this.next();
-    this.parseElementOrUnsupported(undefined, kw, parentId, groupPath);
+    this.parseElementOrUnsupported(undefined, kw, parentId, groupPath, identifierScope);
   }
 
   private parseElementOrUnsupported(
     idTok: Token | undefined,
     kw: Token,
     parentId: string | undefined,
-    groupPath: string[]
+    groupPath: string[],
+    identifierScope: string[]
   ): void {
     const lower = kw.value.toLowerCase();
     if (lower === 'group') {
       const { args, hasBlock } = this.readLineTokens();
       const groupName = args[0]?.value || 'Group';
+      // 公式仕様: !identifiers hierarchical は group には適用しない（identifierScope をそのまま引き継ぐ）
       if (hasBlock) {
-        this.parseModelBody(parentId, [...groupPath, groupName], kw.line, kw.column);
+        this.parseModelBody(parentId, [...groupPath, groupName], identifierScope, kw.line, kw.column);
       } else {
         this.skipNewlines();
         if (this.peek().type === 'LBRACE') {
           this.next();
-          this.parseModelBody(parentId, [...groupPath, groupName], kw.line, kw.column);
+          this.parseModelBody(parentId, [...groupPath, groupName], identifierScope, kw.line, kw.column);
         }
       }
       return;
@@ -385,9 +446,15 @@ class DslParser {
       if (args[3]?.value) extraTags = splitTags([args[3].value]);
     }
 
+    const qualifiedIdentifier = idTok
+      ? (this.identifierMode === 'hierarchical' && identifierScope.length > 0
+        ? `${identifierScope.join('.')}.${idTok.value}`
+        : idTok.value)
+      : undefined;
+
     const element: StructurizrElement = {
       id,
-      identifier: idTok?.value,
+      identifier: qualifiedIdentifier,
       kind,
       name,
       description,
@@ -400,17 +467,20 @@ class DslParser {
     };
     this.elements[id] = element;
 
-    if (idTok) {
-      if (this.identifierMap.has(idTok.value)) {
-        this.addWarning(idTok.line, idTok.column, 'DUPLICATE_IDENTIFIER', `識別子 "${idTok.value}" が重複しています`);
+    if (idTok && qualifiedIdentifier) {
+      if (this.identifierMap.has(qualifiedIdentifier)) {
+        this.addWarning(idTok.line, idTok.column, 'DUPLICATE_IDENTIFIER', `識別子 "${qualifiedIdentifier}" が重複しています`);
       } else {
-        this.identifierMap.set(idTok.value, id);
+        this.identifierMap.set(qualifiedIdentifier, id);
       }
     }
 
     if (hasBlock) {
+      const childScope = (this.identifierMode === 'hierarchical' && idTok)
+        ? [...identifierScope, idTok.value]
+        : identifierScope;
       // 要素直下の groupPath は要素自身の階層でリセットする（配下 container/component の内部 group 用）
-      this.parseModelBody(id, [], kw.line, kw.column);
+      this.parseModelBody(id, [], childScope, kw.line, kw.column);
     }
   }
 
@@ -462,6 +532,10 @@ class DslParser {
       if (tok.type === 'EOF') {
         throw new StructurizrSyntaxError('properties ブロックが "}" で閉じられていません', openLine, openCol);
       }
+      if (tok.type === 'WORD' && tok.value.startsWith('!')) {
+        this.handleDirective(this.next());
+        continue;
+      }
       const keyTok = this.next();
       const { args, hasBlock } = this.readLineTokens();
       if (args[0]) {
@@ -474,6 +548,7 @@ class DslParser {
   private parseRelationshipRest(
     sourceId: string | undefined,
     sourceRef: string | undefined,
+    identifierScope: string[],
     line: number,
     column: number
   ): void {
@@ -488,6 +563,7 @@ class DslParser {
       sourceId,
       sourceRef,
       destRef: destTok.value,
+      scopePath: [...identifierScope],
       description: args[1]?.value || undefined,
       technology: args[2]?.value || undefined,
       tags: mergeTags(['Relationship'], args[3]?.value ? splitTags([args[3].value]) : []),
@@ -561,7 +637,19 @@ class DslParser {
         this.enterNamedBlock(kw, () => this.parseStylesBody(kw.line, kw.column));
       } else if (lower === 'theme' || lower === 'themes') {
         const { args, hasBlock } = this.readLineTokens();
-        this.addWarning(kw.line, kw.column, 'THEME_IGNORED', `外部テーマ "${args.map(a => a.value).join(' ')}" はオフライン動作のため無視しました`);
+        if (args.length === 0) {
+          this.addWarning(kw.line, kw.column, 'THEME_IGNORED', 'テーマ名が指定されていません');
+        } else {
+          for (const arg of args) {
+            const builtin = resolveBuiltinTheme(arg.value);
+            if (builtin) {
+              this.themeElementStyles.push(...builtin.elements);
+              this.themeRelationshipStyles.push(...builtin.relationships);
+            } else {
+              this.addWarning(arg.line, arg.column, 'THEME_IGNORED', `外部テーマ "${arg.value}" はオフライン動作のため無視しました`);
+            }
+          }
+        }
         if (hasBlock) this.skipBlockBody(kw.line, kw.column);
       } else {
         this.skipUnsupportedStatement(kw, 'UNSUPPORTED_SYNTAX', kw.value);
@@ -614,6 +702,10 @@ class DslParser {
       if (tok.type === 'EOF') {
         throw new StructurizrSyntaxError('view ブロックが "}" で閉じられていません', openLine, openCol);
       }
+      if (tok.type === 'WORD' && tok.value.startsWith('!')) {
+        this.handleDirective(this.next());
+        continue;
+      }
       const kw = this.next();
       const lower = kw.value.toLowerCase();
       const { args, hasBlock } = this.readLineTokens();
@@ -638,13 +730,43 @@ class DslParser {
   }
 
   private collectViewRefs(args: Token[], target: RawRefToken[]): void {
-    for (const a of args) {
-      // 式フィルタ（element.tag==... や -> 含む表現等）は Phase 1 未対応として警告スキップ
-      if (a.type === 'EQUALS' || a.type === 'ARROW' || /[.=]/.test(a.value)) {
-        this.addWarning(a.line, a.column, 'UNSUPPORTED_SYNTAX', `式フィルタ "${a.value}" は未対応のためスキップしました`);
+    let i = 0;
+    while (i < args.length) {
+      const a = args[i];
+      const nextTok = args[i + 1];
+      // 式フィルタ（element.tag==..., relationship.tag==..., -> 表現等）は Phase 2b 対応予定のため警告スキップ。
+      // ドット修飾識別子（例: ss.wa, ss.api.ctrl）は式フィルタではないため通常参照として受理する。
+      const isExprToken = a.type === 'EQUALS'
+        || a.type === 'ARROW'
+        || nextTok?.type === 'EQUALS'
+        || nextTok?.type === 'ARROW'
+        || a.value.includes('=')
+        || a.value.startsWith('!')
+        || a.value === '->';
+
+      if (isExprToken) {
+        const exprParts: string[] = [a.value];
+        i += 1;
+        while (i < args.length) {
+          const cur = args[i];
+          const prev = args[i - 1];
+          if (
+            cur.type === 'EQUALS'
+            || cur.type === 'ARROW'
+            || prev.type === 'EQUALS'
+            || prev.type === 'ARROW'
+          ) {
+            exprParts.push(cur.value);
+            i += 1;
+            continue;
+          }
+          break;
+        }
+        this.addWarning(a.line, a.column, 'UNSUPPORTED_SYNTAX', `式フィルタ "${exprParts.join('')}" は未対応のためスキップしました`);
         continue;
       }
       target.push({ value: a.value, line: a.line, column: a.column });
+      i += 1;
     }
   }
 
@@ -759,13 +881,24 @@ class DslParser {
     }
   }
 
+  private resolveIdentifier(ref: string, scopePath: string[] = []): string | undefined {
+    if (this.identifierMode === 'hierarchical' && scopePath.length > 0) {
+      for (let len = scopePath.length; len >= 1; len -= 1) {
+        const candidate = `${scopePath.slice(0, len).join('.')}.${ref}`;
+        const hit = this.identifierMap.get(candidate);
+        if (hit) return hit;
+      }
+    }
+    return this.identifierMap.get(ref);
+  }
+
   private resolvePass2(): StructurizrWorkspace {
     const relationships: StructurizrRelationship[] = [];
     let relSeq = 0;
 
     for (const raw of this.rawRelationships) {
-      const sourceId = raw.sourceId ?? (raw.sourceRef ? this.identifierMap.get(raw.sourceRef) : undefined);
-      const destId = this.identifierMap.get(raw.destRef);
+      const sourceId = raw.sourceId ?? (raw.sourceRef ? this.resolveIdentifier(raw.sourceRef, raw.scopePath) : undefined);
+      const destId = this.resolveIdentifier(raw.destRef, raw.scopePath);
       if (!sourceId) {
         this.addWarning(raw.line, raw.column, 'UNKNOWN_REFERENCE', `未定義の識別子 "${raw.sourceRef || ''}" を参照しています`);
         continue;
@@ -798,7 +931,7 @@ class DslParser {
     for (const raw of this.rawViews) {
       let scopeElementId: string | undefined;
       if (raw.scopeRef) {
-        scopeElementId = this.identifierMap.get(raw.scopeRef.value);
+        scopeElementId = this.resolveIdentifier(raw.scopeRef.value);
         if (!scopeElementId) {
           this.addWarning(
             raw.scopeRef.line,
@@ -816,7 +949,7 @@ class DslParser {
           if (!includes.includes('*')) includes.push('*');
           continue;
         }
-        const resolved = this.identifierMap.get(ref.value);
+        const resolved = this.resolveIdentifier(ref.value);
         if (!resolved) {
           this.addWarning(ref.line, ref.column, 'UNKNOWN_REFERENCE', `include 対象 "${ref.value}" が未定義です`);
           continue;
@@ -826,7 +959,7 @@ class DslParser {
 
       const excludes: string[] = [];
       for (const ref of raw.rawExcludes) {
-        const resolved = this.identifierMap.get(ref.value);
+        const resolved = this.resolveIdentifier(ref.value);
         if (!resolved) {
           this.addWarning(ref.line, ref.column, 'UNKNOWN_REFERENCE', `exclude 対象 "${ref.value}" が未定義です`);
           continue;
@@ -878,8 +1011,9 @@ class DslParser {
       relationships,
       views,
       styles: {
-        elements: this.elementStyles,
-        relationships: this.relationshipStyles
+        // 公式仕様に従い、内蔵テーマをベースとしてワークスペース styles が上書きする順で合成する
+        elements: [...this.themeElementStyles, ...this.elementStyles],
+        relationships: [...this.themeRelationshipStyles, ...this.relationshipStyles]
       },
       warnings: this.warnings
     };

@@ -179,12 +179,22 @@ export function tokenizeStructurizrDsl(source: string): Token[] {
       continue;
     }
 
-    // 通常トークン（識別子・キーワード・数値・色コード・URL・!directive 等）
+    // 通常トークン（識別子・キーワード・数値・色コード・URL・!directive・${VAR} 置換等）
     const startCol = col;
     let word = '';
     while (i < source.length && !isWordBoundary(source[i])) {
       if (source[i] === '-' && source[i + 1] === '>') break;
       if (source[i] === '/' && (source[i + 1] === '/' || source[i + 1] === '*')) break;
+      // 引用符なしの ${NAME} 定数参照をブロック記号 { } と誤認しないよう一体で読み込む
+      if (source[i] === '$' && source[i + 1] === '{') {
+        const refMatch = /^\$\{[a-zA-Z0-9_-]+\}/.exec(source.slice(i));
+        if (refMatch) {
+          word += refMatch[0];
+          i += refMatch[0].length;
+          col += refMatch[0].length;
+          continue;
+        }
+      }
       word += source[i];
       i += 1;
       col += 1;

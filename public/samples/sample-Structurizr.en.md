@@ -130,61 +130,55 @@ workspace "Documentation Pipeline" {
 }
 ```
 
-## 3. Official Tutorial Pattern — Identifiers, Explicit Include & Styles
+## 3. Official Tutorial Pattern — Hierarchical Identifiers, Constants & Built-in `default` Theme
 
 This example follows the [Structurizr DSL Tutorial](https://docs.structurizr.com/dsl/tutorial).
 
-- `!identifiers hierarchical` is not yet supported in Lucivo; it emits a warning and falls back to `flat` identifier scoping (unique identifiers render normally, while dotted references such as `ss.wa` emit unresolved-reference warnings).
-- Inside `styles`, both element styles (`Element`, `Person`, `Database` with `shape Cylinder`) and relationship styles (`Relationship`, custom tag styles with `dashed false`) are applied.
+- `!identifiers hierarchical` resolves parent-qualified dotted references (`ss.wa`, `ss.db`) as well as relative in-block references without warnings.
+- Constants and variables defined with `!const` / `!constant` / `!var` are expanded via `${NAME}`.
+- `theme default` applies the built-in Structurizr `default` theme offline, while workspace `styles` override specific tags such as `Database` (`shape Cylinder`) and custom relationship styles (`dashed false`).
 
 ```structurizr
+!const SYSTEM_NAME "Software System"
+
 workspace "Official Tutorial Pattern" "Based on the Structurizr DSL Tutorial" {
   !identifiers hierarchical
 
   model {
     u = person "User" "Uses the software system"
-    ss = softwareSystem "Software System" "Core system" {
+    ss = softwareSystem "${SYSTEM_NAME}" "Core system" {
       wa = container "Web Application" "Serves the browser UI" "Java / Spring Boot"
       db = container "Database Schema" "Stores application data" "PostgreSQL" {
         tags "Database"
       }
     }
 
-    u -> wa "Uses" "HTTPS" {
+    u -> ss.wa "Uses" "HTTPS" {
       tags "Sync"
     }
-    wa -> db "Reads from and writes to" "JDBC"
+    ss.wa -> ss.db "Reads from and writes to" "JDBC"
   }
 
   views {
     systemContext ss "Diagram1" {
       include *
-      title "System Context (Tutorial)"
+      title "${SYSTEM_NAME} - System Context (Tutorial)"
       autoLayout lr
     }
 
     container ss "Diagram2" {
-      include u wa db
-      title "Container View (Explicit Include & Styles)"
+      include u ss.wa ss.db
+      title "${SYSTEM_NAME} - Container View (Explicit Include & Default Theme)"
       autoLayout lr
     }
 
+    theme default
+
     styles {
-      element "Element" {
-        color #ffffff
-        background #1168bd
-        shape RoundedBox
-      }
-      element "Person" {
-        shape Person
-        background #08427b
-      }
       element "Database" {
         shape Cylinder
         background #2563eb
-      }
-      relationship "Relationship" {
-        thickness 2
+        color #ffffff
       }
       relationship "Sync" {
         color #0f766e

@@ -293,6 +293,211 @@ workspace {
   assert.ok(containerSvg.includes('#2563EB'));
   assert.ok(containerSvg.includes('data-drilldown-view="Components"'));
 
+  // 9. Phase 2a: !identifiers hierarchical（同名別親・group 非修飾・相対/上位/ドット修飾参照・views 内参照・式フィルタ識別）
+  const hierDsl = `
+workspace "Hierarchical Identifiers" {
+  !identifiers hierarchical
+
+  model {
+    u = person "User" "利用者"
+
+    sysA = softwareSystem "System A" {
+      group "Frontend" {
+        wa = container "Web App" "UI" "TypeScript" {
+          -> api "Calls" "HTTPS"
+        }
+      }
+      api = container "API A" "Backend A" "Go" {
+        ctrl = component "Order Controller" "Handles orders"
+        ctrl -> db "Reads" "SQL"
+      }
+      db = container "DB A" "Database A" "PostgreSQL" {
+        tags "Database"
+      }
+      wa -> db "Direct Read"
+    }
+
+    sysB = softwareSystem "System B" {
+      api = container "API B" "Backend B" "Rust"
+    }
+
+    u -> sysA.wa "Uses" "HTTPS"
+    sysA.api -> sysB.api "Syncs" "gRPC"
+  }
+
+  views {
+    systemContext sysA "SysAContext" {
+      include *
+      autoLayout lr
+    }
+    container sysA "SysAContainers" {
+      include u sysA.wa sysA.api sysA.db
+      exclude sysA.db
+      autoLayout lr
+    }
+    component sysA.api "SysAApiComponents" {
+      include *
+      autoLayout tb
+    }
+  }
+}
+`;
+  const hierWs = parseStructurizrDsl(hierDsl);
+  assert.strictEqual(hierWs.warnings.length, 0, `unexpected warnings: ${JSON.stringify(hierWs.warnings)}`);
+  const hierById = {};
+  for (const el of Object.values(hierWs.elements)) {
+    if (el.identifier) hierById[el.identifier] = el;
+  }
+  // group は階層識別子に含まれないこと（sysA.wa であり sysA.Frontend.wa ではない）
+  assert.ok(hierById['sysA.wa'], 'sysA.wa should exist');
+  assert.ok(hierById['sysA.api'], 'sysA.api should exist');
+  assert.ok(hierById['sysA.api.ctrl'], 'sysA.api.ctrl should exist');
+  assert.ok(hierById['sysB.api'], 'sysB.api should exist without duplicate warning');
+  // 関係がすべて解決されていること（wa->api, ctrl->db, wa->db, u->sysA.wa, sysA.api->sysB.api）
+  assert.strictEqual(hierWs.relationships.length, 5);
+  assert.ok(hierWs.relationships.some(r => r.sourceId === hierById.u.id && r.destinationId === hierById['sysA.wa'].id));
+  assert.ok(hierWs.relationships.some(r => r.sourceId === hierById['sysA.api'].id && r.destinationId === hierById['sysB.api'].id));
+  assert.ok(hierWs.relationships.some(r => r.sourceId === hierById['sysA.api.ctrl'].id && r.destinationId === hierById['sysA.db'].id));
+  // views の scope / include / exclude がドット修飾識別子で解決されていること
+  const hierResolved = resolveAllStructurizrViews(hierWs);
+  assert.strictEqual(hierResolved.length, 3);
+  const sysAContainers = hierResolved[1];
+  assert.ok(sysAContainers.nodes.some(n => n.element.identifier === 'sysA.wa'));
+  assert.ok(sysAContainers.nodes.some(n => n.element.identifier === 'sysA.api'));
+  assert.ok(!sysAContainers.nodes.some(n => n.element.identifier === 'sysA.db'), 'sysA.db should be excluded');
+  const sysAApiComp = hierResolved[2];
+  assert.strictEqual(sysAApiComp.spec.scopeElementId, hierById['sysA.api'].id);
+  assert.ok(sysAApiComp.nodes.some(n => n.element.identifier === 'sysA.api.ctrl'));
+
+  // 式フィルタ（element.tag==...）は引き続き警告スキップされつつ、同ビューのドット修飾識別子は受理されること
+  const exprFilterWs = parseStructurizrDsl(`
+workspace {
+  !identifiers hierarchical
+  model {
+    ss = softwareSystem "S" {
+      wa = container "W"
+    }
+  }
+  views {
+    container ss "C" {
+      include element.tag==Core ss.wa
+    }
+  }
+}
+`);
+  assert.strictEqual(exprFilterWs.warnings.length, 1);
+  assert.strictEqual(exprFilterWs.warnings[0].code, 'UNSUPPORTED_SYNTAX');
+  assert.strictEqual(exprFilterWs.views[0].includes.length, 1);
+
+  // 10. Phase 2a: !const / !constant / !var 定数・変数展開と未定義保持
+  const constDsl = `
+!const ORG "Acme"
+!constant PLATFORM "\${ORG} Cloud"
+!var ENV "Staging"
+
+workspace "\${PLATFORM}" "Environment: \${ENV} / \${UNDEFINED_VAR}" {
+  !const PRIMARY_COLOR #0f766e
+
+  model {
+    u = person "\${ORG} User"
+    s = softwareSystem "\${PLATFORM}" {
+      !var ENV "Production"
+      web = container "Web (\${ENV})" "Frontend" "TypeScript"
+    }
+    u -> web "Accesses \${ENV}"
+  }
+
+  views {
+    container s "Main" {
+      include *
+      title "\${PLATFORM} - \${ENV}"
+      autoLayout lr
+    }
+    styles {
+      element "Container" {
+        background \${PRIMARY_COLOR}
+        color #ffffff
+      }
+    }
+  }
+}
+`;
+  const constWs = parseStructurizrDsl(constDsl);
+  assert.strictEqual(constWs.warnings.length, 0, `unexpected const warnings: ${JSON.stringify(constWs.warnings)}`);
+  assert.strictEqual(constWs.name, 'Acme Cloud');
+  assert.strictEqual(constWs.description, 'Environment: Staging / ${UNDEFINED_VAR}');
+  const constWeb = Object.values(constWs.elements).find(e => e.identifier === 'web');
+  assert.strictEqual(constWeb.name, 'Web (Production)');
+  assert.strictEqual(constWs.views[0].title, 'Acme Cloud - Production');
+  assert.strictEqual(constWs.styles.elements[0].background, '#0f766e');
+
+  // !const 再定義は警告を出し元の値を維持すること
+  const dupConstWs = parseStructurizrDsl(`
+!const APP "First"
+!const APP "Second"
+workspace "\${APP}" {
+  model {
+    s = softwareSystem "\${APP}"
+  }
+}
+`);
+  assert.strictEqual(dupConstWs.name, 'First');
+  assert.ok(dupConstWs.warnings.some(w => w.code === 'DUPLICATE_IDENTIFIER'));
+
+  // 11. Phase 2a: 内蔵 default テーマプリセットと styles 上書き優先順位・外部 URL 混在時の警告
+  const themeDsl = `
+workspace "Theme Test" {
+  model {
+    u = person "User"
+    s = softwareSystem "Core" {
+      db = container "DB" "Data" "PostgreSQL" {
+        tags "Database"
+      }
+    }
+    u -> db "Uses"
+  }
+  views {
+    container s "Containers" {
+      include *
+      autoLayout lr
+    }
+    styles {
+      element "Database" {
+        shape Cylinder
+        background #dc2626
+        color #ffffff
+      }
+    }
+    theme default
+  }
+}
+`;
+  const themeWs = parseStructurizrDsl(themeDsl);
+  assert.strictEqual(themeWs.warnings.length, 0, `unexpected theme warnings: ${JSON.stringify(themeWs.warnings)}`);
+  // theme default が先、ワークスペース styles が後に並ぶこと（styles の記述が theme より前でも上書きが効く）
+  assert.ok(themeWs.styles.elements.some(s => s.tag === 'Person' && s.background === '#08427b'));
+  assert.strictEqual(themeWs.styles.elements[themeWs.styles.elements.length - 1].tag, 'Database');
+  const themeResolved = resolveAllStructurizrViews(themeWs)[0];
+  const themeLayout = await computeViewLayout(themeResolved, themeWs.styles, elkEngine);
+  const themeSvg = renderStructurizrSvg(themeResolved, themeLayout, themeWs.styles);
+  assert.ok(themeSvg.includes('#08427b'), 'default theme Person color applied');
+  assert.ok(themeSvg.includes('#dc2626'), 'workspace styles overrides default theme');
+
+  // themes で default と外部 URL を混在指定した場合は default を適用しつつ外部 URL のみ警告
+  const mixedThemeWs = parseStructurizrDsl(`
+workspace "Mixed Theme" {
+  model {
+    u = person "User"
+  }
+  views {
+    themes default https://example.com/custom-theme.json
+  }
+}
+`);
+  assert.ok(mixedThemeWs.styles.elements.some(s => s.tag === 'Person' && s.background === '#08427b'));
+  assert.strictEqual(mixedThemeWs.warnings.length, 1);
+  assert.strictEqual(mixedThemeWs.warnings[0].code, 'THEME_IGNORED');
+
   console.log('PASS: structurizr-core.test.cjs (all assertions passed)');
 }
 
