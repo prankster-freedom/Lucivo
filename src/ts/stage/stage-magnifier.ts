@@ -24,6 +24,19 @@ import rawMagnifierPresets from './stage-magnifier-presets.json';
 // 直径（長辺基準 30% / 45% / 60%、既定 45%）× 倍率（3 段階）× 明暗テーマのデザイン定数マトリクス（ARC-MAG-003）
 export const MAGNIFIER_PRESETS: MagnifierMatrixConfig = rawMagnifierPresets as unknown as MagnifierMatrixConfig;
 
+// クロスオリジン画像（raw.githubusercontent.com 等）の foreignObject 内表示用 Data URI キャッシュ
+const imgDataUriCache = new Map<string, string>();
+const imgDataUriPending = new Set<string>();
+
+function blobToDataUri(blob: Blob): Promise<string | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export interface StageMagnifierContext {
   show: { active: boolean; hud: HTMLElement | null };
   ov: { active: boolean };
@@ -344,14 +357,21 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
       sceneClone.classList.remove('is-scene-in');
       if (needInline) inlineComputed(activeScene, sceneClone);
 
-      // <img> 要素（assets/... 等の外部参照）は foreignObject 内で読み込めないため data URI へ変換する
+      // <img> 要素（assets/... や raw.githubusercontent.com 等の外部参照）は foreignObject 内で読み込めないため data URI へ変換する
       const origImgs = activeScene.querySelectorAll('img');
       const cloneImgs = sceneClone.querySelectorAll('img');
       origImgs.forEach((origImg, idx) => {
         const targetImg = cloneImgs[idx];
         if (!targetImg) return;
-        const src = origImg.getAttribute('src') || '';
-        if (src.startsWith('data:')) return;
+        const rawAttr = origImg.getAttribute('src') || '';
+        if (rawAttr.startsWith('data:')) return;
+        const resolvedSrc = origImg.src || rawAttr;
+        if (!resolvedSrc) return;
+        const cached = imgDataUriCache.get(resolvedSrc);
+        if (cached) {
+          targetImg.setAttribute('src', cached);
+          return;
+        }
         if (!origImg.complete || origImg.naturalWidth === 0) {
           origImg.addEventListener('load', () => {
             if (mag.on && ctx.currentScene() === activeScene) refreshSnapshot();
@@ -370,7 +390,23 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
             targetImg.setAttribute('src', tmp.toDataURL('image/png'));
           }
         } catch {
-          // クロスオリジン画像等で変換できない場合はそのまま残す
+          // クロスオリジン画像等で canvas が汚染された場合は CORS fetch で Data URI を取得し再撮影する
+          if (!imgDataUriPending.has(resolvedSrc)) {
+            imgDataUriPending.add(resolvedSrc);
+            fetch(resolvedSrc, { mode: 'cors' })
+              .then((res) => (res.ok ? res.blob() : null))
+              .then((blob) => (blob ? blobToDataUri(blob) : null))
+              .then((dataUri) => {
+                imgDataUriPending.delete(resolvedSrc);
+                if (dataUri) {
+                  imgDataUriCache.set(resolvedSrc, dataUri);
+                  if (mag.on && ctx.currentScene() === activeScene) refreshSnapshot();
+                }
+              })
+              .catch(() => {
+                imgDataUriPending.delete(resolvedSrc);
+              });
+          }
         }
       });
 
