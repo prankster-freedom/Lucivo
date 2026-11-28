@@ -266,6 +266,12 @@ body:not([data-appearance="dark"]) .stage-hud::before {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.45em 1em;
+  pointer-events: auto;
+  cursor: pointer;
+}
+html.is-stage-idle .stage-hud-bar {
+  pointer-events: none;
+  cursor: none;
 }
 .stage-hud-title {
   flex: 1;
