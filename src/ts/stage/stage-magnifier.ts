@@ -234,21 +234,45 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
     if (!container || !activeScene) return null;
 
     const ns = 'http://www.w3.org/1999/xhtml';
-    const rootDiv = document.createElementNS(ns, 'div');
-    rootDiv.setAttribute('xmlns', ns);
-    rootDiv.style.cssText = `width:${vw}px;height:${vh}px;position:relative;overflow:hidden;font-size:${getComputedStyle(document.documentElement).fontSize};`;
+    const htmlClone = document.createElementNS(ns, 'div');
+    Array.from(document.documentElement.attributes).forEach(attr => {
+      htmlClone.setAttribute(attr.name, attr.value);
+    });
+    htmlClone.classList.add('lucivo-snap-html');
+    htmlClone.classList.remove('is-stage-magnifier', 'is-stage-pointer', 'is-stage-idle');
+    htmlClone.style.width = `${vw}px`;
+    htmlClone.style.height = `${vh}px`;
+    htmlClone.style.overflow = 'hidden';
+    htmlClone.style.transformOrigin = '0 0';
+    htmlClone.style.transform = `scale(${scale})`;
 
     const sanitizeCssUrls = (css: string) =>
       css.replace(/url\(\s*(['"]?)(?!data:|#)[^)]*\1\s*\)/gi, 'none');
 
+    const resolveViewportUnits = (css: string) =>
+      css.replace(/(-?\d*\.?\d+)(d?vh|d?vw|vmin|vmax)\b/gi, (_, num, unit) => {
+        const n = parseFloat(num);
+        const u = unit.toLowerCase();
+        const base = u.endsWith('vh') ? vh : u.endsWith('vw') ? vw : u === 'vmin' ? Math.min(vw, vh) : Math.max(vw, vh);
+        return `${((n * base) / 100).toFixed(2)}px`;
+      });
+
+    const rewriteRootSelectors = (css: string) =>
+      css
+        .replace(/(^|[},\s>+~(])html(?=[.#\[:\s,{])/gi, '$1.lucivo-snap-html')
+        .replace(/(^|[},\s>+~(])body(?=[.#\[:\s,{])/gi, '$1.lucivo-snap-body')
+        .replace(/:root\b/gi, '.lucivo-snap-html');
+
     const cssResult = collectStylesCss();
-    const cssText = sanitizeCssUrls(cssResult.cssText);
-    const needInline = cssResult.incomplete || !cssText;
+    const cssText = rewriteRootSelectors(resolveViewportUnits(sanitizeCssUrls(cssResult.cssText)));
+    const needInline = true;
+    htmlClone.style.fontSize = getComputedStyle(document.documentElement).fontSize;
+
     const styleEl = document.createElementNS(ns, 'style');
     styleEl.textContent = `${cssText}
       .is-scene-in, .is-scene-in * { animation: none !important; transition: none !important; opacity: 1 !important; }
       .stage-hud { display: none !important; }`;
-    rootDiv.appendChild(styleEl);
+    htmlClone.appendChild(styleEl);
 
     const INLINE_PROPS = [
       'display', 'position', 'top', 'right', 'bottom', 'left', 'width', 'height',
@@ -293,6 +317,18 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
       }
     };
 
+    const bodyClone = document.createElementNS(ns, 'div');
+    Array.from(document.body.attributes).forEach(attr => {
+      bodyClone.setAttribute(attr.name, attr.value);
+    });
+    bodyClone.classList.add('lucivo-snap-body');
+    if (needInline) copyStyleProps(document.body, bodyClone);
+    bodyClone.style.margin = '0';
+    bodyClone.style.width = `${vw}px`;
+    bodyClone.style.height = `${vh}px`;
+    bodyClone.style.position = 'relative';
+    bodyClone.style.overflow = 'hidden';
+
     const containerClone = container.cloneNode(false) as HTMLElement;
     if (needInline) copyStyleProps(container, containerClone);
     containerClone.style.position = 'absolute';
@@ -307,6 +343,31 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
       const sceneClone = activeScene.cloneNode(true) as HTMLElement;
       sceneClone.classList.remove('is-scene-in');
       if (needInline) inlineComputed(activeScene, sceneClone);
+
+      // <img> 要素（assets/... 等の外部参照）は foreignObject 内で読み込めないため data URI へ変換する
+      const origImgs = activeScene.querySelectorAll('img');
+      const cloneImgs = sceneClone.querySelectorAll('img');
+      origImgs.forEach((origImg, idx) => {
+        const targetImg = cloneImgs[idx];
+        if (!targetImg) return;
+        const src = origImg.getAttribute('src') || '';
+        if (src.startsWith('data:')) return;
+        if (!origImg.complete || origImg.naturalWidth === 0) return;
+        try {
+          const w = Math.max(origImg.naturalWidth, Math.round(origImg.clientWidth * scale));
+          const h = Math.max(origImg.naturalHeight, Math.round(origImg.clientHeight * scale));
+          const tmp = document.createElement('canvas');
+          tmp.width = w;
+          tmp.height = h;
+          const tctx = tmp.getContext('2d');
+          if (tctx) {
+            tctx.drawImage(origImg, 0, 0, w, h);
+            targetImg.setAttribute('src', tmp.toDataURL('image/png'));
+          }
+        } catch {
+          // クロスオリジン画像等で変換できない場合はそのまま残す
+        }
+      });
 
       // Canvas 要素（シグナル・ライト等）を画像として複製する
       const origCanvases = activeScene.querySelectorAll('canvas');
@@ -333,12 +394,13 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
       containerClone.scrollTop = container.scrollTop;
     }
 
-    rootDiv.appendChild(containerClone);
+    bodyClone.appendChild(containerClone);
+    htmlClone.appendChild(bodyClone);
 
-    const serializedHtml = new XMLSerializer().serializeToString(rootDiv);
+    const serializedHtml = new XMLSerializer().serializeToString(htmlClone);
     const outW = Math.round(vw * scale);
     const outH = Math.round(vh * scale);
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${outW}" height="${outH}" viewBox="0 0 ${vw} ${vh}"><foreignObject x="0" y="0" width="${vw}" height="${vh}">${serializedHtml}</foreignObject></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${outW}" height="${outH}"><foreignObject x="0" y="0" width="${outW}" height="${outH}">${serializedHtml}</foreignObject></svg>`;
   }
 
   function refreshSnapshot() {
