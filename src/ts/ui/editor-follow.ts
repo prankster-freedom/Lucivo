@@ -164,7 +164,14 @@ export function measureEditorLineTop(editor: HTMLTextAreaElement, prefix: string
   const mirror = document.createElement('div');
   mirror.style.cssText = 'position:fixed;top:-9999px;left:-9999px;visibility:hidden;pointer-events:none;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;box-sizing:border-box;';
   mirror.style.width = `${editor.clientWidth}px`;
-  mirror.style.font = cs.font;
+  if (cs.font) {
+    mirror.style.font = cs.font;
+  } else {
+    mirror.style.fontFamily = cs.fontFamily;
+    mirror.style.fontSize = cs.fontSize;
+    mirror.style.fontWeight = cs.fontWeight;
+    mirror.style.fontStyle = cs.fontStyle;
+  }
   mirror.style.lineHeight = cs.lineHeight;
   mirror.style.letterSpacing = cs.letterSpacing;
   mirror.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
