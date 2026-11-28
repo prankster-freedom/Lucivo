@@ -2,6 +2,12 @@
 
 Complete release history for Lucivo. The two most recent releases are also listed in [README.en.md](README.en.md#release-notes). ([日本語](release-notes.md))
 
+## 0.18.0 (2026-11-28)
+
+- feat(stage): Added a circular magnifier to Stage Show that smoothly tapers magnification back to 1x toward the edge, with selectable diameter (20% / 30% / 40%) and zoom (1.3x / 2.0x / 2.7x) presets
+- feat(ui): Updated the in-app logo and Help button links to open the public README in single-page layout (`layout=single`) with the Spring Mist tone (`tone=spring-mist`)
+- fix(editor): Improved editor line-top measurement accuracy for scroll synchronization by copying individual font properties
+
 ## 0.17.0 (2026-11-28)
 
 - feat(visual): Unified paged view, Stage Show, and print layouts to 16:10 (with selectable 10:16 portrait and `ratio` URL parameter), automatically compacting or splitting overflowing chapters and fitting the full page even on short landscape mobile screens

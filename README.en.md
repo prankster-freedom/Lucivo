@@ -13,7 +13,7 @@ tags: ["Lucivo", "Markdown", "Mermaid", "Structurizr DSL", "C4 model"]
 
 # Lucivo Markdown Presenter — Exhibition-Grade Markdown Viewer —
 
-- **Version**: `0.17.0`
+- **Version**: `0.18.0`
 - **Language**: [日本語](README.md) | English
 
 Lucivo is a standalone browser-based viewer for Markdown documents, Mermaid diagrams, and C4 model diagrams written in Structurizr DSL. Simply open a local Markdown file to switch instantaneously between two viewing modes: a **lightweight specification layout for reading** and an **exhibition- and presentation-grade layout for showcasing**.
@@ -236,6 +236,12 @@ Licensed under the [MIT License](LICENSE). See [public/THIRD_PARTY_LICENSES.txt]
 
 The two most recent releases are listed below. For the complete version history, see [release-notes.en.md](release-notes.en.md).
 
+### 0.18.0 (2026-11-28)
+
+- feat(stage): Added a circular magnifier to Stage Show that smoothly tapers magnification back to 1x toward the edge, with selectable diameter (20% / 30% / 40%) and zoom (1.3x / 2.0x / 2.7x) presets
+- feat(ui): Updated the in-app logo and Help button links to open the public README in single-page layout (`layout=single`) with the Spring Mist tone (`tone=spring-mist`)
+- fix(editor): Improved editor line-top measurement accuracy for scroll synchronization by copying individual font properties
+
 ### 0.17.0 (2026-11-28)
 
 - feat(visual): Unified paged view, Stage Show, and print layouts to 16:10 (with selectable 10:16 portrait and `ratio` URL parameter), automatically compacting or splitting overflowing chapters and fitting the full page even on short landscape mobile screens
@@ -245,11 +251,3 @@ The two most recent releases are listed below. For the complete version history,
 - feat(museum-walk): Added two-finger pinch zoom on smartphones and a subtle downward camera tilt when crossing slopes
 - feat(ui): Added "Color Museum" and "Print & PDF Check" samples to the mobile "Open" menu
 - fix(museum-walk): Increased swipe look-around range and tuned walking speed on smartphones
-
-### 0.16.3 (2026-11-26)
-
-- feat(museum-walk): Museum Walk can now be selected and used on smartphones
-- feat(museum-walk): Added four rendering lightness levels (Crisp / Normal / Light / Very light). An "Auto" choice fits the device, and smartphones start at a lighter level. Choose it in the "Other" settings screen (Web edition), or specify it in the URL
-- feat(museum-walk): Large figures are now placed wider, with short following text set quietly beside them
-- fix(museum-walk): Fixed wall figures overlapping and getting cut off, and complex single-image figures now display correctly
-- fix(samples): Reordered the Color Museum slides, made the prism figure background transparent, and moved its title and tagline out of the image into text
