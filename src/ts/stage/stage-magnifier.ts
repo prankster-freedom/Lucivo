@@ -260,7 +260,11 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
     htmlClone.style.transform = `scale(${scale})`;
 
     const sanitizeCssUrls = (css: string) =>
-      css.replace(/url\(\s*(['"]?)(?!data:|#)[^)]*\1\s*\)/gi, 'none');
+      css.replace(/url\(\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^)]*)\s*\)/gi, (full, inner: string) => {
+        const unquoted = inner.trim().replace(/^(['"])(.*)\1$/, '$2').trim();
+        if (/^(data:|#|%23)/i.test(unquoted)) return full;
+        return 'none';
+      });
 
     const resolveViewportUnits = (css: string) =>
       css.replace(/(-?\d*\.?\d+)(d?vh|d?vw|vmin|vmax)\b/gi, (_, num, unit) => {
