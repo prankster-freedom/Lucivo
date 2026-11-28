@@ -105,7 +105,7 @@ async function testFileLoading(browser) {
   // TC-FILE-014 ヘッダーと案内のロゴが Lucivo の公開 URL で README を開き、案内の「最新版はこちら」が公開リポジトリへのリンクになっている（#298）
   const repoLinks = await page.evaluate(() => {
     const repoUrl = 'https://github.com/prankster-freedom/Lucivo';
-    const readmeUrl = 'https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual';
+    const readmeUrl = 'https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&layout=single&tone=spring-mist&mode=visual';
     const describe = (a, expected) => a && { href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'), ok: a.getAttribute('href') === expected && a.getAttribute('target') === '_blank' && /\bnoopener\b/.test(a.getAttribute('rel') || '') && /\bnoreferrer\b/.test(a.getAttribute('rel') || '') };
     const latest = document.querySelector('#standard-doc-container .empty-guide-latest');
     return {
@@ -241,7 +241,7 @@ async function testFileLoading(browser) {
       && latest.state === 'latest' && latest.text.includes('最新版です') && latest.text.includes(appVersion)
       && failed.state === 'error' && failed.text.includes('確認できませんでした')
       && afterRender.state === 'error'
-      && helpAttr.helpHref === 'https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&mode=visual'
+      && helpAttr.helpHref === 'https://prankster-freedom.github.io/Lucivo/preview/ja/?url=https%3A%2F%2Fgithub.com%2Fprankster-freedom%2FLucivo%2Fblob%2Fmain%2FREADME.md&view=canvas&layout=single&tone=spring-mist&mode=visual'
       && helpAttr.helpTarget === '_blank' && helpAttr.helpRel === 'noopener noreferrer'
       && helpAttr.updateText === '最新版確認' && helpAttr.updateMenuHiddenInitially === true
       && helpAttr.menuItemText === '通信が発生します' && helpAttr.updateIconAfterText && helpAttr.updateSingleLine

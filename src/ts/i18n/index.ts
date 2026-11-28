@@ -122,7 +122,7 @@ export function t(key: I18nKey, vars?: Record<string, string | number>): string 
 export function getReadmeViewerUrl(lang: Lang = getLang()): string {
   const file = lang === 'en' ? 'README.en.md' : 'README.md';
   const rawBlob = `https://github.com/prankster-freedom/Lucivo/blob/main/${file}`;
-  return `https://prankster-freedom.github.io/Lucivo/preview/${lang}/?url=${encodeURIComponent(rawBlob)}&view=canvas&mode=visual`;
+  return `https://prankster-freedom.github.io/Lucivo/preview/${lang}/?url=${encodeURIComponent(rawBlob)}&view=canvas&layout=single&tone=spring-mist&mode=visual`;
 }
 
 export function resolveSampleFileName(baseFileName: string, lang: Lang = getLang()): string {
