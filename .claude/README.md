@@ -41,7 +41,8 @@ tags: ["Claude Code", "Cursor", "GitHub Copilot", "AGENTS.md", "CLAUDE.md", "ski
         ├── release/                         # /release
         ├── swe1/ swe2/ swe3/ test/          # SKILL.md + template.md（ソフトウェア開発の工程とひな形）
         ├── control-system-documentation/    # SKILL.md + examples.md
-        └── markdown-plantuml-documentation/ # SKILL.md + markdown_sample.md
+        ├── markdown-plantuml-documentation/ # SKILL.md + markdown_sample.md
+        └── structurizr/                     # SKILL.md（Structurizr / C4 公式仕様参照ガイド）
 ```
 
 **他の AI ツールとの共用について**: Cursor・GitHub Copilot・Antigravity は、`AGENTS.md` と `.claude/skills/` を直接参照する。`.cursor/`・`.github/`・`.agent/` に原則・スキルの複製を置かない（`AGENTS.md` 3 章）。原則・スキルを改定するときは、`AGENTS.md` と `.claude/skills/` だけを変更すればよい。
@@ -101,6 +102,7 @@ tags: ["Claude Code", "Cursor", "GitHub Copilot", "AGENTS.md", "CLAUDE.md", "ski
 | design-craft                    | 伝わるデザインの考え方と道具（要件の整理、6 つのステップ、意味と見た目の優先づけ、擬人化・連想・翻訳、細部の詰め方、文章の要素と書体・配色・写真・グラフの扱い方）（v1.0.0） |
 | color-image                     | 伝えたい感情・雰囲気・性格・キャラクターから配色を導く（色相とトーンの記号、色の 3 つの属性、イメージスケール、キー色から 3 色への組み立て、配色テクニックの 4 本の軸、感情ごとの配色見本）（v1.0.0） |
 | control-system-documentation    | 制御系のブロック線図（SVG 既定: 横一列矩形・矢印脇ラベル・白丸加え合せ・黒丸引き出し・直角帰還）と、数式に基づく時系列・周波数応答グラフ。Mermaid flowchart での掲載は非推奨（v2.0.0） |
+| structurizr                     | Structurizr（C4 モデル）および Structurizr DSL の公式情報源（`structurizr.com` / `docs.structurizr.com` / `github.com/structurizr/structurizr`）の参照指針、DSL 仕様要点、Lucivo 固有制約の整理（v1.0.0） |
 
 ### frontmatter
 
