@@ -352,7 +352,12 @@ export function createStageMagnifier(ctx: StageMagnifierContext) {
         if (!targetImg) return;
         const src = origImg.getAttribute('src') || '';
         if (src.startsWith('data:')) return;
-        if (!origImg.complete || origImg.naturalWidth === 0) return;
+        if (!origImg.complete || origImg.naturalWidth === 0) {
+          origImg.addEventListener('load', () => {
+            if (mag.on && ctx.currentScene() === activeScene) refreshSnapshot();
+          }, { once: true });
+          return;
+        }
         try {
           const w = Math.max(origImg.naturalWidth, Math.round(origImg.clientWidth * scale));
           const h = Math.max(origImg.naturalHeight, Math.round(origImg.clientHeight * scale));
